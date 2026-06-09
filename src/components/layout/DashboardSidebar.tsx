@@ -9,7 +9,7 @@ import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "templates" | "deployments" | "profile";
 
 interface DashboardSidebarProps {
   active: NavId;
@@ -30,14 +30,18 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   members:       { icon: "users",       labelKey: "shell.members" },
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
   reporte:       { icon: "trending",    labelKey: "shell.reports" },
+  content:       { icon: "fileText",    labelKey: "shell.content" },
+  templates:     { icon: "grid",        labelKey: "shell.templates" },
+  deployments:   { icon: "upload",      labelKey: "shell.deployments" },
 };
 
-type SectionId = "commercial" | "admin" | "analytics";
+type SectionId = "commercial" | "admin" | "storefront" | "analytics";
 
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
   { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "config"] },
+  { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "templates", "deployments"] },
 ];
 
 function sectionOf(active: NavId): SectionId | null {

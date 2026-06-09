@@ -122,3 +122,6 @@ export type { Member, MemberListResponse } from "./member";
 
 // Dashboard
 export type { StandData, DashboardData, DashboardKPIs, ProductRankItem } from "./dashboard";
+
+// Storefront templates (CMS template gallery)
+export type { Template } from "./storefront";

@@ -41,6 +41,9 @@ import OrgContactPage from "@/pages/dashboard/OrgContactPage";
 import OrgPaymentPage from "@/pages/dashboard/OrgPaymentPage";
 import OrgShippingPage from "@/pages/dashboard/OrgShippingPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
+import ContentPage from "@/pages/dashboard/ContentPage";
+import TemplatesPage from "@/pages/dashboard/TemplatesPage";
+import DeploymentsPage from "@/pages/dashboard/DeploymentsPage";
 
 const DASHBOARD_ROLES = ["gerente", "supervisor", "customer", "cajero"];
 
@@ -255,6 +258,20 @@ export default function Routes() {
       <Route
         path={ROUTES.DASHBOARD_CLIENTS}
         component={() => <DashboardPage><ClientsPage /></DashboardPage>}
+      />
+
+      {/* Sitio web (storefront CMS) — content, templates, deployments */}
+      <Route
+        path={ROUTES.DASHBOARD_CONTENT}
+        component={() => <DashboardPage><ContentPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_TEMPLATES}
+        component={() => <DashboardPage><TemplatesPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_DEPLOYMENTS}
+        component={() => <DashboardPage><DeploymentsPage /></DashboardPage>}
       />
 
       {/* Storefront / org-settings sub-pages — more-specific paths before the hub */}

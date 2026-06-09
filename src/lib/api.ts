@@ -175,6 +175,33 @@ export function orgSettingsPath(userId: string, orgId: string, endpoint: string)
 }
 
 /**
+ * Build org-scoped CMS content API path (markets API) — SINGULAR `/organization`
+ * (NO `/memberships/`), matching the dashboard's `buildOrgApiUrl` shape:
+ *   `/api/users/{u}/organization/{o}{endpoint}`
+ *
+ * markets-api mounts the org-scoped CMS router at
+ * `app.use('/api/users/:userId/organization/:orgId', orgScopedRouter)` —
+ * i.e. WITHOUT `memberships`. The legacy {@link orgPath} (which injects
+ * `/memberships/`) would 404 against these routes; use this builder instead.
+ *
+ * Used by the CMS module for:
+ *   • GET  /pages?includeContent=true            (pages with nested sections+content)
+ *   • POST /content/bulk-all                     (bulk save all section content)
+ *   • POST /pre-deployments/{id}/publish         (publish pending changes)
+ *   • GET  /pre-deployments | /deployments       (deployment history)
+ *
+ * Templates are GLOBAL/public — fetched via the bare `api` client
+ * (`GET /api/templates?activeOnly=true`); no builder needed.
+ *
+ * Shares the exact path shape with {@link orgSettingsPath}; kept as a separate
+ * named export so CMS callers read intentionally.
+ */
+export function orgContentPath(userId: string, orgId: string, endpoint: string) {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `/api/users/${userId}/organization/${orgId}${cleanEndpoint}`;
+}
+
+/**
  * Build a confirmations-scoped path on the orders (cross-app-be) base — a thin
  * convenience wrapper over {@link ordersStoreOrgPath} for the Confirmations
  * module (plan 01). Produces `/api/organizations/{org}/confirmations{suffix}`.

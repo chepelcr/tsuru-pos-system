@@ -30,6 +30,9 @@ export const ROUTES = {
   DASHBOARD_ORG_HACIENDA: "/dashboard/organization/hacienda",
   DASHBOARD_ORG_NOTIFICATIONS: "/dashboard/organization/notifications",
   DASHBOARD_ORG_FISCAL_INFO: "/dashboard/organization/fiscal-info",
+  DASHBOARD_CONTENT: "/dashboard/content",
+  DASHBOARD_TEMPLATES: "/dashboard/templates",
+  DASHBOARD_DEPLOYMENTS: "/dashboard/deployments",
   PROFILE: "/dashboard/profile",
 } as const;
 

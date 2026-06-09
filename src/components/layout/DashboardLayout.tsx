@@ -21,7 +21,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "templates" | "deployments" | "profile";
 
 interface Session {
   name: string;
@@ -44,6 +44,9 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_CONFIRMATIONS)) return "confirmations";
   if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
   if (location.startsWith(ROUTES.DASHBOARD_MEMBERS))  return "members";
+  if (location.startsWith(ROUTES.DASHBOARD_CONTENT))     return "content";
+  if (location.startsWith(ROUTES.DASHBOARD_TEMPLATES))   return "templates";
+  if (location.startsWith(ROUTES.DASHBOARD_DEPLOYMENTS)) return "deployments";
   if (location.startsWith(ROUTES.PROFILE))            return "profile";
   if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /general, /branding, /contact, /payment, /shipping, /hacienda, /notifications sub-paths too
   return "dashboard";
@@ -63,6 +66,9 @@ const NAV_PATHS: Record<NavId, string> = {
   confirmations: ROUTES.DASHBOARD_CONFIRMATIONS,
   members:   ROUTES.DASHBOARD_MEMBERS,
   organization: ROUTES.DASHBOARD_ORG_SETTINGS,
+  content:     ROUTES.DASHBOARD_CONTENT,
+  templates:   ROUTES.DASHBOARD_TEMPLATES,
+  deployments: ROUTES.DASHBOARD_DEPLOYMENTS,
   profile:   ROUTES.PROFILE,
 };
 
