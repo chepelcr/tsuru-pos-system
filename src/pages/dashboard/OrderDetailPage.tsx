@@ -19,6 +19,25 @@ import { CrossdockingPDFPreview } from '@/components/orders/CrossdockingPDFPrevi
 
 const STATUS_BADGE = ORDER_STATUS_BADGE;
 
+/**
+ * Some orders-API fields (department, event, party) arrive as a STRING in some
+ * orgs and as a nested OBJECT ({ name, code, ... }) in others. Rendering the
+ * object directly crashes React (error #31), so coerce to a display string.
+ */
+function text(v: unknown): string {
+  if (v == null) return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number') return String(v);
+  if (typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    if (typeof o.name === 'string') return o.name;
+    if (typeof o.description === 'string') return o.description;
+    if (typeof o.code === 'string') return o.code;
+    return '';
+  }
+  return String(v);
+}
+
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   pending: 'processing',
   processing: 'shipped',
@@ -374,7 +393,7 @@ export default function OrderDetailPage({ orderId }: Props) {
                 <Icon name={statusCfg.icon} size={11} />
                 {t(`orders.status.${order.order_status}`)}
               </Badge>
-              {order.event && <Badge variant="outline">{order.event}</Badge>}
+              {text(order.event) && <Badge variant="outline">{text(order.event)}</Badge>}
             </div>
           </div>
           <div className="flex items-start gap-3 flex-shrink-0">
@@ -436,10 +455,10 @@ export default function OrderDetailPage({ orderId }: Props) {
               </span>
             </div>
           )}
-          {order.department && (
+          {text(order.department) && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Icon name="layers" size={13} />
-              <span className="t-xs">{order.department}</span>
+              <span className="t-xs">{text(order.department)}</span>
             </div>
           )}
         </div>
@@ -456,15 +475,15 @@ export default function OrderDetailPage({ orderId }: Props) {
         <div className="flex flex-col gap-3.5">
           {order.client && (
             <SectionCard title={t('orders.detail.customer')} icon="user">
-              <InfoRow icon="user" label={t('orders.detail.name')} value={order.client.name} />
-              {order.client.gln && (
-                <InfoRow icon="layers" label={t('orders.detail.gln')} value={order.client.gln} />
+              <InfoRow icon="user" label={t('orders.detail.name')} value={text(order.client.name)} />
+              {text(order.client.gln) && (
+                <InfoRow icon="layers" label={t('orders.detail.gln')} value={text(order.client.gln)} />
               )}
-              {order.client.internal_code && (
+              {text(order.client.internal_code) && (
                 <InfoRow
                   icon="copy"
                   label={t('orders.detail.internalCode')}
-                  value={order.client.internal_code}
+                  value={text(order.client.internal_code)}
                 />
               )}
             </SectionCard>
@@ -472,9 +491,9 @@ export default function OrderDetailPage({ orderId }: Props) {
 
           {order.supplier && (
             <SectionCard title={t('orders.detail.supplier')} icon="store">
-              <InfoRow icon="store" label={t('orders.detail.name')} value={order.supplier.name} />
-              {order.supplier.gln && (
-                <InfoRow icon="layers" label={t('orders.detail.gln')} value={order.supplier.gln} />
+              <InfoRow icon="store" label={t('orders.detail.name')} value={text(order.supplier.name)} />
+              {text(order.supplier.gln) && (
+                <InfoRow icon="layers" label={t('orders.detail.gln')} value={text(order.supplier.gln)} />
               )}
             </SectionCard>
           )}
@@ -484,13 +503,13 @@ export default function OrderDetailPage({ orderId }: Props) {
               <InfoRow
                 icon="mapPin"
                 label={t('orders.detail.deliveryLocation')}
-                value={order.delivery_location.name}
+                value={text(order.delivery_location.name)}
               />
-              {order.delivery_location.code && (
+              {text(order.delivery_location.code) && (
                 <InfoRow
                   icon="copy"
                   label={t('orders.detail.locationCode')}
-                  value={order.delivery_location.code}
+                  value={text(order.delivery_location.code)}
                 />
               )}
             </SectionCard>

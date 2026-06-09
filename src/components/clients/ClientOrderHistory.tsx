@@ -1,6 +1,8 @@
+import { useLocation } from "wouter";
 import { Card, Icon, EmptyState } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useClientOrders, ORDERS_MODULE_READY } from "@/hooks/useClientOrders";
+import { ROUTES } from "@/routePaths";
 import { ClientStats } from "./ClientStats";
 import type { Order } from "@/hooks/useOrders";
 
@@ -30,6 +32,7 @@ function formatDate(dateString: string | undefined, locale: string): string {
 export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps) {
   const { t, language } = useLanguage();
   const locale = language === "es" ? "es-CR" : "en-US";
+  const [, navigate] = useLocation();
   const { data: orders = [], isLoading } = useClientOrders(orgId, clientGln ?? undefined);
 
   // Gated: Orders module not yet migrated (no order-detail route exists).
@@ -51,10 +54,9 @@ export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps
     );
   }
 
-  // TODO(verify-endpoint): wire order-detail navigation once the Orders module
-  // (and its detail route) exists. Until then rows are non-navigable.
-  const onOpenOrder = (_order: Order) => {
-    /* no-op until Orders module ships a detail route */
+  // Open the order's detail page (Orders module is live).
+  const onOpenOrder = (order: Order) => {
+    navigate(`${ROUTES.DASHBOARD_ORDERS}/${order.document_number}`);
   };
 
   return (

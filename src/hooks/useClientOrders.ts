@@ -15,7 +15,7 @@ import type { Order } from '@/hooks/useOrders';
  * `/orders?search=clientGln:{gln}` once Orders is migrated; until then the query
  * stays disabled and returns [] so we never fetch a half-built endpoint.
  */
-export const ORDERS_MODULE_READY = false;
+export const ORDERS_MODULE_READY = true;
 
 export function useClientOrders(orgId: string | undefined, clientGln: string | undefined) {
   const enabled = ORDERS_MODULE_READY && !!orgId && !!clientGln;
