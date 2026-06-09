@@ -78,7 +78,7 @@ export function ContactStep({ form, patch, compact = false }: ContactStepProps) 
             value={isoCountryCode}
             onChange={(e) => patch({ phoneCountryCode: e.target.value, phoneAreaCode: "" })}
           >
-            {countries.length === 0 && <option value="188">Costa Rica (+506)</option>}
+            {countries.length === 0 && <option value="188">{t("orgSettings.fiscalInfo.costaRicaPhone")}</option>}
             {countries.map((c) => (
               <option key={c.iso_code} value={c.iso_code}>
                 {(c.spanish_name || c.name) + (c.phone_code ? ` (${c.phone_code})` : "")}

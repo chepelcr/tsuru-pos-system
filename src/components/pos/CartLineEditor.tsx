@@ -32,7 +32,7 @@ export function CartLineEditor({ product, qty, lineDiscount = 0, lineNote = "", 
 
   return (
     <div
-      className="fixed inset-0 bg-foreground/60 z-[9000] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-foreground/60 z-modal flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-card rounded-2xl w-full max-w-[420px] shadow-modal overflow-hidden">

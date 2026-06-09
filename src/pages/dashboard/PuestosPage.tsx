@@ -248,8 +248,8 @@ export default function PuestosPage() {
         title={t("puestos.addTerminal")}
         subtitle={addTermBranch?.name}
         icon="sliders"
-        iconBg="hsl(220 100% 60% / 0.12)"
-        iconColor="hsl(220 100% 55%)"
+        iconBg="hsl(var(--info) / 0.12)"
+        iconColor="hsl(var(--info))"
         width={400}
         footer={
           <div className="flex gap-2.5 px-6 py-4 justify-end">

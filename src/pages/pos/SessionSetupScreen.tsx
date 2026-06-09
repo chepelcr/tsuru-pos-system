@@ -5,28 +5,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { Organization } from "@/types/organization";
 import type { Branch, Terminal, CreateTerminalRequest } from "@/types/branch";
 import { Icon, Drawer, Button, Input, FormLabel } from "@/components/ui";
-import { POS } from "@/theme/pos";
 
 interface Props {
   org: Organization;
 }
-
-const selectStyle = (active: boolean, enabled: boolean): React.CSSProperties => ({
-  width: "100%",
-  padding: "12px 40px 12px 14px",
-  background: enabled ? POS.card : "rgba(36,36,38,0.4)",
-  border: `1px solid ${active ? "rgba(212,168,116,0.4)" : POS.border}`,
-  borderRadius: 10,
-  color: active ? POS.text : POS.muted,
-  fontSize: 14,
-  fontFamily: POS.fontUI,
-  fontWeight: active ? 600 : 400,
-  cursor: enabled ? "pointer" : "not-allowed",
-  appearance: "none",
-  outline: "none",
-  opacity: enabled ? 1 : 0.5,
-  transition: "all 0.15s",
-});
 
 export default function SessionSetupScreen({ org }: Props) {
   const { setSession } = useSessionContext();
@@ -57,7 +39,7 @@ export default function SessionSetupScreen({ org }: Props) {
       setBranches(res.data ?? []);
       setBranchesLoaded(true);
     } catch {
-      setError("No se pudieron cargar las estaciones.");
+      setError(t("setup.loadStationsError"));
     } finally {
       setLoadingBranches(false);
     }
@@ -99,7 +81,7 @@ export default function SessionSetupScreen({ org }: Props) {
       setSelectedTerminal(newTerm);
       setAddTermOpen(false);
     } catch (e: unknown) {
-      setTermError(e instanceof Error ? e.message : "No se pudo crear la terminal.");
+      setTermError(e instanceof Error ? e.message : t("setup.createTerminalError"));
     } finally {
       setSavingTerm(false);
     }
@@ -117,7 +99,7 @@ export default function SessionSetupScreen({ org }: Props) {
         terminal_name: selectedTerminal.name,
       });
     } catch {
-      setError("No se pudo iniciar la sesión.");
+      setError(t("setup.startSessionError"));
       setSaving(false);
     }
   }
@@ -127,115 +109,46 @@ export default function SessionSetupScreen({ org }: Props) {
   const canBegin = !!selectedBranch && !!selectedTerminal && !saving;
 
   return (
-    <div
-      style={{
-        minHeight: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: POS.bg,
-        padding: "40px 20px",
-        fontFamily: POS.fontUI,
-      }}
-    >
+    <div className="min-h-full flex items-center justify-center bg-background font-sans px-5 py-10">
       {/* Ambient glow */}
-      <div
-        style={{
-          position: "fixed",
-          top: "20%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 600,
-          height: 300,
-          background: `radial-gradient(ellipse at center, ${POS.roseLight} 0%, transparent 70%)`,
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
+      <div className="session-setup-glow fixed top-[20%] left-1/2 -translate-x-1/2 w-[600px] h-[300px] pointer-events-none z-0" />
 
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          width: "100%",
-          maxWidth: 440,
-          background: POS.surface,
-          border: `1px solid ${POS.border}`,
-          borderRadius: 20,
-          overflow: "hidden",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,168,116,0.06)",
-        }}
-      >
+      <div className="relative z-10 w-full max-w-[440px] bg-card border border-border rounded-[20px] overflow-hidden shadow-modal">
         {/* Header strip */}
-        <div
-          style={{
-            background: `linear-gradient(135deg, rgba(212,168,116,0.12) 0%, transparent 100%)`,
-            borderBottom: `1px solid ${POS.border}`,
-            padding: "28px 32px 24px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                background: POS.roseLight,
-                border: `1px solid rgba(212,168,116,0.3)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Icon name="store" size={20} style={{ color: POS.rose }} />
+        <div className="session-setup-header border-b border-border px-8 pt-7 pb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="icon-pill-rose-soft w-10 h-10 flex-shrink-0">
+              <Icon name="store" size={20} />
             </div>
             <div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: POS.rose,
-                  fontFamily: POS.fontUI,
-                }}
-              >
+              <div className="t-xs font-semibold uppercase tracking-[0.08em] text-accent-rose">
                 {t("setup.pointOfSale")}
               </div>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: POS.text,
-                  fontFamily: POS.fontDisplay,
-                  lineHeight: 1.2,
-                }}
-              >
+              <div className="text-lg font-bold font-display leading-tight text-foreground">
                 {org.name}
               </div>
             </div>
           </div>
-          <p style={{ fontSize: 13, color: POS.muted, lineHeight: 1.5, margin: 0 }}>
+          <p className="t-sm text-muted-foreground leading-relaxed m-0">
             {t("setup.selectStationTerminal")}
           </p>
         </div>
 
         {/* Form body */}
-        <div style={{ padding: "24px 32px 32px" }}>
+        <div className="px-8 pt-6 pb-8">
 
           {/* Station selector */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: POS.muted, marginBottom: 8 }}>
+          <div className="mb-5">
+            <label className="label-section block mb-2">
               {t("setup.station")}
             </label>
-            <div style={{ position: "relative" }}>
+            <div className="relative">
               <select
                 onFocus={loadBranches}
                 onChange={(e) => handleBranchChange(Number(e.target.value))}
                 value={selectedBranch?.code ?? ""}
                 disabled={loadingBranches}
-                style={selectStyle(!!selectedBranch, true)}
+                className="select-native"
               >
                 <option value="">{loadingBranches ? t("common.loading") : t("setup.selectStation")}</option>
                 {branches.map((b) => (
@@ -244,17 +157,17 @@ export default function SessionSetupScreen({ org }: Props) {
                   </option>
                 ))}
               </select>
-              <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: POS.muted }}>
-                {loadingBranches
-                  ? <Icon name="refresh" size={14} style={{ animation: "spin 1s linear infinite" }} />
-                  : <Icon name="chevronDown" size={14} />}
-              </div>
+              {loadingBranches && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                  <Icon name="refresh" size={14} className="animate-spin" />
+                </div>
+              )}
             </div>
           </div>
 
           {/* Terminal selector */}
-          <div style={{ marginBottom: 28 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: selectedBranch ? POS.muted : "rgba(142,142,147,0.4)", marginBottom: 8 }}>
+          <div className="mb-7">
+            <label className="label-section block mb-2">
               {t("setup.terminal")}
             </label>
 
@@ -263,36 +176,18 @@ export default function SessionSetupScreen({ org }: Props) {
               <button
                 type="button"
                 onClick={() => setAddTermOpen(true)}
-                style={{
-                  width: "100%",
-                  padding: "12px 16px",
-                  background: "transparent",
-                  border: `1.5px dashed rgba(212,168,116,0.4)`,
-                  borderRadius: 10,
-                  color: POS.rose,
-                  fontSize: 13,
-                  fontFamily: POS.fontUI,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = POS.roseDim)}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                className="w-full px-4 py-3 bg-transparent hover:bg-accent-rose-dim border-[1.5px] border-dashed border-accent-rose-border rounded-[10px] text-accent-rose t-sm font-semibold cursor-pointer flex items-center justify-center gap-2 transition-colors"
               >
                 <Icon name="plus" size={14} />
                 {t("setup.addTerminalToStation")}
               </button>
             ) : (
-              <div style={{ position: "relative" }}>
+              <div className="relative">
                 <select
                   onChange={(e) => handleTerminalChange(Number(e.target.value))}
                   value={selectedTerminal?.code ?? ""}
                   disabled={!selectedBranch}
-                  style={selectStyle(!!selectedTerminal, !!selectedBranch)}
+                  className="select-native"
                 >
                   <option value="">{!selectedBranch ? t("setup.selectStationFirst") : t("setup.selectTerminal")}</option>
                   {terminals.map((t) => (
@@ -301,58 +196,31 @@ export default function SessionSetupScreen({ org }: Props) {
                     </option>
                   ))}
                 </select>
-                <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: POS.muted, opacity: selectedBranch ? 1 : 0.4 }}>
-                  <Icon name="chevronDown" size={14} />
-                </div>
               </div>
             )}
           </div>
 
           {/* Error */}
           {error && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "10px 14px",
-                background: "rgba(255,69,58,0.1)",
-                border: "1px solid rgba(255,69,58,0.25)",
-                borderRadius: 8,
-                marginBottom: 20,
-                fontSize: 13,
-                color: "#FF453A",
-                fontFamily: POS.fontUI,
-              }}
-            >
-              <Icon name="alertTri" size={14} style={{ flexShrink: 0 }} />
+            <div className="error-box-inline mb-5">
+              <Icon name="alertTri" size={14} className="flex-shrink-0" />
               {error}
             </div>
           )}
 
           {/* Selection summary */}
           {selectedBranch && selectedTerminal && (
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                marginBottom: 20,
-                padding: "12px 14px",
-                background: "rgba(212,168,116,0.06)",
-                border: "1px solid rgba(212,168,116,0.18)",
-                borderRadius: 10,
-              }}
-            >
+            <div className="flex gap-2.5 mb-5 px-3.5 py-3 bg-accent-rose-dim border border-accent-rose-border rounded-[10px]">
               {[
                 { label: t("setup.station"), value: selectedBranch.name, code: selectedBranch.code },
                 { label: t("setup.terminal"), value: selectedTerminal.name, code: selectedTerminal.code },
               ].map((item) => (
-                <div key={item.label} style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: POS.rose, marginBottom: 2 }}>
+                <div key={item.label} className="flex-1">
+                  <div className="t-xs font-bold uppercase tracking-[0.07em] text-accent-rose mb-0.5">
                     {item.label}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: POS.text }}>{item.value}</div>
-                  <div style={{ fontSize: 11, color: POS.muted }}>{t("setup.codeLabel")}{item.code}</div>
+                  <div className="t-sm font-bold text-foreground">{item.value}</div>
+                  <div className="t-xs text-muted-foreground">{t("setup.codeLabel")}{item.code}</div>
                 </div>
               ))}
             </div>
@@ -362,30 +230,10 @@ export default function SessionSetupScreen({ org }: Props) {
           <button
             onClick={handleBegin}
             disabled={!canBegin}
-            style={{
-              width: "100%",
-              padding: "14px 24px",
-              background: canBegin
-                ? `linear-gradient(135deg, ${POS.rose} 0%, #C49060 100%)`
-                : "rgba(212,168,116,0.15)",
-              border: canBegin ? "none" : `1px solid rgba(212,168,116,0.2)`,
-              borderRadius: 12,
-              color: canBegin ? "#1C1410" : POS.muted,
-              fontSize: 15,
-              fontWeight: 700,
-              fontFamily: POS.fontUI,
-              letterSpacing: "0.02em",
-              cursor: canBegin ? "pointer" : "not-allowed",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              transition: "all 0.2s",
-              boxShadow: canBegin ? "0 4px 20px rgba(212,168,116,0.35)" : "none",
-            }}
+            className="btn-session-cta"
           >
             {saving ? (
-              <><Icon name="refresh" size={16} style={{ animation: "spin 1s linear infinite" }} />{t("setup.starting")}</>
+              <><Icon name="refresh" size={16} className="animate-spin" />{t("setup.starting")}</>
             ) : (
               <><Icon name="checkCircle" size={16} />{t("setup.startShift")}</>
             )}
@@ -400,8 +248,6 @@ export default function SessionSetupScreen({ org }: Props) {
         title={t("setup.newTerminal")}
         subtitle={selectedBranch ? `${t("setup.stationLabel")}${selectedBranch.name}` : undefined}
         icon="sliders"
-        iconBg="rgba(212,168,116,0.12)"
-        iconColor={POS.rose}
         width={400}
       >
         <TerminalForm
@@ -412,11 +258,6 @@ export default function SessionSetupScreen({ org }: Props) {
           onClose={() => { setAddTermOpen(false); setTermError(null); }}
         />
       </Drawer>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        select option { background: #242426; color: #FAF8F5; }
-      `}</style>
     </div>
   );
 }
@@ -443,7 +284,7 @@ function TerminalForm({ branchId, isSaving, error, onSave, onClose }: TerminalFo
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+    <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
       <div>
         <FormLabel required>{t("products.name")}</FormLabel>
         <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("terminal.namePlaceholder")} />
@@ -474,12 +315,12 @@ function TerminalForm({ branchId, isSaving, error, onSave, onClose }: TerminalFo
       </div>
 
       {error && (
-        <div style={{ fontSize: 13, color: "#FF453A", padding: "10px 14px", background: "rgba(255,69,58,0.1)", border: "1px solid rgba(255,69,58,0.25)", borderRadius: 8 }}>
+        <div className="error-box-inline">
           {error}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
+      <div className="flex gap-2.5 justify-end pt-1">
         <Button variant="outline" size="sm" type="button" onClick={onClose} disabled={isSaving}>{t("common.cancel")}</Button>
         <Button variant="primary" size="sm" type="submit" disabled={isSaving || !name.trim() || !code}>
           {isSaving ? t("setup.creating") : t("setup.createTerminal")}

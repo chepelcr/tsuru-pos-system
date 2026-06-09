@@ -333,13 +333,12 @@ export function PaymentSection({
           <div
             ref={menuRef}
             role="menu"
-            className="dropdown-menu p-2 grid grid-cols-2 gap-2 fade-up"
+            className="dropdown-menu z-modal p-2 grid grid-cols-2 gap-2 fade-up"
             style={{
               position: 'fixed',
               top: menuPos.top,
               left: menuPos.left,
               width: menuPos.width,
-              zIndex: 300,
             }}
           >
             {overflowMethods.map(({ code, label, icon }) => {

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ordersApi, ordersOrgPath } from "../lib/api";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useOrganization } from "./useOrganization";
@@ -61,5 +61,44 @@ export function useProducts(options: UseProductsOptions = {}) {
         ordersOrgPath(org!.id, `/products?${params.toString()}`)
       );
     },
+  });
+}
+
+/**
+ * Bulk status mutation — loops the existing single-product status endpoint
+ * (`PATCH /products/{id}/status`, body `{ status }`) sequentially over the
+ * given ids. Status: 1 = active, 2 = inactive, 3 = soft-deleted. Sequential
+ * (not Promise.all) to match the page's existing bulk-delete behaviour.
+ *
+ * `ProductsPage` currently inlines this loop reusing its own `toggleActive`
+ * mutation; this hook is provided for reuse elsewhere (plan 03 §5A).
+ */
+export function useBulkProductStatus(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: number }) => {
+      for (const id of ids) {
+        await ordersApi.patch(ordersOrgPath(orgId!, `/products/${id}/status`), { status });
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products", orgId] }),
+  });
+}
+
+/**
+ * One-shot Excel/CSV bulk import — `POST /products/parse` with a base64 blob.
+ * `ProductExcelUpload` calls `ordersApi` directly for its inline feedback
+ * needs; this hook mirrors that contract for reuse.
+ *
+ * TODO(verify-endpoint): confirmed present on cross-app-be
+ * (products_controller.parse_products_excel, body ExcelDTO { data, name,
+ * contentType }, returns ProductListResponse).
+ */
+export function useParseProductsExcel(orgId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { data: string; name?: string; contentType?: string }) =>
+      ordersApi.post<ProductListResponse>(ordersOrgPath(orgId!, "/products/parse"), payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["products", orgId] }),
   });
 }

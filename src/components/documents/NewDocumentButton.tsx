@@ -111,7 +111,7 @@ export function NewDocumentButton({
       {open && (
         <div
           className={cn(
-            'absolute z-[110] w-60 rounded-lg border border-border bg-card shadow-lg py-1',
+            'absolute z-dropdown w-60 rounded-lg border border-border bg-card shadow-lg py-1',
             direction === 'up' ? 'bottom-[calc(100%+4px)]' : 'top-[calc(100%+4px)]',
             fullWidth ? 'left-0 right-0 w-auto' : 'right-0'
           )}

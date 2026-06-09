@@ -14,6 +14,7 @@
   --card-foreground: 20 14% 16%;
   --primary: 23 88% 47%;
   --primary-foreground: 0 0% 100%;
+  --primary-dark: 23 90% 38%;
   --secondary: 20 14% 16%;
   --secondary-foreground: 0 0% 100%;
   --muted: 30 25% 94%;
@@ -48,12 +49,15 @@
   --accent-rose-soft: 32 53% 64% / 0.15;
   --accent-rose-dim: 32 53% 64% / 0.08;
   --accent-rose-border: 32 53% 64% / 0.2;
+  --accent-rose-shadow: 0 4px 20px hsl(var(--accent-rose) / 0.35);
 
   /* Z-index scale */
   --z-dropdown: 30;
   --z-overlay: 40;
   --z-modal: 50;
+  --z-popover: 80;
   --z-tooltip: 100;
+  --z-drawer: 200;
 
   /* Shadow tokens */
   --shadow-card: 0 1px 2px rgba(0,0,0,0.06);
@@ -72,6 +76,7 @@
   --popover-foreground: 30 20% 96%;
   --primary: 23 88% 52%;
   --primary-foreground: 0 0% 100%;
+  --primary-dark: 23 90% 42%;
   --secondary: 30 20% 96%;
   --secondary-foreground: 20 14% 12%;
   --muted: 20 10% 18%;
@@ -99,6 +104,15 @@
   --accent-rose-soft: 32 53% 64% / 0.18;
   --accent-rose-dim: 32 53% 64% / 0.1;
   --accent-rose-border: 32 53% 64% / 0.3;
+  --accent-rose-shadow: 0 4px 20px hsl(var(--accent-rose) / 0.35);
+
+  /* Z-index scale (mirrors :root) */
+  --z-dropdown: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-popover: 80;
+  --z-tooltip: 100;
+  --z-drawer: 200;
 
   --shadow-card: 0 1px 2px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4);
@@ -527,3 +541,80 @@
 /* Soft-tinted icon containers (paired with text-* color when needed) */
 .icon-pill-primary-soft { display: inline-flex; align-items: center; justify-content: center; background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); border: 1px solid hsl(var(--primary) / 0.3); border-radius: var(--radius); }
 .icon-pill-rose-soft { display: inline-flex; align-items: center; justify-content: center; background: hsl(var(--accent-rose-soft)); color: hsl(var(--accent-rose)); border: 1px solid hsl(var(--accent-rose-border)); border-radius: var(--radius); }
+
+/* ============ Auth / session-setup primitives ============ */
+@layer components {
+  /* Styled native <select> matching .input */
+  .select-native {
+    width: 100%;
+    height: 40px;
+    padding: 0 36px 0 12px;
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: var(--font-sans);
+    color-scheme: light dark;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .select-native:focus { outline: none; border-color: hsl(var(--ring)); box-shadow: 0 0 0 3px hsl(var(--ring) / 0.15); }
+  .select-native:disabled { background-color: hsl(var(--muted)); cursor: not-allowed; }
+  .select-native option { background-color: hsl(var(--card)); color: hsl(var(--foreground)); }
+
+  /* Large primary CTA button for session setup (derives from .btn-primary) */
+  .btn-session-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 52px;
+    padding: 0 24px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    color: hsl(var(--primary-foreground));
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+    box-shadow: var(--accent-rose-shadow);
+    transition: filter .15s, box-shadow .15s, transform .1s;
+  }
+  .btn-session-cta:hover:not(:disabled) { filter: brightness(1.05); }
+  .btn-session-cta:active:not(:disabled) { transform: translateY(1px); }
+  .btn-session-cta:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+  /* Session setup: ambient radial glow behind the card (static, on-theme) */
+  .session-setup-glow {
+    background: radial-gradient(ellipse at center, hsl(var(--accent-rose-soft)) 0%, transparent 70%);
+  }
+
+  /* Session setup: header strip diagonal wash (static, on-theme) */
+  .session-setup-header {
+    background: linear-gradient(135deg, hsl(var(--accent-rose) / 0.12) 0%, transparent 100%);
+  }
+
+  /* Inline error container */
+  .error-box-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    background: hsl(var(--destructive) / 0.1);
+    border: 1px solid hsl(var(--destructive) / 0.25);
+    color: hsl(var(--destructive));
+  }
+}

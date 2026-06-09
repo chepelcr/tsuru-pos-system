@@ -22,7 +22,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "reporte" | "pos" | "documents" | "clients" | "organization";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "profile";
 
 interface Session {
   name: string;
@@ -34,6 +34,7 @@ function getActiveNav(location: string): NavId {
   console.log('[DashboardLayout] getActiveNav called with location:', location);
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
+  if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
   if (location.startsWith(ROUTES.DASHBOARD_PRODUCTS)) return "productos";
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS))  return "reporte";
   // Document editor and list both highlight the "documents" sidebar item
@@ -41,7 +42,11 @@ function getActiveNav(location: string): NavId {
   // Legacy /dashboard/pos route also maps to documents (POS is now an editor view)
   if (location.startsWith(ROUTES.DASHBOARD_POS))      return "documents";
   if (location.startsWith(ROUTES.DASHBOARD_CLIENTS))  return "clients";
-  if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /hacienda and /notifications sub-paths too
+  if (location.startsWith(ROUTES.DASHBOARD_CONFIRMATIONS)) return "confirmations";
+  if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
+  if (location.startsWith(ROUTES.DASHBOARD_MEMBERS))  return "members";
+  if (location.startsWith(ROUTES.PROFILE))            return "profile";
+  if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /general, /branding, /contact, /payment, /shipping, /hacienda, /notifications sub-paths too
   return "dashboard";
 }
 
@@ -50,11 +55,16 @@ const NAV_PATHS: Record<NavId, string> = {
   config:    ROUTES.DASHBOARD_SESSIONS,
   puestos:   ROUTES.DASHBOARD_STATIONS,
   productos: ROUTES.DASHBOARD_PRODUCTS,
+  categories: ROUTES.DASHBOARD_CATEGORIES,
   reporte:   ROUTES.DASHBOARD_REPORTS,
   pos:       ROUTES.DASHBOARD_POS,
   documents: ROUTES.DASHBOARD_DOCUMENTS,
   clients:   ROUTES.DASHBOARD_CLIENTS,
+  orders:    ROUTES.DASHBOARD_ORDERS,
+  confirmations: ROUTES.DASHBOARD_CONFIRMATIONS,
+  members:   ROUTES.DASHBOARD_MEMBERS,
   organization: ROUTES.DASHBOARD_ORG_SETTINGS,
+  profile:   ROUTES.PROFILE,
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

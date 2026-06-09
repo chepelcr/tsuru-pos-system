@@ -15,3 +15,4 @@ export { Spinner } from "./Spinner";
 export { Pagination } from "./Pagination";
 export { FadeIn } from "./FadeIn";
 export { FormLabel } from "./FormLabel";
+export { OtpInput } from "./OtpInput";

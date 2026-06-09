@@ -6,9 +6,17 @@ This document gives Claude (or any agent) the context needed to navigate and mod
 
 ---
 
+## 0. Standalone repo (repo split in progress)
+
+This project now lives in its own public repository: **[`chepelcr/tsuru-pos-system`](https://github.com/chepelcr/tsuru-pos-system)**. It is **not a store-front template** — it is a standalone POS + Costa Rica/Hacienda electronic-invoicing system.
+
+During the transition it still physically resides at `BeautyMarket/templates/pos-system/` inside the monorepo (and is gitignored there) because the CI/CD pipelines still reference these paths. **Do new work in the standalone repo.** The monorepo copy will be removed once pipelines are migrated.
+
+---
+
 ## 1. What this is
 
-A Vite + React 18 + TypeScript single-page app that is **one of several store-front templates** in `BeautyMarket/templates/`. It serves as both:
+A Vite + React 18 + TypeScript single-page app — a **standalone POS + electronic-invoicing system** (historically incubated under `BeautyMarket/templates/`, now its own repo `chepelcr/tsuru-pos-system`). It serves as both:
 - **POS workstation** (`/dashboard/pos`, `/pos/*`) — cashier-facing checkout flow
 - **Admin dashboard** (`/dashboard/*`) — products, clients, sessions, stations, electronic invoicing (documents), assignments, reports
 

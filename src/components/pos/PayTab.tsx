@@ -1,5 +1,5 @@
 import { Icon } from "@/components/ui";
-import { POS } from "@/theme/pos";
+import { cn } from "@/lib/utils";
 
 interface PayTabProps {
   icon: string;
@@ -11,25 +11,18 @@ interface PayTabProps {
 export function PayTab({ icon, label, selected, onClick }: PayTabProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      style={{
-        flex: 1,
-        padding: "12px 8px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 5,
-        border: selected ? `1.5px solid ${POS.rose}` : `1px solid ${POS.border}`,
-        background: selected ? POS.roseLight : POS.card,
-        color: selected ? POS.rose : POS.muted,
-        cursor: "pointer",
-        borderRadius: 10,
-        transition: "all .15s",
-        fontFamily: POS.fontUI,
-      }}
+      aria-selected={selected}
+      className={cn(
+        "tab flex-1 flex-col gap-1.5 px-2 py-3 rounded-[10px] border font-sans !shadow-none",
+        selected
+          ? "border-accent-rose-border !bg-accent-rose-soft !text-accent-rose"
+          : "border-border bg-card text-muted-foreground"
+      )}
     >
-      <Icon name={icon} size={20} style={{ color: selected ? POS.rose : POS.muted }} />
-      <span style={{ fontSize: 11, fontWeight: 600 }}>{label}</span>
+      <Icon name={icon} size={20} />
+      <span className="text-[11px] font-semibold">{label}</span>
     </button>
   );
 }

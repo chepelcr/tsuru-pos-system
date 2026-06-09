@@ -12,6 +12,9 @@ import { TopProductsPanel } from "@/components/dashboard/TopProductsPanel";
 import { DashboardStatSkeleton } from "@/components/dashboard/DashboardStatSkeleton";
 import { ChartSkeleton } from "@/components/dashboard/ChartSkeleton";
 import { QuickDocActionsCard } from "@/components/dashboard/QuickDocActionsCard";
+import { QrShareModal } from "@/components/dashboard/QrShareModal";
+import { constructSiteUrl } from "@/lib/siteUrl";
+import { useState } from "react";
 import type { StandData, DashboardData } from "@/types";
 
 const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
@@ -34,6 +37,9 @@ export default function DashboardPage() {
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
   usePageTitle([t("shell.panel")]);
+
+  const [qrOpen, setQrOpen] = useState(false);
+  const siteUrl = org ? constructSiteUrl({ subdomain: org.subdomain }) : null;
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["dashboard", org?.id],
@@ -67,10 +73,22 @@ export default function DashboardPage() {
             {t("dash.activeStations", { n: String(stands.length) })}
           </p>
         </div>
-        <Button variant="outline" size="sm" icon="refresh" onClick={() => void refetch()} disabled={isRefetching}>
-          {isRefetching ? t("dash.refreshing") : t("dash.refresh")}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" icon="store" onClick={() => setQrOpen(true)}>
+            {t("qr.shareStore")}
+          </Button>
+          <Button variant="outline" size="sm" icon="refresh" onClick={() => void refetch()} disabled={isRefetching}>
+            {isRefetching ? t("dash.refreshing") : t("dash.refresh")}
+          </Button>
+        </div>
       </div>
+
+      <QrShareModal
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        siteUrl={siteUrl}
+        subdomain={org?.subdomain}
+      />
 
       {/* Hero stat card */}
       <Card className="fade-up px-6 py-5 mb-4 !border-primary/25 bg-gradient-to-br from-primary/[0.12] to-primary/[0.02] relative overflow-hidden">

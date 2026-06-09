@@ -77,12 +77,11 @@ export function Drawer({
       />
 
       <div
-        className={`fixed top-0 right-0 bottom-0 bg-card border-l border-border flex flex-col shadow-modal ${
+        className={`fixed top-0 right-0 bottom-0 z-drawer bg-card border-l border-border flex flex-col shadow-modal ${
           isClosing ? "drawer-panel-exit" : "drawer-panel-enter"
         }`}
         style={{
           width: typeof width === "number" ? `min(${width}px, 100vw)` : width,
-          zIndex: 201,
         }}
       >
         {/* Header */}

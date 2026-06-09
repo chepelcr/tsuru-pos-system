@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { DashboardSidebar } from "./DashboardSidebar";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "reporte" | "pos" | "documents" | "clients" | "organization";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "profile";
 
 interface DashboardMobileDrawerProps {
   open: boolean;
@@ -50,7 +50,7 @@ export function DashboardMobileDrawer({
 
       {/* Drawer panel */}
       <div
-        className={`relative w-[260px] h-[100dvh] z-[101] bg-card shadow-modal flex flex-col overflow-hidden ${
+        className={`relative w-[260px] h-[100dvh] z-drawer bg-card shadow-modal flex flex-col overflow-hidden ${
           isClosing ? "drawer-panel-left-exit" : "drawer-panel-left-enter"
         }`}
       >

@@ -4,12 +4,12 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
-import { documentEditorPath } from "@/routePaths";
+import { documentEditorPath, ROUTES } from "@/routePaths";
 import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "reporte" | "pos" | "documents" | "clients" | "organization";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "profile";
 
 interface DashboardSidebarProps {
   active: NavId;
@@ -31,7 +31,11 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     { id: "config", icon: "settings", label: t("shell.sessions") },
     { id: "puestos", icon: "store", label: t("shell.stations") },
     { id: "productos", icon: "package", label: t("shell.products") },
+    { id: "categories", icon: "layers", label: t("shell.categories") },
+    { id: "orders", icon: "cart", label: t("shell.orders") },
+    { id: "confirmations", icon: "checkCircle", label: t("shell.confirmations") },
     { id: "clients", icon: "user", label: t("shell.clients") },
+    { id: "members", icon: "users", label: t("shell.members") },
     { id: "reporte", icon: "trending", label: t("shell.reports") },
     { id: "organization", icon: "settings", label: t("shell.orgSettings") },
   ];
@@ -153,8 +157,15 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
       <div className="separator my-3" />
 
-      {/* User + logout */}
-      <div className="flex items-center gap-2 px-2.5 py-2 mb-1">
+      {/* User block — opens the Profile / account page */}
+      <button
+        className="sidebar-item flex items-center gap-2 mb-1 text-left"
+        onClick={() => {
+          setLocation(ROUTES.PROFILE);
+          onClose?.();
+        }}
+        aria-label={t("profile.openAria")}
+      >
         <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-[11px] flex-shrink-0">
           {initials}
         </div>
@@ -164,7 +175,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           </div>
           <div className="t-xs text-muted-foreground">{user?.role ?? ""}</div>
         </div>
-      </div>
+      </button>
       <button className="sidebar-item" onClick={logout}>
         <Icon name="logOut" size={16} /> {t("shell.logout")}
       </button>

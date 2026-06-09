@@ -80,10 +80,9 @@ export function DocumentsToolbar() {
           'relative flex items-center gap-2 px-3 py-2 cursor-pointer select-none shrink-0',
           'border-b-2 transition-colors',
           docsTabActive
-            ? 'border-current text-current bg-current/5'
+            ? 'border-primary text-primary bg-primary/5'
             : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
         )}
-        style={docsTabActive ? { color: 'hsl(var(--primary))' } : undefined}
         title={t('documents.goToList')}
       >
         <span className="text-[14px]" aria-hidden>📄</span>

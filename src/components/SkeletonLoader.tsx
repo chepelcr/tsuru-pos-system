@@ -18,7 +18,7 @@ export function Skeleton({ className }: SkeletonProps) {
 export function StandCardSkeleton() {
   return (
     <div className="bg-surface border border-surface-border rounded-2xl p-6 flex flex-col gap-4 relative overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/30 to-primary-dark/20" />
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/30 to-primary/10" />
 
       <div className="flex justify-between items-start">
         <div className="flex-1">

@@ -8,6 +8,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          dark: "hsl(var(--primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -71,7 +72,9 @@ export default {
         dropdown: "var(--z-dropdown)",
         overlay: "var(--z-overlay)",
         modal: "var(--z-modal)",
+        popover: "var(--z-popover)",
         tooltip: "var(--z-tooltip)",
+        drawer: "var(--z-drawer)",
       },
       fontFamily: {
         sans: ["Barlow", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],

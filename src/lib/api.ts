@@ -70,7 +70,21 @@ async function request<T>(
     throw new Error(err.message || "Request failed");
   }
 
-  const result = await res.json();
+  // Tolerate empty / no-content responses (e.g. 204 from DELETE) so callers
+  // that don't expect a body (department delete, remove-order-from-confirmation)
+  // don't crash on `res.json()` parsing an empty stream.
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    console.log('[API] Empty response (no content)');
+    return undefined as T;
+  }
+
+  const text = await res.text();
+  if (!text) {
+    console.log('[API] Empty response body');
+    return undefined as T;
+  }
+
+  const result = JSON.parse(text) as T;
   console.log('[API] Response data:', result);
   return result;
 }
@@ -109,9 +123,73 @@ export const ordersApi = {
   delete: <T>(path: string) => request<T>("DELETE", path, undefined, CROSS_APP_API_BASE),
 };
 
+/**
+ * Store-facing orders client (orders/products domain — `cross-app-be`).
+ *
+ * The dashboard's orders client (`buildOrdersApiUrl`) targets `VITE_ORDERS_API_URL`
+ * with `/api/organizations/{org}/...` paths — the SAME base + path shape already used
+ * by `crossAppApi` / `ordersApi` here. So this is an explicit alias (not a distinct
+ * base) exposed for Workstream E; pair it with {@link ordersStoreOrgPath}.
+ */
+export const ordersStoreApi = ordersApi;
+
+/** /api/organizations/{org}{endpoint} on the orders (cross-app-be) base — matches dashboard buildOrdersApiUrl */
+export function ordersStoreOrgPath(orgId: string, endpoint: string) {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `/api/organizations/${orgId}${cleanEndpoint}`;
+}
+
 /** Build org-scoped API path (markets API) */
 export function orgPath(userId: string, orgId: string, endpoint: string) {
   return `/api/users/${userId}/memberships/organization/${orgId}${endpoint}`;
+}
+
+/**
+ * Build org-settings API path (markets API) — matches the dashboard's
+ * `buildOrgApiUrl(userId, orgId, endpoint)` shape:
+ *   `/api/users/{u}/organization/{o}{endpoint}`
+ *
+ * NOTE: this is intentionally DISTINCT from {@link orgPath}, which injects
+ * `/memberships/` (`/api/users/{u}/memberships/organization/{o}{e}`). The
+ * storefront/org-settings endpoints (`/settings/{category}`) live under the
+ * dashboard's singular `organization` shape WITHOUT `memberships`, so do not
+ * reuse `orgPath` for them.
+ *
+ * Used by `useOrgSettings.ts` (plan 05) for:
+ *   • PATCH /settings/general
+ *   • GET/PUT /settings/theme | /settings/contact | /settings/payment | /settings/shipping
+ *
+ * TODO(verify-endpoint): confirm markets-api exposes
+ *   `/api/users/{u}/organization/{o}/settings/{category}` (path shape WITHOUT
+ *   `memberships`) and that it accepts the POS app's Cognito ID token via its
+ *   API Gateway. If the markets-api only mounts settings under
+ *   `memberships/organization`, switch callers to `orgPath` instead.
+ */
+export function orgSettingsPath(userId: string, orgId: string, endpoint: string) {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `/api/users/${userId}/organization/${orgId}${cleanEndpoint}`;
+}
+
+/**
+ * Build a confirmations-scoped path on the orders (cross-app-be) base — a thin
+ * convenience wrapper over {@link ordersStoreOrgPath} for the Confirmations
+ * module (plan 01). Produces `/api/organizations/{org}/confirmations{suffix}`.
+ *
+ * Pair with `ordersStoreApi`. Routes covered:
+ *   • GET    /confirmations?page=&page_size=
+ *   • GET    /confirmations/{number}
+ *   • POST   /confirmations
+ *   • PUT    /confirmations/{number}
+ *   • PATCH  /confirmations/{number}/status
+ *   • DELETE /confirmations/{number}/orders/{documentNumber}   (may return 204)
+ *
+ * TODO(verify-endpoint): confirm cross-app-be exposes these confirmation routes
+ * (POST/PUT/PATCH/DELETE shapes) and that DELETE returns 204 (now tolerated by
+ * `request()`).
+ */
+export function crossAppConfirmationPath(orgId: string, suffix: string = '') {
+  const cleanSuffix = suffix && !suffix.startsWith('/') ? `/${suffix}` : suffix;
+  return ordersStoreOrgPath(orgId, `/confirmations${cleanSuffix}`);
 }
 
 /** Build user-scoped API path (markets API) */
