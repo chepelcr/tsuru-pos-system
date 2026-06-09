@@ -1,9 +1,9 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { Card, Icon, EmptyState } from "@/components/ui";
+import { Card, Icon, EmptyState, Pagination } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useClientOrders, ORDERS_MODULE_READY } from "@/hooks/useClientOrders";
+import { useOrders } from "@/hooks/useOrders";
 import { ROUTES } from "@/routePaths";
-import { ClientStats } from "./ClientStats";
 import type { Order } from "@/hooks/useOrders";
 
 interface ClientOrderHistoryProps {
@@ -12,7 +12,7 @@ interface ClientOrderHistoryProps {
 }
 
 function formatColones(amount: number): string {
-  return `₡${amount.toLocaleString("es-CR")}`;
+  return `₡${(amount ?? 0).toLocaleString("es-CR")}`;
 }
 
 function formatDate(dateString: string | undefined, locale: string): string {
@@ -24,101 +24,102 @@ function formatDate(dateString: string | undefined, locale: string): string {
 }
 
 /**
- * Order history for a client (gated on the Orders module — plan 02 §2.4).
- * While `ORDERS_MODULE_READY` is false, renders a "coming soon" empty-state and
- * never fetches; once the Orders module lands, flip the flag and wire the
- * order-detail deep link in {@link onOpenOrder}.
+ * Paginated order history for a client. Orders are linked by the client's GLN
+ * (`/orders?search=clientGln:{gln}`); rows deep-link to the order detail page.
+ * Compact list + Pagination (replaces the previous big-card grid).
  */
 export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps) {
   const { t, language } = useLanguage();
   const locale = language === "es" ? "es-CR" : "en-US";
   const [, navigate] = useLocation();
-  const { data: orders = [], isLoading } = useClientOrders(orgId, clientGln ?? undefined);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
 
-  // Gated: Orders module not yet migrated (no order-detail route exists).
-  if (!ORDERS_MODULE_READY) {
-    return (
-      <Card className="px-6 py-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Icon name="cart" size={14} className="text-accent-rose" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-accent-rose">
-            {t("clients.orders.title")}
-          </span>
-        </div>
-        <EmptyState
-          icon="cart"
-          title={t("clients.orders.comingSoonTitle")}
-          description={t("clients.orders.comingSoonDescription")}
-        />
-      </Card>
-    );
-  }
+  const { data, isLoading } = useOrders({
+    orgId,
+    search: clientGln ? `clientGln:${clientGln}` : "",
+    page,
+    pageSize,
+    enabled: !!orgId && !!clientGln,
+  });
+  const orders = data?.data ?? [];
+  const pagination = data?.pagination;
 
-  // Open the order's detail page (Orders module is live).
-  const onOpenOrder = (order: Order) => {
+  const openOrder = (order: Order) =>
     navigate(`${ROUTES.DASHBOARD_ORDERS}/${order.document_number}`);
-  };
 
   return (
-    <div className="flex flex-col gap-3.5">
-      <ClientStats orders={orders} />
+    <Card className="px-6 py-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Icon name="cart" size={14} className="text-accent-rose" />
+        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-accent-rose">
+          {t("clients.orders.title")}
+        </span>
+      </div>
 
-      <Card className="px-6 py-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Icon name="cart" size={14} className="text-accent-rose" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-accent-rose">
-            {t("clients.orders.title")}
-          </span>
-        </div>
-
-        {isLoading ? (
-          <div className="t-sm text-muted-foreground text-center py-6">{t("common.loading")}</div>
-        ) : orders.length === 0 ? (
-          <div className="t-sm text-muted-foreground text-center py-6">
-            {t("clients.orders.noOrders")}
-          </div>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+      {!clientGln ? (
+        <EmptyState
+          icon="cart"
+          title={t("clients.orders.noGlnTitle")}
+          description={t("clients.orders.noGlnDescription")}
+        />
+      ) : isLoading ? (
+        <div className="t-sm text-muted-foreground text-center py-6">{t("common.loading")}</div>
+      ) : orders.length === 0 ? (
+        <div className="t-sm text-muted-foreground text-center py-6">{t("clients.orders.noOrders")}</div>
+      ) : (
+        <>
+          <div className="flex flex-col divide-y divide-border">
             {orders.map((order) => {
-              const itemCount = order.lines?.length ?? 0;
+              const itemCount = order.line_count ?? order.lines?.length ?? 0;
               return (
                 <button
                   key={order.order_id}
                   type="button"
-                  onClick={() => onOpenOrder(order)}
-                  className="text-left flex items-start justify-between gap-2 p-4 border border-border rounded-lg hover:bg-muted/40 transition-colors"
+                  onClick={() => openOrder(order)}
+                  className="flex items-center justify-between gap-3 py-3 text-left -mx-2 px-2 rounded-md hover:bg-muted/40 transition-colors"
                 >
-                  <div className="flex-1 min-w-0 flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                      <span className="t-num text-sm font-bold text-foreground">
-                        #{order.document_number}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1 t-sm text-muted-foreground">
-                      <span className="flex items-center gap-2">
-                        <Icon name="calendar" size={12} />
+                  <div className="min-w-0 flex-1">
+                    <div className="t-num text-sm font-bold text-foreground">#{order.document_number}</div>
+                    <div className="flex items-center gap-3 t-xs text-muted-foreground mt-0.5 flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <Icon name="calendar" size={11} />
                         {formatDate(order.delivery_date, locale)}
                       </span>
-                      <span className="flex items-center gap-2">
-                        <Icon name="mapPin" size={12} />
-                        <span className="line-clamp-1">{order.delivery_location?.name}</span>
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Icon name="package" size={12} />
+                      <span className="flex items-center gap-1">
+                        <Icon name="package" size={11} />
                         {itemCount} {itemCount === 1 ? t("clients.orders.item") : t("clients.orders.items")}
                       </span>
                     </div>
-                    <span className="font-semibold text-foreground">
-                      {formatColones(order.grand_total)}
-                    </span>
                   </div>
-                  <Icon name="chevronRight" size={16} className="text-muted-foreground flex-shrink-0" />
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="t-sm font-semibold text-foreground">{formatColones(order.grand_total)}</span>
+                    <Icon name="chevronRight" size={16} className="text-muted-foreground" />
+                  </div>
                 </button>
               );
             })}
           </div>
-        )}
-      </Card>
-    </div>
+
+          {pagination && (
+            <div className="mt-4">
+              <Pagination
+                page={pagination.page}
+                totalPages={pagination.total_pages}
+                totalElements={pagination.total_elements}
+                pageSize={pagination.page_size}
+                onPageChange={setPage}
+                onPageSizeChange={(s) => {
+                  setPageSize(s);
+                  setPage(1);
+                }}
+                itemName={t("orders.itemName")}
+                pageSizeOptions={[8, 16, 32]}
+              />
+            </div>
+          )}
+        </>
+      )}
+    </Card>
   );
 }

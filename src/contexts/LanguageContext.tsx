@@ -1593,6 +1593,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // clients - order history
     "clients.orders.title": "Historial de pedidos",
+    "clients.orders.noGlnTitle": "Sin GLN asociado",
+    "clients.orders.noGlnDescription": "Asociá un GLN a este cliente para ver sus pedidos.",
     "clients.orders.noOrders": "Sin pedidos",
     "clients.orders.comingSoonTitle": "Próximamente",
     "clients.orders.comingSoonDescription": "El historial de pedidos estará disponible pronto.",
@@ -3434,6 +3436,8 @@ const translations: Record<Language, Record<string, string>> = {
 
     // clients - order history
     "clients.orders.title": "Order history",
+    "clients.orders.noGlnTitle": "No GLN linked",
+    "clients.orders.noGlnDescription": "Link a GLN to this client to see their orders.",
     "clients.orders.noOrders": "No orders",
     "clients.orders.comingSoonTitle": "Coming soon",
     "clients.orders.comingSoonDescription": "Order history will be available soon.",

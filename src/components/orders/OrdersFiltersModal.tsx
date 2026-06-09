@@ -65,8 +65,10 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
       {/* Multi-status */}
       <div className="space-y-2">
         <label className="label-section">{t('orders.filters.status')}</label>
-        <div className="flex flex-wrap gap-2">
-          {ORDER_STATUSES.map((status) => {
+        {/* Mobile: 6-col grid → 3 buttons (col-span-2) on row 1, 2 (col-span-3) on
+            row 2 so each row fills evenly. sm+: natural flex-wrap row. */}
+        <div className="grid grid-cols-6 gap-2 sm:flex sm:flex-wrap">
+          {ORDER_STATUSES.map((status, i) => {
             const active = local.statuses.includes(status);
             return (
               <button
@@ -74,7 +76,9 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleStatus(status)}
-                className={`h-9 px-3 rounded-md border text-[12px] font-semibold transition-colors ${
+                className={`h-9 px-3 rounded-md border text-[12px] font-semibold transition-colors w-full sm:w-auto ${
+                  i < 3 ? 'col-span-2' : 'col-span-3'
+                } ${
                   active
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-muted-foreground hover:text-foreground'

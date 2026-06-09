@@ -129,7 +129,7 @@ function Section({ title, icon, children }: { title: string; icon: string; child
   );
 }
 
-type TabKey = "overview" | "stores" | "departments";
+type TabKey = "overview" | "orders" | "stores" | "departments";
 
 interface Props {
   clientId: string;
@@ -188,6 +188,7 @@ export default function ClientDetailPage({ clientId }: Props) {
 
   const TABS: { key: TabKey; label: string; icon: string }[] = [
     { key: "overview", label: t("clients.tabs.overview"), icon: "user" },
+    { key: "orders", label: t("shell.orders"), icon: "cart" },
     { key: "stores", label: t("clients.tabs.stores"), icon: "store" },
     { key: "departments", label: t("clients.tabs.departments"), icon: "layers" },
   ];
@@ -247,9 +248,9 @@ export default function ClientDetailPage({ clientId }: Props) {
         </div>
       </Card>
 
-      {/* Tabs */}
+      {/* Tabs — 2×2 grid on mobile, inline row on sm+ */}
       <div className="tabs-container mb-4">
-        <div className="tabs">
+        <div className="tabs grid grid-cols-2 gap-1 sm:flex">
           {TABS.map((tb) => (
             <button
               key={tb.key}
@@ -310,11 +311,11 @@ export default function ClientDetailPage({ clientId }: Props) {
             onSave={handleSaveNotes}
             isSaving={notesMutation.isPending}
           />
-
-          {/* Order history (gated on Orders module) */}
-          <ClientOrderHistory orgId={orgId} clientGln={client.client_gln} />
         </div>
       )}
+
+      {/* Orders tab — paginated history */}
+      {tab === "orders" && <ClientOrderHistory orgId={orgId} clientGln={client.client_gln} />}
 
       {/* Stores tab */}
       {tab === "stores" && <ClientStoresList orgId={orgId} clientId={client.client_id} />}

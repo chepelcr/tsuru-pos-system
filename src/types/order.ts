@@ -64,7 +64,19 @@ export const REPORT_COLOR_OPTIONS: ReportColorOption[] = [
 export interface OrderParty {
   name: string;
   gln: string;
-  internal_code: string;
+  internal_code?: string;
+  /** Some org responses include the party logo. */
+  logo_url?: string;
+}
+
+/**
+ * Department reference. Some org responses send a plain string code; others send
+ * a nested object. Both are coerced to a display label via `text()` in the UI.
+ */
+export interface OrderDepartment {
+  department_code: string;
+  name?: string;
+  supplier_code?: string;
 }
 
 export interface DeliveryLocation {
@@ -182,6 +194,8 @@ export interface Order {
   client: OrderParty;
   supplier: OrderParty;
   delivery_location: DeliveryLocation;
+  // NOTE: some org responses send these as objects; the type stays `string`
+  // for consumer compatibility and the UI coerces via `text()` at render.
   event: string;
   department: string;
   comment: string;
