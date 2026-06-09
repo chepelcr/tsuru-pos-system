@@ -4,7 +4,6 @@ import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { OrgProvider } from "@/contexts/OrgContext";
-import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { CountryISO } from "@/lib/enums";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
@@ -92,17 +91,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Org still loading — shell renders with empty content. Notifications are
     // mounted here so the bell stays available even before the org resolves.
     return (
-      <NotificationsProvider>
+      <>
         <NotificationsBridge />
         <DashboardShell active={active} onNav={handleNav}>
           {null}
         </DashboardShell>
-      </NotificationsProvider>
+      </>
     );
   }
 
   return (
-    <NotificationsProvider>
+    <>
       <NotificationsBridge />
       <OrgProvider orgId={org.id} orgName={org.name ?? ""}>
         <ExchangeRateProvider orgId={org.id} isoCode={CountryISO.COSTA_RICA}>
@@ -116,6 +115,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </DashboardShell>
         </ExchangeRateProvider>
       </OrgProvider>
-    </NotificationsProvider>
+    </>
   );
 }
