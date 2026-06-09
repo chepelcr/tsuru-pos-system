@@ -67,7 +67,7 @@ const MACRO_STEPS: StepperStep[] = [
 
 export default function Register() {
   const [, navigate] = useLocation();
-  const { signUp, forceLogout } = useAuthContext();
+  const { signUp } = useAuthContext();
   const { add } = useNotifications();
   const { t, language } = useLanguage();
 
@@ -76,10 +76,6 @@ export default function Register() {
   // Zod messages are i18n keys; resolve through t() (missing keys fall back to the key).
   const tErr = (key?: string) => (key ? t(key) : undefined);
 
-  // Clear any stale Cognito session before signing up.
-  useEffect(() => {
-    forceLogout();
-  }, [forceLogout]);
 
   const [currentStep, setCurrentStep] = useState<"info" | "password">("info");
   const [step1Data, setStep1Data] = useState<Step1Form | null>(null);

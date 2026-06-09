@@ -21,12 +21,11 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const { t } = useLanguage();
-  const { user, login, isLoading, forceLogout } = useAuthContext();
+  const { user, login, isLoading } = useAuthContext();
   const { add } = useNotifications();
   const [, navigate] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [sessionCleared, setSessionCleared] = useState(false);
 
   usePageTitle([t("pageTitle.login")]);
 
@@ -35,12 +34,11 @@ export default function Login() {
     defaultValues: { email: "", password: "" },
   });
 
-  // Clear any stale Cognito session before allowing a login attempt.
-  useEffect(() => {
-    forceLogout().finally(() => setSessionCleared(true));
-  }, [forceLogout]);
-
   // Once a profile is resolved (login succeeded), advance to org selection.
+  // NOTE: we deliberately do NOT force-logout on mount — that was an async
+  // signOut whose setUser(null) resolved AFTER a fast login, clobbering the
+  // fresh session and bouncing the user back to /login. login() already clears
+  // any stale Cognito session via signOut() before signIn().
   useEffect(() => {
     if (user && !isLoading) {
       navigate(ROUTES.SELECT_ORG);
@@ -99,21 +97,6 @@ export default function Login() {
 
   // Zod messages are i18n keys; resolve through t() (missing keys fall back to the key).
   const tErr = (key?: string) => (key ? t(key) : undefined);
-
-  // Hold the page until any stale session has been cleared.
-  if (!sessionCleared) {
-    return (
-      <AuthLayout maxWidthClassName="max-w-md">
-        <Card>
-          <CardBody>
-            <div className="flex items-center justify-center py-10">
-              <Spinner size={24} label={t("common.loading")} />
-            </div>
-          </CardBody>
-        </Card>
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout maxWidthClassName="max-w-md">
