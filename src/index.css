@@ -618,3 +618,19 @@
     color: hsl(var(--destructive));
   }
 }
+
+/* ── Sidebar section collapse (accordion) ──────────────────────────────────
+   grid-template-rows 0fr→1fr animates height with zero magic numbers. The
+   inner wrapper hides overflow so collapsed content is fully clipped. */
+.nav-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.nav-collapse[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.nav-collapse > div {
+  overflow: hidden;
+  min-height: 0;
+}
