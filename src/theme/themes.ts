@@ -199,6 +199,67 @@ const pollosPortenos: ThemeDef = {
   },
 };
 
+// ─── Theme: jmarkets (POS DEFAULT — forest green, mirrors the original
+//     dashboard admin palette + src/index.css base) ───────────────────────────
+const jmarkets: ThemeDef = {
+  id: "jmarkets",
+  name: "JMarkets",
+  fonts: {
+    sans: '"Barlow", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    display: '"Barlow Condensed", "Barlow", "Arial Narrow", sans-serif',
+    googleFonts: ["Barlow:wght@400;500;600;700;800", "Barlow+Condensed:wght@700;800"],
+  },
+  radius: "0.5rem",
+  light: {
+    background: "60 30% 97%",
+    foreground: "20 14% 16%",
+    card: "0 0% 100%",
+    "card-foreground": "20 14% 16%",
+    primary: "123 46% 34%",
+    "primary-foreground": "0 0% 100%",
+    secondary: "123 33% 64%",
+    "secondary-foreground": "20 14% 16%",
+    muted: "60 20% 94%",
+    "muted-foreground": "20 10% 45%",
+    accent: "123 40% 92%",
+    "accent-foreground": "123 46% 24%",
+    ...STATUS_LIGHT,
+    border: "60 20% 86%",
+    input: "60 20% 86%",
+    ring: "123 46% 34%",
+    sidebar: "60 20% 96%",
+    "sidebar-foreground": "20 14% 16%",
+    "sidebar-accent": "60 20% 92%",
+    "sidebar-accent-foreground": "20 14% 16%",
+    "sidebar-border": "60 20% 86%",
+    ...ROSE_LIGHT,
+  },
+  dark: {
+    background: "20 14% 8%",
+    foreground: "60 30% 92%",
+    card: "20 14% 12%",
+    "card-foreground": "60 30% 92%",
+    primary: "122 39% 49%",
+    "primary-foreground": "0 0% 100%",
+    secondary: "123 33% 64%",
+    "secondary-foreground": "20 14% 8%",
+    muted: "20 10% 18%",
+    "muted-foreground": "60 10% 60%",
+    accent: "123 30% 20%",
+    "accent-foreground": "123 40% 80%",
+    ...STATUS_DARK,
+    border: "20 10% 20%",
+    input: "20 10% 20%",
+    ring: "122 39% 49%",
+    sidebar: "20 14% 10%",
+    "sidebar-foreground": "60 30% 92%",
+    "sidebar-accent": "20 10% 16%",
+    "sidebar-accent-foreground": "60 30% 92%",
+    "sidebar-border": "20 10% 18%",
+    ...ROSE_DARK,
+  },
+};
+
 // ─── Theme: jmarkets-demo (Orange / Blue) ───────────────────────────────────
 const jmarketsDemo: ThemeDef = {
   id: "jmarkets-demo",
@@ -683,6 +744,7 @@ const beautyEssentials: ThemeDef = {
 
 /** All themes keyed by id. */
 export const THEMES: Record<string, ThemeDef> = {
+  "jmarkets": jmarkets,
   "pollos-portenos": pollosPortenos,
   "jmarkets-demo": jmarketsDemo,
   "tech-gadgets": techGadgets,
@@ -696,6 +758,7 @@ export const THEMES: Record<string, ThemeDef> = {
 
 /** Ordered theme list for galleries — default first. */
 export const THEME_LIST: ThemeDef[] = [
+  jmarkets,
   pollosPortenos,
   jmarketsDemo,
   techGadgets,
@@ -708,7 +771,7 @@ export const THEME_LIST: ThemeDef[] = [
 ];
 
 /** The fallback theme id when an org has no theme / an unknown one. */
-export const DEFAULT_THEME_ID = "pollos-portenos";
+export const DEFAULT_THEME_ID = "jmarkets";
 
 /** Type guard: is `id` a known theme id? */
 export function isKnownThemeId(id: string | undefined | null): id is string {

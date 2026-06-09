@@ -59,8 +59,12 @@ async function request<T>(
   console.log('[API] Response status:', res.status, res.statusText);
 
   if (res.status === 401) {
-    console.error('[API] Unauthorized - redirecting to login');
-    window.location.href = "/login";
+    // Do NOT hard-redirect here. A library fetch helper navigating the whole
+    // app (window.location) on ANY 401 caused a login→dashboard→login loop: a
+    // single transient 401 on a dashboard data call reloaded the page, and the
+    // Login mount's forceLogout() then cleared the session. Just throw — the
+    // RequireAuth guard (React state) owns auth redirects.
+    console.error('[API] Unauthorized');
     throw new Error("Unauthorized");
   }
 
