@@ -38,7 +38,6 @@ type SectionId = "commercial" | "admin" | "analytics";
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
   { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "config"] },
-  { id: "analytics",  labelKey: "shell.sectionAnalytics",  icon: "trending", items: ["reporte"] },
 ];
 
 function sectionOf(active: NavId): SectionId | null {
@@ -163,6 +162,9 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             </div>
           );
         })}
+
+        {/* Reportes — standalone item (not wrapped in a collapsible section) */}
+        <div className="mt-1.5">{renderItem("reporte")}</div>
 
         {/* Documentos — standalone, at the end of the menu */}
         <div className="relative flex items-stretch gap-0.5 mt-1.5">

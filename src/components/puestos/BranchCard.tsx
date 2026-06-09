@@ -4,8 +4,9 @@ import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { Icon, Card, Badge, Menu } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
 import { TerminalRow } from "./TerminalRow";
-import type { Branch, TerminalListResponse, BranchType, BranchStatus } from "@/types";
+import type { Branch, TerminalListResponse, BranchStatus } from "@/types";
 
 const STATUS_VARIANT: Record<BranchStatus, "success" | "secondary" | "destructive"> = {
   1: "success", 2: "secondary", 3: "destructive",
@@ -22,12 +23,15 @@ interface BranchCardProps {
 
 export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTerminal, delay = 0 }: BranchCardProps) {
   const { t } = useLanguage();
-  const TYPE_LABEL: Record<BranchType, string> = { stand: t("puestos.stand"), restaurant: t("puestos.restaurant") };
+  const typeOptions = useBranchTypeOptions();
+  const typeOpt = typeOptions.find((o) => o.code === branch.type);
+  const typeLabel = typeOpt?.name ?? branch.type;
+  const typeIcon = (typeOpt?.icon || "store") as never;
   const STATUS_LABEL: Record<BranchStatus, string> = { 1: t("common.active"), 2: t("common.inactive"), 3: t("common.delete") };
   const [expanded, setExpanded] = useState(false);
   const isActive = branch.status === 1;
-  const typeColorClass = branch.type === "stand" ? "text-primary" : "text-info";
-  const typeBorderColor = branch.type === "stand" ? "hsl(var(--primary))" : "hsl(var(--info))";
+  const typeColorClass = typeOpt?.color === "info" ? "text-info" : "text-primary";
+  const typeBorderColor = `hsl(var(--${typeOpt?.color === "info" ? "info" : "primary"}))`;
 
   const { data: terminalsData } = useQuery({
     queryKey: ["terminals", orgId, branch.code],
@@ -58,7 +62,7 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
                   isActive ? `${typeColorClass} bg-primary/10` : "text-muted-foreground bg-muted"
                 }`}
               >
-                <Icon name={branch.type === "stand" ? "store" : "home"} size={17} />
+                <Icon name={typeIcon} size={17} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-[7px] flex-wrap">
@@ -77,8 +81,8 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
 
           <div className="flex items-center gap-3.5 mt-3 flex-wrap">
             <div className="t-xs flex items-center gap-[5px] text-muted-foreground">
-              <Icon name={branch.type === "stand" ? "store" : "home"} size={12} />
-              {TYPE_LABEL[branch.type]}
+              <Icon name={typeIcon} size={12} />
+              {typeLabel}
             </div>
             {branch.phone && (
               <div className="t-xs flex items-center gap-[5px] text-muted-foreground">

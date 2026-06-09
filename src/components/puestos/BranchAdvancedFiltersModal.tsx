@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
 import { FiltersModal } from "@/components/common/FiltersModal";
 
 /**
@@ -23,6 +24,7 @@ interface Props {
 
 export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: Props) {
   const { t } = useLanguage();
+  const typeOptions = useBranchTypeOptions();
   const [local, setLocal] = useState<BranchAdvancedFilters>({ ...filters });
   const patch = (p: Partial<BranchAdvancedFilters>) => setLocal((f) => ({ ...f, ...p }));
 
@@ -45,8 +47,9 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
           className="pp-input"
         >
           <option value="">{t("puestos.all")}</option>
-          <option value="stand">{t("puestos.stand")}</option>
-          <option value="restaurant">{t("puestos.restaurant")}</option>
+          {typeOptions.map((opt) => (
+            <option key={opt.code} value={opt.code}>{opt.name}</option>
+          ))}
         </select>
       </div>
 

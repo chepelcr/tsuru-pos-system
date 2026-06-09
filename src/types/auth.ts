@@ -2,7 +2,7 @@
  * Authentication DTOs for Pollos Sales
  */
 
-export type UserRole = "cajero" | "gerente" | "supervisor";
+export type UserRole = "cajero" | "gerente" | "supervisor" | "customer";
 
 export interface AuthUser {
   userId: string;

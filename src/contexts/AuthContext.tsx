@@ -21,7 +21,9 @@ import {
 import "../lib/amplify";
 import { api, userPath } from "../lib/api";
 
-export type UserRole = "cajero" | "gerente" | "supervisor";
+// "customer" is the default role the markets-api assigns on first Cognito sync;
+// org/POS roles (cajero/gerente/supervisor) are assigned later via RBAC.
+export type UserRole = "cajero" | "gerente" | "supervisor" | "customer";
 
 interface AuthUser {
   userId: string;

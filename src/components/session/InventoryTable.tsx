@@ -7,7 +7,7 @@ interface Branch {
   branch_id: string;
   name: string;
   code: number;
-  type: "stand" | "restaurant";
+  type: string;
   status: number;
 }
 

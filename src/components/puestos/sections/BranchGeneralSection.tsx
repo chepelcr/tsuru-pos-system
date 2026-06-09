@@ -2,6 +2,7 @@ import { Store } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { Icon, Input, FormLabel } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
 import type { BranchType } from "@/types";
 
 interface BranchGeneralSectionProps {
@@ -26,11 +27,7 @@ export function BranchGeneralSection({
   onToggle,
 }: BranchGeneralSectionProps) {
   const { t } = useLanguage();
-  
-  const TYPE_LABEL: Record<BranchType, string> = { 
-    stand: t("puestos.stand"), 
-    restaurant: t("puestos.restaurant") 
-  };
+  const typeOptions = useBranchTypeOptions();
 
   return (
     <SectionWrapper
@@ -44,19 +41,20 @@ export function BranchGeneralSection({
         <div>
           <FormLabel>{t("session.sessionType")}</FormLabel>
           <div className="grid grid-cols-2 gap-2">
-            {(["stand", "restaurant"] as BranchType[]).map((bt) => (
+            {typeOptions.map((opt) => (
               <button
-                key={bt}
+                key={opt.code}
                 type="button"
-                onClick={() => setType(bt)}
+                onClick={() => setType(opt.code)}
                 className={`px-4 py-3 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-sm transition-all ${
-                  type === bt
+                  type === opt.code
                     ? "border-primary bg-primary/[0.08] text-primary font-bold"
                     : "border-border bg-transparent text-foreground font-medium"
                 }`}
               >
-                <Icon name={bt === "stand" ? "store" : "home"} size={15} />
-                {TYPE_LABEL[bt]}
+                {/* icon name comes from the catalog (data-driven) */}
+                <Icon name={(opt.icon || "store") as never} size={15} />
+                {opt.name}
               </button>
             ))}
           </div>
