@@ -1919,6 +1919,8 @@ const translations: Record<Language, Record<string, string>> = {
     // content (CMS storefront content editor)
     "content.title": "Contenido",
     "content.sectionSubtitle": "Editá el contenido de esta sección",
+    "content.pageSubtitle": "Editá las secciones de esta página",
+    "content.sectionCount": "{count} secciones",
     "content.section.hero": "Sección principal",
     "content.section.header": "Encabezado",
     "content.section.benefits": "Beneficios",
@@ -3930,6 +3932,8 @@ const translations: Record<Language, Record<string, string>> = {
     // content (CMS storefront content editor)
     "content.title": "Content",
     "content.sectionSubtitle": "Edit this section's content",
+    "content.pageSubtitle": "Edit this page's sections",
+    "content.sectionCount": "{count} sections",
     "content.section.hero": "Hero",
     "content.section.header": "Header",
     "content.section.benefits": "Benefits",

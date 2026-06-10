@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -12,6 +13,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { Drawer, Icon } from "@/components/ui";
+import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { BaseSectionEditor } from "@/components/cms/BaseSectionEditor";
 import type {
   ContentData,
@@ -63,9 +65,10 @@ export default function ContentPage() {
   const pages = useMemo<Page[]>(() => pagesQuery.data ?? [], [pagesQuery.data]);
 
   const [contentData, setContentData] = useState<ContentData>({});
-  const [activeSlug, setActiveSlug] = useState<string>("");
-  /** The section currently open in the edit drawer (by section id). */
-  const [editingId, setEditingId] = useState<string | null>(null);
+  /** The page whose sections are open in the drawer (by slug). */
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  /** Accordion: the open section within the drawer (by section id). */
+  const [openSectionId, setOpenSectionId] = useState<string | undefined>(undefined);
   /** Per-page section display order (client-side reorder; key = slug). */
   const [sectionOrder, setSectionOrder] = useState<Record<string, string[]>>({});
 
@@ -73,7 +76,6 @@ export default function ContentPage() {
   useEffect(() => {
     if (!pagesQuery.data) return;
     setContentData(groupContent(pagesQuery.data));
-
     const order: Record<string, string[]> = {};
     pagesQuery.data.forEach((page) => {
       order[page.slug] = (page.sections ?? [])
@@ -82,13 +84,10 @@ export default function ContentPage() {
         .map((s) => s.id);
     });
     setSectionOrder(order);
-
-    if (pagesQuery.data.length > 0) setActiveSlug(pagesQuery.data[0].slug);
   }, [pagesQuery.data]);
 
   const isSaving = saveContent.isPending;
   const saveFailed = saveContent.isError;
-  const activePage = pages.find((p) => p.slug === activeSlug) ?? pages[0];
 
   // ── i18n helpers (fallback-keyed: use the key if a translation exists) ────
   const pageLabel = (page: Page) => {
@@ -100,17 +99,13 @@ export default function ContentPage() {
     return t(key) !== key ? t(key) : section.displayName || section.sectionType;
   };
 
-  // ── save (per-section, from the drawer) ───────────────────────────────────
-  const handleSectionSave = (
-    sectionKey: string,
-    updated: ContentSection,
-    onDone?: () => void,
-  ) => {
+  // ── save (per-section, from inside the drawer) ────────────────────────────
+  const handleSectionSave = (sectionKey: string, updated: ContentSection) => {
     const [pageSlug, sectionType] = sectionKey.split("-");
     const page = pages.find((p) => p.slug === pageSlug);
     const section = page?.sections?.find((s) => s.sectionType === sectionType);
     if (!section) return;
-    saveContent.mutate([toUpdate(section.id, updated)], { onSuccess: () => onDone?.() });
+    saveContent.mutate([toUpdate(section.id, updated)]);
   };
 
   // ── section reorder (client-side display order) ───────────────────────────
@@ -163,12 +158,9 @@ export default function ContentPage() {
     );
   }
 
-  const orderedSectionIds = activePage ? sectionOrder[activePage.slug] ?? [] : [];
-  const sectionsById = new Map((activePage?.sections ?? []).map((s) => [s.id, s]));
-  const editingSection = editingId ? sectionsById.get(editingId) : undefined;
-  const editingKey =
-    editingSection && activePage ? `${activePage.slug}-${editingSection.sectionType}` : "";
-  const editingIdx = orderedSectionIds.indexOf(editingId ?? "");
+  const openPage = editingSlug ? pages.find((p) => p.slug === editingSlug) : undefined;
+  const drawerSectionIds = openPage ? sectionOrder[openPage.slug] ?? [] : [];
+  const drawerSectionsById = new Map((openPage?.sections ?? []).map((s) => [s.id, s]));
 
   return (
     <div className="px-6 pt-6 pb-10 max-w-[1100px] mx-auto">
@@ -194,113 +186,110 @@ export default function ContentPage() {
         </div>
       )}
 
-      {/* Page tabs */}
-      <div className="tabs-container mb-5">
-        <div className="tabs" role="tablist">
-          {pages.map((page) => (
-            <button
-              key={page.slug}
-              type="button"
-              role="tab"
-              className="tab"
-              aria-selected={page.slug === activePage?.slug}
-              disabled={isSaving}
-              onClick={() => {
-                setActiveSlug(page.slug);
-                setEditingId(null);
-              }}
-            >
-              {pageLabel(page)}
-            </button>
-          ))}
+      {/* Page cards — each opens a drawer with that page's sections */}
+      <FadeIn>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {pages.map((page) => {
+            const count = page.sections?.length ?? 0;
+            return (
+              <button
+                key={page.slug}
+                type="button"
+                className="card card-hover text-left w-full p-5 flex items-start gap-4 group"
+                onClick={() => {
+                  setEditingSlug(page.slug);
+                  setOpenSectionId((sectionOrder[page.slug] ?? [])[0]);
+                }}
+              >
+                <div className="icon-pill icon-pill-lg icon-pill-primary-soft w-12 h-12 flex-shrink-0">
+                  <Icon name="fileText" size={22} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="t-h4 !mb-0">{pageLabel(page)}</span>
+                    <Badge variant="secondary">
+                      {t("content.sectionCount", { count: String(count) })}
+                    </Badge>
+                  </div>
+                  <p className="t-xs text-muted-foreground font-mono">{page.slug}</p>
+                </div>
+                <Icon
+                  name="chevronRight"
+                  size={18}
+                  className="text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5"
+                />
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      {/* Sections — card grid (consistent with the org-settings hub) */}
-      <FadeIn key={activePage?.slug}>
-        {orderedSectionIds.length === 0 ? (
-          <p className="t-sm text-muted-foreground py-6 text-center">{t("content.noSections")}</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {orderedSectionIds.map((sectionId) => {
-              const section = sectionsById.get(sectionId);
-              if (!section || !activePage) return null;
-              const sectionKey = `${activePage.slug}-${section.sectionType}`;
-              const fieldCount = Object.keys(contentData[sectionKey] || {}).length;
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  className="card card-hover text-left w-full p-5 flex items-start gap-4 group"
-                  onClick={() => setEditingId(section.id)}
-                >
-                  <div className="icon-pill icon-pill-lg icon-pill-primary-soft w-12 h-12 flex-shrink-0">
-                    <Icon name="fileText" size={22} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="t-h4 !mb-0">{sectionLabel(section)}</span>
-                      <Badge variant="secondary">
-                        {t("content.fieldCount", { count: String(fieldCount) })}
-                      </Badge>
-                    </div>
-                    <p className="t-xs text-muted-foreground font-mono">{section.sectionType}</p>
-                  </div>
-                  <Icon
-                    name="chevronRight"
-                    size={18}
-                    className="text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5"
-                  />
-                </button>
-              );
-            })}
-          </div>
-        )}
       </FadeIn>
 
-      {/* Section edit drawer */}
+      {/* Page drawer — all the page's sections as collapsible sub-sections */}
       <Drawer
-        open={!!editingSection}
-        onClose={() => setEditingId(null)}
-        title={editingSection ? sectionLabel(editingSection) : ""}
-        subtitle={t("content.sectionSubtitle")}
+        open={!!openPage}
+        onClose={() => setEditingSlug(null)}
+        title={openPage ? pageLabel(openPage) : ""}
+        subtitle={t("content.pageSubtitle")}
         icon="fileText"
-        width={520}
+        width={560}
       >
-        {editingSection && activePage && (
-          <div className="p-6">
-            {/* Section meta + reorder (no overlap with the card click) */}
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <span className="t-xs text-muted-foreground font-mono">{editingSection.sectionType}</span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  icon="chevronUp"
-                  title={t("content.moveUp")}
-                  aria-label={t("content.moveUp")}
-                  disabled={editingIdx <= 0 || isSaving}
-                  onClick={() => moveSection(activePage.slug, editingSection.id, -1)}
-                />
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  icon="chevronDown"
-                  title={t("content.moveDown")}
-                  aria-label={t("content.moveDown")}
-                  disabled={editingIdx < 0 || editingIdx >= orderedSectionIds.length - 1 || isSaving}
-                  onClick={() => moveSection(activePage.slug, editingSection.id, 1)}
-                />
-              </div>
-            </div>
+        {openPage && (
+          <div className="p-6 flex flex-col gap-3">
+            {drawerSectionIds.length === 0 && (
+              <p className="t-sm text-muted-foreground py-6 text-center">{t("content.noSections")}</p>
+            )}
+            {drawerSectionIds.map((sectionId, idx) => {
+              const section = drawerSectionsById.get(sectionId);
+              if (!section) return null;
+              const sectionKey = `${openPage.slug}-${section.sectionType}`;
+              const fields = contentData[sectionKey] || {};
+              const fieldCount = Object.keys(fields).length;
+              const expanded = openSectionId === section.id;
+              return (
+                <SectionWrapper
+                  key={section.id}
+                  title={sectionLabel(section)}
+                  icon={FileText}
+                  badge={fieldCount}
+                  isExpanded={expanded}
+                  onToggle={() => setOpenSectionId(expanded ? undefined : section.id)}
+                  disabled={isSaving}
+                >
+                  {/* Section type + reorder controls */}
+                  <div className="flex items-center justify-between gap-2 -mt-1 mb-2">
+                    <span className="t-xs text-muted-foreground font-mono">{section.sectionType}</span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        icon="chevronUp"
+                        title={t("content.moveUp")}
+                        aria-label={t("content.moveUp")}
+                        disabled={idx === 0 || isSaving}
+                        onClick={() => moveSection(openPage.slug, section.id, -1)}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        icon="chevronDown"
+                        title={t("content.moveDown")}
+                        aria-label={t("content.moveDown")}
+                        disabled={idx === drawerSectionIds.length - 1 || isSaving}
+                        onClick={() => moveSection(openPage.slug, section.id, 1)}
+                      />
+                    </div>
+                  </div>
 
-            <BaseSectionEditor
-              sectionType={editingKey}
-              content={contentData[editingKey] || {}}
-              isSaving={isSaving}
-              onInputChange={() => {}}
-              onSave={(updated) => handleSectionSave(editingKey, updated, () => setEditingId(null))}
-            />
+                  <BaseSectionEditor
+                    sectionType={sectionKey}
+                    content={fields}
+                    isSaving={isSaving}
+                    onInputChange={() => {}}
+                    onSave={(updated) => handleSectionSave(sectionKey, updated)}
+                  />
+                </SectionWrapper>
+              );
+            })}
           </div>
         )}
       </Drawer>
