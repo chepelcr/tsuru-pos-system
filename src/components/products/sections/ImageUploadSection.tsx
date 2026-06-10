@@ -1,32 +1,31 @@
 import { ImageIcon } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { ImagePicker } from "@/components/ui/ImagePicker";
+import { MediaPicker } from "@/components/ui/MediaPicker";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ImageUploadSectionProps {
-  currentUrl?: string;
+  /** Current image URL (org media library / CloudFront). */
+  value: string;
   isExpanded: boolean;
   onToggle: () => void;
-  onFileChange: (file: File | null) => void;
+  onChange: (url: string) => void;
 }
 
 export function ImageUploadSection({
-  currentUrl,
+  value,
   isExpanded,
   onToggle,
-  onFileChange,
+  onChange,
 }: ImageUploadSectionProps) {
+  const { t } = useLanguage();
   return (
     <SectionWrapper
-      title="Imagen del producto"
+      title={t("products.image")}
       icon={ImageIcon}
       isExpanded={isExpanded}
       onToggle={onToggle}
     >
-      <ImagePicker
-        currentUrl={currentUrl}
-        onFileChange={onFileChange}
-        size={100}
-      />
+      <MediaPicker value={value} onChange={onChange} />
     </SectionWrapper>
   );
 }

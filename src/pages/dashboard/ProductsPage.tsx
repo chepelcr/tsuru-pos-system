@@ -28,14 +28,6 @@ const PRODUCT_STATUS_OPTIONS: readonly StatusOption<ProductStatusValue>[] = [
   { value: "all", labelKey: "products.statusAll" },
 ];
 
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function ProductsPage() {
   const { user } = useAuthContext();
@@ -72,7 +64,7 @@ export default function ProductsPage() {
         : undefined,
   ]);
   const [form, setForm] = useState<ProductFormState>({ ...EMPTY_FORM });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [unitsPerBox, setUnitsPerBox] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -173,7 +165,7 @@ export default function ProductsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["products", org?.id] }); setDrawerProduct(null); setSelected([]); },
   });
 
-  const openNew = () => { setForm({ ...EMPTY_FORM }); setImageFile(null); setUnitsPerBox(""); setDrawerProduct("new"); };
+  const openNew = () => { setForm({ ...EMPTY_FORM }); setImageUrl(""); setUnitsPerBox(""); setDrawerProduct("new"); };
 
   const openEdit = (p: Product) => {
     const hasCabys = !!p.cabys?.id;
@@ -222,7 +214,7 @@ export default function ProductsPage() {
       })),
     });
     setUnitsPerBox(p.units_per_box ? String(p.units_per_box) : "");
-    setImageFile(null);
+    setImageUrl(p.image_url ?? "");
     setDrawerProduct(p);
   };
 
@@ -288,12 +280,10 @@ export default function ProductsPage() {
         })) : undefined,
       };
       
-      // Image upload
-      if (imageFile) {
-        const data = await fileToBase64(imageFile);
-        body.image = { data, name: imageFile.name, contentType: imageFile.type };
-      }
-      
+      // Image — the MediaPicker already uploaded to the org S3 bucket and gave
+      // us the absolute URL; just persist it (empty string clears).
+      body.image_url = imageUrl || null;
+
       if (drawerProduct === "new") await createProduct.mutateAsync(body);
       else if (drawerProduct) await updateProduct.mutateAsync({ id: drawerProduct.product_id, body });
     } finally { setSaving(false); }
@@ -465,16 +455,16 @@ export default function ProductsPage() {
         form={form}
         categories={allCategories}
         saving={saving}
-        imageFile={imageFile}
+        imageUrl={imageUrl}
         unitsPerBox={unitsPerBox}
         onClose={() => {
           setDrawerProduct(null);
           setForm({ ...EMPTY_FORM });
-          setImageFile(null);
+          setImageUrl("");
           setUnitsPerBox("");
         }}
         onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-        onImageChange={setImageFile}
+        onImageChange={setImageUrl}
         onUnitsPerBoxChange={setUnitsPerBox}
         onSave={handleSave}
         onDelete={() => { if (drawerProduct && drawerProduct !== "new") deleteProduct.mutate(drawerProduct.product_id); }}

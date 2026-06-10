@@ -57,11 +57,11 @@ interface ProductDrawerFormProps {
   form: ProductFormState;
   categories: Category[];
   saving: boolean;
-  imageFile: File | null;
+  imageUrl: string;
   unitsPerBox: string;
   onClose: () => void;
   onFormChange: (patch: Partial<ProductFormState>) => void;
-  onImageChange: (file: File | null) => void;
+  onImageChange: (url: string) => void;
   onUnitsPerBoxChange: (value: string) => void;
   onSave: () => void;
   onDelete: () => void;
@@ -86,6 +86,7 @@ export function ProductDrawerForm({
   form,
   categories,
   saving,
+  imageUrl,
   unitsPerBox,
   onClose,
   onFormChange,
@@ -410,10 +411,10 @@ export function ProductDrawerForm({
 
             {/* 2. Image Upload */}
             <ImageUploadSection
-              currentUrl={!isNew && drawerProduct ? ((drawerProduct as Product).image_url ?? undefined) : undefined}
+              value={imageUrl}
               isExpanded={expanded.image}
               onToggle={() => toggle("image")}
-              onFileChange={onImageChange}
+              onChange={onImageChange}
             />
 
             {/* 3. Codes */}

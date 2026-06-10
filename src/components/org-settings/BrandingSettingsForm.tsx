@@ -1,7 +1,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Spinner } from "@/components/ui";
+import { Spinner, MediaPicker } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { OrgThemeBranding } from "@/types";
@@ -62,10 +62,8 @@ interface BrandingSettingsFormProps {
  * the public customer-facing store. DISTINCT from the POS UI theme (OrgThemePage
  * + ThemeContext); this form does NOT call setThemeId / useUpdateOrgTheme.
  *
- * v1 ships logo/favicon as plain URL text inputs.
- * TODO(verify-endpoint): image picker / S3 upload for logo & favicon is a
- * follow-up — POS ships components/ui/ImagePicker but its upload target is
- * unconfirmed. See plan §10.5.
+ * Logo & favicon use the org media library (MediaPicker → S3 upload + gallery);
+ * the stored value is the asset's absolute CloudFront URL.
  */
 export function BrandingSettingsForm({
   initialValues,
@@ -173,11 +171,12 @@ export function BrandingSettingsForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label={t("orgSettings.branding.logoUrl")} error={errors.logoUrl?.message}>
-          <input
-            className="pp-input w-full"
-            type="url"
-            placeholder={t("orgSettings.branding.logoUrlPlaceholder")}
-            {...register("logoUrl")}
+          <Controller
+            control={control}
+            name="logoUrl"
+            render={({ field }) => (
+              <MediaPicker value={field.value ?? ""} onChange={field.onChange} />
+            )}
           />
           <span className="block t-xs text-muted-foreground mt-1">
             {t("orgSettings.branding.logoUrlDesc")}
@@ -185,11 +184,12 @@ export function BrandingSettingsForm({
         </FormField>
 
         <FormField label={t("orgSettings.branding.faviconUrl")} error={errors.faviconUrl?.message}>
-          <input
-            className="pp-input w-full"
-            type="url"
-            placeholder={t("orgSettings.branding.faviconUrlPlaceholder")}
-            {...register("faviconUrl")}
+          <Controller
+            control={control}
+            name="faviconUrl"
+            render={({ field }) => (
+              <MediaPicker value={field.value ?? ""} onChange={field.onChange} />
+            )}
           />
           <span className="block t-xs text-muted-foreground mt-1">
             {t("orgSettings.branding.faviconUrlDesc")}

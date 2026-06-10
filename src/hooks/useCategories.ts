@@ -40,8 +40,12 @@ export interface CategoryRequestPayload {
   description?: string;
   background_color?: string;
   button_color?: string;
+  /** Legacy base64 blob upload (kept for back-compat). */
   image_1?: CategoryImageBlob;
   image_2?: CategoryImageBlob;
+  /** Preferred: absolute URL of an already-uploaded asset (org media library). */
+  image1_url?: string | null;
+  image2_url?: string | null;
   sort_order?: number;
 }
 

@@ -1,15 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Drawer, Button, Input } from "@/components/ui";
+import { Drawer, Button, Input, MediaPicker } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
-import { ImagePicker } from "@/components/ui/ImagePicker";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   useCreateCategory,
   useUpdateCategory,
   type CategoryRequestPayload,
-  type CategoryImageBlob,
 } from "@/hooks/useCategories";
 import type { Category } from "@/types";
 
@@ -45,6 +43,8 @@ interface FormData {
   description: string;
   background_color: string;
   button_color: string;
+  image1_url: string;
+  image2_url: string;
   sort_order: number;
 }
 
@@ -54,21 +54,10 @@ const DEFAULTS: FormData = {
   description: "",
   background_color: "#fce7f3",
   button_color: "#e91e63",
+  image1_url: "",
+  image2_url: "",
   sort_order: 0,
 };
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function toBlob(file: File): Promise<CategoryImageBlob> {
-  return { data: await fileToBase64(file), name: file.name, contentType: file.type };
-}
 
 const slugify = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").trim();
@@ -85,15 +74,8 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
     defaultValues: DEFAULTS,
   });
 
-  // Local file refs for the two optional images (not part of RHF — survive
-  // re-renders without re-triggering validation/submit).
-  const image1Ref = useRef<File | null>(null);
-  const image2Ref = useRef<File | null>(null);
-
   useEffect(() => {
     if (!open) return;
-    image1Ref.current = null;
-    image2Ref.current = null;
     if (category) {
       reset({
         name: category.name ?? "",
@@ -101,6 +83,8 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
         description: category.description ?? "",
         background_color: category.background_color ?? DEFAULTS.background_color,
         button_color: category.button_color ?? DEFAULTS.button_color,
+        image1_url: category.image1_url ?? "",
+        image2_url: category.image2_url ?? "",
         sort_order: category.sort_order ?? 0,
       });
     } else {
@@ -117,10 +101,12 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
       description: data.description || undefined,
       background_color: data.background_color,
       button_color: data.button_color,
+      // Images already uploaded to the org S3 bucket by the MediaPicker — send
+      // the resulting absolute URLs (empty string clears the field).
+      image1_url: data.image1_url || null,
+      image2_url: data.image2_url || null,
       sort_order: Number(data.sort_order) || 0,
     };
-    if (image1Ref.current) body.image_1 = await toBlob(image1Ref.current);
-    if (image2Ref.current) body.image_2 = await toBlob(image2Ref.current);
 
     if (isEditing) {
       await updateMutation.mutateAsync({ id: category!.category_id, body });
@@ -203,15 +189,15 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
 
         <div className="grid grid-cols-2 gap-4">
           <FormField label={t("categories.form.image1")}>
-            <ImagePicker
-              currentUrl={category?.image1_url ?? null}
-              onFileChange={(f) => { image1Ref.current = f; }}
+            <MediaPicker
+              value={watch("image1_url")}
+              onChange={(url) => setValue("image1_url", url)}
             />
           </FormField>
           <FormField label={t("categories.form.image2")}>
-            <ImagePicker
-              currentUrl={category?.image2_url ?? null}
-              onFileChange={(f) => { image2Ref.current = f; }}
+            <MediaPicker
+              value={watch("image2_url")}
+              onChange={(url) => setValue("image2_url", url)}
             />
           </FormField>
         </div>

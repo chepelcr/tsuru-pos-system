@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ImagePicker } from "@/components/ui/ImagePicker";
+import { MediaPicker } from "@/components/ui/MediaPicker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { SectionContent } from "@/types/content";
 
@@ -323,16 +323,14 @@ export function ContentField({
 
         {bgData.type === "image" && (
           <div className="flex flex-col gap-3">
-            <Input
-              type="text"
+            <MediaPicker
               value={bgData.image?.url || ""}
               disabled={disabled}
-              onChange={(e) => {
+              onChange={(ref) => {
                 bgData.image = bgData.image || {};
-                bgData.image.url = e.target.value;
+                bgData.image.url = ref;
                 onChange(JSON.stringify(bgData));
               }}
-              placeholder={t("content.field.imageUrlPlaceholder")}
             />
             <div className="flex flex-col gap-1.5">
               <span className="label-section">
@@ -386,32 +384,14 @@ export function ContentField({
     );
   };
 
-  // ── image (file upload via ImagePicker + URL paste) ───────────────────────
-  // Porting the dashboard <ImageUpload> (base64 upload). The storefront content
-  // contract stores the image as a plain string in `value` — either a remote
-  // URL or a base64 data-URL. ImagePicker yields a File; we read it to a
-  // data-URL and store that string (kept whole so it doubles as the <img src>).
-  const handleImageFile = (file: File | null) => {
-    if (!file) {
-      onChange("");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
+  // ── image (org media library via MediaPicker) ─────────────────────────────
+  // The storefront content contract stores the image as a plain string in
+  // `value` (an absolute URL). MediaPicker uploads to the org S3 bucket and
+  // stores the returned CloudFront URL, or lets the user pick from the gallery
+  // / paste a URL. Replaces the old base64-data-URL ImagePicker (which bloated
+  // saved content).
   const renderImageInput = () => (
-    <div className="flex flex-col gap-2.5">
-      <ImagePicker currentUrl={value || null} onFileChange={handleImageFile} />
-      <Input
-        type="text"
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={t("content.field.imageUrlPlaceholder")}
-      />
-    </div>
+    <MediaPicker value={value} onChange={onChange} disabled={disabled} />
   );
 
   // ── json — structured repeaters (parity with dashboard) ───────────────────

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText } from "lucide-react";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
@@ -71,6 +71,22 @@ export default function ContentPage() {
   const [openSectionId, setOpenSectionId] = useState<string | undefined>(undefined);
   /** Per-page section display order (client-side reorder; key = slug). */
   const [sectionOrder, setSectionOrder] = useState<Record<string, string[]>>({});
+  /** Section wrapper elements (by section id) so expanding one can scroll it to top. */
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // When a section is expanded, bring its header to the top of the drawer body.
+  // Without this the user can be stranded mid-card after a tall sibling
+  // collapses. Wait out the max-height transition (300ms) so the target's
+  // final position is settled before the smooth scroll.
+  useEffect(() => {
+    if (!openSectionId) return;
+    const el = sectionRefs.current[openSectionId];
+    if (!el) return;
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 320);
+    return () => window.clearTimeout(id);
+  }, [openSectionId]);
 
   // Hydrate the editor model whenever the server payload arrives.
   useEffect(() => {
@@ -246,8 +262,12 @@ export default function ContentPage() {
               const fieldCount = Object.keys(fields).length;
               const expanded = openSectionId === section.id;
               return (
-                <SectionWrapper
+                <div
                   key={section.id}
+                  ref={(el) => { sectionRefs.current[section.id] = el; }}
+                  className="scroll-mt-3"
+                >
+                <SectionWrapper
                   title={sectionLabel(section)}
                   icon={FileText}
                   badge={fieldCount}
@@ -288,6 +308,7 @@ export default function ContentPage() {
                     onSave={(updated) => handleSectionSave(sectionKey, updated)}
                   />
                 </SectionWrapper>
+                </div>
               );
             })}
           </div>

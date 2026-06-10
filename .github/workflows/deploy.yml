@@ -1,0 +1,72 @@
+name: Deploy POS frontend
+
+# Replaces the monorepo CodePipeline stage for pos-system
+# (buildspec-frontend-pos-system.yml + scripts/pipeline-frontend-pos-system.sh).
+# Same build env, same deploy target (jmarkets-${ENVIRONMENT}-* stack/bucket).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, stag, prod]
+        default: dev
+
+# OIDC: the job assumes an AWS IAM role via GitHub's OIDC provider — no
+# long-lived access keys stored in the repo.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
+  REGION: us-east-1
+  FRONTEND_DOMAIN: j-markets.jcampos.dev
+  ROOT_DOMAIN: jcampos.dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.REGION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write .env from SSM
+        run: |
+          SSM_PATH="/jcampos/${ENVIRONMENT}/jmarkets"
+          cat > .env << EOF
+          VITE_AWS_REGION=$(aws ssm get-parameter --name "${SSM_PATH}/aws/region" --query 'Parameter.Value' --output text --region ${REGION})
+          VITE_AWS_COGNITO_USER_POOL_ID=$(aws ssm get-parameter --name "${SSM_PATH}/cognito/user-pool-id" --query 'Parameter.Value' --output text --region ${REGION})
+          VITE_AWS_COGNITO_CLIENT_ID=$(aws ssm get-parameter --name "${SSM_PATH}/cognito/client-id" --query 'Parameter.Value' --output text --region ${REGION})
+          VITE_API_URL=$(aws ssm get-parameter --name "${SSM_PATH}/api/url" --query 'Parameter.Value' --output text --region ${REGION})
+          VITE_BASE_DOMAIN=${FRONTEND_DOMAIN}
+          VITE_TEMPLATE_NAME=pos-system
+          VITE_TEMPLATE_DISPLAY_NAME=JMarkets POS
+          VITE_TEMPLATE_INDUSTRY=pos
+          VITE_SINPE_NUMBER=8888-8888
+          EOF
+          echo ".env written"
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy (CFN + S3 + CloudFront invalidation)
+        run: bash scripts/deploy.sh

@@ -12,6 +12,15 @@ This project now lives in its own public repository: **[`chepelcr/tsuru-pos-syst
 
 During the transition it still physically resides at `BeautyMarket/templates/pos-system/` inside the monorepo (and is gitignored there) because the CI/CD pipelines still reference these paths. **Do new work in the standalone repo.** The monorepo copy will be removed once pipelines are migrated.
 
+### Deployment (GitHub Actions — own repo)
+
+CI/CD now lives in this repo, replacing the monorepo CodePipeline stage:
+- `.github/workflows/deploy.yml` — on push to `main` (or manual dispatch). Builds the SPA (Vite → `dist/`, env from SSM `/jcampos/${ENVIRONMENT}/jmarkets/*`) and runs `scripts/deploy.sh`.
+- `scripts/deploy.sh` — deploys `cloudformation/frontend-site.yml` (stack `jmarkets-${ENVIRONMENT}-frontend-pos-system`), syncs `dist/` → `s3://jmarkets-${ENVIRONMENT}-pos-system`, invalidates CloudFront. Same names as the old monorepo pipeline, so it updates infra in place. Live at `pos.j-markets.jcampos.dev`.
+- AWS auth: GitHub OIDC → IAM role (no static keys). Provision the role with `cloudformation/github-oidc-deploy-role.yml`, then set the repo secret `AWS_DEPLOY_ROLE_ARN`.
+- Local deploy: `npm run build && AWS_PROFILE=J-CAMPOS bash scripts/deploy.sh`.
+- **Vite `build.outDir` is repo-local `dist/`** (not the old monorepo `../../dist/templates/pos-system`).
+
 ---
 
 ## 1. What this is

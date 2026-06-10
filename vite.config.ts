@@ -11,7 +11,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   build: {
-    outDir: path.resolve(__dirname, "../../dist/templates/pos-system"),
+    outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
     rollupOptions: {
       output: {
