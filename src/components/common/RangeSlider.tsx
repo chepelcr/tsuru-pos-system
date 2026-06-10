@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RangeSliderProps {
   min: number;
@@ -24,6 +25,7 @@ export function RangeSlider({
   onChange,
   format,
 }: RangeSliderProps) {
+  const { t } = useLanguage();
   const [lo, hi] = value;
 
   // Keep the two handles from crossing — each side reserves a one-step gap.
@@ -57,7 +59,7 @@ export function RangeSlider({
           value={lo}
           onChange={(e) => handleLo(Number(e.target.value))}
           className="range-slider-input"
-          aria-label="Mínimo"
+          aria-label={t("common.min")}
         />
         <input
           type="range"
@@ -67,7 +69,7 @@ export function RangeSlider({
           value={hi}
           onChange={(e) => handleHi(Number(e.target.value))}
           className="range-slider-input"
-          aria-label="Máximo"
+          aria-label={t("common.max")}
         />
       </div>
       <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">

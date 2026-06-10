@@ -4,7 +4,6 @@ import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { OrgProvider } from "@/contexts/OrgContext";
-import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { CountryISO } from "@/lib/enums";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
@@ -22,7 +21,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "reporte" | "pos" | "documents" | "clients" | "organization";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "templates" | "deployments" | "profile";
 
 interface Session {
   name: string;
@@ -34,6 +33,7 @@ function getActiveNav(location: string): NavId {
   console.log('[DashboardLayout] getActiveNav called with location:', location);
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
+  if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
   if (location.startsWith(ROUTES.DASHBOARD_PRODUCTS)) return "productos";
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS))  return "reporte";
   // Document editor and list both highlight the "documents" sidebar item
@@ -41,7 +41,14 @@ function getActiveNav(location: string): NavId {
   // Legacy /dashboard/pos route also maps to documents (POS is now an editor view)
   if (location.startsWith(ROUTES.DASHBOARD_POS))      return "documents";
   if (location.startsWith(ROUTES.DASHBOARD_CLIENTS))  return "clients";
-  if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /hacienda and /notifications sub-paths too
+  if (location.startsWith(ROUTES.DASHBOARD_CONFIRMATIONS)) return "confirmations";
+  if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
+  if (location.startsWith(ROUTES.DASHBOARD_MEMBERS))  return "members";
+  if (location.startsWith(ROUTES.DASHBOARD_CONTENT))     return "content";
+  if (location.startsWith(ROUTES.DASHBOARD_TEMPLATES))   return "templates";
+  if (location.startsWith(ROUTES.DASHBOARD_DEPLOYMENTS)) return "deployments";
+  if (location.startsWith(ROUTES.PROFILE))            return "profile";
+  if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /general, /branding, /contact, /payment, /shipping, /hacienda, /notifications sub-paths too
   return "dashboard";
 }
 
@@ -50,11 +57,19 @@ const NAV_PATHS: Record<NavId, string> = {
   config:    ROUTES.DASHBOARD_SESSIONS,
   puestos:   ROUTES.DASHBOARD_STATIONS,
   productos: ROUTES.DASHBOARD_PRODUCTS,
+  categories: ROUTES.DASHBOARD_CATEGORIES,
   reporte:   ROUTES.DASHBOARD_REPORTS,
   pos:       ROUTES.DASHBOARD_POS,
   documents: ROUTES.DASHBOARD_DOCUMENTS,
   clients:   ROUTES.DASHBOARD_CLIENTS,
+  orders:    ROUTES.DASHBOARD_ORDERS,
+  confirmations: ROUTES.DASHBOARD_CONFIRMATIONS,
+  members:   ROUTES.DASHBOARD_MEMBERS,
   organization: ROUTES.DASHBOARD_ORG_SETTINGS,
+  content:     ROUTES.DASHBOARD_CONTENT,
+  templates:   ROUTES.DASHBOARD_TEMPLATES,
+  deployments: ROUTES.DASHBOARD_DEPLOYMENTS,
+  profile:   ROUTES.PROFILE,
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -82,17 +97,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Org still loading — shell renders with empty content. Notifications are
     // mounted here so the bell stays available even before the org resolves.
     return (
-      <NotificationsProvider>
+      <>
         <NotificationsBridge />
         <DashboardShell active={active} onNav={handleNav}>
           {null}
         </DashboardShell>
-      </NotificationsProvider>
+      </>
     );
   }
 
   return (
-    <NotificationsProvider>
+    <>
       <NotificationsBridge />
       <OrgProvider orgId={org.id} orgName={org.name ?? ""}>
         <ExchangeRateProvider orgId={org.id} isoCode={CountryISO.COSTA_RICA}>
@@ -106,6 +121,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </DashboardShell>
         </ExchangeRateProvider>
       </OrgProvider>
-    </NotificationsProvider>
+    </>
   );
 }

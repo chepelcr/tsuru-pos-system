@@ -7,7 +7,13 @@ import { ROUTES } from "@/routePaths";
 import { PageTransition } from "@/components/ui/PageTransition";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import VerifyEmail from "@/pages/VerifyEmail";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import SelectOrganization from "@/pages/SelectOrganization";
+import CreateOrganization from "@/pages/CreateOrganization";
+import AcceptInvitation from "@/pages/AcceptInvitation";
 import DashboardHome from "@/pages/dashboard/DashboardPage";
 import SessionsPage from "@/pages/dashboard/SessionsPage";
 import PuestosPage from "@/pages/dashboard/PuestosPage";
@@ -22,6 +28,22 @@ import OrgSettingsPage from "@/pages/dashboard/OrgSettingsPage";
 import OrgHaciendaPage from "@/pages/dashboard/OrgHaciendaPage";
 import OrgNotificationsPage from "@/pages/dashboard/OrgNotificationsPage";
 import OrgRegisteredOrgPage from "@/pages/dashboard/OrgRegisteredOrgPage";
+import OrgThemePage from "@/pages/dashboard/OrgThemePage";
+import MembersPage from "@/pages/dashboard/MembersPage";
+import OrdersPage from "@/pages/dashboard/OrdersPage";
+import OrderDetailPage from "@/pages/dashboard/OrderDetailPage";
+import ConfirmationsPage from "@/pages/dashboard/ConfirmationsPage";
+import ConfirmationDetailPage from "@/pages/dashboard/ConfirmationDetailPage";
+import CategoriesPage from "@/pages/dashboard/CategoriesPage";
+import OrgGeneralPage from "@/pages/dashboard/OrgGeneralPage";
+import OrgBrandingPage from "@/pages/dashboard/OrgBrandingPage";
+import OrgContactPage from "@/pages/dashboard/OrgContactPage";
+import OrgPaymentPage from "@/pages/dashboard/OrgPaymentPage";
+import OrgShippingPage from "@/pages/dashboard/OrgShippingPage";
+import ProfilePage from "@/pages/dashboard/ProfilePage";
+import ContentPage from "@/pages/dashboard/ContentPage";
+import TemplatesPage from "@/pages/dashboard/TemplatesPage";
+import DeploymentsPage from "@/pages/dashboard/DeploymentsPage";
 
 const DASHBOARD_ROLES = ["gerente", "supervisor", "customer", "cajero"];
 
@@ -90,6 +112,26 @@ function ProductDetailRoute() {
   );
 }
 
+// Order detail route — reads :orderId from Wouter params
+function OrderDetailRoute() {
+  const { orderId } = useParams<{ orderId: string }>();
+  return (
+    <DashboardPage>
+      <OrderDetailPage orderId={orderId ?? ""} />
+    </DashboardPage>
+  );
+}
+
+// Confirmation detail route — reads :confirmationNumber from Wouter params
+function ConfirmationDetailRoute() {
+  const { confirmationNumber } = useParams<{ confirmationNumber: string }>();
+  return (
+    <DashboardPage>
+      <ConfirmationDetailPage confirmationNumber={confirmationNumber ?? ""} />
+    </DashboardPage>
+  );
+}
+
 // Single documents route — handles both list (/dashboard/documents)
 // and editor (/dashboard/documents/new/:tabId) under one mounted component
 // so the nav stays persistent and content can animate internally.
@@ -104,7 +146,7 @@ function DocumentsRoute() {
   } catch (error) {
     console.error('[DocumentsRoute] Error rendering:', error);
     return (
-      <div style={{ padding: 20, color: 'red' }}>
+      <div className="text-destructive p-5">
         Error in DocumentsRoute: {error instanceof Error ? error.message : String(error)}
       </div>
     );
@@ -121,11 +163,24 @@ export default function Routes() {
     <Switch>
       {/* Public */}
       <Route path={ROUTES.LOGIN} component={Login} />
+      <Route path={ROUTES.REGISTER} component={Register} />
+      <Route path={ROUTES.VERIFY_EMAIL} component={VerifyEmail} />
+      <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
+      <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />
+      <Route path={ROUTES.ACCEPT_INVITE} component={AcceptInvitation} />
       <Route
         path={ROUTES.SELECT_ORG}
         component={() => (
           <RequireAuth>
             <SelectOrganization />
+          </RequireAuth>
+        )}
+      />
+      <Route
+        path={ROUTES.CREATE_ORG}
+        component={() => (
+          <RequireAuth>
+            <CreateOrganization />
           </RequireAuth>
         )}
       />
@@ -149,7 +204,38 @@ export default function Routes() {
         path={ROUTES.DASHBOARD_PRODUCTS}
         component={() => <DashboardPage><ProductsPage /></DashboardPage>}
       />
-      
+
+      {/* Categories — standalone CRUD (drawer-hosted, no detail sub-route) */}
+      <Route
+        path={ROUTES.DASHBOARD_CATEGORIES}
+        component={() => <DashboardPage><CategoriesPage /></DashboardPage>}
+      />
+
+      {/* Orders — detail before list so :orderId is matched first */}
+      <Route
+        path={`${ROUTES.DASHBOARD_ORDERS}/:orderId`}
+        component={OrderDetailRoute}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_ORDERS}
+        component={() => <DashboardPage><OrdersPage /></DashboardPage>}
+      />
+
+      {/* Confirmations — detail before list so :confirmationNumber is matched first */}
+      <Route
+        path={`${ROUTES.DASHBOARD_CONFIRMATIONS}/:confirmationNumber`}
+        component={ConfirmationDetailRoute}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_CONFIRMATIONS}
+        component={() => <DashboardPage><ConfirmationsPage /></DashboardPage>}
+      />
+
+      <Route
+        path={ROUTES.DASHBOARD_MEMBERS}
+        component={() => <DashboardPage><MembersPage /></DashboardPage>}
+      />
+
       <Route
         path={ROUTES.DASHBOARD_REPORTS}
         component={() => <DashboardPage><ReportePage /></DashboardPage>}
@@ -174,6 +260,41 @@ export default function Routes() {
         component={() => <DashboardPage><ClientsPage /></DashboardPage>}
       />
 
+      {/* Sitio web (storefront CMS) — content, templates, deployments */}
+      <Route
+        path={ROUTES.DASHBOARD_CONTENT}
+        component={() => <DashboardPage><ContentPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_TEMPLATES}
+        component={() => <DashboardPage><TemplatesPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_DEPLOYMENTS}
+        component={() => <DashboardPage><DeploymentsPage /></DashboardPage>}
+      />
+
+      {/* Storefront / org-settings sub-pages — more-specific paths before the hub */}
+      <Route
+        path={ROUTES.DASHBOARD_ORG_GENERAL}
+        component={() => <DashboardPage><OrgGeneralPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_ORG_BRANDING}
+        component={() => <DashboardPage><OrgBrandingPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_ORG_CONTACT}
+        component={() => <DashboardPage><OrgContactPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_ORG_PAYMENT}
+        component={() => <DashboardPage><OrgPaymentPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_ORG_SHIPPING}
+        component={() => <DashboardPage><OrgShippingPage /></DashboardPage>}
+      />
       <Route
         path={ROUTES.DASHBOARD_ORG_HACIENDA}
         component={() => <DashboardPage><OrgHaciendaPage /></DashboardPage>}
@@ -187,8 +308,18 @@ export default function Routes() {
         component={() => <DashboardPage><OrgRegisteredOrgPage /></DashboardPage>}
       />
       <Route
+        path={ROUTES.DASHBOARD_ORG_THEME}
+        component={() => <DashboardPage><OrgThemePage /></DashboardPage>}
+      />
+      <Route
         path={ROUTES.DASHBOARD_ORG_SETTINGS}
         component={() => <DashboardPage><OrgSettingsPage /></DashboardPage>}
+      />
+
+      {/* Profile — available to every authenticated role; before the catch-all dashboard route */}
+      <Route
+        path={ROUTES.PROFILE}
+        component={() => <DashboardPage><ProfilePage /></DashboardPage>}
       />
 
       <Route

@@ -12,15 +12,6 @@ import type { Product, Category } from "@/types";
 import { Card, Icon, Button, Badge, Menu } from "@/components/ui";
 import { ProductDrawerForm, EMPTY_FORM, type ProductFormState } from "@/components/products/ProductDrawerForm";
 
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 function InfoRow({ icon, label, value }: { icon: string; label: string; value: string | number }) {
   return (
     <div className="flex items-center gap-3.5 py-3 border-b border-border">
@@ -63,7 +54,7 @@ export default function ProductDetailPage({ productId }: Props) {
 
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState<ProductFormState>({ ...EMPTY_FORM });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [unitsPerBox, setUnitsPerBox] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -171,7 +162,7 @@ export default function ProductDetailPage({ productId }: Props) {
       })),
     });
     setUnitsPerBox(product.units_per_box ? String(product.units_per_box) : "");
-    setImageFile(null);
+    setImageUrl(product.image_url ?? "");
     setEditOpen(true);
   };
 
@@ -223,10 +214,9 @@ export default function ProductDetailPage({ productId }: Props) {
         })) : undefined,
       };
 
-      if (imageFile) {
-        const data = await fileToBase64(imageFile);
-        body.image = { data, name: imageFile.name, contentType: imageFile.type };
-      }
+      // Image already uploaded to the org S3 bucket by the MediaPicker — send
+      // the resulting URL (empty string clears it).
+      body.image_url = imageUrl || null;
 
       await updateProduct.mutateAsync({ id: productId, body });
     } finally {
@@ -427,11 +417,11 @@ export default function ProductDetailPage({ productId }: Props) {
         form={form}
         categories={allCategories}
         saving={saving}
-        imageFile={imageFile}
+        imageUrl={imageUrl}
         unitsPerBox={unitsPerBox}
         onClose={() => setEditOpen(false)}
         onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-        onImageChange={setImageFile}
+        onImageChange={setImageUrl}
         onUnitsPerBoxChange={setUnitsPerBox}
         onSave={handleSave}
         onDelete={handleDelete}

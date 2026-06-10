@@ -8,18 +8,19 @@
   --brand-orange-500: 23 88% 47%;
   --brand-orange-600: 23 90% 40%;
 
-  --background: 30 40% 98%;
+  --background: 60 30% 97%;
   --foreground: 20 14% 16%;
   --card: 0 0% 100%;
   --card-foreground: 20 14% 16%;
-  --primary: 23 88% 47%;
+  --primary: 123 46% 34%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 20 14% 16%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 30 25% 94%;
-  --muted-foreground: 20 8% 45%;
-  --accent: 23 100% 95%;
-  --accent-foreground: 23 88% 35%;
+  --primary-dark: 123 46% 26%;
+  --secondary: 123 33% 64%;
+  --secondary-foreground: 20 14% 16%;
+  --muted: 60 20% 94%;
+  --muted-foreground: 20 10% 45%;
+  --accent: 123 40% 92%;
+  --accent-foreground: 123 46% 24%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
   --success: 142 71% 40%;
@@ -28,16 +29,16 @@
   --warning-foreground: 20 14% 12%;
   --info: 217 91% 55%;
   --info-foreground: 0 0% 100%;
-  --border: 30 15% 88%;
-  --input: 30 15% 88%;
-  --ring: 23 88% 47%;
+  --border: 60 20% 86%;
+  --input: 60 20% 86%;
+  --ring: 123 46% 34%;
   --radius: 0.5rem;
 
-  --sidebar: 30 25% 96%;
+  --sidebar: 60 20% 96%;
   --sidebar-foreground: 20 14% 16%;
-  --sidebar-accent: 30 25% 92%;
+  --sidebar-accent: 60 20% 92%;
   --sidebar-accent-foreground: 20 14% 16%;
-  --sidebar-border: 30 15% 86%;
+  --sidebar-border: 60 20% 86%;
 
   --font-sans: "Barlow", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-display: "Barlow Condensed", "Barlow", "Arial Narrow", sans-serif;
@@ -48,12 +49,15 @@
   --accent-rose-soft: 32 53% 64% / 0.15;
   --accent-rose-dim: 32 53% 64% / 0.08;
   --accent-rose-border: 32 53% 64% / 0.2;
+  --accent-rose-shadow: 0 4px 20px hsl(var(--accent-rose) / 0.35);
 
   /* Z-index scale */
   --z-dropdown: 30;
   --z-overlay: 40;
   --z-modal: 50;
+  --z-popover: 80;
   --z-tooltip: 100;
+  --z-drawer: 200;
 
   /* Shadow tokens */
   --shadow-card: 0 1px 2px rgba(0,0,0,0.06);
@@ -65,19 +69,20 @@
 
 .dark {
   --background: 20 14% 8%;
-  --foreground: 30 20% 96%;
+  --foreground: 60 30% 92%;
   --card: 20 14% 12%;
-  --card-foreground: 30 20% 96%;
+  --card-foreground: 60 30% 92%;
   --popover: 20 14% 12%;
-  --popover-foreground: 30 20% 96%;
-  --primary: 23 88% 52%;
+  --popover-foreground: 60 30% 92%;
+  --primary: 122 39% 49%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 30 20% 96%;
-  --secondary-foreground: 20 14% 12%;
+  --primary-dark: 122 39% 40%;
+  --secondary: 123 33% 64%;
+  --secondary-foreground: 20 14% 8%;
   --muted: 20 10% 18%;
-  --muted-foreground: 30 10% 65%;
-  --accent: 23 88% 18%;
-  --accent-foreground: 23 88% 75%;
+  --muted-foreground: 60 10% 60%;
+  --accent: 123 30% 20%;
+  --accent-foreground: 123 40% 80%;
   --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
   --success: 142 71% 50%;
@@ -86,19 +91,28 @@
   --warning-foreground: 20 14% 8%;
   --info: 217 91% 65%;
   --info-foreground: 0 0% 100%;
-  --border: 20 10% 22%;
-  --input: 20 10% 22%;
-  --ring: 23 88% 52%;
+  --border: 20 10% 20%;
+  --input: 20 10% 20%;
+  --ring: 122 39% 49%;
   --sidebar: 20 14% 10%;
-  --sidebar-foreground: 30 20% 96%;
+  --sidebar-foreground: 60 30% 92%;
   --sidebar-accent: 20 10% 16%;
-  --sidebar-accent-foreground: 30 20% 96%;
+  --sidebar-accent-foreground: 60 30% 92%;
   --sidebar-border: 20 10% 18%;
 
   --accent-rose: 32 53% 64%;
   --accent-rose-soft: 32 53% 64% / 0.18;
   --accent-rose-dim: 32 53% 64% / 0.1;
   --accent-rose-border: 32 53% 64% / 0.3;
+  --accent-rose-shadow: 0 4px 20px hsl(var(--accent-rose) / 0.35);
+
+  /* Z-index scale (mirrors :root) */
+  --z-dropdown: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-popover: 80;
+  --z-tooltip: 100;
+  --z-drawer: 200;
 
   --shadow-card: 0 1px 2px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4);
@@ -527,3 +541,96 @@
 /* Soft-tinted icon containers (paired with text-* color when needed) */
 .icon-pill-primary-soft { display: inline-flex; align-items: center; justify-content: center; background: hsl(var(--primary) / 0.15); color: hsl(var(--primary)); border: 1px solid hsl(var(--primary) / 0.3); border-radius: var(--radius); }
 .icon-pill-rose-soft { display: inline-flex; align-items: center; justify-content: center; background: hsl(var(--accent-rose-soft)); color: hsl(var(--accent-rose)); border: 1px solid hsl(var(--accent-rose-border)); border-radius: var(--radius); }
+
+/* ============ Auth / session-setup primitives ============ */
+@layer components {
+  /* Styled native <select> matching .input */
+  .select-native {
+    width: 100%;
+    height: 40px;
+    padding: 0 36px 0 12px;
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: var(--font-sans);
+    color-scheme: light dark;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .select-native:focus { outline: none; border-color: hsl(var(--ring)); box-shadow: 0 0 0 3px hsl(var(--ring) / 0.15); }
+  .select-native:disabled { background-color: hsl(var(--muted)); cursor: not-allowed; }
+  .select-native option { background-color: hsl(var(--card)); color: hsl(var(--foreground)); }
+
+  /* Large primary CTA button for session setup (derives from .btn-primary) */
+  .btn-session-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 52px;
+    padding: 0 24px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    color: hsl(var(--primary-foreground));
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%);
+    box-shadow: var(--accent-rose-shadow);
+    transition: filter .15s, box-shadow .15s, transform .1s;
+  }
+  .btn-session-cta:hover:not(:disabled) { filter: brightness(1.05); }
+  .btn-session-cta:active:not(:disabled) { transform: translateY(1px); }
+  .btn-session-cta:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+  /* Session setup: ambient radial glow behind the card (static, on-theme) */
+  .session-setup-glow {
+    background: radial-gradient(ellipse at center, hsl(var(--accent-rose-soft)) 0%, transparent 70%);
+  }
+
+  /* Session setup: header strip diagonal wash (static, on-theme) */
+  .session-setup-header {
+    background: linear-gradient(135deg, hsl(var(--accent-rose) / 0.12) 0%, transparent 100%);
+  }
+
+  /* Inline error container */
+  .error-box-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    background: hsl(var(--destructive) / 0.1);
+    border: 1px solid hsl(var(--destructive) / 0.25);
+    color: hsl(var(--destructive));
+  }
+}
+
+/* ── Sidebar section collapse (accordion) ──────────────────────────────────
+   grid-template-rows 0fr→1fr animates height with zero magic numbers. The
+   inner wrapper hides overflow so collapsed content is fully clipped. */
+.nav-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+.nav-collapse[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.nav-collapse > div {
+  overflow: hidden;
+  min-height: 0;
+}

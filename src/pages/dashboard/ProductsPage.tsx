@@ -7,11 +7,12 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import type { Product, Category } from "@/types";
-import { Button, EmptyState, Pagination } from "@/components/ui";
+import { Button, EmptyState, Pagination, Drawer } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { ProductGridView } from "@/components/products/ProductGridView";
 import { ProductBulkBar } from "@/components/products/ProductBulkBar";
+import { ProductExcelUpload } from "@/components/products/ProductExcelUpload";
 import { ProductDrawerForm, EMPTY_FORM, type ProductFormState } from "@/components/products/ProductDrawerForm";
 import { ProductSkeletonCard } from "@/components/products/ProductSkeletonCard";
 import {
@@ -27,14 +28,6 @@ const PRODUCT_STATUS_OPTIONS: readonly StatusOption<ProductStatusValue>[] = [
   { value: "all", labelKey: "products.statusAll" },
 ];
 
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(",")[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function ProductsPage() {
   const { user } = useAuthContext();
@@ -59,6 +52,8 @@ export default function ProductsPage() {
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [priceInput, setPriceInput] = useState("");
   const [drawerProduct, setDrawerProduct] = useState<Product | "new" | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importedCount, setImportedCount] = useState<number | null>(null);
 
   usePageTitle([
     t("shell.products"),
@@ -69,7 +64,7 @@ export default function ProductsPage() {
         : undefined,
   ]);
   const [form, setForm] = useState<ProductFormState>({ ...EMPTY_FORM });
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [unitsPerBox, setUnitsPerBox] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -170,7 +165,7 @@ export default function ProductsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["products", org?.id] }); setDrawerProduct(null); setSelected([]); },
   });
 
-  const openNew = () => { setForm({ ...EMPTY_FORM }); setImageFile(null); setUnitsPerBox(""); setDrawerProduct("new"); };
+  const openNew = () => { setForm({ ...EMPTY_FORM }); setImageUrl(""); setUnitsPerBox(""); setDrawerProduct("new"); };
 
   const openEdit = (p: Product) => {
     const hasCabys = !!p.cabys?.id;
@@ -219,7 +214,7 @@ export default function ProductsPage() {
       })),
     });
     setUnitsPerBox(p.units_per_box ? String(p.units_per_box) : "");
-    setImageFile(null);
+    setImageUrl(p.image_url ?? "");
     setDrawerProduct(p);
   };
 
@@ -285,12 +280,10 @@ export default function ProductsPage() {
         })) : undefined,
       };
       
-      // Image upload
-      if (imageFile) {
-        const data = await fileToBase64(imageFile);
-        body.image = { data, name: imageFile.name, contentType: imageFile.type };
-      }
-      
+      // Image — the MediaPicker already uploaded to the org S3 bucket and gave
+      // us the absolute URL; just persist it (empty string clears).
+      body.image_url = imageUrl || null;
+
       if (drawerProduct === "new") await createProduct.mutateAsync(body);
       else if (drawerProduct) await updateProduct.mutateAsync({ id: drawerProduct.product_id, body });
     } finally { setSaving(false); }
@@ -329,6 +322,37 @@ export default function ProductsPage() {
     });
   };
 
+  // ── Bulk actions (status 1 = active, 2 = inactive, 3 = soft-delete) ───────
+  // Reuse the existing single-product `toggleActive` mutation, looped
+  // sequentially to mirror the page's bulk-delete style. Clear selection after.
+  const bulkSetStatus = async (status: number) => {
+    for (const id of selected) {
+      await toggleActive.mutateAsync({ id, status });
+    }
+    setSelected([]);
+    qc.invalidateQueries({ queryKey: ["products", org?.id] });
+  };
+
+  const handleBulkDelete = () => {
+    if (selected.length === 0) return;
+    confirm({
+      title: t("products.bulkDelete.title", { count: String(selected.length) }),
+      message: t("products.bulkDelete.message", { count: String(selected.length) }),
+      variant: "destructive",
+      confirmLabel: t("common.delete"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: async () => {
+        for (const id of selected) await deleteProduct.mutateAsync(id);
+        setSelected([]);
+      },
+    });
+  };
+
+  // Select-all toggles between every product on the current page and none.
+  const allSelected = products.length > 0 && selected.length === products.length;
+  const handleToggleSelectAll = () =>
+    setSelected(allSelected ? [] : products.map((p) => p.product_id));
+
   const priceEditorProps = {
     editingPrice,
     priceInput,
@@ -348,7 +372,12 @@ export default function ProductsPage() {
             {pagination ? `${pagination.total_elements} productos registrados` : t("products.subtitle")}
           </p>
         </div>
-        <Button variant="primary" size="sm" icon="plus" onClick={openNew}>{t("products.newProduct")}</Button>
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="sm" icon="upload" onClick={() => setImportOpen(true)}>
+            {t("products.import")}
+          </Button>
+          <Button variant="primary" size="sm" icon="plus" onClick={openNew}>{t("products.newProduct")}</Button>
+        </div>
       </div>
 
       <ListToolbar<ProductStatusValue>
@@ -378,7 +407,14 @@ export default function ProductsPage() {
 
       {/* Bulk actions bar */}
       {selected.length > 0 && (
-        <ProductBulkBar count={selected.length} onDelete={async () => { for (const id of selected) await deleteProduct.mutateAsync(id); }} />
+        <ProductBulkBar
+          count={selected.length}
+          allSelected={allSelected}
+          onToggleSelectAll={handleToggleSelectAll}
+          onActivate={() => bulkSetStatus(1)}
+          onDeactivate={() => bulkSetStatus(2)}
+          onDelete={handleBulkDelete}
+        />
       )}
 
       {isLoading ? (
@@ -419,16 +455,16 @@ export default function ProductsPage() {
         form={form}
         categories={allCategories}
         saving={saving}
-        imageFile={imageFile}
+        imageUrl={imageUrl}
         unitsPerBox={unitsPerBox}
         onClose={() => {
           setDrawerProduct(null);
           setForm({ ...EMPTY_FORM });
-          setImageFile(null);
+          setImageUrl("");
           setUnitsPerBox("");
         }}
         onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-        onImageChange={setImageFile}
+        onImageChange={setImageUrl}
         onUnitsPerBoxChange={setUnitsPerBox}
         onSave={handleSave}
         onDelete={() => { if (drawerProduct && drawerProduct !== "new") deleteProduct.mutate(drawerProduct.product_id); }}
@@ -441,6 +477,30 @@ export default function ProductsPage() {
         onApply={(next) => { setAdvanced(next); setPage(1); }}
         onClose={() => setShowAdvanced(false)}
       />
+
+      {/* Bulk import (Excel/CSV) */}
+      <Drawer
+        open={importOpen}
+        onClose={() => { setImportOpen(false); setImportedCount(null); }}
+        title={t("products.import.title")}
+        icon="upload"
+        width={480}
+      >
+        <div className="p-6">
+          {importedCount !== null && (
+            <div className="mb-4 bg-success/10 border border-success/30 rounded-lg text-success px-3.5 py-2.5 text-[13px]">
+              {t("products.excel.uploadSuccessDescription", { count: String(importedCount) })}
+            </div>
+          )}
+          <ProductExcelUpload
+            orgId={org!.id}
+            onUploadSuccess={(count) => {
+              setImportedCount(count);
+              qc.invalidateQueries({ queryKey: ["products", org?.id] });
+            }}
+          />
+        </div>
+      </Drawer>
 
       {/* Confirmation Modal */}
       <ConfirmModal />

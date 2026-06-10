@@ -63,7 +63,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-[300] bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
+      className="fixed inset-0 z-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
       onClick={onClose}
     >
       <div

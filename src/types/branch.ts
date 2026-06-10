@@ -6,7 +6,25 @@ import type { LocationData } from "./location";
 
 export type { LocationData };
 
-export type BranchType = "stand" | "restaurant";
+/**
+ * Branch type code. Now a FREE STRING — branch types are an org-configurable
+ * catalog (managed in cross-app-be: `/api/organizations/{orgId}/branch-types`)
+ * rather than a hardcoded enum. The legacy `"stand"`/`"restaurant"` are just the
+ * default seed codes.
+ */
+export type BranchType = string;
+
+/** A selectable branch-type option from the per-org catalog. */
+export interface BranchTypeOption {
+  id?: string;
+  code: string;
+  name: string;
+  /** Optional Icon name from the design-system icon set. */
+  icon?: string;
+  /** Optional CSS-var color token name (e.g. "primary", "info"). */
+  color?: string;
+}
+
 export type BranchStatus = 1 | 2 | 3; // 1=Active, 2=Inactive, 3=Deleted
 
 export type BranchLocation = LocationData;

@@ -1,0 +1,171 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Tsuru POS static website — S3 (private) + OAC + CloudFront + ACM (DNS-validated) + Route53.
+  Migrated from the monorepo (cloudformation/frontend-site.yml) — identical stack shape so the
+  existing jmarkets-${Environment}-frontend-pos-system stack updates in place.
+
+Parameters:
+
+  BucketName:
+    Type: String
+    Description: S3 bucket name for static site assets (e.g. jmarkets-dev-pos-system)
+
+  DomainName:
+    Type: String
+    Description: Full custom domain for this site (e.g. pos.j-markets.jcampos.dev)
+
+  HostedZoneId:
+    Type: String
+    Description: Route53 hosted zone ID for the domain (used for cert validation + DNS record)
+
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, stag, prod]
+    Description: Deployment environment (used for tagging)
+
+Resources:
+
+  # ── ACM Certificate (DNS-validated, must be in us-east-1 for CloudFront) ──────
+
+  SiteCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+
+  # ── S3 Bucket (private — access only via CloudFront OAC) ─────────────────────
+
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: jmarkets
+
+  # ── CloudFront Origin Access Control ─────────────────────────────────────────
+
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${BucketName}-oac"
+        Description: !Sub "OAC for ${DomainName}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ── CloudFront Distribution ───────────────────────────────────────────────────
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    DependsOn: SiteCertificate
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        # Keep identical to the original monorepo stack so updates are a no-op
+        # (changing this forces a slow CloudFront distribution update).
+        Comment: !Sub "JMarkets ${DomainName} (${Environment})"
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_All
+        Aliases:
+          - !Ref DomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref SiteCertificate
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: !Sub "${BucketName}-origin"
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: !Sub "${BucketName}-origin"
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          # CachingOptimized managed policy
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          # CORS-S3Origin managed policy
+          OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf
+        # SPA: serve index.html on 403/404 so client-side routing works
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  # ── S3 Bucket Policy (allow CloudFront OAC) ───────────────────────────────────
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontOAC
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+
+  # ── Route53 A-alias record ────────────────────────────────────────────────────
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        # CloudFront's fixed hosted zone ID (always Z2FDTNDATAQYW2)
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        EvaluateTargetHealth: false
+
+Outputs:
+
+  BucketName:
+    Description: S3 bucket name
+    Value: !Ref SiteBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketName"
+
+  DistributionId:
+    Description: CloudFront distribution ID
+    Value: !Ref CloudFrontDistribution
+    Export:
+      Name: !Sub "${AWS::StackName}-DistributionId"
+
+  DistributionDomain:
+    Description: CloudFront default domain (*.cloudfront.net)
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub "${AWS::StackName}-DistributionDomain"
+
+  SiteUrl:
+    Description: Live URL of the deployed site
+    Value: !Sub "https://${DomainName}"
+    Export:
+      Name: !Sub "${AWS::StackName}-SiteUrl"

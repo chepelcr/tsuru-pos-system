@@ -17,6 +17,11 @@ import ClientFormBody from "@/components/clients/ClientFormBody";
 import { ID_TYPE_SHORT, ID_TYPE_LABEL } from "@/lib/enums";
 import { Card, Icon, Drawer, Button, Badge, Menu } from "@/components/ui";
 import { initials, avatarColor } from "@/utils/avatar";
+import { ClientNotes } from "@/components/clients/ClientNotes";
+import { ClientStoresList } from "@/components/clients/ClientStoresList";
+import { ClientDepartmentsList } from "@/components/clients/ClientDepartmentsList";
+import { ClientOrderHistory } from "@/components/clients/ClientOrderHistory";
+import { ClientWhatsAppButton } from "@/components/clients/ClientWhatsAppButton";
 
 function buildForm(client?: Client | null): CreateClientDto {
   return {
@@ -33,6 +38,7 @@ function buildForm(client?: Client | null): CreateClientDto {
 }
 
 function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => void; client?: Client | null }) {
+  const { t } = useLanguage();
   const { orgId } = useOrgContext();
   const updateMutation = useUpdateClient(orgId);
   const [form, setForm] = useState<CreateClientDto>(() => buildForm(client));
@@ -44,13 +50,13 @@ function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => v
 
   async function handleSave() {
     if (!form.business_name?.trim() && !form.client_gln?.trim()) {
-      setError("Se requiere al menos razón social o código GLN."); return;
+      setError(t("clients.validation.nameOrGlnRequired")); return;
     }
     if (!form.identification?.number?.trim()) {
-      setError("El número de identificación es requerido."); return;
+      setError(t("clients.validation.idRequired")); return;
     }
     if (!form.email?.trim()) {
-      setError("El correo electrónico es requerido."); return;
+      setError(t("clients.validation.emailRequired")); return;
     }
     setError(null);
     const dto: CreateClientDto = {
@@ -68,7 +74,7 @@ function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => v
       await updateMutation.mutateAsync({ clientId: client!.client_id, dto });
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error al guardar.");
+      setError(e instanceof Error ? e.message : t("common.error"));
     }
   }
 
@@ -77,7 +83,7 @@ function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => v
   return (
     <Drawer
       open={open} onClose={onClose}
-      title="Editar cliente"
+      title={t("clients.editClient")}
       subtitle={clientDisplayName(client)}
       icon="user"
       iconBg="hsl(var(--accent-rose-soft))"
@@ -85,9 +91,9 @@ function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => v
       width={480}
       footer={
         <div className="flex gap-2.5 px-6 py-4 justify-end">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>{t("common.cancel")}</Button>
           <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? "Guardando…" : "Guardar cambios"}
+            {saving ? t("common.loading") : t("common.save")}
           </Button>
         </div>
       }
@@ -123,6 +129,8 @@ function Section({ title, icon, children }: { title: string; icon: string; child
   );
 }
 
+type TabKey = "overview" | "orders" | "stores" | "departments";
+
 interface Props {
   clientId: string;
 }
@@ -133,9 +141,11 @@ export default function ClientDetailPage({ clientId }: Props) {
   const [, navigate] = useLocation();
 
   const [editOpen, setEditOpen] = useState(false);
+  const [tab, setTab] = useState<TabKey>("overview");
 
   const { data: client, isLoading } = useClient(orgId, clientId);
   const statusMutation = useUpdateClientStatus(orgId);
+  const notesMutation = useUpdateClient(orgId);
 
   const displayName = clientDisplayName(client);
   usePageTitle([t("shell.clients"), displayName || (isLoading ? undefined : t("common.new"))]);
@@ -149,6 +159,11 @@ export default function ClientDetailPage({ clientId }: Props) {
   const hasContact  = !!(client?.email || phone);
   const hasAddress  = !!(client?.residence?.address);
 
+  const handleSaveNotes = async (notes: string) => {
+    if (!client) return;
+    await notesMutation.mutateAsync({ clientId: client.client_id, dto: { notes } });
+  };
+
   if (isLoading) {
     return (
       <div className="px-6 py-12 flex items-center justify-center gap-2.5">
@@ -160,25 +175,32 @@ export default function ClientDetailPage({ clientId }: Props) {
   if (!client) {
     return (
       <div className="px-6 py-12 text-center">
-        <div className="text-sm text-muted-foreground">Cliente no encontrado.</div>
+        <div className="text-sm text-muted-foreground">{t("clients.notFound")}</div>
         <button
           onClick={() => navigate(ROUTES.DASHBOARD_CLIENTS)}
           className="mt-4 text-accent-rose bg-transparent border-0 cursor-pointer text-[13px]"
         >
-          ← Volver a clientes
+          ← {t("shell.clients")}
         </button>
       </div>
     );
   }
 
+  const TABS: { key: TabKey; label: string; icon: string }[] = [
+    { key: "overview", label: t("clients.tabs.overview"), icon: "user" },
+    { key: "orders", label: t("shell.orders"), icon: "cart" },
+    { key: "stores", label: t("clients.tabs.stores"), icon: "store" },
+    { key: "departments", label: t("clients.tabs.departments"), icon: "layers" },
+  ];
+
   return (
-    <div className="px-6 pt-6 pb-12 max-w-[800px] mx-auto">
+    <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
       {/* Back button */}
       <button
         onClick={() => navigate(ROUTES.DASHBOARD_CLIENTS)}
         className="t-body inline-flex items-center gap-1.5 text-muted-foreground bg-transparent border-0 cursor-pointer mb-5 py-1.5 hover:text-foreground transition-colors"
       >
-        <Icon name="arrowLeft" size={14} /> Clientes
+        <Icon name="arrowLeft" size={14} /> {t("shell.clients")}
       </button>
 
       {/* Hero card */}
@@ -200,21 +222,22 @@ export default function ClientDetailPage({ clientId }: Props) {
                 </span>
               )}
               <Badge variant={isActive ? "success" : "secondary"}>
-                {isActive ? "● Activo" : "○ Inactivo"}
+                {isActive ? t("common.active") : t("common.inactive")}
               </Badge>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            <ClientWhatsAppButton client={client} />
             <Button variant="outline" size="sm" icon="edit" onClick={() => setEditOpen(true)}>
-              Editar
+              {t("common.edit")}
             </Button>
             <div onClick={(e) => e.stopPropagation()}>
               <Menu
                 align="right"
                 items={[
                   {
-                    label: isActive ? "Desactivar cliente" : "Activar cliente",
+                    label: isActive ? t("clients.deactivateClient") : t("clients.activateClient"),
                     icon: isActive ? "xCircle" : "checkCircle",
                     action: () => statusMutation.mutate({ clientId: client.client_id, status: isActive ? 2 : 1 }),
                   },
@@ -225,46 +248,80 @@ export default function ClientDetailPage({ clientId }: Props) {
         </div>
       </Card>
 
-      {/* Info sections */}
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
-        {hasIdentity && (
-          <Section title="Identidad" icon="user">
-            {idCode && <InfoRow icon="fileText" label="Tipo de identificación" value={ID_TYPE_LABEL[idCode] ?? idCode} />}
-            {client.identification?.number && <InfoRow icon="copy" label="Número de identificación" value={client.identification.number} />}
-            {client.client_gln && <InfoRow icon="layers" label="GLN / Código comercial" value={client.client_gln} />}
-          </Section>
-        )}
-
-        {hasContact && (
-          <Section title="Contacto" icon="smartphone">
-            {client.email && <InfoRow icon="mail" label="Correo electrónico" value={client.email} />}
-            {phone && <InfoRow icon="smartphone" label="Teléfono" value={phone} />}
-          </Section>
-        )}
-
-        {hasAddress && (
-          <Section title="Dirección" icon="mapPin">
-            <InfoRow icon="mapPin" label="Dirección exacta" value={client.residence!.address!} />
-          </Section>
-        )}
-
-        {!hasIdentity && !hasContact && !hasAddress && (
-          <Card className="px-6 py-8 text-center col-span-full">
-            <div className="w-11 h-11 rounded-xl bg-accent-rose-soft flex items-center justify-center mx-auto mb-3">
-              <Icon name="user" size={20} className="text-accent-rose" />
-            </div>
-            <div className="t-body text-muted-foreground">
-              Sin información adicional registrada.
-            </div>
+      {/* Tabs — 2×2 grid on mobile, inline row on sm+ */}
+      <div className="tabs-container mb-4">
+        <div className="tabs grid grid-cols-2 gap-1 sm:flex">
+          {TABS.map((tb) => (
             <button
-              onClick={() => setEditOpen(true)}
-              className="t-body mt-2.5 text-accent-rose bg-transparent border-0 cursor-pointer font-semibold"
+              key={tb.key}
+              className="tab"
+              aria-selected={tab === tb.key}
+              onClick={() => setTab(tb.key)}
             >
-              Agregar información →
+              <Icon name={tb.icon} size={14} /> {tb.label}
             </button>
-          </Card>
-        )}
+          ))}
+        </div>
       </div>
+
+      {/* Overview tab */}
+      {tab === "overview" && (
+        <div className="flex flex-col gap-3.5">
+          <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+            {hasIdentity && (
+              <Section title={t("clients.identity")} icon="user">
+                {idCode && <InfoRow icon="fileText" label={t("clients.idType")} value={ID_TYPE_LABEL[idCode] ?? idCode} />}
+                {client.identification?.number && <InfoRow icon="copy" label={t("clients.idNumber")} value={client.identification.number} />}
+                {client.client_gln && <InfoRow icon="layers" label={t("clients.gln")} value={client.client_gln} />}
+              </Section>
+            )}
+
+            {hasContact && (
+              <Section title={t("clients.contact")} icon="smartphone">
+                {client.email && <InfoRow icon="mail" label={t("clients.email")} value={client.email} />}
+                {phone && <InfoRow icon="smartphone" label={t("clients.phone")} value={phone} />}
+              </Section>
+            )}
+
+            {hasAddress && (
+              <Section title={t("clients.address")} icon="mapPin">
+                <InfoRow icon="mapPin" label={t("clients.exactAddress")} value={client.residence!.address!} />
+              </Section>
+            )}
+
+            {!hasIdentity && !hasContact && !hasAddress && (
+              <Card className="px-6 py-8 text-center col-span-full">
+                <div className="w-11 h-11 rounded-xl bg-accent-rose-soft flex items-center justify-center mx-auto mb-3">
+                  <Icon name="user" size={20} className="text-accent-rose" />
+                </div>
+                <div className="t-body text-muted-foreground">{t("clients.noExtraInfo")}</div>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="t-body mt-2.5 text-accent-rose bg-transparent border-0 cursor-pointer font-semibold"
+                >
+                  {t("clients.addInfo")} →
+                </button>
+              </Card>
+            )}
+          </div>
+
+          {/* Notes */}
+          <ClientNotes
+            notes={client.notes}
+            onSave={handleSaveNotes}
+            isSaving={notesMutation.isPending}
+          />
+        </div>
+      )}
+
+      {/* Orders tab — paginated history */}
+      {tab === "orders" && <ClientOrderHistory orgId={orgId} clientGln={client.client_gln} />}
+
+      {/* Stores tab */}
+      {tab === "stores" && <ClientStoresList orgId={orgId} clientId={client.client_id} />}
+
+      {/* Departments tab */}
+      {tab === "departments" && <ClientDepartmentsList orgId={orgId} clientId={client.client_id} />}
 
       <EditDrawer
         open={editOpen}

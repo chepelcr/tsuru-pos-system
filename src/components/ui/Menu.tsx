@@ -59,11 +59,11 @@ export function Menu({ items, trigger, align = "right" }: MenuProps) {
       {open && createPortal(
         <>
           <div
-            className="fixed inset-0 z-[9998]"
+            className="fixed inset-0 z-popover"
             onClick={() => setOpen(false)}
           />
           <div
-            className="fixed bg-card border border-border rounded-lg shadow-dropdown z-[9999] min-w-[170px] overflow-hidden"
+            className="fixed bg-card border border-border rounded-lg shadow-dropdown z-popover min-w-[170px] overflow-hidden"
             style={{
               top: coords.top,
               ...(align === "right" ? { right: coords.right } : { left: coords.left }),

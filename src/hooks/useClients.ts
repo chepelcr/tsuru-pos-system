@@ -37,6 +37,8 @@ export interface Client {
   email?: string | null;
   phone?: PhoneValue | null;
   residence?: ResidenceValue | null;
+  /** Free-text customer note (plan 02 §2.3 / §6.3). */
+  notes?: string | null;
   status: number;
 }
 
@@ -62,6 +64,8 @@ export interface CreateClientDto {
   email?: string;
   phone?: { country_code?: string; area_code?: string; number?: string; description?: string };
   residence?: { state_id?: number; county_id?: number; district_id?: number; neighborhood_id?: number; address?: string };
+  /** Free-text customer note (plan 02 §2.3 / §6.3). */
+  notes?: string;
 }
 
 export type UpdateClientDto = Partial<CreateClientDto>;

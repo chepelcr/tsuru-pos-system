@@ -157,7 +157,7 @@ export function HaciendaInfoStep({
           disabled
           aria-disabled="true"
         >
-          {countries.length === 0 && <option value="188">Costa Rica</option>}
+          {countries.length === 0 && <option value="188">{t("orgSettings.fiscalInfo.costaRica")}</option>}
           {countries.map((c) => (
             <option key={c.iso_code} value={c.iso_code}>
               {c.spanish_name || c.name}

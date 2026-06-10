@@ -57,7 +57,7 @@ export function ActivitiesStep({ form, compact = false }: ActivitiesStepProps) {
                     <span className="t-sm font-semibold">{a.code}</span>
                     {a.type && (
                       <Badge variant="secondary">
-                        {t(`orgSettings.fiscalInfo.activityType.${a.type}`) || a.type}
+                        {t(`orgSettings.fiscalInfo.activityType.${a.type}`)}
                       </Badge>
                     )}
                     {a.status === "A" && (
@@ -67,7 +67,7 @@ export function ActivitiesStep({ form, compact = false }: ActivitiesStepProps) {
                     )}
                     {a.status && a.status !== "A" && (
                       <Badge variant="secondary">
-                        {t(`orgSettings.fiscalInfo.activityStatus.${a.status}`) || a.status}
+                        {t(`orgSettings.fiscalInfo.activityStatus.${a.status}`)}
                       </Badge>
                     )}
                   </div>

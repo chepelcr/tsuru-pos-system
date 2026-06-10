@@ -1,20 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
-import { documentEditorPath } from "@/routePaths";
+import { documentEditorPath, ROUTES } from "@/routePaths";
 import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "reporte" | "pos" | "documents" | "clients" | "organization";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "templates" | "deployments" | "profile";
 
 interface DashboardSidebarProps {
   active: NavId;
   onNav: (id: NavId) => void;
   onClose?: () => void;
+}
+
+/** Icon + i18n label for each navigable item. */
+const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
+  dashboard:     { icon: "chart",       labelKey: "shell.panel" },
+  productos:     { icon: "package",     labelKey: "shell.products" },
+  categories:    { icon: "layers",      labelKey: "shell.categories" },
+  clients:       { icon: "user",        labelKey: "shell.clients" },
+  orders:        { icon: "cart",        labelKey: "shell.orders" },
+  confirmations: { icon: "checkCircle", labelKey: "shell.confirmations" },
+  organization:  { icon: "settings",    labelKey: "shell.orgSettings" },
+  puestos:       { icon: "store",       labelKey: "shell.stations" },
+  members:       { icon: "users",       labelKey: "shell.members" },
+  config:        { icon: "calendar",    labelKey: "shell.sessions" },
+  reporte:       { icon: "trending",    labelKey: "shell.reports" },
+  content:       { icon: "fileText",    labelKey: "shell.content" },
+  templates:     { icon: "grid",        labelKey: "shell.templates" },
+  deployments:   { icon: "upload",      labelKey: "shell.deployments" },
+};
+
+type SectionId = "commercial" | "admin" | "storefront" | "analytics";
+
+/** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
+const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
+  { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
+  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "config"] },
+  { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "templates", "deployments"] },
+];
+
+function sectionOf(active: NavId): SectionId | null {
+  for (const s of SECTIONS) if (s.items.includes(active)) return s.id;
+  return null;
 }
 
 export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarProps) {
@@ -26,17 +58,21 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   const [, setLocation] = useLocation();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const NAV_ITEMS: { id: NavId; icon: string; label: string }[] = [
-    { id: "dashboard", icon: "chart", label: t("shell.panel") },
-    { id: "config", icon: "settings", label: t("shell.sessions") },
-    { id: "puestos", icon: "store", label: t("shell.stations") },
-    { id: "productos", icon: "package", label: t("shell.products") },
-    { id: "clients", icon: "user", label: t("shell.clients") },
-    { id: "reporte", icon: "trending", label: t("shell.reports") },
-    { id: "organization", icon: "settings", label: t("shell.orgSettings") },
-  ];
+  // Accordion: only one section open at a time. Defaults to (and follows) the
+  // section that owns the active route, so the current page's section is marked.
+  const [openSection, setOpenSection] = useState<SectionId | null>(() => sectionOf(active));
+  useEffect(() => {
+    const s = sectionOf(active);
+    if (s) setOpenSection(s);
+  }, [active]);
 
-  const docsActive = active === "documents";
+  const toggleSection = (id: SectionId) =>
+    setOpenSection((cur) => (cur === id ? null : id));
+
+  const goNav = (id: NavId) => {
+    onNav(id);
+    onClose?.();
+  };
 
   const handleCreateDoc = (docType: typeof DOCUMENT_TYPES[number]) => {
     setCreateOpen(false);
@@ -60,48 +96,88 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     : "U";
   const displayName = fullName || user?.email || "Usuario";
 
+  const renderItem = (id: NavId) => {
+    const meta = ITEM_META[id];
+    if (!meta) return null;
+    return (
+      <button
+        key={id}
+        className={`sidebar-item ${active === id ? "active" : ""}`}
+        onClick={() => goNav(id)}
+      >
+        <Icon name={meta.icon} size={16} />
+        {t(meta.labelKey)}
+      </button>
+    );
+  };
+
   return (
-    <aside className="sidebar w-full h-full flex flex-col p-4 overflow-y-auto overflow-x-hidden">
-      {/* Logo */}
-      <div className="px-2 pt-1 pb-5 border-b border-sidebar-border mb-3.5 flex items-center justify-between">
-        <Logo orgName={org?.name} />
-        {onClose && (
-          <button className="btn btn-ghost btn-sm btn-icon ml-2" onClick={onClose}>
-            <Icon name="close" size={16} />
-          </button>
-        )}
+    <aside className="sidebar w-full h-full flex flex-col overflow-hidden">
+      {/* ── HEADER (always visible) ── */}
+      <div className="shrink-0 px-4 pt-4">
+        <div className="px-2 pt-1 pb-4 border-b border-sidebar-border flex items-center justify-between">
+          <Logo orgName={org?.name} />
+          {onClose && (
+            <button className="btn btn-ghost btn-sm btn-icon ml-2" onClick={onClose}>
+              <Icon name="close" size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Nav label */}
-      <div className="t-label px-2.5 pt-2 pb-1.5">{t("shell.navigation")}</div>
+      {/* ── SCROLLABLE NAV (only this region scrolls) ── */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-0.5">
+        <div className="t-label px-2.5 pb-1.5">{t("shell.navigation")}</div>
 
-      {/* Nav items */}
-      <nav className="flex flex-col gap-0.5">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.id}
-            className={`sidebar-item ${active === item.id ? "active" : ""}`}
-            onClick={() => {
-              onNav(item.id);
-              onClose?.();
-            }}
-          >
-            <Icon name={item.icon} size={16} />
-            {item.label}
-          </button>
-        ))}
+        {/* Panel — standalone, primary view */}
+        {renderItem("dashboard")}
 
-        {/* Documentos composite row */}
-        <div className="relative flex items-stretch gap-0.5">
+        {/* Collapsible sections (accordion) */}
+        {SECTIONS.map((section) => {
+          const open = openSection === section.id;
+          const containsActive = section.items.includes(active);
+          return (
+            <div key={section.id} className="mt-1.5">
+              <button
+                type="button"
+                aria-expanded={open}
+                className={`sidebar-item w-full justify-between ${open || containsActive ? "active" : ""}`}
+                onClick={() => toggleSection(section.id)}
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <Icon name={section.icon} size={16} />
+                  <span className="truncate">{t(section.labelKey)}</span>
+                </span>
+                <Icon
+                  name="chevronDown"
+                  size={14}
+                  className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Animated collapse — grid-rows 0fr→1fr (see .nav-collapse in index.css) */}
+              <div className="nav-collapse" data-open={open}>
+                <div>
+                  <div className="flex flex-col gap-0.5 pl-3 pt-0.5">
+                    {section.items.map(renderItem)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Reportes — standalone item (not wrapped in a collapsible section) */}
+        <div className="mt-1.5">{renderItem("reporte")}</div>
+
+        {/* Documentos — standalone, at the end of the menu */}
+        <div className="relative flex items-stretch gap-0.5 mt-1.5">
           <button
-            className={`sidebar-item flex-1 min-w-0 ${docsActive ? "active" : ""}`}
-            onClick={() => {
-              onNav("documents");
-              onClose?.();
-            }}
+            className={`sidebar-item flex-1 min-w-0 ${active === "documents" ? "active" : ""}`}
+            onClick={() => goNav("documents")}
           >
             <Icon name="fileText" size={16} />
-            Documentos
+            {t("shell.documents")}
           </button>
 
           <button
@@ -109,8 +185,8 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
               e.stopPropagation();
               setCreateOpen((v) => !v);
             }}
-            title="Crear documento"
-            aria-label="Crear documento"
+            title={t("shell.createDocument")}
+            aria-label={t("shell.createDocument")}
             className={`flex items-center justify-center w-8 flex-shrink-0 rounded-lg cursor-pointer transition-colors border ${
               createOpen
                 ? "border-primary bg-primary/10 text-primary"
@@ -122,10 +198,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
           {createOpen && (
             <>
-              <div
-                className="fixed inset-0 z-dropdown"
-                onClick={() => setCreateOpen(false)}
-              />
+              <div className="fixed inset-0 z-dropdown" onClick={() => setCreateOpen(false)} />
               <div className="absolute bottom-full mb-1 left-0 right-0 z-overlay bg-card border border-border rounded-lg shadow-dropdown-up p-1 flex flex-col gap-px">
                 {DOCUMENT_TYPES.map((dt) => (
                   <button
@@ -133,14 +206,9 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
                     onClick={() => handleCreateDoc(dt)}
                     className="flex items-center gap-2 px-2.5 py-2 bg-transparent border-0 rounded-md cursor-pointer text-xs text-foreground text-left w-full hover:bg-muted"
                   >
-                    <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: dt.dotColor }}
-                    />
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dt.dotColor }} />
                     <span className="font-bold text-[10px] opacity-70">{dt.short}</span>
-                    <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                      {dt.label}
-                    </span>
+                    <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{dt.label}</span>
                   </button>
                 ))}
               </div>
@@ -149,25 +217,30 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
         </div>
       </nav>
 
-      <div className="flex-1" />
-
-      <div className="separator my-3" />
-
-      {/* User + logout */}
-      <div className="flex items-center gap-2 px-2.5 py-2 mb-1">
-        <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-[11px] flex-shrink-0">
-          {initials}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
-            {displayName}
+      {/* ── FOOTER (always visible) ── */}
+      <div className="shrink-0 px-4 pb-4 pt-2 border-t border-sidebar-border flex flex-col gap-0.5">
+        <button
+          className="sidebar-item flex items-center gap-2 text-left"
+          onClick={() => {
+            setLocation(ROUTES.PROFILE);
+            onClose?.();
+          }}
+          aria-label={t("profile.openAria")}
+        >
+          <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-[11px] flex-shrink-0">
+            {initials}
           </div>
-          <div className="t-xs text-muted-foreground">{user?.role ?? ""}</div>
-        </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
+              {displayName}
+            </div>
+            <div className="t-xs text-muted-foreground">{user?.role ?? ""}</div>
+          </div>
+        </button>
+        <button className="sidebar-item" onClick={logout}>
+          <Icon name="logOut" size={16} /> {t("shell.logout")}
+        </button>
       </div>
-      <button className="sidebar-item" onClick={logout}>
-        <Icon name="logOut" size={16} /> {t("shell.logout")}
-      </button>
     </aside>
   );
 }
