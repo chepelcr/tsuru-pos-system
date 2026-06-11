@@ -40,6 +40,33 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
 
 type SectionId = "commercial" | "admin" | "storefront" | "analytics";
 
+/**
+ * RBAC map — the catalog mirrors this sidebar 1:1 (modules = sections /
+ * standalone items, submodules = section items; see rbac-seed.ts in
+ * tsuru-platform-api). Every NavId maps to its [module, submodule]; items
+ * hide when the org/role lacks read on that pair (legacy validar_permiso).
+ */
+const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
+  dashboard:     ["panel", "overview"],
+  productos:     ["commercial", "products"],
+  categories:    ["commercial", "categories"],
+  clients:       ["commercial", "clients"],
+  orders:        ["commercial", "orders"],
+  confirmations: ["commercial", "confirmations"],
+  organization:  ["admin", "organization"],
+  puestos:       ["admin", "stations"],
+  members:       ["admin", "members"],
+  roles:         ["admin", "roles"],
+  config:        ["admin", "sessions"],
+  content:       ["storefront", "content"],
+  gallery:       ["storefront", "gallery"],
+  templates:     ["storefront", "templates"],
+  deployments:   ["storefront", "deployments"],
+  reporte:       ["reports", "general"],
+  documents:     ["documents", "emitted"],
+  pos:           ["documents", "emitted"], // POS creates emitted documents
+};
+
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
@@ -103,10 +130,18 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     : "U";
   const displayName = fullName || user?.email || "Usuario";
 
+  // Legacy-style nav gating: an item shows only when the role can read its
+  // module/submodule (fail-open until my-permissions resolves).
+  const itemVisible = (id: NavId): boolean => {
+    const perm = NAV_PERMISSION[id];
+    if (!perm || !permsReady) return true;
+    return can(perm[0], "read", perm[1]);
+  };
+
   const renderItem = (id: NavId) => {
     const meta = ITEM_META[id];
     if (!meta) return null;
-    if (id === "roles" && permsReady && !can("team", "read", "roles")) return null;
+    if (!itemVisible(id)) return null;
     return (
       <button
         key={id}
@@ -140,8 +175,9 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
         {/* Panel — standalone, primary view */}
         {renderItem("dashboard")}
 
-        {/* Collapsible sections (accordion) */}
+        {/* Collapsible sections (accordion) — hidden when no item is visible */}
         {SECTIONS.map((section) => {
+          if (!section.items.some(itemVisible)) return null;
           const open = openSection === section.id;
           const containsActive = section.items.includes(active);
           return (
@@ -179,6 +215,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
         <div className="mt-1.5">{renderItem("reporte")}</div>
 
         {/* Documentos — standalone, at the end of the menu */}
+        {itemVisible("documents") && (
         <div className="relative flex items-stretch gap-0.5 mt-1.5">
           <button
             className={`sidebar-item flex-1 min-w-0 ${active === "documents" ? "active" : ""}`}
@@ -188,6 +225,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             {t("shell.documents")}
           </button>
 
+          {(!permsReady || can("documents", "create", "emitted")) && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -203,6 +241,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           >
             <Icon name="plus" size={14} />
           </button>
+          )}
 
           {createOpen && (
             <>
@@ -223,6 +262,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             </>
           )}
         </div>
+        )}
       </nav>
 
       {/* ── FOOTER (always visible) ── */}

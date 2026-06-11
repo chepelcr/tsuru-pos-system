@@ -60,10 +60,10 @@ export default function RolesPage() {
     [visibleRoles]
   );
 
-  const canRead = can("team", "read", "roles");
-  const canCreate = can("team", "create", "roles");
-  const canUpdate = can("team", "update", "roles");
-  const canDelete = can("team", "delete", "roles");
+  const canRead = can("admin", "read", "roles");
+  const canCreate = can("admin", "create", "roles");
+  const canUpdate = can("admin", "update", "roles");
+  const canDelete = can("admin", "delete", "roles");
 
   const openCreate = () => {
     setActionError(null);

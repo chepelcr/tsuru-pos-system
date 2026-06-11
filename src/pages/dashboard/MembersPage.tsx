@@ -67,7 +67,7 @@ export default function MembersPage() {
   const { data: allRoles = [] } = useOrgRoles(userId, orgId);
   const assignMemberRole = useAssignMemberRole();
   const { can } = usePermissions();
-  const canUpdateMembers = can("team", "update", "members");
+  const canUpdateMembers = can("admin", "update", "members");
 
   // Same-org role rule (contract V3): only active, non-platform_admin roles
   // are assignable — filtered defensively here too.

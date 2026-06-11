@@ -237,6 +237,19 @@ POS standalone flow (cashier device):
 
 **Adding a new page**: define route constant in `routePaths.ts`, register it in `Routes.tsx`, and add the navigation entry in `DashboardSidebar.tsx` (the `NAV_ITEMS` array) if it belongs to the dashboard.
 
+### 5.1 RBAC catalog rule (load-bearing)
+
+The RBAC catalog in the platform API **mirrors this sidebar 1:1** (legacy facturacion model): **modules = sidebar sections / standalone items, submodules = section items**. Gating runs through `usePermissions()` (`src/hooks/useRbac.ts`) and the `NAV_PERMISSION` map in `DashboardSidebar.tsx`.
+
+**When you add (or rename/move) a sidebar section or item you MUST, in the same change:**
+1. Add the `NavId → [module, submodule]` entry to `NAV_PERMISSION` in `DashboardSidebar.tsx`.
+2. Map it in the seeded catalog in `tsuru-platform-api` → `src/seeds/rbac-seed.ts`: the module (`defaultModules` + `DEFAULT_ORG_MODULE_NAMES`), its submodules (`defaultSubmodules`), **all its grantable actions** (`submoduleActionMatrix`), and the system-role grants (`rolePermissionMatrix`).
+3. Run `pnpm run db:reseed-rbac` in tsuru-platform-api (destructive catalog reseed; aborts if custom org roles exist unless `--force`).
+
+Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `storefront`(content, gallery, templates, deployments) · `reports`(general).
+
+Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesPage gates on `admin/…/roles`, MembersPage on `admin/update/members`, the sidebar "+" document button on `documents/create/emitted`. Fail-open while `my-permissions` loads (RBAC_ENFORCEMENT=log rollout); flip to fail-closed when enforcement is on.
+
 ---
 
 ## 6. State management
