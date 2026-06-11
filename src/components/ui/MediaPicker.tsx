@@ -32,7 +32,7 @@ interface MediaPickerProps {
 export function MediaPicker({ value, onChange, disabled = false, className }: MediaPickerProps) {
   const { t } = useLanguage();
   const { orgId } = useOrgContext();
-  const { listQuery, upload } = useMediaLibrary(orgId);
+  const { listQuery, upload, addExternal } = useMediaLibrary(orgId);
 
   const [open, setOpen] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
@@ -72,11 +72,18 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
     if (file && file.type.startsWith("image/")) void handleUpload(file);
   };
 
-  const onAddUrl = () => {
+  const onAddUrl = async () => {
     const url = urlDraft.trim();
     if (!url) return;
     setUrlDraft("");
-    choose(url);
+    setError(null);
+    try {
+      // Register the external URL in the library, then select it.
+      const item = await addExternal.mutateAsync(url);
+      choose(item.url);
+    } catch {
+      choose(url); // fall back to storing the raw ref even if registration fails
+    }
   };
 
   return (
@@ -220,7 +227,7 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
                     const selected = item.url === value;
                     return (
                       <button
-                        key={item.key}
+                        key={item.id}
                         type="button"
                         onClick={() => choose(item.url)}
                         title={item.filename}

@@ -1,27 +1,30 @@
 /**
  * Media library types + helpers.
  *
- * Mirrors the landing-dxp "media management" concept (a reusable asset library
- * + picker), but assets live in the **organization's S3 bucket** instead of the
- * repo. Uploads go through the organization-configurations service's presigned
- * endpoint; the gallery lists objects already in the bucket.
- *
- * Stored content value is always a plain absolute URL string (CloudFront), so
- * rendering is a passthrough — no base prefixing like the static-site skill.
+ * The library is a server-side registry (one `organization_media` row per asset)
+ * exposed by the organization-configurations service — the equivalent of the
+ * landing-dxp `media.json`, but per-org in the DB. Local assets live in the
+ * org S3 bucket; external items are off-site URLs. Stored content value is
+ * always the plain absolute `url`.
  */
 
-/** One asset in the org media library (an object under the bucket `media/` prefix). */
+/** One asset in the org media library (an `organization_media` row). */
 export interface MediaItem {
-  /** Public CloudFront URL — what gets stored in content. */
+  /** Stable registry id (used for delete + React keys). */
+  id: string;
+  /** Public URL — what gets stored in content. */
   url: string;
-  /** S3 object key. */
-  key: string;
-  /** Display file name (last path segment). */
+  /** S3 object key (local assets only). */
+  key?: string;
   filename: string;
-  /** Size in bytes. */
+  /** image | video | audio | document */
+  kind: string;
+  /** local | external */
+  source: string;
+  mime?: string;
   size?: number;
-  /** ISO-8601 last-modified timestamp. */
-  lastModified?: string;
+  alt?: string;
+  createdAt?: string;
 }
 
 /** Presigned upload response from the backend. */
@@ -31,14 +34,7 @@ export interface PresignedUpload {
   key: string;
 }
 
-/**
- * Resolve a stored ref to a usable `<img src>` / `href`.
- *
- * Content refs are absolute URLs (CloudFront) — or legacy data-URLs/external
- * URLs — so this is effectively identity. Kept as a named helper so call sites
- * read intentionally and we have one place to evolve if base-prefixing is ever
- * needed.
- */
+/** Resolve a stored ref to a usable `<img src>` (absolute URLs → identity). */
 export function resolveMediaUrl(ref?: string | null): string {
   return ref ?? "";
 }

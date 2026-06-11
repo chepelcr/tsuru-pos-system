@@ -15,24 +15,25 @@ import { resolveMediaUrl, type MediaItem } from "@/lib/media";
 /**
  * Media library management page (online-store / storefront section).
  *
- * Landing-dxp "media library" pattern — a grid of all org assets with upload
- * (dropzone) + add-by-URL + delete — but backed by the org S3 bucket via
- * {@link useMediaLibrary} (presigned upload + list + delete) instead of a
- * bundled media.json. Picking media into content fields is done by the
+ * Landing-dxp "media library" pattern, server-backed by the `organization_media`
+ * registry (via {@link useMediaLibrary}): a grid of all org assets, with an
+ * Add button that opens an upload modal (dropzone + add-by-URL), plus per-tile
+ * copy-URL and delete. Picking media into content fields is done by the
  * `<MediaPicker>`; this page is the manage-everything view.
  */
 export default function GalleryPage() {
   const { orgId } = useOrgContext();
   const { t } = useLanguage();
   usePageTitle([t("gallery.title")]);
-  const { listQuery, upload, remove } = useMediaLibrary(orgId);
+  const { listQuery, upload, addExternal, remove } = useMediaLibrary(orgId);
   const { confirm, ConfirmModal } = useConfirmModal();
 
   const items: MediaItem[] = listQuery.data ?? [];
+  const [addOpen, setAddOpen] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const doUpload = async (file: File) => {
@@ -57,14 +58,24 @@ export default function GalleryPage() {
     if (file && file.type.startsWith("image/")) void doUpload(file);
   };
 
-  const copy = async (url: string, key: string) => {
+  const onAddUrl = async () => {
+    const url = urlDraft.trim();
+    if (!url) return;
+    setUrlDraft("");
+    setError(null);
+    try {
+      await addExternal.mutateAsync(url);
+    } catch {
+      setError(t("media.uploadError"));
+    }
+  };
+
+  const copy = async (url: string, id: string) => {
     try {
       await navigator.clipboard.writeText(url);
-      setCopiedKey(key);
-      window.setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
-    } catch {
-      /* clipboard unavailable — no-op */
-    }
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId((k) => (k === id ? null : k)), 1500);
+    } catch { /* clipboard unavailable */ }
   };
 
   const askDelete = (item: MediaItem) =>
@@ -74,49 +85,22 @@ export default function GalleryPage() {
       variant: "destructive",
       confirmLabel: t("common.delete"),
       cancelLabel: t("common.cancel"),
-      onConfirm: async () => { await remove.mutateAsync(item.key); },
+      onConfirm: async () => { await remove.mutateAsync(item.id); },
     });
+
+  const busy = upload.isPending || addExternal.isPending;
 
   return (
     <div className="px-6 pt-6 pb-10 max-w-[1100px] mx-auto">
-      <div className="mb-6">
-        <h1 className="t-h1 mb-1.5">{t("gallery.title")}</h1>
-        <p className="t-body text-muted-foreground">{t("gallery.subtitle")}</p>
-      </div>
-
-      {/* Upload + URL add */}
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end mb-5">
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          onClick={() => !upload.isPending && inputRef.current?.click()}
-          className={`h-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
-            dragging ? "border-primary bg-primary/[0.06]" : "border-border bg-muted/35"
-          }`}
-        >
-          {upload.isPending ? (
-            <><Spinner /><span className="t-xs text-muted-foreground">{t("media.uploading")}</span></>
-          ) : (
-            <><Icon name="upload" size={24} className="text-muted-foreground" />
-              <span className="t-xs text-muted-foreground text-center px-3">{t("media.uploadHint")}</span></>
-          )}
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="t-h1 mb-1.5">{t("gallery.title")}</h1>
+          <p className="t-body text-muted-foreground">{t("gallery.subtitle")}</p>
         </div>
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
-        <div className="flex items-end gap-2">
-          <div className="flex flex-col gap-1">
-            <span className="label-section">{t("media.urlField")}</span>
-            <Input
-              value={urlDraft}
-              onChange={(e) => setUrlDraft(e.target.value)}
-              placeholder={t("media.urlPlaceholder")}
-              className="sm:w-64"
-            />
-          </div>
-        </div>
+        <Button variant="primary" size="sm" icon="plus" onClick={() => { setError(null); setAddOpen(true); }}>
+          {t("gallery.add")}
+        </Button>
       </div>
-
-      {error && <p className="mb-3 t-sm text-destructive">{error}</p>}
 
       {/* Grid */}
       {listQuery.isLoading ? (
@@ -125,32 +109,88 @@ export default function GalleryPage() {
         <EmptyState icon="alertTri" title={t("media.loadError")}
           action={<Button variant="outline" size="sm" icon="refresh" onClick={() => listQuery.refetch()}>{t("common.retry")}</Button>} />
       ) : items.length === 0 ? (
-        <EmptyState icon="upload" title={t("media.empty")} />
+        <EmptyState icon="upload" title={t("media.empty")}
+          action={<Button variant="primary" size="sm" icon="plus" onClick={() => setAddOpen(true)}>{t("gallery.add")}</Button>} />
       ) : (
         <FadeIn>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {items.map((item) => (
-              <div key={item.key} className="card overflow-hidden group">
+              <div key={item.id} className="card overflow-hidden">
                 <div className="aspect-square bg-muted/35 overflow-hidden">
-                  <img src={resolveMediaUrl(item.url)} alt={item.filename} className="w-full h-full object-cover" />
+                  <img src={resolveMediaUrl(item.url)} alt={item.alt || item.filename} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-2.5 flex flex-col gap-1.5">
                   <span className="t-xs font-mono truncate" title={item.filename}>{item.filename}</span>
                   <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="xs" icon={copiedKey === item.key ? "check" : "copy"}
-                      onClick={() => copy(item.url, item.key)}>
-                      {copiedKey === item.key ? t("gallery.copied") : t("gallery.copyUrl")}
+                    <Button variant="outline" size="xs" icon={copiedId === item.id ? "check" : "copy"}
+                      onClick={() => copy(item.url, item.id)}>
+                      {copiedId === item.id ? t("gallery.copied") : t("gallery.copyUrl")}
                     </Button>
-                    <Button variant="ghost" size="xs" icon="trash"
-                      disabled={remove.isPending}
-                      aria-label={t("common.delete")}
-                      onClick={() => askDelete(item)} />
+                    <Button variant="ghost" size="xs" icon="trash" disabled={remove.isPending}
+                      aria-label={t("common.delete")} onClick={() => askDelete(item)} />
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </FadeIn>
+      )}
+
+      {/* Add modal — dropzone + add-by-URL (like the import modal) */}
+      {addOpen && (
+        <div
+          className="fixed inset-0 z-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
+          onClick={() => setAddOpen(false)}
+        >
+          <div
+            className="w-full max-w-[480px] bg-card border border-border rounded-xl shadow-modal p-5 fade-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="t-h4 !mb-0">{t("gallery.addTitle")}</h3>
+              <button type="button" className="btn btn-ghost btn-sm btn-icon"
+                onClick={() => setAddOpen(false)} aria-label={t("common.close")}>
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={onDrop}
+              onClick={() => !busy && inputRef.current?.click()}
+              className={`w-full h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
+                dragging ? "border-primary bg-primary/[0.06]" : "border-border bg-muted/35"
+              }`}
+            >
+              {busy ? (
+                <><Spinner /><span className="t-xs text-muted-foreground">{t("media.uploading")}</span></>
+              ) : (
+                <><Icon name="upload" size={26} className="text-muted-foreground" />
+                  <span className="t-xs text-muted-foreground text-center px-3">{t("media.uploadHint")}</span></>
+              )}
+            </div>
+            <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
+
+            {error && <p className="mt-2 t-xs text-destructive">{error}</p>}
+
+            <div className="flex items-end gap-2 mt-3">
+              <div className="flex-1">
+                <span className="label-section">{t("media.urlField")}</span>
+                <Input value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)}
+                  placeholder={t("media.urlPlaceholder")}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onAddUrl(); } }} />
+              </div>
+              <Button variant="outline" size="sm" icon="plus" onClick={() => void onAddUrl()} disabled={!urlDraft.trim() || busy}>
+                {t("media.add")}
+              </Button>
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <Button variant="primary" size="sm" onClick={() => setAddOpen(false)}>{t("common.close")}</Button>
+            </div>
+          </div>
+        </div>
       )}
 
       <ConfirmModal />
