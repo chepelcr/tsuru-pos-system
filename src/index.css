@@ -58,6 +58,7 @@
   --z-popover: 80;
   --z-tooltip: 100;
   --z-drawer: 200;
+  --z-drawer-modal: 210;
 
   /* Shadow tokens */
   --shadow-card: 0 1px 2px rgba(0,0,0,0.06);
@@ -113,6 +114,7 @@
   --z-popover: 80;
   --z-tooltip: 100;
   --z-drawer: 200;
+  --z-drawer-modal: 210;
 
   --shadow-card: 0 1px 2px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4);

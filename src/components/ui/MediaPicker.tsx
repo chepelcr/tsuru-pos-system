@@ -120,22 +120,20 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
               </Button>
             )}
           </div>
-          {/* Editable raw ref — paths/URLs can be typed/pasted directly. */}
-          <Input
-            type="text"
-            value={value ?? ""}
-            disabled={disabled}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={t("media.urlPlaceholder")}
-            aria-label={t("media.urlField")}
-          />
+          {/* Show the current ref read-only as a hint; editing/pasting a URL is
+              done inside the modal (keeps the field compact). */}
+          {value && (
+            <p className="t-xs text-muted-foreground font-mono truncate max-w-full" title={value}>
+              {value}
+            </p>
+          )}
         </div>
       </div>
 
       {/* ── Library modal ─────────────────────────────────────────────── */}
       {open && (
         <div
-          className="fixed inset-0 z-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
+          className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
           onClick={() => setOpen(false)}
         >
           <div

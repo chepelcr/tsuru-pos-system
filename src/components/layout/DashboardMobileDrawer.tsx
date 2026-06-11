@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { DashboardSidebar } from "./DashboardSidebar";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
 
 interface DashboardMobileDrawerProps {
   open: boolean;

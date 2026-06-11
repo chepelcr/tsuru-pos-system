@@ -75,6 +75,7 @@ export default {
         popover: "var(--z-popover)",
         tooltip: "var(--z-tooltip)",
         drawer: "var(--z-drawer)",
+        "drawer-modal": "var(--z-drawer-modal)",
       },
       fontFamily: {
         sans: ["Barlow", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
