@@ -42,6 +42,7 @@ import OrgPaymentPage from "@/pages/dashboard/OrgPaymentPage";
 import OrgShippingPage from "@/pages/dashboard/OrgShippingPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
 import ContentPage from "@/pages/dashboard/ContentPage";
+import GalleryPage from "@/pages/dashboard/GalleryPage";
 import TemplatesPage from "@/pages/dashboard/TemplatesPage";
 import DeploymentsPage from "@/pages/dashboard/DeploymentsPage";
 
@@ -264,6 +265,10 @@ export default function Routes() {
       <Route
         path={ROUTES.DASHBOARD_CONTENT}
         component={() => <DashboardPage><ContentPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_GALLERY}
+        component={() => <DashboardPage><GalleryPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_TEMPLATES}

@@ -51,5 +51,11 @@ export function useMediaLibrary(orgId: string | undefined) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["media", orgId] }),
   });
 
-  return { listQuery, upload };
+  const remove = useMutation({
+    mutationFn: (key: string) =>
+      salesApi.delete(authOrgPath(orgId!, `/media?key=${encodeURIComponent(key)}`)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["media", orgId] }),
+  });
+
+  return { listQuery, upload, remove };
 }

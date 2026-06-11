@@ -21,7 +21,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
 
 interface Session {
   name: string;
@@ -44,6 +44,7 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_CONFIRMATIONS)) return "confirmations";
   if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
   if (location.startsWith(ROUTES.DASHBOARD_MEMBERS))  return "members";
+  if (location.startsWith(ROUTES.DASHBOARD_GALLERY))     return "gallery";
   if (location.startsWith(ROUTES.DASHBOARD_CONTENT))     return "content";
   if (location.startsWith(ROUTES.DASHBOARD_TEMPLATES))   return "templates";
   if (location.startsWith(ROUTES.DASHBOARD_DEPLOYMENTS)) return "deployments";
@@ -67,6 +68,7 @@ const NAV_PATHS: Record<NavId, string> = {
   members:   ROUTES.DASHBOARD_MEMBERS,
   organization: ROUTES.DASHBOARD_ORG_SETTINGS,
   content:     ROUTES.DASHBOARD_CONTENT,
+  gallery:     ROUTES.DASHBOARD_GALLERY,
   templates:   ROUTES.DASHBOARD_TEMPLATES,
   deployments: ROUTES.DASHBOARD_DEPLOYMENTS,
   profile:   ROUTES.PROFILE,
