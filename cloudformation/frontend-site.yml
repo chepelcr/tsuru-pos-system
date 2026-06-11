@@ -43,6 +43,7 @@ Resources:
   # is deterministic, so we reference it directly (no cross-stack import needed).
   DeployRole:
     Type: AWS::IAM::Role
+    DeletionPolicy: Retain          # survives stack deletion; matches imported state
     Properties:
       RoleName: !Sub "jcampos-${GitHubRepo}-gha-deploy"
       MaxSessionDuration: 3600
