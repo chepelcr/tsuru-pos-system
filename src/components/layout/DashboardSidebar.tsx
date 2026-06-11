@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
@@ -9,7 +10,7 @@ import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
 
 interface DashboardSidebarProps {
   active: NavId;
@@ -28,6 +29,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   organization:  { icon: "settings",    labelKey: "shell.orgSettings" },
   puestos:       { icon: "store",       labelKey: "shell.stations" },
   members:       { icon: "users",       labelKey: "shell.members" },
+  roles:         { icon: "shield",      labelKey: "shell.roles" },
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
   reporte:       { icon: "trending",    labelKey: "shell.reports" },
   content:       { icon: "fileText",    labelKey: "shell.content" },
@@ -41,7 +43,7 @@ type SectionId = "commercial" | "admin" | "storefront" | "analytics";
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
-  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "config"] },
+  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "roles", "config"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "templates", "deployments"] },
 ];
 
@@ -54,6 +56,10 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   const { user, logout } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
+  // RBAC nav gating (my-permissions, O1). Fail-open while unresolved — the
+  // backend rollout starts with RBAC_ENFORCEMENT=log, so the item only hides
+  // once an authoritative permission set says the caller can't read roles.
+  const { can, isReady: permsReady } = usePermissions();
   const { t } = useLanguage();
   const { addDocumentTab } = useDocumentStore();
   const [, setLocation] = useLocation();
@@ -100,6 +106,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   const renderItem = (id: NavId) => {
     const meta = ITEM_META[id];
     if (!meta) return null;
+    if (id === "roles" && permsReady && !can("team", "read", "roles")) return null;
     return (
       <button
         key={id}

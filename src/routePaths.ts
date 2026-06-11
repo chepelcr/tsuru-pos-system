@@ -10,6 +10,7 @@ export const ROUTES = {
 
   DASHBOARD: "/dashboard",
   DASHBOARD_MEMBERS: "/dashboard/members",
+  DASHBOARD_ROLES: "/dashboard/roles",
   DASHBOARD_ORDERS: "/dashboard/orders",
   DASHBOARD_CONFIRMATIONS: "/dashboard/confirmations",
   DASHBOARD_CATEGORIES: "/dashboard/categories",

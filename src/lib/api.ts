@@ -202,6 +202,30 @@ export function orgContentPath(userId: string, orgId: string, endpoint: string) 
 }
 
 /**
+ * Build org-scoped RBAC API path (markets API) — SINGULAR `/organization`
+ * (NO `/memberships/`), matching {@link orgSettingsPath}/{@link orgContentPath}:
+ *   `/api/users/{u}/organization/{o}/rbac{endpoint}`
+ *
+ * markets-api mounts the RBAC router at
+ * `app.use('/api/users/:userId/organization/:orgId', orgScopedRouter)` with
+ * `orgScopedRouter.use('/rbac', rbacController.getRouter())`. The legacy
+ * {@link orgPath} (which injects `/memberships/`) would 404 against these
+ * routes — do NOT reuse it here.
+ *
+ * Used by `useRbac.ts` for (RBAC Express contract, docs/roadmap/rbac_express_contract.md):
+ *   • GET /my-permissions             (O1 — nav/action gating)
+ *   • GET /available-matrix           (O2 — org-filtered permission matrix)
+ *   • GET /roles/organization         (O4 — org roles + system templates)
+ *   • POST/PUT/DELETE /roles[...]     (O6/O7/O8 — org role CRUD)
+ *   • GET/PUT /roles/{id}/permissions (O9/O10 — grant rows, bulk replace)
+ *   • PUT /members/{id}/role          (O11 — member role assignment)
+ */
+export function orgRbacPath(userId: string, orgId: string, endpoint: string) {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `/api/users/${userId}/organization/${orgId}/rbac${cleanEndpoint}`;
+}
+
+/**
  * Build a confirmations-scoped path on the orders (cross-app-be) base — a thin
  * convenience wrapper over {@link ordersStoreOrgPath} for the Confirmations
  * module (plan 01). Produces `/api/organizations/{org}/confirmations{suffix}`.

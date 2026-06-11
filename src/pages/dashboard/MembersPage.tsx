@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useOrgContext } from "@/contexts/OrgContext";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
-import { useOrganization, type Invitation } from "@/hooks/useOrganization";
+import { useOrganization, type Invitation, type OrgMember } from "@/hooks/useOrganization";
+import { useAssignMemberRole, useOrgRoles, usePermissions } from "@/hooks/useRbac";
 import { api, orgPath } from "@/lib/api";
 import {
   Icon,
@@ -18,12 +18,7 @@ import {
 } from "@/components/ui";
 import { SearchInput } from "@/components/forms/SearchInput";
 import { FormField } from "@/components/forms/FormField";
-
-interface SystemRole {
-  id: string;
-  name: string;
-  displayName: string;
-}
+import { ErrorBox } from "@/components/feedback/ErrorBox";
 
 const PAGE_SIZE = 12;
 
@@ -67,15 +62,20 @@ export default function MembersPage() {
   const { data: invitations = [], isLoading: invitationsLoading } =
     useOrgInvitations(userId, orgId);
 
-  // Roles for the invite Select (org-scoped RBAC roles).
-  const { data: roles = [] } = useQuery<SystemRole[]>({
-    queryKey: ["org-roles", userId, orgId],
-    queryFn: async () => {
-      if (!userId || !orgId) return [];
-      return api.get<SystemRole[]>(orgPath(userId, orgId, "/rbac/roles"));
-    },
-    enabled: !!userId && !!orgId,
-  });
+  // Org roles + system templates (O4) — drives both the invite Select and the
+  // per-member role assignment dropdown.
+  const { data: allRoles = [] } = useOrgRoles(userId, orgId);
+  const assignMemberRole = useAssignMemberRole();
+  const { can } = usePermissions();
+  const canUpdateMembers = can("team", "update", "members");
+
+  // Same-org role rule (contract V3): only active, non-platform_admin roles
+  // are assignable — filtered defensively here too.
+  const roles = useMemo(
+    () => allRoles.filter((r) => r.isActive && r.name !== "platform_admin"),
+    [allRoles]
+  );
+  const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
 
   const pendingInvitations = useMemo(
     () => invitations.filter((i) => i.status === "pending"),
@@ -198,6 +198,44 @@ export default function MembersPage() {
     role?: { displayName?: string; name?: string };
   }) => member.role?.displayName || member.role?.name || t("members.roleMember");
 
+  // O11 — assign a role to a member (server enforces same-org rule V3 +
+  // last-owner protection). Controlled <Select> snaps back on cancel because
+  // its value always derives from the members query.
+  const handleChangeRole = (member: OrgMember, roleId: string) => {
+    if (!userId || !orgId || roleId === member.roleId) return;
+    const role = roles.find((r) => r.id === roleId);
+    if (!role) return;
+    const name = memberFullName(member) || member.user?.email || "";
+    confirm({
+      title: t("roles.members.changeRoleTitle"),
+      message: t("roles.members.changeRoleConfirm", {
+        role: role.displayName,
+        name,
+      }),
+      variant: "default",
+      icon: "shield",
+      confirmLabel: t("roles.members.changeRole"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: async () => {
+        setRoleChangeError(null);
+        try {
+          await assignMemberRole.mutateAsync({
+            userId,
+            orgId,
+            memberId: member.id,
+            roleId,
+          });
+        } catch (err) {
+          setRoleChangeError(
+            err instanceof Error && err.message !== "Request failed"
+              ? err.message
+              : t("roles.members.changeRoleFailed")
+          );
+        }
+      },
+    });
+  };
+
   return (
     <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto">
       {/* Header */}
@@ -227,6 +265,10 @@ export default function MembersPage() {
             placeholder={t("members.searchPlaceholder")}
           />
         </div>
+      )}
+
+      {roleChangeError && (
+        <ErrorBox message={roleChangeError} className="mb-5" />
       )}
 
       {/* Members list */}
@@ -290,9 +332,32 @@ export default function MembersPage() {
                     {m.user?.email}
                   </div>
                 </div>
-                <Badge variant={roleBadgeVariant(m.role?.name)}>
-                  {roleLabel(m)}
-                </Badge>
+                {canUpdateMembers && !isCurrentUser ? (
+                  <div className="w-44 flex-shrink-0">
+                    <Select
+                      inputSize="sm"
+                      value={m.roleId}
+                      aria-label={t("roles.members.changeRoleTitle")}
+                      onChange={(e) => handleChangeRole(m, e.target.value)}
+                    >
+                      {/* Keep the current role visible even when it's no longer assignable (inactive role) */}
+                      {!roles.some((r) => r.id === m.roleId) && (
+                        <option value={m.roleId} disabled>
+                          {roleLabel(m)}
+                        </option>
+                      )}
+                      {roles.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.displayName}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                ) : (
+                  <Badge variant={roleBadgeVariant(m.role?.name)}>
+                    {roleLabel(m)}
+                  </Badge>
+                )}
                 {!isCurrentUser && !isOwner && (
                   <Button
                     variant="ghost"

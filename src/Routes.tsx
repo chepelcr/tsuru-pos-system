@@ -30,6 +30,7 @@ import OrgNotificationsPage from "@/pages/dashboard/OrgNotificationsPage";
 import OrgRegisteredOrgPage from "@/pages/dashboard/OrgRegisteredOrgPage";
 import OrgThemePage from "@/pages/dashboard/OrgThemePage";
 import MembersPage from "@/pages/dashboard/MembersPage";
+import RolesPage from "@/pages/dashboard/RolesPage";
 import OrdersPage from "@/pages/dashboard/OrdersPage";
 import OrderDetailPage from "@/pages/dashboard/OrderDetailPage";
 import ConfirmationsPage from "@/pages/dashboard/ConfirmationsPage";
@@ -235,6 +236,12 @@ export default function Routes() {
       <Route
         path={ROUTES.DASHBOARD_MEMBERS}
         component={() => <DashboardPage><MembersPage /></DashboardPage>}
+      />
+
+      {/* Roles — org-scoped RBAC roles + permission matrix */}
+      <Route
+        path={ROUTES.DASHBOARD_ROLES}
+        component={() => <DashboardPage><RolesPage /></DashboardPage>}
       />
 
       <Route
