@@ -18,6 +18,8 @@ STACK_NAME="jmarkets-${ENVIRONMENT}-frontend-pos-system"
 BUCKET_NAME="jmarkets-${ENVIRONMENT}-pos-system"
 DIST_DIR="dist"
 DOMAIN="pos.${FRONTEND_DOMAIN}"
+GITHUB_ORG="${GITHUB_ORG:-chepelcr}"
+GITHUB_REPO="${GITHUB_REPO:-tsuru-pos-system}"
 
 echo "=== Tsuru POS Frontend Deploy ==="
 echo "  Environment : $ENVIRONMENT"
@@ -53,6 +55,9 @@ aws cloudformation deploy \
     "DomainName=${DOMAIN}" \
     "HostedZoneId=${HOSTED_ZONE_ID}" \
     "Environment=${ENVIRONMENT}" \
+    "GitHubOrg=${GITHUB_ORG}" \
+    "GitHubRepo=${GITHUB_REPO}" \
+  --capabilities CAPABILITY_NAMED_IAM \
   --region "${REGION}" \
   --no-fail-on-empty-changeset
 echo "Stack ${STACK_NAME} ready."
