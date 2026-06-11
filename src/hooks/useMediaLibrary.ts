@@ -5,18 +5,18 @@ import type { MediaItem, PresignedUpload } from "@/lib/media";
 /**
  * Organization media library hook (organization-configurations service).
  *
- * - `listQuery` — GET `/organizations/{org}/media`: the gallery of assets
- *   already in the org bucket (newest first).
- * - `upload` — two-step direct-to-S3 upload: request a presigned PUT URL, then
- *   PUT the raw file to S3. Returns the new {@link MediaItem}; invalidates the
- *   gallery so it reappears for reuse.
+ * Backed by the `organization_media` registry (rows), not raw S3 listing:
+ * - `listQuery` — GET `/organizations/{org}/media` → the gallery (newest first).
+ * - `upload` — presigned PUT to S3, then POST `/media` to register the row.
+ * - `addExternal` — POST `/media` with an off-site URL (source=external).
+ * - `remove` — DELETE `/media/{id}` (drops the row + the S3 object for locals).
  *
- * Reached via the `salesApi` client + {@link authOrgPath} — the org-config
- * Lambda is mounted at `/organizations/{org}/...` on the sales API gateway
- * (same place the POS already calls `/configurations`, `/credentials`).
+ * Reached via `salesApi` + {@link authOrgPath} (the org-config Lambda is mounted
+ * at `/organizations/{org}/...` on the sales API gateway).
  */
 export function useMediaLibrary(orgId: string | undefined) {
   const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["media", orgId] });
 
   const listQuery = useQuery({
     queryKey: ["media", orgId],
@@ -31,31 +31,41 @@ export function useMediaLibrary(orgId: string | undefined) {
         authOrgPath(orgId!, "/media/presigned"),
         { fileName: file.name, fileType: contentType },
       );
-
-      // Direct browser → S3 PUT. No Authorization header — the presigned URL
-      // is itself the credential. Content-Type MUST match what was signed.
       const put = await fetch(presigned.uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": contentType },
         body: file,
       });
       if (!put.ok) throw new Error(`S3 upload failed (${put.status})`);
-
-      return {
+      // Register the uploaded object in the library registry.
+      return salesApi.post<MediaItem>(authOrgPath(orgId!, "/media"), {
         url: presigned.fileUrl,
         key: presigned.key,
         filename: file.name,
+        mime: contentType,
         size: file.size,
-      };
+        kind: "image",
+        source: "local",
+      });
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["media", orgId] }),
+    onSuccess: invalidate,
+  });
+
+  const addExternal = useMutation({
+    mutationFn: (url: string): Promise<MediaItem> =>
+      salesApi.post<MediaItem>(authOrgPath(orgId!, "/media"), {
+        url,
+        filename: url.split("/").pop() || url,
+        kind: "image",
+        source: "external",
+      }),
+    onSuccess: invalidate,
   });
 
   const remove = useMutation({
-    mutationFn: (key: string) =>
-      salesApi.delete(authOrgPath(orgId!, `/media?key=${encodeURIComponent(key)}`)),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["media", orgId] }),
+    mutationFn: (id: string) => salesApi.delete(authOrgPath(orgId!, `/media/${id}`)),
+    onSuccess: invalidate,
   });
 
-  return { listQuery, upload, remove };
+  return { listQuery, upload, addExternal, remove };
 }
