@@ -278,6 +278,10 @@ Outputs:
 
   DeployRoleArn:
     Description: GitHub Actions deploy role ARN — set as repo secret AWS_DEPLOY_ROLE_ARN
-    Value: !GetAtt DeployRole.Arn
+    # Constructed with !Sub (deterministic from RoleName) instead of !GetAtt so a
+    # routine GitHub Actions deploy never needs iam:GetRole — the deploy role is
+    # intentionally denied all IAM access (can't manage itself). Role changes are
+    # an admin (J-CAMPOS) deploy.
+    Value: !Sub "arn:aws:iam::${AWS::AccountId}:role/jcampos-${GitHubRepo}-gha-deploy"
     Export:
       Name: !Sub "${AWS::StackName}-DeployRoleArn"
