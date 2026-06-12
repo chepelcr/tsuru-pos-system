@@ -10,7 +10,7 @@ import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
 
 interface DashboardSidebarProps {
   active: NavId;
@@ -64,7 +64,6 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   deployments:   ["storefront", "deployments"],
   reporte:       ["reports", "general"],
   documents:     ["documents", "emitted"],
-  pos:           ["documents", "emitted"], // POS creates emitted documents
 };
 
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */

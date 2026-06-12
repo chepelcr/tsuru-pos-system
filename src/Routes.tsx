@@ -19,7 +19,6 @@ import SessionsPage from "@/pages/dashboard/SessionsPage";
 import PuestosPage from "@/pages/dashboard/PuestosPage";
 import ProductsPage from "@/pages/dashboard/ProductsPage";
 import ReportePage from "@/pages/dashboard/ReportePage";
-import POSIntegratedPage from "@/pages/dashboard/POSIntegratedPage";
 import DocumentsPage from "@/pages/dashboard/DocumentsPage";
 import ClientsPage from "@/pages/dashboard/ClientsPage";
 import ClientDetailPage from "@/pages/dashboard/ClientDetailPage";
@@ -248,10 +247,11 @@ export default function Routes() {
         path={ROUTES.DASHBOARD_REPORTS}
         component={() => <DashboardPage><ReportePage /></DashboardPage>}
       />
-      <Route
-        path={ROUTES.DASHBOARD_POS}
-        component={() => <DashboardPage><POSIntegratedPage /></DashboardPage>}
-      />
+      {/* Legacy POS entry — the POS now lives inside the documents editor
+          (new-document tabs render POSIntegratedPage); redirect old links. */}
+      <Route path="/dashboard/pos">
+        <Redirect to={ROUTES.DASHBOARD_DOCUMENTS} />
+      </Route>
 
       {/* Documents — single wildcard route covers both list and editor sub-paths.
           The DocumentsContainer reads useLocation directly and animates content swaps. */}

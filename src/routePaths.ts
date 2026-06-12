@@ -19,7 +19,6 @@ export const ROUTES = {
   DASHBOARD_STATIONS: "/dashboard/stations",
   DASHBOARD_PRODUCTS: "/dashboard/products",
   DASHBOARD_REPORTS: "/dashboard/reports",
-  DASHBOARD_POS: "/dashboard/pos",
   DASHBOARD_DOCUMENTS: "/dashboard/documents",
   DASHBOARD_CLIENTS: "/dashboard/clients",
   DASHBOARD_ORG_SETTINGS: "/dashboard/organization",

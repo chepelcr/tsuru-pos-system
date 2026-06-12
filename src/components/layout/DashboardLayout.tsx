@@ -21,7 +21,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "pos" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
 
 interface Session {
   name: string;
@@ -38,8 +38,6 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS))  return "reporte";
   // Document editor and list both highlight the "documents" sidebar item
   if (location.startsWith(ROUTES.DASHBOARD_DOCUMENTS)) return "documents";
-  // Legacy /dashboard/pos route also maps to documents (POS is now an editor view)
-  if (location.startsWith(ROUTES.DASHBOARD_POS))      return "documents";
   if (location.startsWith(ROUTES.DASHBOARD_CLIENTS))  return "clients";
   if (location.startsWith(ROUTES.DASHBOARD_CONFIRMATIONS)) return "confirmations";
   if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
@@ -61,7 +59,6 @@ const NAV_PATHS: Record<NavId, string> = {
   productos: ROUTES.DASHBOARD_PRODUCTS,
   categories: ROUTES.DASHBOARD_CATEGORIES,
   reporte:   ROUTES.DASHBOARD_REPORTS,
-  pos:       ROUTES.DASHBOARD_POS,
   documents: ROUTES.DASHBOARD_DOCUMENTS,
   clients:   ROUTES.DASHBOARD_CLIENTS,
   orders:    ROUTES.DASHBOARD_ORDERS,
