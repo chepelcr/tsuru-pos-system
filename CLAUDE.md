@@ -12,6 +12,8 @@ This project now lives in its own public repository: **[`chepelcr/tsuru-pos-syst
 
 During the transition it still physically resides at `BeautyMarket/templates/pos-system/` inside the monorepo (and is gitignored there) because the CI/CD pipelines still reference these paths. **Do new work in the standalone repo.** The monorepo copy will be removed once pipelines are migrated.
 
+> 📍 **Roadmap tracking:** the whole Tsuru ecosystem (this POS included) is tracked in the monorepo at `E:/dev/BeautyMarket/docs/roadmap/tsuru_roadmap.md` (TSR-### board, pending manual steps, changelog). When you complete or start work here, **update that roadmap in the same session** (status cells + §8 changelog) so a fresh session can pick up from it.
+
 ### Deployment (GitHub Actions — own repo)
 
 CI/CD now lives in this repo, replacing the monorepo CodePipeline stage:
