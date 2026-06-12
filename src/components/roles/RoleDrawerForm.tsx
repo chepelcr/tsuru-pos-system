@@ -18,7 +18,7 @@ import { Button, Drawer, Input } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import type { RoleDto } from "@/types/rbac";
-import { roleLabel } from "@/lib/rbacI18n";
+import { roleDescription, roleLabel } from "@/lib/rbacI18n";
 
 /**
  * Derive the unique role identifier (`roles.name`) from the display name on
@@ -234,6 +234,16 @@ export function RoleDrawerForm({
             <span className="t-sm text-muted-foreground">
               {t("roles.form.systemNotice")}
             </span>
+          </div>
+        )}
+
+        {readOnly && sourceRole && (
+          <div>
+            <div className="label-section mb-1">{t("roles.form.description")}</div>
+            <p className="t-sm text-muted-foreground">
+              {roleDescription(t, sourceRole.name, sourceRole.description) ||
+                t("roles.form.noDescription")}
+            </p>
           </div>
         )}
 

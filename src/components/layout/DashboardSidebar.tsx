@@ -9,6 +9,7 @@ import { documentEditorPath, ROUTES } from "@/routePaths";
 import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
+import { roleLabel } from "@/lib/rbacI18n";
 
 type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
 
@@ -85,7 +86,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // RBAC nav gating (my-permissions, O1). Fail-open while unresolved — the
   // backend rollout starts with RBAC_ENFORCEMENT=log, so the item only hides
   // once an authoritative permission set says the caller can't read roles.
-  const { can, isReady: permsReady } = usePermissions();
+  const { can, isReady: permsReady, role: orgRole } = usePermissions();
   // Per-doc-type create gating (documents/<permSub>): the "+" menu only lists
   // the types this role may create — e.g. cashiers see FE/TE, never NC/ND.
   const creatableDocTypes = useCreatableDocTypes();
@@ -284,7 +285,11 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
               {displayName}
             </div>
-            <div className="t-xs text-muted-foreground">{user?.role ?? ""}</div>
+            {/* Org-scoped role from my-permissions — NOT user.role, which is the
+                platform-level role ("customer" on first Cognito sync). */}
+            <div className="t-xs text-muted-foreground">
+              {orgRole ? roleLabel(t, orgRole.name, orgRole.displayName) : ""}
+            </div>
           </div>
         </button>
         <button className="sidebar-item" onClick={logout}>

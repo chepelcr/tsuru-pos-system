@@ -76,7 +76,7 @@ export function NotificationsBell() {
 
       {open && (
         <div
-          className="absolute right-0 top-[calc(100%+6px)] w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-dropdown z-overlay overflow-hidden"
+          className="fixed left-1/2 top-14 -translate-x-1/2 sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+6px)] sm:translate-x-0 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-dropdown z-overlay overflow-hidden"
           role="dialog"
           aria-label={t("notifications.title")}
         >
