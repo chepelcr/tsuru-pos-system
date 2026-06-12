@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Drawer, Button, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import { useAllProductTypes, useAllMeasurementUnits, useAllTaxes, useAllTaxRates } from "@/hooks/useDataApi";
 import { useAccordionSections } from "@/hooks/useAccordionSections";
 import { TaxCalculationService, type LineTax, type LineDiscount } from "@/services/taxCalculationService";
@@ -97,6 +98,11 @@ export function ProductDrawerForm({
 }: ProductDrawerFormProps) {
   const { t } = useLanguage();
   const isNew = drawerProduct === "new";
+
+  // RBAC defense-in-depth on the footer actions — fail-open while loading (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canSubmit = !permsReady || can("commercial", isNew ? "create" : "update", "products");
+  const canDelete = !permsReady || can("commercial", "delete", "products");
 
   // Preload data — React Query deduplicates with section-level calls
   const { data: productTypesData } = useAllProductTypes();
@@ -364,7 +370,7 @@ export function ProductDrawerForm({
       width="min(500px, 100vw)"
       footer={
         <div className="px-6 py-4 flex gap-2 items-center">
-          {!isNew && (
+          {!isNew && canDelete && (
             <Button
               variant="ghost"
               size="sm"
@@ -379,14 +385,16 @@ export function ProductDrawerForm({
           <Button variant="outline" size="sm" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onSave}
-            disabled={saving || !canSave}
-          >
-            {saving ? t("common.saving") : t("common.save")}
-          </Button>
+          {canSubmit && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onSave}
+              disabled={saving || !canSave}
+            >
+              {saving ? t("common.saving") : t("common.save")}
+            </Button>
+          )}
         </div>
       }
     >

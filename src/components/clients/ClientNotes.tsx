@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Button, Icon } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 
 interface ClientNotesProps {
   notes?: string | null;
@@ -10,6 +11,11 @@ interface ClientNotesProps {
 
 export function ClientNotes({ notes, onSave, isSaving }: ClientNotesProps) {
   const { t } = useLanguage();
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("commercial", "update", "clients");
+
   const initial = notes ?? "";
   const [localNotes, setLocalNotes] = useState(initial);
   const [hasChanges, setHasChanges] = useState(false);
@@ -38,15 +44,17 @@ export function ClientNotes({ notes, onSave, isSaving }: ClientNotesProps) {
             {t("clients.notes.title")}
           </span>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          icon="check"
-          onClick={handleSave}
-          disabled={!hasChanges || isSaving}
-        >
-          {isSaving ? t("common.loading") : t("common.save")}
-        </Button>
+        {canUpdate && (
+          <Button
+            variant="primary"
+            size="sm"
+            icon="check"
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
+          >
+            {isSaving ? t("common.loading") : t("common.save")}
+          </Button>
+        )}
       </div>
 
       <textarea

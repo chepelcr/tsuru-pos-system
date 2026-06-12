@@ -14,6 +14,7 @@ import {
   type CreateClientDto,
 } from "@/hooks/useClients";
 import ClientFormBody from "@/components/clients/ClientFormBody";
+import { usePermissions } from "@/hooks/useRbac";
 import { ID_TYPE_SHORT, ID_TYPE_LABEL } from "@/lib/enums";
 import { Card, Icon, Drawer, Button, Badge, Menu } from "@/components/ui";
 import { initials, avatarColor } from "@/utils/avatar";
@@ -147,6 +148,11 @@ export default function ClientDetailPage({ clientId }: Props) {
   const statusMutation = useUpdateClientStatus(orgId);
   const notesMutation = useUpdateClient(orgId);
 
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("commercial", "update", "clients");
+  const canDelete = !permsReady || can("commercial", "delete", "clients");
+
   const displayName = clientDisplayName(client);
   usePageTitle([t("shell.clients"), displayName || (isLoading ? undefined : t("common.new"))]);
   const [bg, fg] = avatarColor(displayName);
@@ -229,21 +235,25 @@ export default function ClientDetailPage({ clientId }: Props) {
 
           <div className="flex items-center gap-2 flex-shrink-0">
             <ClientWhatsAppButton client={client} />
-            <Button variant="outline" size="sm" icon="edit" onClick={() => setEditOpen(true)}>
-              {t("common.edit")}
-            </Button>
-            <div onClick={(e) => e.stopPropagation()}>
-              <Menu
-                align="right"
-                items={[
-                  {
-                    label: isActive ? t("clients.deactivateClient") : t("clients.activateClient"),
-                    icon: isActive ? "xCircle" : "checkCircle",
-                    action: () => statusMutation.mutate({ clientId: client.client_id, status: isActive ? 2 : 1 }),
-                  },
-                ]}
-              />
-            </div>
+            {canUpdate && (
+              <Button variant="outline" size="sm" icon="edit" onClick={() => setEditOpen(true)}>
+                {t("common.edit")}
+              </Button>
+            )}
+            {canDelete && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Menu
+                  align="right"
+                  items={[
+                    {
+                      label: isActive ? t("clients.deactivateClient") : t("clients.activateClient"),
+                      icon: isActive ? "xCircle" : "checkCircle",
+                      action: () => statusMutation.mutate({ clientId: client.client_id, status: isActive ? 2 : 1 }),
+                    },
+                  ]}
+                />
+              </div>
+            )}
           </div>
         </div>
       </Card>
@@ -295,12 +305,14 @@ export default function ClientDetailPage({ clientId }: Props) {
                   <Icon name="user" size={20} className="text-accent-rose" />
                 </div>
                 <div className="t-body text-muted-foreground">{t("clients.noExtraInfo")}</div>
-                <button
-                  onClick={() => setEditOpen(true)}
-                  className="t-body mt-2.5 text-accent-rose bg-transparent border-0 cursor-pointer font-semibold"
-                >
-                  {t("clients.addInfo")} →
-                </button>
+                {canUpdate && (
+                  <button
+                    onClick={() => setEditOpen(true)}
+                    className="t-body mt-2.5 text-accent-rose bg-transparent border-0 cursor-pointer font-semibold"
+                  >
+                    {t("clients.addInfo")} →
+                  </button>
+                )}
               </Card>
             )}
           </div>

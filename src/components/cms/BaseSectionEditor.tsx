@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ContentField } from "./ContentField";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import type { ContentSection } from "@/types/content";
 
 interface BaseSectionEditorProps {
@@ -34,6 +35,9 @@ export function BaseSectionEditor({
   isSaving = false,
 }: BaseSectionEditorProps) {
   const { t } = useLanguage();
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canEdit = !permsReady || can("storefront", "update", "content");
   const [localContent, setLocalContent] = useState<ContentSection>(content);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -149,15 +153,17 @@ export function BaseSectionEditor({
         >
           {t("common.reset")}
         </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          icon="check"
-          onClick={handleSave}
-          disabled={!hasChanges || isSaving}
-        >
-          {isSaving ? t("common.saving") : t("content.saveSection")}
-        </Button>
+        {canEdit && (
+          <Button
+            variant="primary"
+            size="sm"
+            icon="check"
+            onClick={handleSave}
+            disabled={!hasChanges || isSaving}
+          >
+            {isSaving ? t("common.saving") : t("content.saveSection")}
+          </Button>
+        )}
       </div>
     </div>
   );

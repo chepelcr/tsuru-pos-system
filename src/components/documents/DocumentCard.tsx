@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { DOCUMENT_TYPES } from '@/types/invoice';
+import { usePermissions } from '@/hooks/useRbac';
 import type { DocumentListItem } from '@/types/document';
 
 const fmt = (n: number) => '₡' + Math.round(n).toLocaleString('es-CR');
@@ -19,6 +20,11 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentCardProps) {
+  const { can, isReady: permsReady } = usePermissions();
+  // Download/resend re-distribute the document → documents/export/{sub};
+  // receiver accept/reject mirrors ConfirmationsPage → commercial/update/confirmations.
+  const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
+  const canConfirm = !permsReady || can('commercial', 'update', 'confirmations');
   const dt = DOCUMENT_TYPES.find((d) => d.code === doc.document_type);
   const status = doc.atv_validation?.validation_status;
   const statusInfo = status ? STATUS_LABELS[status] : null;
@@ -60,10 +66,10 @@ export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentC
       {/* Actions */}
       <div className="flex flex-wrap gap-1.5 pt-1 border-t border-border">
         <ActionBtn label="Ver PDF" onClick={() => onAction(doc, 'pdf')} disabled={!doc.pdf_url} />
-        <ActionBtn label="Descargar" onClick={() => onAction(doc, 'download')} disabled={!doc.pdf_url} />
+        {canExport && <ActionBtn label="Descargar" onClick={() => onAction(doc, 'download')} disabled={!doc.pdf_url} />}
         {status && <ActionBtn label="Validación" onClick={() => onAction(doc, 'validation')} />}
-        <ActionBtn label="Reenviar" onClick={() => onAction(doc, 'resend')} />
-        {isReceived && <ActionBtn label="Aceptar/Rechazar" onClick={() => onAction(doc, 'accept')} />}
+        {canExport && <ActionBtn label="Reenviar" onClick={() => onAction(doc, 'resend')} />}
+        {isReceived && canConfirm && <ActionBtn label="Aceptar/Rechazar" onClick={() => onAction(doc, 'accept')} />}
       </div>
     </div>
     </FadeIn>

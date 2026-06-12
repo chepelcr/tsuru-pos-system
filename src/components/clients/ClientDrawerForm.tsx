@@ -3,6 +3,7 @@ import { Drawer, Button, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCreateClient, useUpdateClient, clientDisplayName, type Client, type CreateClientDto } from "@/hooks/useClients";
+import { usePermissions } from "@/hooks/useRbac";
 import { useAllIdentifications } from "@/hooks/useDataApi";
 import { useAccordionSections } from "@/hooks/useAccordionSections";
 import type { IdentificationResponse } from "@/services/data-api/dtos/identifications";
@@ -192,6 +193,12 @@ export function ClientDrawerForm({
 
   const createMutation = useCreateClient(orgId);
   const updateMutation = useUpdateClient(orgId);
+
+  // RBAC action gating — receiver mode performs no API write, so it is never
+  // gated on clients perms. Fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canSubmit =
+    isReceiver || !permsReady || can("commercial", isEdit ? "update" : "create", "clients");
   const { data: idTypes = [], isLoading: idTypesLoading } = useAllIdentifications({
     iso_code: CountryISO.COSTA_RICA,
   });
@@ -349,9 +356,11 @@ export function ClientDrawerForm({
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
             {isReceiver ? t("common.cancel") : "Cancelar"}
           </Button>
-          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-            {saveLabel}
-          </Button>
+          {canSubmit && (
+            <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+              {saveLabel}
+            </Button>
+          )}
         </div>
       }
     >

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { MediaPicker } from "@/components/ui/MediaPicker";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import type { SectionContent } from "@/types/content";
 
 interface ContentFieldProps {
@@ -59,6 +60,16 @@ export function ContentField({
   disabled = false,
 }: ContentFieldProps) {
   const { t } = useLanguage();
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canEditContent = !permsReady || can("storefront", "update", "content");
+  // MediaPicker hosts upload (storefront/upload/gallery) + add-by-URL
+  // (storefront/create/gallery); it's a shared primitive, so it's rendered
+  // read-only here when the user can do neither.
+  const canAddMedia =
+    !permsReady ||
+    can("storefront", "upload", "gallery") ||
+    can("storefront", "create", "gallery");
 
   // ── color (dual-mode) ─────────────────────────────────────────────────────
   const renderColorInput = () => {
@@ -325,7 +336,7 @@ export function ContentField({
           <div className="flex flex-col gap-3">
             <MediaPicker
               value={bgData.image?.url || ""}
-              disabled={disabled}
+              disabled={disabled || !canAddMedia}
               onChange={(ref) => {
                 bgData.image = bgData.image || {};
                 bgData.image.url = ref;
@@ -391,7 +402,7 @@ export function ContentField({
   // / paste a URL. Replaces the old base64-data-URL ImagePicker (which bloated
   // saved content).
   const renderImageInput = () => (
-    <MediaPicker value={value} onChange={onChange} disabled={disabled} />
+    <MediaPicker value={value} onChange={onChange} disabled={disabled || !canAddMedia} />
   );
 
   // ── json — structured repeaters (parity with dashboard) ───────────────────
@@ -456,22 +467,26 @@ export function ContentField({
                 )}
               </div>
             ))}
-            <div className="flex justify-end">
-              <Button
-                variant="ghost"
-                size="xs"
-                icon="trash"
-                disabled={disabled}
-                onClick={() => remove(idx)}
-              >
-                {t("content.field.remove")}
-              </Button>
-            </div>
+            {canEditContent && (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  icon="trash"
+                  disabled={disabled}
+                  onClick={() => remove(idx)}
+                >
+                  {t("content.field.remove")}
+                </Button>
+              </div>
+            )}
           </div>
         ))}
-        <Button variant="outline" size="sm" icon="plus" disabled={disabled} onClick={add}>
-          {addLabel}
-        </Button>
+        {canEditContent && (
+          <Button variant="outline" size="sm" icon="plus" disabled={disabled} onClick={add}>
+            {addLabel}
+          </Button>
+        )}
       </div>
     );
   };

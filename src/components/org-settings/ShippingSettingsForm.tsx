@@ -21,6 +21,8 @@ interface ShippingSettingsFormProps {
   initialValues?: OrgShippingSettings;
   onSubmit: (data: OrgShippingSettings) => Promise<void>;
   isSaving?: boolean;
+  /** RBAC gate from the page call site — hides the save button when false. */
+  canSave?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ export function ShippingSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
+  canSave = true,
 }: ShippingSettingsFormProps) {
   const { t } = useLanguage();
 
@@ -136,17 +139,19 @@ export function ShippingSettingsForm({
         </div>
       </label>
 
-      <div className="flex justify-end pt-1">
-        <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Spinner size={14} /> {t("common.saving")}
-            </>
-          ) : (
-            t("common.save")
-          )}
-        </button>
-      </div>
+      {canSave && (
+        <div className="flex justify-end pt-1">
+          <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Spinner size={14} /> {t("common.saving")}
+              </>
+            ) : (
+              t("common.save")
+            )}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

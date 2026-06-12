@@ -7,6 +7,7 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useOrder, useUpdateOrderStatus } from '@/hooks/useOrders';
+import { usePermissions } from '@/hooks/useRbac';
 import type { Order, OrderStatus, OrderLine } from '@/types/order';
 import { fmt } from '@/lib/utils';
 import { downloadFromUrl } from '@/lib/downloadUtils';
@@ -264,6 +265,12 @@ export default function OrderDetailPage({ orderId }: Props) {
   const { data: order, isLoading, error } = useOrder(orgId, orderId);
   const updateStatus = useUpdateOrderStatus(orgId, orderId);
 
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can('commercial', 'update', 'orders');
+  const canCancelPerm = !permsReady || can('commercial', 'cancel', 'orders');
+  const canExport = !permsReady || can('commercial', 'export', 'orders');
+
   const [reprocessOpen, setReprocessOpen] = useState(false);
   const [crossdockUploadOpen, setCrossdockUploadOpen] = useState(false);
   const [crossdockPreviewOpen, setCrossdockPreviewOpen] = useState(false);
@@ -335,14 +342,14 @@ export default function OrderDetailPage({ orderId }: Props) {
   const att = order.attachments ?? {};
 
   const menuItems: MenuItem[] = [
-    nextStatus
+    nextStatus && canUpdate
       ? {
           label: t('orders.status.markAs', { status: t(`orders.status.${nextStatus}`) }),
           icon: 'arrowRight',
           action: () => changeStatus(nextStatus),
         }
       : null,
-    canCancel
+    canCancel && canCancelPerm
       ? {
           label: t('orders.status.cancelOrder'),
           icon: 'xCircle',
@@ -357,7 +364,9 @@ export default function OrderDetailPage({ orderId }: Props) {
             }),
         }
       : null,
-    { label: t('orders.actions.reprocess'), icon: 'refresh', action: () => setReprocessOpen(true) },
+    canUpdate
+      ? { label: t('orders.actions.reprocess'), icon: 'refresh', action: () => setReprocessOpen(true) }
+      : null,
     hasCrossdocking
       ? {
           label: t('orders.crossdocking.viewCrossdocking'),
@@ -365,7 +374,7 @@ export default function OrderDetailPage({ orderId }: Props) {
           action: () => setCrossdockPreviewOpen(true),
         }
       : null,
-    isCrossdockingType
+    isCrossdockingType && canUpdate
       ? {
           label: t('orders.crossdocking.upload'),
           icon: 'upload',
@@ -401,19 +410,21 @@ export default function OrderDetailPage({ orderId }: Props) {
               <span className="t-label">{t('orders.total')}</span>
               <span className="t-stat-xl">{fmt(order.grand_total)}</span>
             </div>
-            <Menu
-              items={menuItems}
-              trigger={
-                <button className="btn btn-outline btn-sm btn-icon" type="button" aria-label={t('common.actions')}>
-                  <Icon name="moreV" size={15} />
-                </button>
-              }
-            />
+            {menuItems.length > 0 && (
+              <Menu
+                items={menuItems}
+                trigger={
+                  <button className="btn btn-outline btn-sm btn-icon" type="button" aria-label={t('common.actions')}>
+                    <Icon name="moreV" size={15} />
+                  </button>
+                }
+              />
+            )}
           </div>
         </div>
 
         {/* Attachment downloads */}
-        {(att.pdf_url || att.excel_url || att.nuevo_reporte_url) && (
+        {canExport && (att.pdf_url || att.excel_url || att.nuevo_reporte_url) && (
           <div className="flex flex-wrap gap-2 mt-5">
             {att.pdf_url && (
               <Button variant="outline" size="sm" icon="fileText" onClick={() => downloadAttachment(att.pdf_url)}>

@@ -23,6 +23,8 @@ interface PaymentSettingsFormProps {
   initialValues?: OrgPaymentSettings;
   onSubmit: (data: OrgPaymentSettings) => Promise<void>;
   isSaving?: boolean;
+  /** RBAC gate from the page call site — hides the save button when false. */
+  canSave?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export function PaymentSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
+  canSave = true,
 }: PaymentSettingsFormProps) {
   const { t } = useLanguage();
 
@@ -122,17 +125,19 @@ export function PaymentSettingsForm({
         </FormField>
       )}
 
-      <div className="flex justify-end pt-1">
-        <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Spinner size={14} /> {t("common.saving")}
-            </>
-          ) : (
-            t("common.save")
-          )}
-        </button>
-      </div>
+      {canSave && (
+        <div className="flex justify-end pt-1">
+          <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Spinner size={14} /> {t("common.saving")}
+              </>
+            ) : (
+              t("common.save")
+            )}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

@@ -3,6 +3,7 @@ import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePermissions } from "@/hooks/useRbac";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PaymentBreakdown } from "@/components/sessions/PaymentBreakdown";
@@ -57,6 +58,10 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   const { t } = useLanguage();
   usePageTitle([t("shell.reports")]);
 
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canExport = !permsReady || can("reports", "export", "general");
+
   const { data, isLoading } = useQuery<ReportData>({
     queryKey: ["report", org?.id, sessionId],
     enabled: !!user && !!org,
@@ -104,12 +109,16 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" icon="print" onClick={handlePrint}>
-              {t("report.print")}
-            </Button>
-            <Button variant="primary" icon="download">
-              {t("report.downloadPdf")}
-            </Button>
+            {canExport && (
+              <>
+                <Button variant="outline" icon="print" onClick={handlePrint}>
+                  {t("report.print")}
+                </Button>
+                <Button variant="primary" icon="download">
+                  {t("report.downloadPdf")}
+                </Button>
+              </>
+            )}
             <Button variant="outline" icon="store" onClick={() => (window.location.href = "/pos")}>
               {t("dash.goToPOS")}
             </Button>
@@ -179,7 +188,9 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
             <CardTitle>{t("report.productsTable")}</CardTitle>
             <CardDescription>{t("report.productsTable")}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" icon="download">{t("report.csv")}</Button>
+          {canExport && (
+            <Button variant="outline" size="sm" icon="download">{t("report.csv")}</Button>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">

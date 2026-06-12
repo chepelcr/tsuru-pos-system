@@ -7,6 +7,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useCmsContent } from "@/hooks/useCmsContent";
+import { usePermissions } from "@/hooks/useRbac";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
@@ -60,6 +61,10 @@ export default function ContentPage() {
   const { t } = useLanguage();
   const [, navigate] = useLocation();
   usePageTitle([t("content.title")]);
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canEditContent = !permsReady || can("storefront", "update", "content");
 
   const { pagesQuery, saveContent } = useCmsContent(user?.userId, org?.id);
   const pages = useMemo<Page[]>(() => pagesQuery.data ?? [], [pagesQuery.data]);
@@ -278,26 +283,28 @@ export default function ContentPage() {
                   {/* Section type + reorder controls */}
                   <div className="flex items-center justify-between gap-2 -mt-1 mb-2">
                     <span className="t-xs text-muted-foreground font-mono">{section.sectionType}</span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        icon="chevronUp"
-                        title={t("content.moveUp")}
-                        aria-label={t("content.moveUp")}
-                        disabled={idx === 0 || isSaving}
-                        onClick={() => moveSection(openPage.slug, section.id, -1)}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        icon="chevronDown"
-                        title={t("content.moveDown")}
-                        aria-label={t("content.moveDown")}
-                        disabled={idx === drawerSectionIds.length - 1 || isSaving}
-                        onClick={() => moveSection(openPage.slug, section.id, 1)}
-                      />
-                    </div>
+                    {canEditContent && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          icon="chevronUp"
+                          title={t("content.moveUp")}
+                          aria-label={t("content.moveUp")}
+                          disabled={idx === 0 || isSaving}
+                          onClick={() => moveSection(openPage.slug, section.id, -1)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          icon="chevronDown"
+                          title={t("content.moveDown")}
+                          aria-label={t("content.moveDown")}
+                          disabled={idx === drawerSectionIds.length - 1 || isSaving}
+                          onClick={() => moveSection(openPage.slug, section.id, 1)}
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <BaseSectionEditor

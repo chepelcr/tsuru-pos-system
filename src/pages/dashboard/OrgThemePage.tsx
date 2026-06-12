@@ -1,5 +1,6 @@
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -29,6 +30,12 @@ export default function OrgThemePage() {
 
   const updateTheme = useUpdateOrgTheme(user?.userId);
 
+  // Each swatch persists the theme on click, so the grid is a write surface.
+  // Without update permission the swatches stay visible (read view) but
+  // non-interactive. Fail-open while my-permissions resolves.
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "theme");
+
   if (orgLoading || !org) {
     return (
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
@@ -41,7 +48,7 @@ export default function OrgThemePage() {
   }
 
   const handleSelect = (theme: ThemeDef) => {
-    if (theme.id === themeId) return;
+    if (!canUpdate || theme.id === themeId) return;
     setThemeId(theme.id); // instant live apply
     updateTheme.mutate({ orgId: org.id, theme: theme.id });
   };

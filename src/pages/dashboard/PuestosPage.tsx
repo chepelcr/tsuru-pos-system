@@ -6,6 +6,7 @@ import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { Button, Drawer, EmptyState, Pagination } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePermissions } from "@/hooks/useRbac";
 import { BranchCard } from "@/components/puestos/BranchCard";
 import { BranchForm } from "@/components/puestos/BranchForm";
 import { TerminalForm } from "@/components/puestos/TerminalForm";
@@ -32,6 +33,9 @@ export default function PuestosPage() {
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
+  // RBAC gating — `can` fails open until my-permissions resolves (log rollout).
+  const { can } = usePermissions();
+  const canCreateStations = can("admin", "create", "stations");
 
   const [term, setTerm] = useState("");
   // Land on active branches by default — mirrors products/clients.
@@ -133,9 +137,11 @@ export default function PuestosPage() {
             {total === 0 ? t("puestos.title") : t("puestos.subtitle", { active: String(activeCount), total: String(total) })}
           </p>
         </div>
-        <Button variant="primary" icon="plus" onClick={() => { setEditingBranch(null); setBranchDrawer(true); }}>
-          {t("puestos.newStation")}
-        </Button>
+        {canCreateStations && (
+          <Button variant="primary" icon="plus" onClick={() => { setEditingBranch(null); setBranchDrawer(true); }}>
+            {t("puestos.newStation")}
+          </Button>
+        )}
       </div>
 
       <ListToolbar<BranchStatusValue>
@@ -168,7 +174,7 @@ export default function PuestosPage() {
           icon="store"
           title={term || hasAdvancedFilters ? t("common.noResults") : t("puestos.title")}
           description={term || hasAdvancedFilters ? t("common.noResults") : t("puestos.newStation")}
-          action={!term && !hasAdvancedFilters ? (
+          action={!term && !hasAdvancedFilters && canCreateStations ? (
             <Button variant="primary" icon="plus" onClick={() => { setEditingBranch(null); setBranchDrawer(true); }}>
               {t("puestos.newStation")}
             </Button>

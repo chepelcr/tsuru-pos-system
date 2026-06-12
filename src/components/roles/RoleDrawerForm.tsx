@@ -18,6 +18,7 @@ import { Button, Drawer, Input } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import type { RoleDto } from "@/types/rbac";
+import { roleLabel } from "@/lib/rbacI18n";
 
 /**
  * Derive the unique role identifier (`roles.name`) from the display name on
@@ -94,7 +95,9 @@ export function RoleDrawerForm({
     setDisplayName(
       role?.displayName ??
         (duplicateFrom
-          ? t("roles.form.copyName", { name: duplicateFrom.displayName })
+          ? t("roles.form.copyName", {
+              name: roleLabel(t, duplicateFrom.name, duplicateFrom.displayName),
+            })
           : "")
     );
     setDescription(role?.description ?? duplicateFrom?.description ?? "");
@@ -172,9 +175,13 @@ export function RoleDrawerForm({
       : t("roles.form.createTitle");
 
   const subtitle = readOnly
-    ? sourceRole?.displayName
+    ? sourceRole
+      ? roleLabel(t, sourceRole.name, sourceRole.displayName)
+      : undefined
     : duplicateFrom
-      ? t("roles.form.duplicateSubtitle", { name: duplicateFrom.displayName })
+      ? t("roles.form.duplicateSubtitle", {
+          name: roleLabel(t, duplicateFrom.name, duplicateFrom.displayName),
+        })
       : undefined;
 
   const matrixLoading =

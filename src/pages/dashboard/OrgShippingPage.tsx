@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useShippingSettings, useUpdateShippingSettings } from "@/hooks/useOrgSettings";
@@ -27,6 +28,10 @@ export default function OrgShippingPage() {
   const [, navigate] = useLocation();
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+
+  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "shipping");
 
   const { data: shipping, isLoading: shippingLoading } = useShippingSettings(
     user?.userId,
@@ -90,6 +95,7 @@ export default function OrgShippingPage() {
             initialValues={shipping ?? undefined}
             onSubmit={handleSave}
             isSaving={updateMutation.isPending}
+            canSave={canUpdate}
           />
         )}
       </FadeIn>

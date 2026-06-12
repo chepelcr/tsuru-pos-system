@@ -2,6 +2,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
+import { usePermissions } from "@/hooks/useRbac";
 import type { PreDeployment } from "@/hooks/useDeployments";
 
 /** dd/MM/yyyy HH:mm — small local formatter (POS has no date-fns dependency). */
@@ -33,6 +34,9 @@ export function DeploymentPendingCard({
   onPublish,
 }: DeploymentPendingCardProps) {
   const { t } = useLanguage();
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canPublish = !permsReady || can("storefront", "create", "deployments");
 
   return (
     <div className="card p-5 flex flex-col gap-4">
@@ -57,17 +61,19 @@ export function DeploymentPendingCard({
         </div>
       </div>
 
-      <Button
-        variant="primary"
-        icon={publishing ? "refresh" : "upload"}
-        className={`w-full ${publishing ? "[&_svg]:animate-spin" : ""}`}
-        disabled={publishing}
-        onClick={onPublish}
-      >
-        {publishing
-          ? t("deployments.pending.publishing")
-          : t("deployments.pending.publishButton")}
-      </Button>
+      {canPublish && (
+        <Button
+          variant="primary"
+          icon={publishing ? "refresh" : "upload"}
+          className={`w-full ${publishing ? "[&_svg]:animate-spin" : ""}`}
+          disabled={publishing}
+          onClick={onPublish}
+        >
+          {publishing
+            ? t("deployments.pending.publishing")
+            : t("deployments.pending.publishButton")}
+        </Button>
+      )}
     </div>
   );
 }

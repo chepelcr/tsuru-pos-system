@@ -4,6 +4,7 @@ import { useXmlFiles } from '@/hooks/useXmlFiles';
 import { useInvoiceValidation } from '@/hooks/useInvoiceValidation';
 import { useValidationAction } from '@/hooks/useValidationAction';
 import { useResendNotification } from '@/hooks/useResendNotification';
+import { usePermissions } from '@/hooks/useRbac';
 import type { DocumentListItem } from '@/types/document';
 
 type ActionView = 'pdf' | 'download' | 'validation' | 'resend' | 'accept';
@@ -34,7 +35,19 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
   const validationAction = useValidationAction(orgId, doc.sale_id);
   const resend = useResendNotification(orgId, doc.sale_id);
 
-  const VIEWS = ['pdf', 'download', 'validation', 'resend', ...(isReceived ? ['accept'] : [])] as ActionView[];
+  // RBAC: download/resend re-distribute the document → documents/export/{sub};
+  // receiver accept/reject mirrors ConfirmationsPage → commercial/update/confirmations.
+  const { can, isReady: permsReady } = usePermissions();
+  const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
+  const canConfirm = !permsReady || can('commercial', 'update', 'confirmations');
+
+  const VIEWS = [
+    'pdf',
+    ...(canExport ? ['download'] : []),
+    'validation',
+    ...(canExport ? ['resend'] : []),
+    ...(isReceived && canConfirm ? ['accept'] : []),
+  ] as ActionView[];
 
   return (
     <div className="fixed inset-0 z-50 bg-foreground/50 flex items-center justify-center p-4">
@@ -73,7 +86,7 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
           )}
 
           {/* Download links */}
-          {view === 'download' && (
+          {view === 'download' && canExport && (
             <div className="space-y-3">
               {xmlFiles?.pdf_url ? (
                 <>
@@ -110,7 +123,7 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
           )}
 
           {/* Resend email */}
-          {view === 'resend' && (
+          {view === 'resend' && canExport && (
             <div className="space-y-3">
               <p className="text-[13px] text-muted-foreground">Ingresa los correos adicionales a donde enviar el documento:</p>
               {resendEmails.map((email, i) => (
@@ -142,7 +155,7 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
           )}
 
           {/* Accept/Reject (received only) */}
-          {view === 'accept' && isReceived && (
+          {view === 'accept' && isReceived && canConfirm && (
             <div className="space-y-4">
               <p className="text-[13px] text-muted-foreground">Selecciona la acción para este documento recibido:</p>
               <div className="flex gap-2">

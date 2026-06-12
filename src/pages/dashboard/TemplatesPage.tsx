@@ -3,6 +3,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useTemplates } from "@/hooks/useTemplates";
+import { usePermissions } from "@/hooks/useRbac";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Icon, Spinner, EmptyState, FadeIn } from "@/components/ui";
@@ -40,6 +41,10 @@ export default function TemplatesPage() {
   const applyTemplate = useApplyTemplate(user?.userId);
 
   const { confirm, ConfirmModal } = useConfirmModal();
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canApplyTemplate = !permsReady || can("storefront", "update", "templates");
 
   usePageTitle([t("storefront.title")]);
 
@@ -188,7 +193,7 @@ export default function TemplatesPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* Playground / start from scratch — only when no filters narrow it out */}
-            {!hasFilters && (
+            {!hasFilters && canApplyTemplate && (
               <TemplatePlaygroundCard
                 isSelected={!activeName}
                 onSelect={() => handleApply(null, t("playground.title"))}

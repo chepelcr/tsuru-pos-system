@@ -9,6 +9,7 @@ import { RoleDrawerForm } from "@/components/roles/RoleDrawerForm";
 import { Badge, Button, EmptyState, Icon } from "@/components/ui";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import type { RoleDto } from "@/types/rbac";
+import { roleLabel, roleDescription } from "@/lib/rbacI18n";
 
 interface DrawerState {
   open: boolean;
@@ -119,6 +120,9 @@ export default function RolesPage() {
 
   const renderRoleCard = (role: RoleDto) => {
     const isSystem = role.isSystem;
+    // System templates render localized; custom org roles keep their own text
+    const label = roleLabel(t, role.name, role.displayName);
+    const descText = roleDescription(t, role.name, role.description);
     return (
       <div key={role.id} className="card card-hover p-4 flex items-center gap-3.5 flex-wrap">
         <div
@@ -131,7 +135,7 @@ export default function RolesPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="t-body font-semibold text-foreground truncate">
-              {role.displayName}
+              {label}
             </span>
             <Badge variant={isSystem ? "secondary" : "primary-soft"}>
               {isSystem ? t("roles.systemBadge") : t("roles.customBadge")}
@@ -140,9 +144,9 @@ export default function RolesPage() {
               <Badge variant="warning">{t("roles.inactiveBadge")}</Badge>
             )}
           </div>
-          {role.description && (
+          {descText && (
             <div className="t-sm text-muted-foreground truncate">
-              {role.description}
+              {descText}
             </div>
           )}
         </div>

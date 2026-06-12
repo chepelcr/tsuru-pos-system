@@ -19,6 +19,7 @@ import {
 import { SearchInput } from "@/components/forms/SearchInput";
 import { FormField } from "@/components/forms/FormField";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
+import { roleLabel as rbacRoleLabel } from "@/lib/rbacI18n";
 
 const PAGE_SIZE = 12;
 
@@ -68,6 +69,8 @@ export default function MembersPage() {
   const assignMemberRole = useAssignMemberRole();
   const { can } = usePermissions();
   const canUpdateMembers = can("admin", "update", "members");
+  const canInviteMembers = can("admin", "invite", "members");
+  const canRemoveMembers = can("admin", "remove", "members");
 
   // Same-org role rule (contract V3): only active, non-platform_admin roles
   // are assignable — filtered defensively here too.
@@ -196,7 +199,10 @@ export default function MembersPage() {
 
   const roleLabel = (member: {
     role?: { displayName?: string; name?: string };
-  }) => member.role?.displayName || member.role?.name || t("members.roleMember");
+  }) =>
+    member.role?.name
+      ? rbacRoleLabel(t, member.role.name, member.role.displayName ?? member.role.name)
+      : member.role?.displayName || t("members.roleMember");
 
   // O11 — assign a role to a member (server enforces same-org rule V3 +
   // last-owner protection). Controlled <Select> snaps back on cancel because
@@ -209,7 +215,7 @@ export default function MembersPage() {
     confirm({
       title: t("roles.members.changeRoleTitle"),
       message: t("roles.members.changeRoleConfirm", {
-        role: role.displayName,
+        role: rbacRoleLabel(t, role.name, role.displayName),
         name,
       }),
       variant: "default",
@@ -248,9 +254,11 @@ export default function MembersPage() {
               : t("members.subtitle")}
           </p>
         </div>
-        <Button variant="primary" size="sm" icon="userPlus" onClick={openInvite}>
-          {t("members.invite")}
-        </Button>
+        {canInviteMembers && (
+          <Button variant="primary" size="sm" icon="userPlus" onClick={openInvite}>
+            {t("members.invite")}
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -293,7 +301,7 @@ export default function MembersPage() {
             term ? t("members.tryOtherSearch") : t("members.noMembersDescription")
           }
           action={
-            !term ? (
+            !term && canInviteMembers ? (
               <Button
                 variant="primary"
                 size="sm"
@@ -348,7 +356,7 @@ export default function MembersPage() {
                       )}
                       {roles.map((role) => (
                         <option key={role.id} value={role.id}>
-                          {role.displayName}
+                          {rbacRoleLabel(t, role.name, role.displayName)}
                         </option>
                       ))}
                     </Select>
@@ -358,7 +366,7 @@ export default function MembersPage() {
                     {roleLabel(m)}
                   </Badge>
                 )}
-                {!isCurrentUser && !isOwner && (
+                {!isCurrentUser && !isOwner && canRemoveMembers && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -427,28 +435,32 @@ export default function MembersPage() {
                   </div>
                 </div>
                 <Badge variant="secondary">
-                  {inv.role?.displayName ?? inv.roleId}
+                  {inv.role?.name
+                    ? rbacRoleLabel(t, inv.role.name, inv.role.displayName ?? inv.role.name)
+                    : inv.role?.displayName ?? inv.roleId}
                 </Badge>
                 <Badge variant="warning">{t("members.statusPending")}</Badge>
-                <div className="flex items-center gap-1.5 ml-auto">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon="refresh"
-                    onClick={() => handleResend(inv)}
-                  >
-                    {t("members.resend")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon="close"
-                    className="text-destructive"
-                    onClick={() => handleCancelInvite(inv)}
-                  >
-                    {t("members.cancelInvite")}
-                  </Button>
-                </div>
+                {canInviteMembers && (
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon="refresh"
+                      onClick={() => handleResend(inv)}
+                    >
+                      {t("members.resend")}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon="close"
+                      className="text-destructive"
+                      onClick={() => handleCancelInvite(inv)}
+                    >
+                      {t("members.cancelInvite")}
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -510,7 +522,7 @@ export default function MembersPage() {
               </option>
               {roles.map((role) => (
                 <option key={role.id} value={role.id}>
-                  {role.displayName}
+                  {rbacRoleLabel(t, role.name, role.displayName)}
                 </option>
               ))}
             </Select>

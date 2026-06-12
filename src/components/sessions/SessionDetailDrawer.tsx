@@ -1,6 +1,7 @@
 import { Drawer, Icon, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import { fmt, formatDate } from "@/utils/formatDate";
 import { SessionOverviewTab } from "./tabs/SessionOverviewTab";
 import { SessionAssignmentsTab } from "./tabs/SessionAssignmentsTab";
@@ -40,6 +41,9 @@ export function SessionDetailDrawer({
   onEndSession,
 }: SessionDetailDrawerProps) {
   const { t } = useLanguage();
+  // RBAC gating — `can` fails open until my-permissions resolves (log rollout).
+  const { can } = usePermissions();
+  const canUpdateSessions = can("admin", "update", "sessions");
   if (!session) return null;
 
   const isActive = session.status === 1;
@@ -89,7 +93,7 @@ export function SessionDetailDrawer({
             )}
           </div>
 
-          {isActive && (
+          {isActive && canUpdateSessions && (
             <div className="flex gap-2 mt-3 flex-wrap">
               <Button variant="outline" size="sm" icon="edit" onClick={onEdit}>{t("common.edit") ?? "Editar"}</Button>
               <Button variant="secondary" size="sm" icon="lock" onClick={() => onEndSession(session.session_id)} disabled={endingPending}>

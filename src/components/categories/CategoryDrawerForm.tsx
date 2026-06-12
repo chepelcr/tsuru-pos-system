@@ -4,6 +4,7 @@ import { Drawer, Button, Input, MediaPicker } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import {
   useCreateCategory,
   useUpdateCategory,
@@ -65,6 +66,12 @@ const slugify = (name: string) =>
 export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: CategoryDrawerFormProps) {
   const { t } = useLanguage();
   const isEditing = !!category;
+
+  // RBAC defense-in-depth on the footer submit — fail-open while loading (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canSubmit =
+    !permsReady || can("commercial", isEditing ? "update" : "create", "categories");
+
   const createMutation = useCreateCategory(orgId);
   const updateMutation = useUpdateCategory(orgId);
 
@@ -136,11 +143,13 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
             {t("categories.form.cancel")}
           </Button>
-          <Button variant="primary" size="sm" onClick={() => onSubmit()} disabled={saving}>
-            {saving
-              ? t(isEditing ? "categories.form.updating" : "categories.form.creating")
-              : t(isEditing ? "categories.form.update" : "categories.form.create")}
-          </Button>
+          {canSubmit && (
+            <Button variant="primary" size="sm" onClick={() => onSubmit()} disabled={saving}>
+              {saving
+                ? t(isEditing ? "categories.form.updating" : "categories.form.creating")
+                : t(isEditing ? "categories.form.update" : "categories.form.create")}
+            </Button>
+          )}
         </div>
       }
     >

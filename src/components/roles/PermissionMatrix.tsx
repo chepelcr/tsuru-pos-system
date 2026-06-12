@@ -4,11 +4,21 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Icon } from "@/components/ui";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
+import { actionLabel, moduleLabel, submoduleLabel } from "@/lib/rbacI18n";
 import type {
   AvailableMatrixDto,
   MatrixModule,
+  MatrixSubmodule,
   PermissionGrantDto,
 } from "@/types/rbac";
+
+/**
+ * Doc-type submodules of the `documents` module are CREATE-gates, not real
+ * sections — the drawer renders them as a nested doc-type picker under
+ * Emitidos→Crear instead of as submodule rows. Storage stays unchanged:
+ * each pick serializes to a documents/<type> create grant.
+ */
+const DOC_TYPE_SUBS = new Set(["fe", "te", "nc", "nd", "fc", "fexp"]);
 
 /** Internal grant key — one selected (module, submodule, action) cell. */
 export function grantKey(
@@ -137,9 +147,48 @@ export function PermissionMatrix({
       sub.actions.map((a) => grantKey(module.id, sub.id, a.id))
     );
 
+  /** documents/<type> create grant key, or null when unavailable. */
+  const docTypeCreateKey = (module: MatrixModule, sub: MatrixSubmodule): string | null => {
+    const create = sub.actions.find((a) => a.name === "create");
+    return create ? grantKey(module.id, sub.id, create.id) : null;
+  };
+
+  /**
+   * Emitidos→Crear drives the doc-type picker: enabling it defaults to ALL
+   * doc types (previous behavior — deselect the sensitive ones); disabling
+   * it clears the type grants so no orphan create-gates linger.
+   */
+  const toggleEmittedCreate = (
+    module: MatrixModule,
+    docTypeSubs: MatrixSubmodule[],
+    key: string
+  ) => {
+    if (readOnly) return;
+    const next = new Set(grants);
+    const turningOn = !next.has(key);
+    if (turningOn) next.add(key);
+    else next.delete(key);
+    for (const sub of docTypeSubs) {
+      const typeKey = docTypeCreateKey(module, sub);
+      if (!typeKey) continue;
+      if (turningOn) next.add(typeKey);
+      else next.delete(typeKey);
+    }
+    onChange(next);
+  };
+
   return (
     <div className="flex flex-col gap-3">
       {modules.map((module) => {
+        const isDocs = module.name === "documents";
+        const docTypeSubs = isDocs
+          ? module.submodules
+              .filter((s) => DOC_TYPE_SUBS.has(s.name))
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+          : [];
+        const rowSubs = module.submodules.filter(
+          (s) => !(isDocs && DOC_TYPE_SUBS.has(s.name))
+        );
         const allKeys = moduleKeys(module);
         const selectedCount = allKeys.filter((k) => grants.has(k)).length;
         const allSelected = allKeys.length > 0 && selectedCount === allKeys.length;
@@ -148,7 +197,7 @@ export function PermissionMatrix({
         return (
           <SectionWrapper
             key={module.id}
-            title={module.displayName}
+            title={moduleLabel(t, module.name, module.displayName)}
             icon={Shield}
             badge={t("roles.matrix.selected", { count: selectedCount })}
             isExpanded={isExpanded}
@@ -171,28 +220,47 @@ export function PermissionMatrix({
               </div>
             )}
 
-            {module.submodules
+            {rowSubs
               .slice()
               .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((sub) => (
+              .map((sub) => {
+                const isEmitted = isDocs && sub.name === "emitted";
+                const emittedCreateAction = isEmitted
+                  ? sub.actions.find((a) => a.name === "create")
+                  : undefined;
+                const emittedCreateKey = emittedCreateAction
+                  ? grantKey(module.id, sub.id, emittedCreateAction.id)
+                  : null;
+                const showDocTypes =
+                  !!emittedCreateKey &&
+                  grants.has(emittedCreateKey) &&
+                  docTypeSubs.length > 0;
+
+                return (
                 <div
                   key={sub.id}
                   className="flex flex-col gap-1.5 py-1.5 border-b border-border/40 last:border-b-0"
                 >
                   <span className="t-sm font-semibold text-foreground">
-                    {sub.displayName}
+                    {submoduleLabel(t, module.name, sub.name, sub.displayName)}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {sub.actions.map((action) => {
                       const key = grantKey(module.id, sub.id, action.id);
                       const selected = grants.has(key);
+                      const isDocTypeDriver =
+                        isEmitted && action.name === "create";
                       return (
                         <button
                           key={action.id}
                           type="button"
                           disabled={readOnly}
                           aria-pressed={selected}
-                          onClick={() => toggleCell(key)}
+                          onClick={() =>
+                            isDocTypeDriver
+                              ? toggleEmittedCreate(module, docTypeSubs, key)
+                              : toggleCell(key)
+                          }
                           className={`badge ${
                             selected
                               ? "badge-primary-soft"
@@ -204,13 +272,51 @@ export function PermissionMatrix({
                           }`}
                         >
                           {selected && <Icon name="check" size={11} />}
-                          {action.displayName}
+                          {actionLabel(t, action.name, action.displayName)}
                         </button>
                       );
                     })}
                   </div>
+
+                  {/* Doc-type picker — appears when Emitidos→Crear is on */}
+                  {showDocTypes && (
+                    <div className="mt-1 pl-3 border-l-2 border-border">
+                      <span className="t-xs text-muted-foreground block mb-1.5">
+                        {t("roles.matrix.docTypes")}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {docTypeSubs.map((typeSub) => {
+                          const typeKey = docTypeCreateKey(module, typeSub);
+                          if (!typeKey) return null;
+                          const selected = grants.has(typeKey);
+                          return (
+                            <button
+                              key={typeSub.id}
+                              type="button"
+                              disabled={readOnly}
+                              aria-pressed={selected}
+                              onClick={() => toggleCell(typeKey)}
+                              className={`badge ${
+                                selected
+                                  ? "badge-primary-soft"
+                                  : "badge-outline text-muted-foreground"
+                              } ${
+                                readOnly
+                                  ? "cursor-default opacity-80"
+                                  : "cursor-pointer hover:bg-muted"
+                              }`}
+                            >
+                              {selected && <Icon name="check" size={11} />}
+                              {submoduleLabel(t, module.name, typeSub.name, typeSub.displayName)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
           </SectionWrapper>
         );
       })}

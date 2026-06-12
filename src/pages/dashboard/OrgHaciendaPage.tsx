@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useOrgConfigurations } from "@/hooks/useOrgConfigurations";
@@ -24,6 +25,12 @@ export default function OrgHaciendaPage() {
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
 
   const { data: config, isLoading } = useOrgConfigurations(org?.id);
+
+  // The stepper, edit triggers and drawer are all write surfaces; gate them on
+  // organization/update/hacienda. Fail-open while my-permissions resolves
+  // (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "hacienda");
 
   // First-time setup branch: render the stepper. Once a config exists we swap
   // to the existing summary tab + edit drawer, unchanged.
@@ -54,7 +61,7 @@ export default function OrgHaciendaPage() {
           </div>
         )}
 
-        {showStepper && org ? (
+        {showStepper && org && canUpdate ? (
           <HaciendaCredentialsStepper
             orgId={org.id}
             onSaved={() => {
@@ -66,12 +73,12 @@ export default function OrgHaciendaPage() {
           <HaciendaTab
             config={config}
             isLoading={isLoading}
-            onEdit={() => setDrawerOpen(true)}
+            onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
           />
         )}
       </FadeIn>
 
-      {org && (
+      {org && canUpdate && (
         <HaciendaConfigDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}

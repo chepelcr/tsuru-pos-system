@@ -5,6 +5,7 @@ import { Icon, Card, Badge, Menu } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
+import { usePermissions } from "@/hooks/useRbac";
 import { TerminalRow } from "./TerminalRow";
 import type { Branch, TerminalListResponse, BranchStatus } from "@/types";
 
@@ -23,6 +24,11 @@ interface BranchCardProps {
 
 export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTerminal, delay = 0 }: BranchCardProps) {
   const { t } = useLanguage();
+  // RBAC gating — `can` fails open until my-permissions resolves (log rollout).
+  const { can } = usePermissions();
+  const canCreateStations = can("admin", "create", "stations");
+  const canUpdateStations = can("admin", "update", "stations");
+  const canDeleteStations = can("admin", "delete", "stations");
   const typeOptions = useBranchTypeOptions();
   const typeOpt = typeOptions.find((o) => o.code === branch.type);
   const typeLabel = typeOpt?.name ?? branch.type;
@@ -41,11 +47,12 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
   const terminals = terminalsData?.data ?? [];
 
   const menuItems = [
-    { label: t("common.edit"),        icon: "edit",        action: () => onEdit(branch),            hidden: branch.status === 3 },
-    { label: t("common.activate"),    icon: "checkCircle", action: () => onStatusChange(branch, 1), hidden: branch.status !== 2, color: "hsl(var(--success))" },
-    { label: t("common.deactivate"),  icon: "xCircle",     action: () => onStatusChange(branch, 2), hidden: branch.status !== 1 },
-    { label: t("common.delete"),      icon: "trash",       action: () => onStatusChange(branch, 3), hidden: branch.status === 3, color: "hsl(var(--destructive))" },
+    { label: t("common.edit"),        icon: "edit",        action: () => onEdit(branch),            hidden: branch.status === 3 || !canUpdateStations },
+    { label: t("common.activate"),    icon: "checkCircle", action: () => onStatusChange(branch, 1), hidden: branch.status !== 2 || !canUpdateStations, color: "hsl(var(--success))" },
+    { label: t("common.deactivate"),  icon: "xCircle",     action: () => onStatusChange(branch, 2), hidden: branch.status !== 1 || !canUpdateStations },
+    { label: t("common.delete"),      icon: "trash",       action: () => onStatusChange(branch, 3), hidden: branch.status === 3 || !canDeleteStations, color: "hsl(var(--destructive))" },
   ];
+  const hasMenuItems = menuItems.some((item) => !item.hidden);
 
   return (
     <FadeIn delay={delay} duration={0.4}>
@@ -76,7 +83,7 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
                 </div>
               </div>
             </div>
-            <Menu items={menuItems} />
+            {hasMenuItems && <Menu items={menuItems} />}
           </div>
 
           <div className="flex items-center gap-3.5 mt-3 flex-wrap">
@@ -124,7 +131,7 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
             ) : (
               terminals.map((term, i) => <TerminalRow key={term.terminal_id} terminal={term} isLast={i === terminals.length - 1} />)
             )}
-            {isActive && (
+            {isActive && canCreateStations && (
               <div className="px-5 py-2.5">
                 <button
                   type="button"

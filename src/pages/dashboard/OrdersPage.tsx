@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useOrders } from '@/hooks/useOrders';
+import { usePermissions } from '@/hooks/useRbac';
 import type { Order } from '@/types/order';
 import { fmt } from '@/lib/utils';
 import type { OrderSearchFilters } from '@/lib/orderSearchBuilder';
@@ -125,6 +126,11 @@ export default function OrdersPage() {
 
   usePageTitle([t('orders.title')]);
 
+  // RBAC action gating — Excel import creates orders. Fail-open while
+  // my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can('commercial', 'create', 'orders');
+
   const [term, setTerm] = useState('');
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<OrdersAdvancedFilters>({ ...EMPTY_ORDERS_FILTERS });
@@ -188,9 +194,11 @@ export default function OrdersPage() {
           <h1 className="t-h1 mb-1.5">{t('orders.title')}</h1>
           <p className="t-body text-muted-foreground">{t('orders.subtitle')}</p>
         </div>
-        <Button variant="primary" icon="upload" onClick={() => setImportOpen(true)}>
-          {t('orders.excel.import')}
-        </Button>
+        {canCreate && (
+          <Button variant="primary" icon="upload" onClick={() => setImportOpen(true)}>
+            {t('orders.excel.import')}
+          </Button>
+        )}
       </div>
 
       <ListToolbar

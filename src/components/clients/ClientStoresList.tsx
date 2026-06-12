@@ -3,6 +3,7 @@ import { Button, Pagination, EmptyState } from "@/components/ui";
 import { SearchInput } from "@/components/forms/SearchInput";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { usePermissions } from "@/hooks/useRbac";
 import { useStores, useStoreMutations } from "@/hooks/useStores";
 import { useStoreListStore } from "@/store/store-list-store";
 import { buildStoreSearchString } from "@/lib/storeSearchBuilder";
@@ -21,6 +22,11 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
   const { confirm, ConfirmModal } = useConfirmModal();
   const { searchQuery, page, pageSize, sortBy, sortOrder, setSearchQuery, setPage } =
     useStoreListStore();
+
+  // RBAC action gating — stores inherit commercial/clients tuples (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can("commercial", "create", "clients");
+  const canUpload = !permsReady || can("commercial", "upload", "clients");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Store | null>(null);
@@ -88,12 +94,16 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
           placeholder={t("stores.search")}
           className="flex-1 min-w-[200px]"
         />
-        <Button variant="outline" size="sm" icon="upload" onClick={() => setUploadOpen(true)}>
-          {t("stores.uploadExcel")}
-        </Button>
-        <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
-          {t("stores.addStore")}
-        </Button>
+        {canUpload && (
+          <Button variant="outline" size="sm" icon="upload" onClick={() => setUploadOpen(true)}>
+            {t("stores.uploadExcel")}
+          </Button>
+        )}
+        {canCreate && (
+          <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
+            {t("stores.addStore")}
+          </Button>
+        )}
       </div>
 
       {/* List */}
@@ -109,9 +119,11 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
           title={t("stores.noStores")}
           description={t("stores.noStoresDescription")}
           action={
-            <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
-              {t("stores.addStore")}
-            </Button>
+            canCreate ? (
+              <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
+                {t("stores.addStore")}
+              </Button>
+            ) : undefined
           }
         />
       ) : (

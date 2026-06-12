@@ -1,6 +1,7 @@
 import { Card, Menu, Badge } from "@/components/ui";
 import type { MenuItem } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import type { Store } from "@/types";
 
 interface StoreCardProps {
@@ -27,25 +28,31 @@ export function StoreCard({ store, onEdit, onStatusChange, delay = 0 }: StoreCar
   const { t } = useLanguage();
   const isDeleted = store.status === 3;
 
+  // RBAC action gating — stores inherit commercial/clients tuples (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("commercial", "update", "clients");
+  const canDelete = !permsReady || can("commercial", "delete", "clients");
+
   const menuItems: MenuItem[] = [
-    { label: t("common.edit"), icon: "edit", action: () => onEdit(store) },
+    { label: t("common.edit"), icon: "edit", action: () => onEdit(store), hidden: !canUpdate },
     {
       label: t("stores.activate"),
       icon: "checkCircle",
       action: () => onStatusChange(store.store_id, 1),
-      hidden: store.status !== 2,
+      hidden: store.status !== 2 || !canUpdate,
     },
     {
       label: t("stores.deactivate"),
       icon: "xCircle",
       action: () => onStatusChange(store.store_id, 2),
-      hidden: store.status !== 1,
+      hidden: store.status !== 1 || !canUpdate,
     },
     {
       label: t("common.delete"),
       icon: "trash",
       color: "hsl(var(--destructive))",
       action: () => onStatusChange(store.store_id, 3),
+      hidden: !canDelete,
     },
   ];
 
@@ -73,7 +80,7 @@ export function StoreCard({ store, onEdit, onStatusChange, delay = 0 }: StoreCar
           </div>
         </div>
 
-        {!isDeleted && (
+        {!isDeleted && (canUpdate || canDelete) && (
           <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <Menu align="right" items={menuItems} />
           </div>

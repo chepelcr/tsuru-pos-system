@@ -3,6 +3,7 @@ import { useOrgContext } from "@/contexts/OrgContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import { usePermissions } from "@/hooks/useRbac";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -27,6 +28,14 @@ export default function GalleryPage() {
   usePageTitle([t("gallery.title")]);
   const { listQuery, upload, addExternal, remove } = useMediaLibrary(orgId);
   const { confirm, ConfirmModal } = useConfirmModal();
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can("storefront", "create", "gallery");
+  const canUpload = !permsReady || can("storefront", "upload", "gallery");
+  const canDelete = !permsReady || can("storefront", "delete", "gallery");
+  // The Add modal hosts both the upload dropzone and add-by-URL.
+  const canAdd = canCreate || canUpload;
 
   const items: MediaItem[] = listQuery.data ?? [];
   const [addOpen, setAddOpen] = useState(false);
@@ -97,9 +106,11 @@ export default function GalleryPage() {
           <h1 className="t-h1 mb-1.5">{t("gallery.title")}</h1>
           <p className="t-body text-muted-foreground">{t("gallery.subtitle")}</p>
         </div>
-        <Button variant="primary" size="sm" icon="plus" onClick={() => { setError(null); setAddOpen(true); }}>
-          {t("gallery.add")}
-        </Button>
+        {canAdd && (
+          <Button variant="primary" size="sm" icon="plus" onClick={() => { setError(null); setAddOpen(true); }}>
+            {t("gallery.add")}
+          </Button>
+        )}
       </div>
 
       {/* Grid */}
@@ -110,7 +121,7 @@ export default function GalleryPage() {
           action={<Button variant="outline" size="sm" icon="refresh" onClick={() => listQuery.refetch()}>{t("common.retry")}</Button>} />
       ) : items.length === 0 ? (
         <EmptyState icon="upload" title={t("media.empty")}
-          action={<Button variant="primary" size="sm" icon="plus" onClick={() => setAddOpen(true)}>{t("gallery.add")}</Button>} />
+          action={canAdd ? <Button variant="primary" size="sm" icon="plus" onClick={() => setAddOpen(true)}>{t("gallery.add")}</Button> : undefined} />
       ) : (
         <FadeIn>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -126,8 +137,10 @@ export default function GalleryPage() {
                       onClick={() => copy(item.url, item.id)}>
                       {copiedId === item.id ? t("gallery.copied") : t("gallery.copyUrl")}
                     </Button>
-                    <Button variant="ghost" size="xs" icon="trash" disabled={remove.isPending}
-                      aria-label={t("common.delete")} onClick={() => askDelete(item)} />
+                    {canDelete && (
+                      <Button variant="ghost" size="xs" icon="trash" disabled={remove.isPending}
+                        aria-label={t("common.delete")} onClick={() => askDelete(item)} />
+                    )}
                   </div>
                 </div>
               </div>
@@ -154,37 +167,43 @@ export default function GalleryPage() {
               </button>
             </div>
 
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={onDrop}
-              onClick={() => !busy && inputRef.current?.click()}
-              className={`w-full h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
-                dragging ? "border-primary bg-primary/[0.06]" : "border-border bg-muted/35"
-              }`}
-            >
-              {busy ? (
-                <><Spinner /><span className="t-xs text-muted-foreground">{t("media.uploading")}</span></>
-              ) : (
-                <><Icon name="upload" size={26} className="text-muted-foreground" />
-                  <span className="t-xs text-muted-foreground text-center px-3">{t("media.uploadHint")}</span></>
-              )}
-            </div>
-            <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
+            {canUpload && (
+              <>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={onDrop}
+                  onClick={() => !busy && inputRef.current?.click()}
+                  className={`w-full h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
+                    dragging ? "border-primary bg-primary/[0.06]" : "border-border bg-muted/35"
+                  }`}
+                >
+                  {busy ? (
+                    <><Spinner /><span className="t-xs text-muted-foreground">{t("media.uploading")}</span></>
+                  ) : (
+                    <><Icon name="upload" size={26} className="text-muted-foreground" />
+                      <span className="t-xs text-muted-foreground text-center px-3">{t("media.uploadHint")}</span></>
+                  )}
+                </div>
+                <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
+              </>
+            )}
 
             {error && <p className="mt-2 t-xs text-destructive">{error}</p>}
 
-            <div className="flex items-end gap-2 mt-3">
-              <div className="flex-1">
-                <span className="label-section">{t("media.urlField")}</span>
-                <Input value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)}
-                  placeholder={t("media.urlPlaceholder")}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onAddUrl(); } }} />
+            {canCreate && (
+              <div className="flex items-end gap-2 mt-3">
+                <div className="flex-1">
+                  <span className="label-section">{t("media.urlField")}</span>
+                  <Input value={urlDraft} onChange={(e) => setUrlDraft(e.target.value)}
+                    placeholder={t("media.urlPlaceholder")}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onAddUrl(); } }} />
+                </div>
+                <Button variant="outline" size="sm" icon="plus" onClick={() => void onAddUrl()} disabled={!urlDraft.trim() || busy}>
+                  {t("media.add")}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" icon="plus" onClick={() => void onAddUrl()} disabled={!urlDraft.trim() || busy}>
-                {t("media.add")}
-              </Button>
-            </div>
+            )}
 
             <div className="flex justify-end mt-4">
               <Button variant="primary" size="sm" onClick={() => setAddOpen(false)}>{t("common.close")}</Button>

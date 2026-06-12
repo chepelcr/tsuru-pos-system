@@ -8,6 +8,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { usePermissions } from "@/hooks/useRbac";
 import type { Product, Category } from "@/types";
 import { Card, Icon, Button, Badge, Menu } from "@/components/ui";
 import { ProductDrawerForm, EMPTY_FORM, type ProductFormState } from "@/components/products/ProductDrawerForm";
@@ -51,6 +52,11 @@ export default function ProductDetailPage({ productId }: Props) {
   const qc = useQueryClient();
   const { t } = useLanguage();
   const { confirm, ConfirmModal } = useConfirmModal();
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("commercial", "update", "products");
+  const canDelete = !permsReady || can("commercial", "delete", "products");
 
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState<ProductFormState>({ ...EMPTY_FORM });
@@ -325,27 +331,33 @@ export default function ProductDetailPage({ productId }: Props) {
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" icon="edit" onClick={openEdit}>
-              Editar
-            </Button>
-            <div onClick={(e) => e.stopPropagation()}>
-              <Menu
-                align="right"
-                items={[
-                  {
-                    label: isActive ? "Desactivar producto" : "Activar producto",
-                    icon: isActive ? "xCircle" : "checkCircle",
-                    action: handleToggleActive,
-                  },
-                  {
-                    label: "Eliminar producto",
-                    icon: "trash",
-                    action: handleDelete,
-                    color: "destructive",
-                  },
-                ]}
-              />
-            </div>
+            {canUpdate && (
+              <Button variant="outline" size="sm" icon="edit" onClick={openEdit}>
+                Editar
+              </Button>
+            )}
+            {(canUpdate || canDelete) && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Menu
+                  align="right"
+                  items={[
+                    {
+                      label: isActive ? "Desactivar producto" : "Activar producto",
+                      icon: isActive ? "xCircle" : "checkCircle",
+                      action: handleToggleActive,
+                      hidden: !canUpdate,
+                    },
+                    {
+                      label: "Eliminar producto",
+                      icon: "trash",
+                      action: handleDelete,
+                      color: "destructive",
+                      hidden: !canDelete,
+                    },
+                  ]}
+                />
+              </div>
+            )}
           </div>
         </div>
       </Card>
@@ -401,12 +413,14 @@ export default function ProductDetailPage({ productId }: Props) {
           <div className="t-body text-muted-foreground">
             Sin información adicional registrada.
           </div>
-          <button
-            onClick={openEdit}
-            className="t-body mt-2.5 text-accent-rose bg-transparent border-0 cursor-pointer font-semibold"
-          >
-            Agregar información →
-          </button>
+          {canUpdate && (
+            <button
+              onClick={openEdit}
+              className="t-body mt-2.5 text-accent-rose bg-transparent border-0 cursor-pointer font-semibold"
+            >
+              Agregar información →
+            </button>
+          )}
         </Card>
       )}
 

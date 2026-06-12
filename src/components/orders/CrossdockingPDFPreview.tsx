@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Button, Icon } from '@/components/ui';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePermissions } from '@/hooks/useRbac';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import type { Order } from '@/types/order';
 import { CrossdockingSummaries } from './CrossdockingSummaries';
@@ -19,6 +20,11 @@ interface CrossdockingPDFPreviewProps {
  */
 export function CrossdockingPDFPreview({ open, onClose, order }: CrossdockingPDFPreviewProps) {
   const { t } = useLanguage();
+
+  // RBAC action gating — downloads map to export; the preview itself stays
+  // visible under read. Fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canExport = !permsReady || can('commercial', 'export', 'orders');
 
   useEffect(() => {
     if (!open) return;
@@ -83,27 +89,27 @@ export function CrossdockingPDFPreview({ open, onClose, order }: CrossdockingPDF
         </div>
 
         <div className="px-5 py-4 border-t border-border flex flex-wrap gap-2 shrink-0">
-          {crossdockingPdfUrl && (
+          {canExport && crossdockingPdfUrl && (
             <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(crossdockingPdfUrl)}>
               {t('orders.crossdocking.downloadPdf')}
             </Button>
           )}
-          {crossdockingExcelUrl && (
+          {canExport && crossdockingExcelUrl && (
             <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(crossdockingExcelUrl)}>
               {t('orders.crossdocking.downloadExcel')}
             </Button>
           )}
-          {nuevoReporteUrl && (
+          {canExport && nuevoReporteUrl && (
             <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(nuevoReporteUrl)}>
               {t('orders.attachments.nuevoReporte')}
             </Button>
           )}
-          {orderPdfUrl && (
+          {canExport && orderPdfUrl && (
             <Button variant="outline" size="sm" icon="fileText" onClick={() => downloadFromUrl(orderPdfUrl)}>
               {t('orders.attachments.orderPdf')}
             </Button>
           )}
-          {orderExcelUrl && (
+          {canExport && orderExcelUrl && (
             <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(orderExcelUrl)}>
               {t('orders.attachments.orderExcel')}
             </Button>

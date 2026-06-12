@@ -34,6 +34,8 @@ interface ContactSettingsFormProps {
   initialValues?: OrgContactSettings;
   onSubmit: (data: OrgContactSettings) => Promise<void>;
   isSaving?: boolean;
+  /** RBAC gate from the page call site — hides the save button when false. */
+  canSave?: boolean;
 }
 
 /**
@@ -44,6 +46,7 @@ export function ContactSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
+  canSave = true,
 }: ContactSettingsFormProps) {
   const { t } = useLanguage();
 
@@ -153,17 +156,19 @@ export function ContactSettingsForm({
         </div>
       </SectionWrapper>
 
-      <div className="flex justify-end pt-1">
-        <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
-          {isSaving ? (
-            <>
-              <Spinner size={14} /> {t("common.saving")}
-            </>
-          ) : (
-            t("common.save")
-          )}
-        </button>
-      </div>
+      {canSave && (
+        <div className="flex justify-end pt-1">
+          <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Spinner size={14} /> {t("common.saving")}
+              </>
+            ) : (
+              t("common.save")
+            )}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

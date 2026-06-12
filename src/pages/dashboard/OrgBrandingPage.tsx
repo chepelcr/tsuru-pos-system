@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
@@ -30,6 +31,10 @@ export default function OrgBrandingPage() {
   const [, navigate] = useLocation();
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+
+  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "branding");
 
   const { data: branding, isLoading: brandingLoading } = useThemeBrandingSettings(
     user?.userId,
@@ -93,6 +98,7 @@ export default function OrgBrandingPage() {
             initialValues={branding ?? undefined}
             onSubmit={handleSave}
             isSaving={updateMutation.isPending}
+            canSave={canUpdate}
           />
         )}
       </FadeIn>

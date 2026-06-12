@@ -7,6 +7,7 @@ import { Card, Badge, Button, Icon, Select, EmptyState, Pagination, FormLabel } 
 import { FadeIn } from "@/components/ui/FadeIn";
 import type { BranchListResponse } from "@/types";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import { AssignmentSkeletonCard } from "@/components/assignments/AssignmentSkeletonCard";
 
 interface Assignment {
@@ -53,6 +54,11 @@ export default function AssignmentsPage() {
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
+  // RBAC gating — assignments are session-scoped resources (admin/sessions);
+  // `can` fails open until my-permissions resolves (log rollout).
+  const { can } = usePermissions();
+  const canCreateSessions = can("admin", "create", "sessions");
+  const canUpdateSessions = can("admin", "update", "sessions");
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
@@ -161,14 +167,16 @@ export default function AssignmentsPage() {
             </p>
           )}
         </div>
-        <Button
-          variant={showForm ? "outline" : "primary"}
-          size="sm"
-          icon={showForm ? "close" : "plus"}
-          onClick={() => { setShowForm((v) => !v); setFormError(null); }}
-        >
-          {showForm ? t("common.cancel") : t("assignments.newAssignment")}
-        </Button>
+        {canCreateSessions && (
+          <Button
+            variant={showForm ? "outline" : "primary"}
+            size="sm"
+            icon={showForm ? "close" : "plus"}
+            onClick={() => { setShowForm((v) => !v); setFormError(null); }}
+          >
+            {showForm ? t("common.cancel") : t("assignments.newAssignment")}
+          </Button>
+        )}
       </div>
 
       {/* Create form */}
@@ -314,15 +322,17 @@ export default function AssignmentsPage() {
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => deactivateMutation.mutate(a.assignment_id)}
-              disabled={deactivateMutation.isPending}
-              className="flex-shrink-0 !text-destructive !border-destructive/40"
-            >
-              {t("assignments.finish")}
-            </Button>
+            {canUpdateSessions && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => deactivateMutation.mutate(a.assignment_id)}
+                disabled={deactivateMutation.isPending}
+                className="flex-shrink-0 !text-destructive !border-destructive/40"
+              >
+                {t("assignments.finish")}
+              </Button>
+            )}
           </Card>
           </FadeIn>
         );

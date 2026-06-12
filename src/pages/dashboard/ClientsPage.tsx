@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useClients, useUpdateClientStatus, clientDisplayName, type Client } from "@/hooks/useClients";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { usePermissions } from "@/hooks/useRbac";
 import { ClientCard } from "@/components/clients/ClientCard";
 import { ClientSkeletonCard } from "@/components/clients/ClientSkeletonCard";
 import { ClientDrawerForm } from "@/components/clients/ClientDrawerForm";
@@ -29,6 +30,10 @@ export default function ClientsPage() {
   const { confirm, ConfirmModal } = useConfirmModal();
   const { t } = useLanguage();
   const statusMutation = useUpdateClientStatus(orgId);
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can("commercial", "create", "clients");
 
   const [term, setTerm] = useState("");
   // Default to status:1 (Active) on first load — matches the products page.
@@ -109,7 +114,9 @@ export default function ClientsPage() {
             {pagination ? `${pagination.total_elements} ${t("clients.registered")}` : t("clients.directory")}
           </p>
         </div>
-        <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.newClient")}</Button>
+        {canCreate && (
+          <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.newClient")}</Button>
+        )}
       </div>
 
       <ListToolbar<ClientStatusValue>
@@ -141,7 +148,7 @@ export default function ClientsPage() {
           <div className={`t-body text-muted-foreground ${term ? "" : "mb-5"}`}>
             {term ? t("clients.tryOtherSearch") : t("empty.addFirst")}
           </div>
-          {!term && <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.addClient")}</Button>}
+          {!term && canCreate && <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.addClient")}</Button>}
         </div>
       ) : (
         <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(265px, 1fr))" }}>

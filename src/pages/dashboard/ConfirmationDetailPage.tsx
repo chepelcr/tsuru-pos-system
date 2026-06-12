@@ -11,6 +11,7 @@ import {
   useUpdateConfirmationStatus,
   useRemoveOrderFromConfirmation,
 } from '@/hooks/useConfirmations';
+import { usePermissions } from '@/hooks/useRbac';
 import type { OrderStatus } from '@/types/order';
 import { Card, Icon, Badge, Spinner, EmptyState, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE, OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
@@ -52,6 +53,11 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
   const { data: confirmation, isLoading, error } = useConfirmation(orgId, confirmationNumber);
   const updateStatus = useUpdateConfirmationStatus(orgId, confirmationNumber);
   const removeOrder = useRemoveOrderFromConfirmation(orgId, confirmationNumber);
+
+  // RBAC action gating — all confirmation mutations map to update (no
+  // cancel/delete in the catalog). Fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can('commercial', 'update', 'confirmations');
 
   const [addOpen, setAddOpen] = useState(false);
 
@@ -176,14 +182,16 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
               </Badge>
             </div>
           </div>
-          <Menu
-            items={menuItems}
-            trigger={
-              <button className="btn btn-outline btn-sm btn-icon" type="button" aria-label={t('common.actions')}>
-                <Icon name="moreV" size={15} />
-              </button>
-            }
-          />
+          {canUpdate && (
+            <Menu
+              items={menuItems}
+              trigger={
+                <button className="btn btn-outline btn-sm btn-icon" type="button" aria-label={t('common.actions')}>
+                  <Icon name="moreV" size={15} />
+                </button>
+              }
+            />
+          )}
         </div>
 
         <div className="flex flex-wrap gap-x-6 gap-y-2 mt-5 pt-5 border-t border-accent-rose-border">
@@ -241,24 +249,26 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <OrderStatusBadge status={order.order_status} />
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm btn-icon text-muted-foreground hover:text-destructive disabled:opacity-40"
-                    aria-label={t('confirmations.removeOrder')}
-                    disabled={removeOrder.isPending}
-                    onClick={() =>
-                      confirm({
-                        title: t('confirmations.removeOrder'),
-                        message: t('confirmations.removeOrder.confirm'),
-                        variant: 'destructive',
-                        confirmLabel: t('confirmations.removeOrder'),
-                        cancelLabel: t('common.cancel'),
-                        onConfirm: () => handleRemoveOrder(order.document_number),
-                      })
-                    }
-                  >
-                    <Icon name="trash" size={15} />
-                  </button>
+                  {canUpdate && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm btn-icon text-muted-foreground hover:text-destructive disabled:opacity-40"
+                      aria-label={t('confirmations.removeOrder')}
+                      disabled={removeOrder.isPending}
+                      onClick={() =>
+                        confirm({
+                          title: t('confirmations.removeOrder'),
+                          message: t('confirmations.removeOrder.confirm'),
+                          variant: 'destructive',
+                          confirmLabel: t('confirmations.removeOrder'),
+                          cancelLabel: t('common.cancel'),
+                          onConfirm: () => handleRemoveOrder(order.document_number),
+                        })
+                      }
+                    >
+                      <Icon name="trash" size={15} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

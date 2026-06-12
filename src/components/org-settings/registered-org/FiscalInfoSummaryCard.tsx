@@ -6,7 +6,8 @@ import type { RegisteredOrganization } from "@/types/registeredOrganization";
 
 interface FiscalInfoSummaryCardProps {
   reg: RegisteredOrganization;
-  onEdit: () => void;
+  /** Undefined when the user lacks organization/update/fiscal-info — edit button hides. */
+  onEdit?: () => void;
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -66,10 +67,12 @@ export function FiscalInfoSummaryCard({ reg, onEdit }: FiscalInfoSummaryCardProp
             </div>
           </div>
         </div>
-        <button className="btn btn-outline btn-sm" onClick={onEdit}>
-          <Icon name="edit" size={13} />
-          {t("orgSettings.fiscalInfo.edit")}
-        </button>
+        {onEdit && (
+          <button className="btn btn-outline btn-sm" onClick={onEdit}>
+            <Icon name="edit" size={13} />
+            {t("orgSettings.fiscalInfo.edit")}
+          </button>
+        )}
       </div>
 
       {/* Identity rows */}

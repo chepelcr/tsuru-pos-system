@@ -5,7 +5,8 @@ import type { OrgConfiguration } from "@/types/orgConfigurations";
 interface HaciendaTabProps {
   config: OrgConfiguration | null | undefined;
   isLoading: boolean;
-  onEdit: () => void;
+  /** Undefined when the user lacks organization/update/hacienda — edit triggers hide. */
+  onEdit?: () => void;
 }
 
 function certExpiryStatus(expirationDate: string): "expired" | "soon" | "ok" {
@@ -42,10 +43,12 @@ export function HaciendaTab({ config, isLoading, onEdit }: HaciendaTabProps) {
           title={t("orgSettings.hacienda.empty.title")}
           description={t("orgSettings.hacienda.empty.desc")}
           action={
-            <button className="btn btn-primary btn-sm" onClick={onEdit}>
-              <Icon name="plus" size={14} />
-              {t("orgSettings.hacienda.configure")}
-            </button>
+            onEdit && (
+              <button className="btn btn-primary btn-sm" onClick={onEdit}>
+                <Icon name="plus" size={14} />
+                {t("orgSettings.hacienda.configure")}
+              </button>
+            )
           }
         />
       </div>
@@ -71,10 +74,12 @@ export function HaciendaTab({ config, isLoading, onEdit }: HaciendaTabProps) {
               <div className="t-xs text-muted-foreground">Acceso a la API de Ministerio de Hacienda</div>
             </div>
           </div>
-          <button className="btn btn-outline btn-sm" onClick={onEdit}>
-            <Icon name="edit" size={13} />
-            {t("orgSettings.hacienda.edit")}
-          </button>
+          {onEdit && (
+            <button className="btn btn-outline btn-sm" onClick={onEdit}>
+              <Icon name="edit" size={13} />
+              {t("orgSettings.hacienda.edit")}
+            </button>
+          )}
         </div>
 
         <div className="space-y-3">

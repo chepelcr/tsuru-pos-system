@@ -6,6 +6,7 @@ import { ordersApi, ordersOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { usePermissions } from "@/hooks/useRbac";
 import type { Product, Category } from "@/types";
 import { Button, EmptyState, Pagination, Drawer } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -37,6 +38,13 @@ export default function ProductsPage() {
   const { t } = useLanguage();
   const { confirm, ConfirmModal } = useConfirmModal();
   const [, navigate] = useLocation();
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can("commercial", "create", "products");
+  const canUpdate = !permsReady || can("commercial", "update", "products");
+  const canDelete = !permsReady || can("commercial", "delete", "products");
+  const canUpload = !permsReady || can("commercial", "upload", "products");
 
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -373,10 +381,14 @@ export default function ProductsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" icon="upload" onClick={() => setImportOpen(true)}>
-            {t("products.import")}
-          </Button>
-          <Button variant="primary" size="sm" icon="plus" onClick={openNew}>{t("products.newProduct")}</Button>
+          {canUpload && (
+            <Button variant="outline" size="sm" icon="upload" onClick={() => setImportOpen(true)}>
+              {t("products.import")}
+            </Button>
+          )}
+          {canCreate && (
+            <Button variant="primary" size="sm" icon="plus" onClick={openNew}>{t("products.newProduct")}</Button>
+          )}
         </div>
       </div>
 
@@ -406,11 +418,13 @@ export default function ProductsPage() {
       />
 
       {/* Bulk actions bar */}
-      {selected.length > 0 && (
+      {selected.length > 0 && (canUpdate || canDelete) && (
         <ProductBulkBar
           count={selected.length}
           allSelected={allSelected}
           onToggleSelectAll={handleToggleSelectAll}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
           onActivate={() => bulkSetStatus(1)}
           onDeactivate={() => bulkSetStatus(2)}
           onDelete={handleBulkDelete}
@@ -427,6 +441,7 @@ export default function ProductsPage() {
         <ProductGridView
           products={products}
           selected={selected}
+          canUpdate={canUpdate}
           onToggleSelect={toggleSelect}
           onEdit={openEdit}
           onToggleActive={handleToggleActive}

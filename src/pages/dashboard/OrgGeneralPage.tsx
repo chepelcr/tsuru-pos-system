@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
@@ -44,6 +45,10 @@ export default function OrgGeneralPage() {
   const [, navigate] = useLocation();
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+
+  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "general");
 
   const updateMutation = useUpdateGeneralSettings(user?.userId, org?.id);
 
@@ -170,21 +175,23 @@ export default function OrgGeneralPage() {
             />
           </FormField>
 
-          <div className="flex justify-end pt-1">
-            <button
-              type="submit"
-              className="btn btn-primary btn-sm"
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? (
-                <>
-                  <Spinner size={14} /> {t("common.saving")}
-                </>
-              ) : (
-                t("common.save")
-              )}
-            </button>
-          </div>
+          {canUpdate && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
+                  <>
+                    <Spinner size={14} /> {t("common.saving")}
+                  </>
+                ) : (
+                  t("common.save")
+                )}
+              </button>
+            </div>
+          )}
         </form>
       </FadeIn>
     </div>

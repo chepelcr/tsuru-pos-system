@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Icon, Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import { templateCategoryIcon } from "./templateCategory";
 import type { Template } from "@/types";
 
@@ -43,6 +44,9 @@ export function TemplatePreview({
   disabled,
 }: TemplatePreviewProps) {
   const { t } = useLanguage();
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canApply = !permsReady || can("storefront", "update", "templates");
 
   useEffect(() => {
     if (!open) return;
@@ -144,15 +148,17 @@ export function TemplatePreview({
           <Button variant="outline" size="sm" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            icon="check"
-            onClick={() => onUse(template)}
-            disabled={disabled || isSelected}
-          >
-            {isSelected ? t("template.card.active") : t("template.preview.useTemplate")}
-          </Button>
+          {canApply && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon="check"
+              onClick={() => onUse(template)}
+              disabled={disabled || isSelected}
+            >
+              {isSelected ? t("template.card.active") : t("template.preview.useTemplate")}
+            </Button>
+          )}
         </div>
       </div>
     </div>

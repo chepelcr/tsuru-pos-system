@@ -1,6 +1,7 @@
 import { Card, CardFooter, Icon, Badge, Menu } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useUpdateClientStatus, clientDisplayName, formatPhone, type Client } from "@/hooks/useClients";
+import { usePermissions } from "@/hooks/useRbac";
 import { ID_TYPE_SHORT } from "@/lib/enums";
 import { initials, avatarColor } from "@/utils/avatar";
 
@@ -15,6 +16,12 @@ interface ClientCardProps {
 
 export function ClientCard({ client, orgId, onNavigate, onEdit, onToggleActive, delay = 0 }: ClientCardProps) {
   const statusMutation = useUpdateClientStatus(orgId);
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("commercial", "update", "clients");
+  const canDelete = !permsReady || can("commercial", "delete", "clients");
+
   const displayName = clientDisplayName(client);
   const [bg, fg] = avatarColor(displayName);
   const idShort = client.identification?.code ? ID_TYPE_SHORT[client.identification.code] : undefined;
@@ -69,11 +76,12 @@ export function ClientCard({ client, orgId, onNavigate, onEdit, onToggleActive, 
               align="right"
               items={[
                 { label: "Ver perfil", icon: "user", action: onNavigate },
-                { label: "Editar", icon: "edit", action: () => onEdit(client) },
+                { label: "Editar", icon: "edit", action: () => onEdit(client), hidden: !canUpdate },
                 {
                   label: isActive ? "Desactivar" : "Activar",
                   icon: isActive ? "xCircle" : "checkCircle",
                   action: handleToggleStatus,
+                  hidden: !canDelete,
                 },
               ]}
             />

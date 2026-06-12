@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useContactSettings, useUpdateContactSettings } from "@/hooks/useOrgSettings";
@@ -23,6 +24,10 @@ export default function OrgContactPage() {
   const [, navigate] = useLocation();
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+
+  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "contact");
 
   const { data: contact, isLoading: contactLoading } = useContactSettings(
     user?.userId,
@@ -86,6 +91,7 @@ export default function OrgContactPage() {
             initialValues={contact ?? undefined}
             onSubmit={handleSave}
             isSaving={updateMutation.isPending}
+            canSave={canUpdate}
           />
         )}
       </FadeIn>

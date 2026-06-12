@@ -3,6 +3,7 @@ import { Button, Pagination, EmptyState } from "@/components/ui";
 import { SearchInput } from "@/components/forms/SearchInput";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { usePermissions } from "@/hooks/useRbac";
 import { useDepartments, useDepartmentMutations } from "@/hooks/useDepartments";
 import { useDepartmentListStore } from "@/store/department-list-store";
 import { buildDepartmentSearchString } from "@/lib/departmentSearchBuilder";
@@ -20,6 +21,10 @@ export function ClientDepartmentsList({ orgId, clientId }: ClientDepartmentsList
   const { confirm, ConfirmModal } = useConfirmModal();
   const { searchQuery, page, pageSize, sortBy, sortOrder, setSearchQuery, setPage } =
     useDepartmentListStore();
+
+  // RBAC action gating — departments inherit commercial/clients tuples (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can("commercial", "create", "clients");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Department | null>(null);
@@ -78,9 +83,11 @@ export function ClientDepartmentsList({ orgId, clientId }: ClientDepartmentsList
           placeholder={t("departments.search")}
           className="flex-1 min-w-[200px]"
         />
-        <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
-          {t("departments.addDepartment")}
-        </Button>
+        {canCreate && (
+          <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
+            {t("departments.addDepartment")}
+          </Button>
+        )}
       </div>
 
       {/* List */}
@@ -96,9 +103,11 @@ export function ClientDepartmentsList({ orgId, clientId }: ClientDepartmentsList
           title={t("departments.noDepartments")}
           description={t("departments.noDepartmentsDescription")}
           action={
-            <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
-              {t("departments.addDepartment")}
-            </Button>
+            canCreate ? (
+              <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
+                {t("departments.addDepartment")}
+              </Button>
+            ) : undefined
           }
         />
       ) : (

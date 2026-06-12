@@ -1,6 +1,7 @@
 import { Card, Icon, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import { fmt, formatDate } from "@/utils/formatDate";
 import type { Session } from "@/types";
 
@@ -17,6 +18,10 @@ interface SessionCardProps {
 
 export function SessionCard({ session, endingPending, deletingPending, onView, onEdit, onEndSession, onDeleteConfirm, delay = 0 }: SessionCardProps) {
   const { t } = useLanguage();
+  // RBAC gating — `can` fails open until my-permissions resolves (log rollout).
+  // Soft-delete also maps to update: admin/sessions has no grantable delete action.
+  const { can } = usePermissions();
+  const canUpdateSessions = can("admin", "update", "sessions");
   const isActive = session.status === 1;
 
   return (
@@ -54,7 +59,7 @@ export function SessionCard({ session, endingPending, deletingPending, onView, o
           </div>
           <div className="flex gap-2 flex-shrink-0 flex-wrap">
             <Button variant="outline" size="sm" icon="eye" onClick={() => onView(session)}>{t("session.viewDetail")}</Button>
-            {isActive && (
+            {isActive && canUpdateSessions && (
               <>
                 <Button variant="outline" size="sm" icon="edit" onClick={() => onEdit(session)}>{t("common.edit")}</Button>
                 <Button variant="outline" size="sm" icon="stop" onClick={() => onEndSession(session.session_id)} disabled={endingPending}>
@@ -62,7 +67,7 @@ export function SessionCard({ session, endingPending, deletingPending, onView, o
                 </Button>
               </>
             )}
-            {!isActive && (
+            {!isActive && canUpdateSessions && (
               <Button variant="ghost" size="sm" icon="trash" onClick={() => onDeleteConfirm(session.session_id)} disabled={deletingPending} className="!text-destructive">
                 {t("common.delete")}
               </Button>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useOrgConfigurations } from "@/hooks/useOrgConfigurations";
@@ -23,6 +24,11 @@ export default function OrgNotificationsPage() {
 
   const { data: config, isLoading } = useOrgConfigurations(org?.id);
 
+  // Edit triggers + save drawer gate on organization/update/notifications.
+  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "notifications");
+
   return (
     <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
       <FadeIn duration={0.3}>
@@ -42,11 +48,11 @@ export default function OrgNotificationsPage() {
         <NotificationsTab
           config={config}
           isLoading={isLoading}
-          onEdit={() => setDrawerOpen(true)}
+          onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
         />
       </FadeIn>
 
-      {org && (
+      {org && canUpdate && (
         <NotificationsDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}

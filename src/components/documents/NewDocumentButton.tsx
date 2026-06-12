@@ -6,7 +6,7 @@ import { useDocumentStore, newDocTabId } from '@/store/documentStore';
 import { documentEditorPath } from '@/routePaths';
 import { DOCUMENT_TYPES } from '@/types/invoice';
 import type { DocTypeCode } from '@/types/invoice';
-import { useCreatableDocTypes } from '@/hooks/useRbac';
+import { useCreatableDocTypes, usePermissions } from '@/hooks/useRbac';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NewDocumentButtonProps {
@@ -40,6 +40,7 @@ export function NewDocumentButton({
   const containerRef = useRef<HTMLDivElement>(null);
   // Per-doc-type create gating: only list the types this role may create.
   const creatableDocTypes = useCreatableDocTypes();
+  const { can, isReady: permsReady } = usePermissions();
 
   // Close on click-outside via document-level listener. This is more robust
   // than a backdrop div because it isn't subject to stacking-context bugs
@@ -57,6 +58,12 @@ export function NewDocumentButton({
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [open]);
+
+  // RBAC: hide the trigger entirely when the role can't create any document
+  // (mirrors the sidebar's "+" guard in DashboardSidebar.tsx).
+  if (!((!permsReady || can('documents', 'create', 'emitted')) && creatableDocTypes.length > 0)) {
+    return null;
+  }
 
   const createDoc = (docType: typeof DOCUMENT_TYPES[number]) => {
     setOpen(false);

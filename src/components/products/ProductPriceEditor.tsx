@@ -8,6 +8,8 @@ interface ProductPriceEditorProps {
   editing: boolean;
   inputValue: string;
   align?: "left" | "right";
+  /** RBAC: render the price as plain text (no inline-edit affordance). */
+  readOnly?: boolean;
   onStartEdit: (id: string, currentPrice: number) => void;
   onInputChange: (v: string) => void;
   onSave: (id: string, price: number) => void;
@@ -20,11 +22,24 @@ export function ProductPriceEditor({
   editing,
   inputValue,
   align = "left",
+  readOnly = false,
   onStartEdit,
   onInputChange,
   onSave,
   onCancel,
 }: ProductPriceEditorProps) {
+  if (readOnly) {
+    return (
+      <span
+        className={`font-bold font-display text-primary ${
+          align === "left" ? "text-xl" : "text-[13px]"
+        }`}
+      >
+        {fmt(price)}
+      </span>
+    );
+  }
+
   if (editing) {
     return (
       <div

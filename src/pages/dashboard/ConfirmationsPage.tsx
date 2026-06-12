@@ -5,6 +5,7 @@ import { useOrgContext } from '@/contexts/OrgContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useConfirmations } from '@/hooks/useConfirmations';
+import { usePermissions } from '@/hooks/useRbac';
 import { Card, Pagination, EmptyState, FadeIn, Button } from '@/components/ui';
 import { ConfirmationCard } from '@/components/confirmations/ConfirmationCard';
 import { CreateConfirmationDialog } from '@/components/confirmations/CreateConfirmationDialog';
@@ -37,6 +38,12 @@ export default function ConfirmationsPage() {
 
   usePageTitle([t('confirmations.title')]);
 
+  // RBAC action gating — confirmations only grant read/update, so update is
+  // the grantable tuple for the create flow. Fail-open while my-permissions
+  // resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can('commercial', 'update', 'confirmations');
+
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -56,9 +63,11 @@ export default function ConfirmationsPage() {
           <h1 className="t-h1 mb-1.5">{t('confirmations.title')}</h1>
           <p className="t-body text-muted-foreground">{t('confirmations.subtitle')}</p>
         </div>
-        <Button variant="primary" icon="plus" onClick={() => setCreateOpen(true)}>
-          {t('confirmations.create')}
-        </Button>
+        {canUpdate && (
+          <Button variant="primary" icon="plus" onClick={() => setCreateOpen(true)}>
+            {t('confirmations.create')}
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -87,9 +96,11 @@ export default function ConfirmationsPage() {
             title={t('confirmations.noConfirmations')}
             description={t('confirmations.noConfirmationsDescription')}
             action={
-              <Button variant="primary" icon="plus" onClick={() => setCreateOpen(true)}>
-                {t('confirmations.create')}
-              </Button>
+              canUpdate ? (
+                <Button variant="primary" icon="plus" onClick={() => setCreateOpen(true)}>
+                  {t('confirmations.create')}
+                </Button>
+              ) : undefined
             }
           />
         </div>

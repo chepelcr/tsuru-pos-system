@@ -1,6 +1,7 @@
 import { Icon } from "@/components/ui";
 import { Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import { templateCategoryIcon } from "./templateCategory";
 import type { Template } from "@/types";
 
@@ -28,6 +29,9 @@ export function TemplateCard({
   disabled,
 }: TemplateCardProps) {
   const { t } = useLanguage();
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canApply = !permsReady || can("storefront", "update", "templates");
 
   return (
     <div
@@ -78,16 +82,18 @@ export function TemplateCard({
           >
             {t("template.card.preview")}
           </Button>
-          <Button
-            variant={isSelected ? "secondary" : "primary"}
-            size="sm"
-            icon={isSelected ? "check" : undefined}
-            className="flex-1"
-            onClick={() => onSelect(template)}
-            disabled={disabled || isSelected}
-          >
-            {isSelected ? t("template.card.active") : t("template.card.select")}
-          </Button>
+          {canApply && (
+            <Button
+              variant={isSelected ? "secondary" : "primary"}
+              size="sm"
+              icon={isSelected ? "check" : undefined}
+              className="flex-1"
+              onClick={() => onSelect(template)}
+              disabled={disabled || isSelected}
+            >
+              {isSelected ? t("template.card.active") : t("template.card.select")}
+            </Button>
+          )}
         </div>
       </div>
     </div>

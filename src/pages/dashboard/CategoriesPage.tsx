@@ -6,6 +6,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { usePermissions } from "@/hooks/useRbac";
 import { useCategories, useDeleteCategory } from "@/hooks/useCategories";
 import { CategoryDrawerForm, getContrastingColor } from "@/components/categories/CategoryDrawerForm";
 import type { Category } from "@/types";
@@ -16,6 +17,12 @@ export default function CategoriesPage() {
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
   const { confirm, ConfirmModal } = useConfirmModal();
+
+  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canCreate = !permsReady || can("commercial", "create", "categories");
+  const canUpdate = !permsReady || can("commercial", "update", "categories");
+  const canDelete = !permsReady || can("commercial", "delete", "categories");
 
   usePageTitle([t("shell.categories")]);
 
@@ -57,9 +64,11 @@ export default function CategoriesPage() {
           <h1 className="t-h1 mb-1.5">{t("categories.title")}</h1>
           <p className="t-body text-muted-foreground">{t("categories.subtitle")}</p>
         </div>
-        <Button variant="primary" size="sm" icon="plus" onClick={() => setDrawer("new")}>
-          {t("categories.new")}
-        </Button>
+        {canCreate && (
+          <Button variant="primary" size="sm" icon="plus" onClick={() => setDrawer("new")}>
+            {t("categories.new")}
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -81,9 +90,11 @@ export default function CategoriesPage() {
           title={t("categories.empty")}
           description={t("categories.emptyDescription")}
           action={
-            <Button variant="primary" size="sm" icon="plus" onClick={() => setDrawer("new")}>
-              {t("categories.createFirst")}
-            </Button>
+            canCreate ? (
+              <Button variant="primary" size="sm" icon="plus" onClick={() => setDrawer("new")}>
+                {t("categories.createFirst")}
+              </Button>
+            ) : undefined
           }
         />
       ) : filtered.length === 0 ? (
@@ -100,17 +111,19 @@ export default function CategoriesPage() {
       ) : (
         <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {/* Add-new card */}
-          <button
-            type="button"
-            onClick={() => setDrawer("new")}
-            className="card card-hover border-2 border-dashed border-border hover:border-primary flex flex-col items-center justify-center min-h-[220px] p-8 text-center cursor-pointer transition-colors"
-          >
-            <div className="icon-pill icon-pill-lg icon-pill-primary-soft mb-3 w-14 h-14">
-              <Icon name="plus" size={24} />
-            </div>
-            <h3 className="t-h4 mb-1">{t("categories.new")}</h3>
-            <p className="t-xs text-muted-foreground">{t("categories.newDescription")}</p>
-          </button>
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => setDrawer("new")}
+              className="card card-hover border-2 border-dashed border-border hover:border-primary flex flex-col items-center justify-center min-h-[220px] p-8 text-center cursor-pointer transition-colors"
+            >
+              <div className="icon-pill icon-pill-lg icon-pill-primary-soft mb-3 w-14 h-14">
+                <Icon name="plus" size={24} />
+              </div>
+              <h3 className="t-h4 mb-1">{t("categories.new")}</h3>
+              <p className="t-xs text-muted-foreground">{t("categories.newDescription")}</p>
+            </button>
+          )}
 
           {/* Existing categories */}
           {filtered.map((category) => {
@@ -149,20 +162,26 @@ export default function CategoriesPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 mt-auto pt-2">
-                    <Button variant="outline" size="sm" icon="edit" onClick={() => setDrawer(category)}>
-                      {t("common.edit")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      icon="trash"
-                      onClick={() => handleDelete(category)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      {t("common.delete")}
-                    </Button>
-                  </div>
+                  {(canUpdate || canDelete) && (
+                    <div className="grid grid-cols-2 gap-2 mt-auto pt-2">
+                      {canUpdate && (
+                        <Button variant="outline" size="sm" icon="edit" onClick={() => setDrawer(category)}>
+                          {t("common.edit")}
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          icon="trash"
+                          onClick={() => handleDelete(category)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );

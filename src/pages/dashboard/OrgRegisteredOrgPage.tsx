@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useRegisteredOrganization } from "@/hooks/useRegisteredOrganization";
@@ -24,6 +25,12 @@ export default function OrgRegisteredOrgPage() {
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
 
   const { data: reg, isLoading } = useRegisteredOrganization(org?.id);
+
+  // Stepper, edit trigger and drawer all write the registered org; gate on
+  // organization/update/fiscal-info. Fail-open while my-permissions resolves
+  // (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "fiscal-info");
 
   return (
     <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
@@ -60,7 +67,7 @@ export default function OrgRegisteredOrgPage() {
         )}
 
         {/* Empty → stepper */}
-        {!isLoading && org && !reg && (
+        {!isLoading && org && !reg && canUpdate && (
           <FiscalInfoStepper
             orgId={org.id}
             onSaved={() => {
@@ -74,12 +81,12 @@ export default function OrgRegisteredOrgPage() {
         {!isLoading && org && reg && (
           <FiscalInfoSummaryCard
             reg={reg}
-            onEdit={() => setDrawerOpen(true)}
+            onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
           />
         )}
       </FadeIn>
 
-      {org && (
+      {org && canUpdate && (
         <FiscalInfoEditDrawer
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}

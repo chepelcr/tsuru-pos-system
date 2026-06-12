@@ -7,6 +7,7 @@ import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { Icon, Card, Button, Drawer, Modal, Pagination } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { usePermissions } from "@/hooks/useRbac";
 import { SessionCard } from "@/components/sessions/SessionCard";
 import { SessionDetailDrawer } from "@/components/sessions/SessionDetailDrawer";
 import { SessionSkeletonCard } from "@/components/sessions/SessionSkeletonCard";
@@ -44,6 +45,9 @@ export default function SessionsPage() {
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
+  // RBAC gating — `can` fails open until my-permissions resolves (log rollout).
+  const { can } = usePermissions();
+  const canCreateSessions = can("admin", "create", "sessions");
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const searchParams = useSearch();
@@ -161,9 +165,11 @@ export default function SessionsPage() {
           <h1 className="t-h1 mb-1.5">{t("session.title")}</h1>
           <p className="t-body text-muted-foreground">{t("session.manageActiveSessions")}</p>
         </div>
-        <Button variant="primary" icon="plus" onClick={() => { setEditSession(null); setConfigOpen(true); }}>
-          {t("session.newSession")}
-        </Button>
+        {canCreateSessions && (
+          <Button variant="primary" icon="plus" onClick={() => { setEditSession(null); setConfigOpen(true); }}>
+            {t("session.newSession")}
+          </Button>
+        )}
       </div>
 
       <ListToolbar<SessionStatusValue>
@@ -188,7 +194,9 @@ export default function SessionsPage() {
           </div>
           <div className="t-h3 mb-1.5">{t("session.noSessions")}</div>
           <div className="t-sm text-muted-foreground mb-5">{t("session.createFirstSession")}</div>
-          <Button variant="primary" icon="plus" onClick={() => setConfigOpen(true)}>{t("session.newSession")}</Button>
+          {canCreateSessions && (
+            <Button variant="primary" icon="plus" onClick={() => setConfigOpen(true)}>{t("session.newSession")}</Button>
+          )}
         </Card>
       ) : (
         <div className="grid gap-3.5">

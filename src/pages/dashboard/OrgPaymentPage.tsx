@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { usePaymentSettings, useUpdatePaymentSettings } from "@/hooks/useOrgSettings";
@@ -27,6 +28,10 @@ export default function OrgPaymentPage() {
   const [, navigate] = useLocation();
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+
+  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("organization", "update", "payment");
 
   const { data: payment, isLoading: paymentLoading } = usePaymentSettings(
     user?.userId,
@@ -90,6 +95,7 @@ export default function OrgPaymentPage() {
             initialValues={payment ?? undefined}
             onSubmit={handleSave}
             isSaving={updateMutation.isPending}
+            canSave={canUpdate}
           />
         )}
       </FadeIn>

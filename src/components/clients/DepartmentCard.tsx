@@ -1,6 +1,7 @@
 import { Card, Menu } from "@/components/ui";
 import type { MenuItem } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePermissions } from "@/hooks/useRbac";
 import type { Department } from "@/types";
 
 interface DepartmentCardProps {
@@ -13,13 +14,19 @@ interface DepartmentCardProps {
 export function DepartmentCard({ department, onEdit, onDelete, delay = 0 }: DepartmentCardProps) {
   const { t } = useLanguage();
 
+  // RBAC action gating — departments inherit commercial/clients tuples (§5.1).
+  const { can, isReady: permsReady } = usePermissions();
+  const canUpdate = !permsReady || can("commercial", "update", "clients");
+  const canDelete = !permsReady || can("commercial", "delete", "clients");
+
   const menuItems: MenuItem[] = [
-    { label: t("common.edit"), icon: "edit", action: () => onEdit(department) },
+    { label: t("common.edit"), icon: "edit", action: () => onEdit(department), hidden: !canUpdate },
     {
       label: t("common.delete"),
       icon: "trash",
       color: "hsl(var(--destructive))",
       action: () => onDelete(department.department_id),
+      hidden: !canDelete,
     },
   ];
 
@@ -38,9 +45,11 @@ export function DepartmentCard({ department, onEdit, onDelete, delay = 0 }: Depa
           )}
         </div>
 
-        <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-          <Menu align="right" items={menuItems} />
-        </div>
+        {(canUpdate || canDelete) && (
+          <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Menu align="right" items={menuItems} />
+          </div>
+        )}
       </div>
     </Card>
   );

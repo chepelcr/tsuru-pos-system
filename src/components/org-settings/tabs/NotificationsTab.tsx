@@ -5,7 +5,8 @@ import type { OrgConfiguration } from "@/types/orgConfigurations";
 interface NotificationsTabProps {
   config: OrgConfiguration | null | undefined;
   isLoading: boolean;
-  onEdit: () => void;
+  /** Undefined when the user lacks organization/update/notifications — edit triggers hide. */
+  onEdit?: () => void;
 }
 
 const SENT_DOCS_LABELS: Record<number, string> = {
@@ -38,10 +39,12 @@ export function NotificationsTab({ config, isLoading, onEdit }: NotificationsTab
           title={t("orgSettings.notifications.empty.title")}
           description={t("orgSettings.notifications.empty.desc")}
           action={
-            <button className="btn btn-primary btn-sm" onClick={onEdit}>
-              <Icon name="plus" size={14} />
-              {t("orgSettings.notifications.configure")}
-            </button>
+            onEdit && (
+              <button className="btn btn-primary btn-sm" onClick={onEdit}>
+                <Icon name="plus" size={14} />
+                {t("orgSettings.notifications.configure")}
+              </button>
+            )
           }
         />
       </div>
@@ -63,10 +66,12 @@ export function NotificationsTab({ config, isLoading, onEdit }: NotificationsTab
               <div className="t-xs text-muted-foreground">Alertas sobre el estado de tus comprobantes</div>
             </div>
           </div>
-          <button className="btn btn-outline btn-sm" onClick={onEdit}>
-            <Icon name="edit" size={13} />
-            {t("orgSettings.notifications.edit")}
-          </button>
+          {onEdit && (
+            <button className="btn btn-outline btn-sm" onClick={onEdit}>
+              <Icon name="edit" size={13} />
+              {t("orgSettings.notifications.edit")}
+            </button>
+          )}
         </div>
 
         <div className="space-y-3">
