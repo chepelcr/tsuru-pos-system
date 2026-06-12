@@ -18,12 +18,14 @@ import type {
  * All HTTP goes through `api` + `orgSettingsPath` (markets-api, singular
  * `/organization/` shape WITHOUT `memberships`). Token is auto-injected.
  *
- * TODO(verify-endpoint): confirm markets-api exposes
+ * Endpoints VERIFIED against tsuru-platform-api (routes.ts + the four
+ * *SettingsController upserts + OrganizationController.updateGeneral):
  *   GET/PUT  /api/users/{u}/organization/{o}/settings/{theme|contact|payment|shipping}
- *   PATCH    /api/users/{u}/organization/{o}/settings/general
- * reachable from the POS Cognito ID token via its API Gateway. The Payment/Shipping
- * PUT routes are described as dashboard "placeholders" — verify the real PUT path +
- * payload before relying on persistence.
+ *   PATCH    /api/users/{u}/organization/{o}/settings/general  (updates the org row:
+ *            name/description/email/phone/address)
+ * Each section is RBAC-gated by the `organization/<section>` submodule
+ * (settings/theme maps to `branding` — it stores storefront branding, not the
+ * POS shell theme scalar).
  */
 
 export type SettingsCategory = "theme" | "contact" | "payment" | "shipping";
@@ -39,7 +41,6 @@ function useOrgSettingsSection<T>(
 ) {
   return useQuery<T>({
     queryKey: SETTINGS_QK(cat, orgId),
-    // TODO(verify-endpoint): see file header.
     queryFn: () => api.get<T>(orgSettingsPath(userId!, orgId!, `/settings/${cat}`)),
     enabled: !!userId && !!orgId,
   });
@@ -53,7 +54,6 @@ function useUpdateOrgSettingsSection<T>(
 ) {
   const qc = useQueryClient();
   return useMutation({
-    // TODO(verify-endpoint): see file header.
     mutationFn: (body: T) =>
       api.put<T>(orgSettingsPath(userId!, orgId!, `/settings/${cat}`), body as unknown),
     onSuccess: () => qc.invalidateQueries({ queryKey: SETTINGS_QK(cat, orgId) }),
@@ -90,7 +90,6 @@ export const useUpdateShippingSettings = (userId?: string, orgId?: string) =>
 export function useUpdateGeneralSettings(userId?: string, orgId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    // TODO(verify-endpoint): see file header (dashboard uses PATCH here).
     mutationFn: (body: OrgGeneralSettings) =>
       api.patch<OrgGeneralSettings>(
         orgSettingsPath(userId!, orgId!, `/settings/general`),

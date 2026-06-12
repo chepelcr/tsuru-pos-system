@@ -14,9 +14,9 @@ import type { OrgPaymentSettings } from "@/types";
 /**
  * Storefront checkout-payment settings. GET hydrate + PUT save.
  *
- * TODO(verify-endpoint): the dashboard's Payment form is described as a
- * placeholder that handles its own mutation internally; confirm the real
- * PUT /settings/payment path + payload before relying on persistence.
+ * Endpoint verified: PUT /settings/payment (PaymentSettingsController upsert
+ * on tsuru-platform-api; full payment_settings table — currency, COD, bank
+ * transfer + details, Stripe fields).
  */
 export default function OrgPaymentPage() {
   const { user } = useAuthContext();

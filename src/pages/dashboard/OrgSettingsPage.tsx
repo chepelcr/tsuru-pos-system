@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useOrgConfigurations } from "@/hooks/useOrgConfigurations";
@@ -35,6 +36,14 @@ export default function OrgSettingsPage() {
 
   const { data: config, isLoading: configLoading } = useOrgConfigurations(org?.id);
   const { data: reg, isLoading: regLoading } = useRegisteredOrganization(org?.id);
+
+  // Per-section RBAC gating: each card id doubles as a submodule of the
+  // `organization` module (see rbac-seed.ts in tsuru-platform-api). Cards hide
+  // when the role lacks read on the section; fail-open until permissions
+  // resolve (same convention as the sidebar's NAV_PERMISSION gating).
+  const { can, isReady: permsReady } = usePermissions();
+  const sectionVisible = (sectionId: string): boolean =>
+    !permsReady || can("organization", "read", sectionId);
 
   // Whether the user has dismissed the welcome ghost and is now inside the
   // inline stepper. Resets back to welcome on every page mount.
@@ -211,7 +220,7 @@ export default function OrgSettingsPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {cards.map((card) => (
+          {cards.filter((card) => sectionVisible(card.id)).map((card) => (
             <button
               key={card.id}
               className="card card-hover text-left w-full p-5 flex items-start gap-4 group"

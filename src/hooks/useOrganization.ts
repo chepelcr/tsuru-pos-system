@@ -242,12 +242,10 @@ export function useOrganization() {
   // ─── Theme update ──────────────────────────────────────────────────────
   // Persists the org's selected POS theme on the markets-api.
   //
-  // TODO(verify-endpoint): The dashboard persists theme as a settings object via
-  // PUT /api/users/{u}/organization/{o}/settings/theme (ThemeSettingsController).
-  // This task models `theme` as a scalar field on the Organization itself, for
-  // which no dedicated PATCH route is confirmed. We PATCH the org via the
-  // user-scoped org path (same shape onboarding step2/step3 use) with `{ theme }`.
-  // Verify the real route/body shape against the markets-api before relying on it.
+  // Endpoint verified: PATCH /api/users/{u}/organizations/{orgId} accepts the
+  // scalar `theme` (organizations.theme column on tsuru-platform-api) — this is
+  // the POS shell theme id, DISTINCT from PUT /settings/theme which stores the
+  // storefront branding object.
   const useUpdateOrgTheme = (userId: string | undefined) => {
     return useMutation({
       mutationFn: async ({ orgId, theme }: { orgId: string; theme: string }) => {

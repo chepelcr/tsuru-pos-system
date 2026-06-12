@@ -76,7 +76,9 @@ export function PermissionMatrix({
   readOnly = false,
 }: PermissionMatrixProps) {
   const { t } = useLanguage();
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // Accordion: only one module card open at a time (view AND edit modes) so
+  // the drawer stays scannable — opening a card collapses the rest.
+  const [openModuleId, setOpenModuleId] = useState<string | null>(null);
 
   const modules = useMemo(
     () =>
@@ -141,7 +143,7 @@ export function PermissionMatrix({
         const allKeys = moduleKeys(module);
         const selectedCount = allKeys.filter((k) => grants.has(k)).length;
         const allSelected = allKeys.length > 0 && selectedCount === allKeys.length;
-        const isExpanded = !collapsed[module.id];
+        const isExpanded = openModuleId === module.id;
 
         return (
           <SectionWrapper
@@ -151,7 +153,7 @@ export function PermissionMatrix({
             badge={t("roles.matrix.selected", { count: selectedCount })}
             isExpanded={isExpanded}
             onToggle={() =>
-              setCollapsed((cur) => ({ ...cur, [module.id]: !cur[module.id] }))
+              setOpenModuleId((cur) => (cur === module.id ? null : module.id))
             }
           >
             {!readOnly && (

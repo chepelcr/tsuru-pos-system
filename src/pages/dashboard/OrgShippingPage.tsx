@@ -14,9 +14,9 @@ import type { OrgShippingSettings } from "@/types";
 /**
  * Storefront delivery settings. GET hydrate + PUT save.
  *
- * TODO(verify-endpoint): the dashboard's Shipping form is described as a
- * placeholder that handles its own mutation internally; confirm the real
- * PUT /settings/shipping path + payload before relying on persistence.
+ * Endpoint verified: PUT /settings/shipping (ShippingSettingsController
+ * upsert on tsuru-platform-api; shipping_settings table — threshold, default
+ * cost, local pickup / Correos / Uber Flash toggles).
  */
 export default function OrgShippingPage() {
   const { user } = useAuthContext();
