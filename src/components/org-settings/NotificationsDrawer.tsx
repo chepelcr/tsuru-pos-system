@@ -108,7 +108,7 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
         </div>
 
         {/* Toggle: processing documents */}
-        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
+        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left p-4 rounded-lg border border-border bg-card">
           <div>
             <div className="t-sm font-medium">{t("orgSettings.notifications.processing")}</div>
             <div className="t-xs text-muted-foreground mt-0.5">
@@ -132,7 +132,7 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
         </div>
 
         {/* Toggle: received documents */}
-        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
+        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left p-4 rounded-lg border border-border bg-card">
           <div>
             <div className="t-sm font-medium">{t("orgSettings.notifications.received")}</div>
             <div className="t-xs text-muted-foreground mt-0.5">

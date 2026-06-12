@@ -1,6 +1,7 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, orgRbacPath } from "@/lib/api";
+import { DOCUMENT_TYPES } from "@/types/invoice";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import type {
@@ -280,4 +281,21 @@ export function usePermissions(): UsePermissionsResult {
     isLoading: query.isLoading,
     role: data?.role ?? null,
   };
+}
+
+/**
+ * DOCUMENT_TYPES filtered to the ones the current role may CREATE — each doc
+ * type maps to a `documents/<permSub>` submodule (sensitive types like credit/
+ * debit notes are restricted per role; cashiers only get FE/TE). Fail-open
+ * (all types) until my-permissions resolves, like the rest of the nav gating.
+ */
+export function useCreatableDocTypes() {
+  const { can, isReady } = usePermissions();
+  return useMemo(
+    () =>
+      DOCUMENT_TYPES.filter(
+        (dt) => !isReady || can("documents", "create", dt.permSub)
+      ),
+    [can, isReady]
+  );
 }

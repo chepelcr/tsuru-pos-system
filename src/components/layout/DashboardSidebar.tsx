@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
-import { usePermissions } from "@/hooks/useRbac";
+import { usePermissions, useCreatableDocTypes } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
@@ -87,6 +87,9 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // backend rollout starts with RBAC_ENFORCEMENT=log, so the item only hides
   // once an authoritative permission set says the caller can't read roles.
   const { can, isReady: permsReady } = usePermissions();
+  // Per-doc-type create gating (documents/<permSub>): the "+" menu only lists
+  // the types this role may create — e.g. cashiers see FE/TE, never NC/ND.
+  const creatableDocTypes = useCreatableDocTypes();
   const { t } = useLanguage();
   const { addDocumentTab } = useDocumentStore();
   const [, setLocation] = useLocation();
@@ -225,7 +228,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             {t("shell.documents")}
           </button>
 
-          {(!permsReady || can("documents", "create", "emitted")) && (
+          {(!permsReady || can("documents", "create", "emitted")) && creatableDocTypes.length > 0 && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -247,7 +250,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             <>
               <div className="fixed inset-0 z-dropdown" onClick={() => setCreateOpen(false)} />
               <div className="absolute bottom-full mb-1 left-0 right-0 z-overlay bg-card border border-border rounded-lg shadow-dropdown-up p-1 flex flex-col gap-px">
-                {DOCUMENT_TYPES.map((dt) => (
+                {creatableDocTypes.map((dt) => (
                   <button
                     key={dt.code}
                     onClick={() => handleCreateDoc(dt)}

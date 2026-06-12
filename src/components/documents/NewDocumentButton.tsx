@@ -6,6 +6,7 @@ import { useDocumentStore, newDocTabId } from '@/store/documentStore';
 import { documentEditorPath } from '@/routePaths';
 import { DOCUMENT_TYPES } from '@/types/invoice';
 import type { DocTypeCode } from '@/types/invoice';
+import { useCreatableDocTypes } from '@/hooks/useRbac';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NewDocumentButtonProps {
@@ -37,6 +38,8 @@ export function NewDocumentButton({
   const [open, setOpen] = useState(false);
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
+  // Per-doc-type create gating: only list the types this role may create.
+  const creatableDocTypes = useCreatableDocTypes();
 
   // Close on click-outside via document-level listener. This is more robust
   // than a backdrop div because it isn't subject to stacking-context bugs
@@ -118,7 +121,7 @@ export function NewDocumentButton({
             fullWidth ? 'left-0 right-0 w-auto' : 'left-0 sm:left-auto sm:right-0'
           )}
         >
-          {DOCUMENT_TYPES.map((dt) => (
+          {creatableDocTypes.map((dt) => (
             <button
               key={dt.code}
               onClick={() => createDoc(dt)}

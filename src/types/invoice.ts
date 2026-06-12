@@ -43,13 +43,16 @@ export interface SalePayment {
 }
 
 // ── Document type catalog (Hacienda codes as strings) ──────────────────────
+// `permSub` = RBAC submodule of the `documents` module gating CREATE for that
+// doc type (seeded in tsuru-platform-api rbac-seed.ts; e.g. staff/cashier only
+// holds documents/fe + documents/te — no credit/debit notes).
 export const DOCUMENT_TYPES = [
-  { code: '01', label: 'Factura Electrónica', short: 'FE',   color: 'text-green-600',  tabGradient: 'from-green-600 to-green-700',   dotColor: '#16a34a' },
-  { code: '04', label: 'Tiquete Electrónico', short: 'TE',   color: 'text-blue-600',   tabGradient: 'from-blue-500 to-blue-600',     dotColor: '#3b82f6' },
-  { code: '03', label: 'Nota de Crédito',     short: 'NC',   color: 'text-red-600',    tabGradient: 'from-red-500 to-red-600',       dotColor: '#ef4444' },
-  { code: '02', label: 'Nota de Débito',      short: 'ND',   color: 'text-yellow-600', tabGradient: 'from-yellow-500 to-yellow-600', dotColor: '#eab308' },
-  { code: '08', label: 'Factura de Compra',   short: 'FC',   color: 'text-purple-600', tabGradient: 'from-purple-500 to-purple-600', dotColor: '#a855f7' },
-  { code: '09', label: 'Factura Exportación', short: 'FExp', color: 'text-indigo-600', tabGradient: 'from-indigo-500 to-indigo-600', dotColor: '#6366f1' },
+  { code: '01', label: 'Factura Electrónica', short: 'FE',   permSub: 'fe',   color: 'text-green-600',  tabGradient: 'from-green-600 to-green-700',   dotColor: '#16a34a' },
+  { code: '04', label: 'Tiquete Electrónico', short: 'TE',   permSub: 'te',   color: 'text-blue-600',   tabGradient: 'from-blue-500 to-blue-600',     dotColor: '#3b82f6' },
+  { code: '03', label: 'Nota de Crédito',     short: 'NC',   permSub: 'nc',   color: 'text-red-600',    tabGradient: 'from-red-500 to-red-600',       dotColor: '#ef4444' },
+  { code: '02', label: 'Nota de Débito',      short: 'ND',   permSub: 'nd',   color: 'text-yellow-600', tabGradient: 'from-yellow-500 to-yellow-600', dotColor: '#eab308' },
+  { code: '08', label: 'Factura de Compra',   short: 'FC',   permSub: 'fc',   color: 'text-purple-600', tabGradient: 'from-purple-500 to-purple-600', dotColor: '#a855f7' },
+  { code: '09', label: 'Factura Exportación', short: 'FExp', permSub: 'fexp', color: 'text-indigo-600', tabGradient: 'from-indigo-500 to-indigo-600', dotColor: '#6366f1' },
 ] as const;
 
 /** Hacienda document type code as a string literal union. */

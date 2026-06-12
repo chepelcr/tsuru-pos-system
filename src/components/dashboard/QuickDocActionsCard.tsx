@@ -3,6 +3,7 @@ import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { ROUTES, documentEditorPath } from "@/routePaths";
 import { DOCUMENT_TYPES } from "@/types/invoice";
 import type { DocTypeCode } from "@/types/invoice";
+import { useCreatableDocTypes } from "@/hooks/useRbac";
 import { Card, Icon } from "@/components/ui";
 
 interface ActionButtonProps {
@@ -37,6 +38,10 @@ function ActionButton({ label, icon, accent, onClick }: ActionButtonProps) {
 export function QuickDocActionsCard() {
   const { addDocumentTab } = useDocumentStore();
   const [, setLocation] = useLocation();
+  // Per-doc-type create gating (documents/<permSub>)
+  const creatableDocTypes = useCreatableDocTypes();
+  const canCreate = (code: DocTypeCode) =>
+    creatableDocTypes.some((dt) => dt.code === code);
 
   const openNewDoc = (code: DocTypeCode) => {
     const docType = DOCUMENT_TYPES.find((d) => d.code === code)!;
@@ -62,18 +67,22 @@ export function QuickDocActionsCard() {
         </div>
       </div>
       <div className="flex gap-2.5">
+        {canCreate('01') && (
         <ActionButton
           label="Crear factura"
           icon="fileText"
           accent="hsl(var(--success))"
           onClick={() => openNewDoc('01')}
         />
+        )}
+        {canCreate('04') && (
         <ActionButton
           label="Crear tiquete"
           icon="cash"
           accent="hsl(var(--info))"
           onClick={() => openNewDoc('04')}
         />
+        )}
         <ActionButton
           label="Ver documentos"
           icon="layers"
