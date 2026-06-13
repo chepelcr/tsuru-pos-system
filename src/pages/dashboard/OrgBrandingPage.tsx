@@ -5,10 +5,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import {
-  useThemeBrandingSettings,
-  useUpdateThemeBrandingSettings,
-} from "@/hooks/useOrgSettings";
+import { useUpdateThemeBrandingSettings } from "@/hooks/useOrgSettings";
 import { Icon, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { BrandingSettingsForm } from "@/components/org-settings/BrandingSettingsForm";
@@ -36,10 +33,6 @@ export default function OrgBrandingPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canUpdate = !permsReady || can("organization", "update", "branding");
 
-  const { data: branding, isLoading: brandingLoading } = useThemeBrandingSettings(
-    user?.userId,
-    org?.id
-  );
   const updateMutation = useUpdateThemeBrandingSettings(user?.userId, org?.id);
 
   const handleSave = async (data: OrgThemeBranding) => {
@@ -89,18 +82,14 @@ export default function OrgBrandingPage() {
           </div>
         )}
 
-        {brandingLoading ? (
-          <div className="card p-5">
-            <div className="skeleton-block h-40 w-full rounded-lg animate-pulse" />
-          </div>
-        ) : (
-          <BrandingSettingsForm
-            initialValues={branding ?? undefined}
-            onSubmit={handleSave}
-            isSaving={updateMutation.isPending}
-            canSave={canUpdate}
-          />
-        )}
+        <BrandingSettingsForm
+          // Seed from the embedded org.branding section — no separate GET. Writes
+          // invalidate the org list so this reflows after save.
+          initialValues={org.branding ?? undefined}
+          onSubmit={handleSave}
+          isSaving={updateMutation.isPending}
+          canSave={canUpdate}
+        />
       </FadeIn>
     </div>
   );

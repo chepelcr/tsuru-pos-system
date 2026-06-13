@@ -5,7 +5,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useContactSettings, useUpdateContactSettings } from "@/hooks/useOrgSettings";
+import { useUpdateContactSettings } from "@/hooks/useOrgSettings";
 import { Icon, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ContactSettingsForm } from "@/components/org-settings/ContactSettingsForm";
@@ -29,10 +29,6 @@ export default function OrgContactPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canUpdate = !permsReady || can("organization", "update", "contact");
 
-  const { data: contact, isLoading: contactLoading } = useContactSettings(
-    user?.userId,
-    org?.id
-  );
   const updateMutation = useUpdateContactSettings(user?.userId, org?.id);
 
   const handleSave = async (data: OrgContactSettings) => {
@@ -82,21 +78,15 @@ export default function OrgContactPage() {
           </div>
         )}
 
-        {contactLoading ? (
-          <div className="card p-5">
-            <div className="skeleton-block h-40 w-full rounded-lg animate-pulse" />
-          </div>
-        ) : (
-          <ContactSettingsForm
-            // Prefer the dedicated GET; fall back to the embedded org.contact
-            // section (shared org response contract) so values show even before
-            // the section GET resolves.
-            initialValues={contact ?? org.contact ?? undefined}
-            onSubmit={handleSave}
-            isSaving={updateMutation.isPending}
-            canSave={canUpdate}
-          />
-        )}
+        <ContactSettingsForm
+          // Seed from the embedded org.contact section (shared org response
+          // contract) — no separate GET. Writes invalidate the org list so this
+          // reflows after save.
+          initialValues={org.contact ?? undefined}
+          onSubmit={handleSave}
+          isSaving={updateMutation.isPending}
+          canSave={canUpdate}
+        />
       </FadeIn>
     </div>
   );

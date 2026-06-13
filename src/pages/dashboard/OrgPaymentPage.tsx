@@ -5,7 +5,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { usePaymentSettings, useUpdatePaymentSettings } from "@/hooks/useOrgSettings";
+import { useUpdatePaymentSettings } from "@/hooks/useOrgSettings";
 import { Icon, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { PaymentSettingsForm } from "@/components/org-settings/PaymentSettingsForm";
@@ -33,10 +33,6 @@ export default function OrgPaymentPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canUpdate = !permsReady || can("organization", "update", "payment");
 
-  const { data: payment, isLoading: paymentLoading } = usePaymentSettings(
-    user?.userId,
-    org?.id
-  );
   const updateMutation = useUpdatePaymentSettings(user?.userId, org?.id);
 
   const handleSave = async (data: OrgPaymentSettings) => {
@@ -86,18 +82,14 @@ export default function OrgPaymentPage() {
           </div>
         )}
 
-        {paymentLoading ? (
-          <div className="card p-5">
-            <div className="skeleton-block h-40 w-full rounded-lg animate-pulse" />
-          </div>
-        ) : (
-          <PaymentSettingsForm
-            initialValues={payment ?? undefined}
-            onSubmit={handleSave}
-            isSaving={updateMutation.isPending}
-            canSave={canUpdate}
-          />
-        )}
+        <PaymentSettingsForm
+          // Seed from the embedded org.payment section — no separate GET. Writes
+          // invalidate the org list so this reflows after save.
+          initialValues={org.payment ?? undefined}
+          onSubmit={handleSave}
+          isSaving={updateMutation.isPending}
+          canSave={canUpdate}
+        />
       </FadeIn>
     </div>
   );

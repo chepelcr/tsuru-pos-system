@@ -5,7 +5,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useShippingSettings, useUpdateShippingSettings } from "@/hooks/useOrgSettings";
+import { useUpdateShippingSettings } from "@/hooks/useOrgSettings";
 import { Icon, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ShippingSettingsForm } from "@/components/org-settings/ShippingSettingsForm";
@@ -33,10 +33,6 @@ export default function OrgShippingPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canUpdate = !permsReady || can("organization", "update", "shipping");
 
-  const { data: shipping, isLoading: shippingLoading } = useShippingSettings(
-    user?.userId,
-    org?.id
-  );
   const updateMutation = useUpdateShippingSettings(user?.userId, org?.id);
 
   const handleSave = async (data: OrgShippingSettings) => {
@@ -86,18 +82,14 @@ export default function OrgShippingPage() {
           </div>
         )}
 
-        {shippingLoading ? (
-          <div className="card p-5">
-            <div className="skeleton-block h-40 w-full rounded-lg animate-pulse" />
-          </div>
-        ) : (
-          <ShippingSettingsForm
-            initialValues={shipping ?? undefined}
-            onSubmit={handleSave}
-            isSaving={updateMutation.isPending}
-            canSave={canUpdate}
-          />
-        )}
+        <ShippingSettingsForm
+          // Seed from the embedded org.shipping section — no separate GET. Writes
+          // invalidate the org list so this reflows after save.
+          initialValues={org.shipping ?? undefined}
+          onSubmit={handleSave}
+          isSaving={updateMutation.isPending}
+          canSave={canUpdate}
+        />
       </FadeIn>
     </div>
   );
