@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useOrgConfigurations } from "@/hooks/useOrgConfigurations";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import {
   THEMES,
@@ -94,22 +95,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
+  const { data: config } = useOrgConfigurations(org?.id);
   const { dark } = useDarkMode();
 
   // Manual override (set when the user picks a theme in the gallery). Takes
   // precedence over the org-derived theme until the next mount / org change.
   const [override, setOverride] = useState<string | null>(null);
 
-  // Resolve the org's theme: explicit `theme` field, else `template_name` if it
-  // maps to a known id, else the POS default.
+  // Resolve the org's theme from the org-configurations service (PATCHed via
+  // useUpdateOrgTheme): explicit `theme` field on the config, else the POS
+  // default. (No longer read from org.theme on the markets-api.)
   const orgThemeId = useMemo(() => {
-    if (isKnownThemeId(org?.theme)) return org!.theme!;
-    if (isKnownThemeId(org?.template_name)) return org!.template_name!;
+    if (isKnownThemeId(config?.theme)) return config!.theme!;
     return DEFAULT_THEME_ID;
-  }, [org?.theme, org?.template_name]);
+  }, [config?.theme]);
 
-  // First paint uses the stored id; thereafter prefer override → org → default.
-  const themeId = override ?? (org ? orgThemeId : readStoredThemeId());
+  // First paint uses the stored id; thereafter prefer override → config → default.
+  const themeId = override ?? (config ? orgThemeId : readStoredThemeId());
 
   const setThemeId = useCallback((id: string) => {
     const resolved = isKnownThemeId(id) ? id : DEFAULT_THEME_ID;

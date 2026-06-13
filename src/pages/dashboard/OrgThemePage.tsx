@@ -28,7 +28,7 @@ export default function OrgThemePage() {
   const { themeId, setThemeId } = useThemeContext();
   usePageTitle([t("theme.title")]);
 
-  const updateTheme = useUpdateOrgTheme(user?.userId);
+  const updateTheme = useUpdateOrgTheme();
 
   // Each swatch persists the theme on click, so the grid is a write surface.
   // Without update permission the swatches stay visible (read view) but

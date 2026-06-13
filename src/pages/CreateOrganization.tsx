@@ -52,7 +52,7 @@ export default function CreateOrganization() {
 
   const userId = user?.userId;
   const { data: orgs = [], isLoading: orgsLoading } = useUserOrganizations(userId);
-  const updateTheme = useUpdateOrgTheme(userId);
+  const updateTheme = useUpdateOrgTheme();
 
   // ─── Wizard state (parent owns step + form data) ──────────────────────────
   const [stepIndex, setStepIndex] = useState(0);

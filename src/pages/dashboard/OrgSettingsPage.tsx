@@ -166,7 +166,7 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-info",
       title: t("orgSettings.tab.theme"),
       description: t("theme.card.desc"),
-      configured: !!org.theme,
+      configured: !!config?.theme,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_THEME,
     },

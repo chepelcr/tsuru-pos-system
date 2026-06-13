@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { api, userPath, orgPath } from '@/lib/api';
+import { api, salesApi, userPath, orgPath, authOrgPath } from '@/lib/api';
 import type { Organization } from '../types';
 
 export type { Organization } from '../types';
@@ -240,23 +240,24 @@ export function useOrganization() {
   });
 
   // ─── Theme update ──────────────────────────────────────────────────────
-  // Persists the org's selected POS theme on the markets-api.
+  // Persists the org's selected POS theme on the org-configurations Lambda
+  // (sales-api gateway), NOT the markets-api.
   //
-  // Endpoint verified: PATCH /api/users/{u}/organizations/{orgId} accepts the
-  // scalar `theme` (organizations.theme column on tsuru-platform-api) — this is
-  // the POS shell theme id, DISTINCT from PUT /settings/theme which stores the
-  // storefront branding object.
-  const useUpdateOrgTheme = (userId: string | undefined) => {
+  // PATCH /organizations/{orgId}/configurations/theme accepts the scalar
+  // `theme` (the POS shell theme id) and stores it alongside the org's other
+  // configurations. Mirrors `useSaveOrgConfigurations` — invalidates the
+  // ["org-configurations", orgId] query so the active theme (now read from the
+  // config, not org.theme) re-resolves.
+  const useUpdateOrgTheme = () => {
     return useMutation({
       mutationFn: async ({ orgId, theme }: { orgId: string; theme: string }) => {
-        if (!userId) throw new Error('userId is required to update the organization theme');
-        return api.patch<Organization>(
-          userPath(userId, `/organizations/${orgId}`),
+        return salesApi.patch(
+          authOrgPath(orgId, '/configurations/theme'),
           { theme }
         );
       },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['user-organizations', userId] });
+      onSuccess: (_, { orgId }) => {
+        queryClient.invalidateQueries({ queryKey: ['org-configurations', orgId] });
       },
     });
   };

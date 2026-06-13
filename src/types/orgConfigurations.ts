@@ -21,6 +21,8 @@ export interface OrgConfiguration {
   notificationSettings: OrgNotificationSettings | null;
   certificate: OrgCertificate | null;
   status: number; // 1=Activo 2=Inactivo 3=Eliminado
+  /** POS shell theme id, persisted via PATCH /configurations/theme. */
+  theme?: string;
 }
 
 export interface ValidateCredentialsResponse {

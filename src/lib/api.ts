@@ -145,42 +145,42 @@ export function ordersStoreOrgPath(orgId: string, endpoint: string) {
 
 /** Build org-scoped API path (markets API) */
 export function orgPath(userId: string, orgId: string, endpoint: string) {
-  return `/api/users/${userId}/memberships/organization/${orgId}${endpoint}`;
+  return `/api/users/${userId}/memberships/organizations/${orgId}${endpoint}`;
 }
 
 /**
  * Build org-settings API path (markets API) — matches the dashboard's
  * `buildOrgApiUrl(userId, orgId, endpoint)` shape:
- *   `/api/users/{u}/organization/{o}{endpoint}`
+ *   `/api/users/{u}/organizations/{o}{endpoint}`
  *
  * NOTE: this is intentionally DISTINCT from {@link orgPath}, which injects
- * `/memberships/` (`/api/users/{u}/memberships/organization/{o}{e}`). The
+ * `/memberships/` (`/api/users/{u}/memberships/organizations/{o}{e}`). The
  * storefront/org-settings endpoints (`/settings/{category}`) live under the
- * dashboard's singular `organization` shape WITHOUT `memberships`, so do not
- * reuse `orgPath` for them.
+ * `organizations` shape WITHOUT `memberships`, so do not reuse `orgPath` for
+ * them.
  *
  * Used by `useOrgSettings.ts` (plan 05) for:
  *   • PATCH /settings/general
  *   • GET/PUT /settings/theme | /settings/contact | /settings/payment | /settings/shipping
  *
  * TODO(verify-endpoint): confirm markets-api exposes
- *   `/api/users/{u}/organization/{o}/settings/{category}` (path shape WITHOUT
+ *   `/api/users/{u}/organizations/{o}/settings/{category}` (path shape WITHOUT
  *   `memberships`) and that it accepts the POS app's Cognito ID token via its
  *   API Gateway. If the markets-api only mounts settings under
- *   `memberships/organization`, switch callers to `orgPath` instead.
+ *   `memberships/organizations`, switch callers to `orgPath` instead.
  */
 export function orgSettingsPath(userId: string, orgId: string, endpoint: string) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `/api/users/${userId}/organization/${orgId}${cleanEndpoint}`;
+  return `/api/users/${userId}/organizations/${orgId}${cleanEndpoint}`;
 }
 
 /**
- * Build org-scoped CMS content API path (markets API) — SINGULAR `/organization`
+ * Build org-scoped CMS content API path (markets API) — plural `/organizations`
  * (NO `/memberships/`), matching the dashboard's `buildOrgApiUrl` shape:
- *   `/api/users/{u}/organization/{o}{endpoint}`
+ *   `/api/users/{u}/organizations/{o}{endpoint}`
  *
  * markets-api mounts the org-scoped CMS router at
- * `app.use('/api/users/:userId/organization/:orgId', orgScopedRouter)` —
+ * `app.use('/api/users/:userId/organizations/:orgId', orgScopedRouter)` —
  * i.e. WITHOUT `memberships`. The legacy {@link orgPath} (which injects
  * `/memberships/`) would 404 against these routes; use this builder instead.
  *
@@ -198,16 +198,16 @@ export function orgSettingsPath(userId: string, orgId: string, endpoint: string)
  */
 export function orgContentPath(userId: string, orgId: string, endpoint: string) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `/api/users/${userId}/organization/${orgId}${cleanEndpoint}`;
+  return `/api/users/${userId}/organizations/${orgId}${cleanEndpoint}`;
 }
 
 /**
- * Build org-scoped RBAC API path (markets API) — SINGULAR `/organization`
+ * Build org-scoped RBAC API path (markets API) — plural `/organizations`
  * (NO `/memberships/`), matching {@link orgSettingsPath}/{@link orgContentPath}:
- *   `/api/users/{u}/organization/{o}/rbac{endpoint}`
+ *   `/api/users/{u}/organizations/{o}/rbac{endpoint}`
  *
  * markets-api mounts the RBAC router at
- * `app.use('/api/users/:userId/organization/:orgId', orgScopedRouter)` with
+ * `app.use('/api/users/:userId/organizations/:orgId', orgScopedRouter)` with
  * `orgScopedRouter.use('/rbac', rbacController.getRouter())`. The legacy
  * {@link orgPath} (which injects `/memberships/`) would 404 against these
  * routes — do NOT reuse it here.
@@ -222,7 +222,7 @@ export function orgContentPath(userId: string, orgId: string, endpoint: string) 
  */
 export function orgRbacPath(userId: string, orgId: string, endpoint: string) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `/api/users/${userId}/organization/${orgId}/rbac${cleanEndpoint}`;
+  return `/api/users/${userId}/organizations/${orgId}/rbac${cleanEndpoint}`;
 }
 
 /**
