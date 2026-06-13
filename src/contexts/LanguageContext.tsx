@@ -1177,6 +1177,11 @@ const translations: Record<Language, Record<string, string>> = {
     // auth — register
     "auth.register.title": "Crear cuenta",
     "auth.register.subtitle": "Únete a la Economía Social Solidaria hoy",
+    "auth.story.title": "El origen del nombre",
+    "auth.story.p1": "En la cosmovisión bribri, Sibö —el dios creador— ordenó el mundo sobre un principio: la reciprocidad. Enseñó a sembrar con cuidado y a sostener, no a agotar, a la comunidad.",
+    "auth.story.p2": "Tsuru es el cacao, compañera de Sibö y moneda sagrada: en sus relatos, todas las deudas se pagan con cacao. Una riqueza que se siembra, se comparte y se retribuye.",
+    "auth.story.p3": "Cultivado y preparado por las mujeres de Talamanca, el cacao sostiene una economía de cuidado y comunidad. Esa es la economía para la que construimos herramientas.",
+    "auth.story.attribution": "Inspirado, con respeto, en la cultura bribri de Talamanca, Costa Rica.",
     "auth.register.steps.personalInfo": "Información Personal",
     "auth.register.steps.verify": "Verificar",
     "auth.register.steps.organization": "Organización",
@@ -3331,6 +3336,11 @@ const translations: Record<Language, Record<string, string>> = {
     // auth — register
     "auth.register.title": "Create account",
     "auth.register.subtitle": "Join the Social Solidarity Economy today",
+    "auth.story.title": "The story behind the name",
+    "auth.story.p1": "In Bribri cosmology, Sibö —the creator god— ordered the world around one principle: reciprocity. He taught his people to plant with care and to sustain the community rather than deplete it.",
+    "auth.story.p2": "Tsuru is the cacao, companion of Sibö and a sacred currency: in their stories, every debt is paid in cacao. A wealth that is grown, shared, and repaid.",
+    "auth.story.p3": "Cultivated and prepared by the women of Talamanca, cacao sustains an economy of care and community. That is the economy we build tools for.",
+    "auth.story.attribution": "Inspired, with respect, by the Bribri culture of Talamanca, Costa Rica.",
     "auth.register.steps.personalInfo": "Personal Info",
     "auth.register.steps.verify": "Verify",
     "auth.register.steps.organization": "Organization",

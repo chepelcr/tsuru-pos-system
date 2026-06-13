@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
+import { BrandStoryPanel } from "@/components/common/BrandStoryPanel";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Select, Icon, Spinner } from "@/components/ui";
@@ -171,7 +172,7 @@ export default function Register() {
   const goBackToStep1 = () => setCurrentStep("info");
 
   return (
-    <AuthLayout maxWidthClassName="max-w-lg">
+    <AuthLayout aside={<BrandStoryPanel />}>
       <Card>
         <CardHeader className="text-center pb-2">
           <CardTitle className="t-h2">{t("auth.register.title")}</CardTitle>
