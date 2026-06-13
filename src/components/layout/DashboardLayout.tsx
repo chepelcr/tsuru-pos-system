@@ -85,12 +85,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     navigate(NAV_PATHS[id]);
   };
 
+  // Only the first active session is used (activeSession below), so fetch a
+  // single row — not 100. This query lives in the dashboard shell (wraps every
+  // page), so cache it generously and don't refetch on window focus to avoid a
+  // refetch storm on the /sessions endpoint.
   const { data: sessionsData } = useQuery({
     queryKey: ["active-session", org?.id],
     enabled: !!org,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: () =>
-      crossAppApi.get<{ data: Session[] }>(crossAppOrgPath(org!.id, "/sessions?page_size=100&search=status:1")),
+      crossAppApi.get<{ data: Session[] }>(crossAppOrgPath(org!.id, "/sessions?page_size=1&search=status:1")),
   });
   const activeSession = sessionsData?.data?.[0];
 

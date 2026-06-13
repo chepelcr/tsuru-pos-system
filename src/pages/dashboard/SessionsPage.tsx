@@ -99,6 +99,8 @@ export default function SessionsPage() {
   const { data: sessionsData, isLoading } = useQuery({
     queryKey: ["sessions", org?.id, searchFilter, page, pageSize],
     enabled: !!org,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
     queryFn: () => {
       const qs = new URLSearchParams({
         page: String(page),
