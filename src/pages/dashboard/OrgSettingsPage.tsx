@@ -28,8 +28,9 @@ import { FiscalInfoStepper } from "@/components/org-settings/registered-org/Fisc
  */
 export default function OrgSettingsPage() {
   const { user } = useAuthContext();
-  const { useDefaultOrganization } = useOrganization();
+  const { useDefaultOrganization, useOrgTheme } = useOrganization();
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
+  const { data: themeData } = useOrgTheme(org?.id);
   const { t } = useLanguage();
   usePageTitle([t("shell.orgSettings")]);
   const [, navigate] = useLocation();
@@ -42,8 +43,15 @@ export default function OrgSettingsPage() {
   // when the role lacks read on the section; fail-open until permissions
   // resolve (same convention as the sidebar's NAV_PERMISSION gating).
   const { can, isReady: permsReady } = usePermissions();
-  const sectionVisible = (sectionId: string): boolean =>
-    !permsReady || can("organization", "read", sectionId);
+  const sectionVisible = (sectionId: string): boolean => {
+    if (!permsReady) return true;
+    // The Plantilla card surfaces the storefront template gallery, so it is
+    // gated on the EXISTING storefront/templates permission (not a new
+    // organization/<id> submodule — no RBAC reseed needed). Every other card
+    // stays gated on organization/<cardId>.
+    if (sectionId === "plantilla") return can("storefront", "read", "templates");
+    return can("organization", "read", sectionId);
+  };
 
   // Whether the user has dismissed the welcome ghost and is now inside the
   // inline stepper. Resets back to welcome on every page mount.
@@ -166,9 +174,21 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-info",
       title: t("orgSettings.tab.theme"),
       description: t("theme.card.desc"),
-      configured: !!config?.theme,
+      configured: !!themeData?.theme,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_THEME,
+    },
+    // Plantilla (storefront template gallery) — moved here from the storefront
+    // sidebar section. Gated on storefront/templates (see sectionVisible).
+    {
+      id: "plantilla",
+      icon: "grid",
+      iconClass: "icon-pill-info",
+      title: t("orgSettings.tab.plantilla"),
+      description: t("orgSettings.plantilla.empty.desc"),
+      configured: true,
+      loading: false,
+      route: ROUTES.DASHBOARD_TEMPLATES,
     },
     // ── Storefront / org-settings cards (plan 05) ────────────────────────────
     // General is always configured — the org always has a name.

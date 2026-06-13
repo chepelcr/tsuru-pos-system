@@ -10,7 +10,6 @@ import {
 } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useOrgConfigurations } from "@/hooks/useOrgConfigurations";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import {
   THEMES,
@@ -93,25 +92,31 @@ function applyTheme(themeId: string, isDark: boolean): void {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuthContext();
-  const { useDefaultOrganization } = useOrganization();
+  const { useDefaultOrganization, useOrgTheme } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
-  const { data: config } = useOrgConfigurations(org?.id);
+  // Dedicated theme read: GET /configurations/theme → `{ theme: string|null }`
+  // from organization_settings.theme (independent of the Hacienda config, which
+  // 404s and omits theme). `themeData` is undefined until resolved.
+  const { data: themeData } = useOrgTheme(org?.id);
   const { dark } = useDarkMode();
 
   // Manual override (set when the user picks a theme in the gallery). Takes
   // precedence over the org-derived theme until the next mount / org change.
   const [override, setOverride] = useState<string | null>(null);
 
-  // Resolve the org's theme from the org-configurations service (PATCHed via
-  // useUpdateOrgTheme): explicit `theme` field on the config, else the POS
-  // default. (No longer read from org.theme on the markets-api.)
+  // Resolve the org's theme from the dedicated theme read (PATCHed via
+  // useUpdateOrgTheme): explicit `theme` field, else the POS default.
+  // (No longer read from org.theme on the markets-api, nor from the Hacienda
+  // config response.)
   const orgThemeId = useMemo(() => {
-    if (isKnownThemeId(config?.theme)) return config!.theme!;
+    if (isKnownThemeId(themeData?.theme)) return themeData!.theme!;
     return DEFAULT_THEME_ID;
-  }, [config?.theme]);
+  }, [themeData?.theme]);
 
-  // First paint uses the stored id; thereafter prefer override → config → default.
-  const themeId = override ?? (config ? orgThemeId : readStoredThemeId());
+  // First paint uses the stored id; thereafter prefer override → theme → default.
+  // On the /login page there's no org, so `themeData` stays undefined and the
+  // last-applied theme from localStorage (written below) is shown.
+  const themeId = override ?? (themeData ? orgThemeId : readStoredThemeId());
 
   const setThemeId = useCallback((id: string) => {
     const resolved = isKnownThemeId(id) ? id : DEFAULT_THEME_ID;

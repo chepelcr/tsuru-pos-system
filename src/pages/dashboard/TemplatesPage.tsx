@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -13,6 +14,7 @@ import {
   TemplatePreview,
   TemplatePlaygroundCard,
 } from "@/components/cms";
+import { ROUTES } from "@/routePaths";
 import type { Template } from "@/types";
 
 const ALL = "__all__";
@@ -35,6 +37,7 @@ export default function TemplatesPage() {
   const { t } = useLanguage();
   const { useDefaultOrganization } = useOrganization();
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
+  const [, navigate] = useLocation();
 
   const { useTemplateList, useApplyTemplate } = useTemplates();
   const { data: templates, isLoading: templatesLoading } = useTemplateList(true);
@@ -106,6 +109,13 @@ export default function TemplatesPage() {
       <FadeIn duration={0.3}>
         {/* Header */}
         <div className="mb-5">
+          <button
+            className="btn btn-ghost btn-sm !pl-0 mb-3 text-muted-foreground"
+            onClick={() => navigate(ROUTES.DASHBOARD_ORG_SETTINGS)}
+          >
+            <Icon name="arrowLeft" size={15} />
+            {t("orgSettings.title")}
+          </button>
           <h1 className="t-h1 mb-1.5">{t("storefront.title")}</h1>
           <p className="t-body text-muted-foreground">{t("storefront.subtitle")}</p>
         </div>

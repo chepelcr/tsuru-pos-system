@@ -71,7 +71,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
   { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "roles", "config"] },
-  { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "templates", "deployments"] },
+  { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
 ];
 
 function sectionOf(active: NavId): SectionId | null {

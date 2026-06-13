@@ -1,3 +1,4 @@
+import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/useRbac";
@@ -6,6 +7,7 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { Icon, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
+import { ROUTES } from "@/routePaths";
 import { THEME_LIST, type ThemeDef } from "@/theme/themes";
 
 /**
@@ -26,6 +28,7 @@ export default function OrgThemePage() {
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
   const { themeId, setThemeId } = useThemeContext();
+  const [, navigate] = useLocation();
   usePageTitle([t("theme.title")]);
 
   const updateTheme = useUpdateOrgTheme();
@@ -50,13 +53,23 @@ export default function OrgThemePage() {
   const handleSelect = (theme: ThemeDef) => {
     if (!canUpdate || theme.id === themeId) return;
     setThemeId(theme.id); // instant live apply
-    updateTheme.mutate({ orgId: org.id, theme: theme.id });
+    updateTheme.mutate(
+      { orgId: org.id, theme: theme.id },
+      { onSuccess: () => navigate(ROUTES.DASHBOARD_ORG_SETTINGS) }
+    );
   };
 
   return (
     <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
       <FadeIn duration={0.3}>
         <div className="mb-8">
+          <button
+            className="btn btn-ghost btn-sm !pl-0 mb-3 text-muted-foreground"
+            onClick={() => navigate(ROUTES.DASHBOARD_ORG_SETTINGS)}
+          >
+            <Icon name="arrowLeft" size={15} />
+            {t("orgSettings.title")}
+          </button>
           <h1 className="t-h1 mb-1">{t("theme.title")}</h1>
           <p className="t-body text-muted-foreground">{t("theme.subtitle")}</p>
         </div>

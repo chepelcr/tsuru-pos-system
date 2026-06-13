@@ -70,6 +70,31 @@ export function useOrganization() {
     });
   };
 
+  // ─── Org theme (org-configurations service) ──────────────────────────────
+  // Dedicated read for the org's saved POS theme. Backed by the new endpoint
+  // GET /organizations/{orgId}/configurations/theme which returns
+  // `{ theme: string | null }` straight from the organization_settings.theme
+  // column — independent of the Hacienda config (GET /configurations 404s
+  // without a hacienda config and omits theme). Returns `{ theme: null }` on
+  // 404 / empty so the theme card + ThemeContext can read it unconditionally.
+  const useOrgTheme = (orgId: string | undefined) => {
+    return useQuery({
+      queryKey: ['org-theme', orgId],
+      enabled: !!orgId,
+      queryFn: async () => {
+        try {
+          const data = await salesApi.get<{ theme: string | null }>(
+            authOrgPath(orgId!, '/configurations/theme')
+          );
+          return { theme: data?.theme ?? null };
+        } catch {
+          // 404 / empty → no saved theme yet.
+          return { theme: null };
+        }
+      },
+    });
+  };
+
   // Get the currently selected organization.
   // Shares the same cache as useUserOrganizations (same query key).
   // Returns the org stored in sessionStorage['selectedOrgId'], or the first org when there's just one.
@@ -258,6 +283,7 @@ export function useOrganization() {
       },
       onSuccess: (_, { orgId }) => {
         queryClient.invalidateQueries({ queryKey: ['org-configurations', orgId] });
+        queryClient.invalidateQueries({ queryKey: ['org-theme', orgId] });
       },
     });
   };
@@ -266,6 +292,7 @@ export function useOrganization() {
     // Queries
     useUserOrganizations,
     useDefaultOrganization,
+    useOrgTheme,
     useOrgMembers,
     useOrgInvitations,
 
