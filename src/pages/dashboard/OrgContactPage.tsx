@@ -88,7 +88,10 @@ export default function OrgContactPage() {
           </div>
         ) : (
           <ContactSettingsForm
-            initialValues={contact ?? undefined}
+            // Prefer the dedicated GET; fall back to the embedded org.contact
+            // section (shared org response contract) so values show even before
+            // the section GET resolves.
+            initialValues={contact ?? org.contact ?? undefined}
             onSubmit={handleSave}
             isSaving={updateMutation.isPending}
             canSave={canUpdate}

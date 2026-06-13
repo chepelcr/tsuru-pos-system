@@ -18,19 +18,14 @@ const buildSchema = (t: (k: string) => string) =>
   z.object({
     name: z.string().min(1, t("orgSettings.general.nameRequired")),
     description: z.string().optional(),
-    email: z
-      .string()
-      .email(t("orgSettings.general.emailInvalid"))
-      .optional()
-      .or(z.literal("")),
-    phone: z.string().optional(),
-    address: z.string().optional(),
   });
 
 type GeneralValues = z.infer<ReturnType<typeof buildSchema>>;
 
 /**
- * General org-metadata settings (name/description/email/phone/address).
+ * General org-metadata settings — edits ONLY name + description (top-level org
+ * fields). email/phone/address moved to the Contact card (contact_settings via
+ * PUT /settings/contact) per the de-dup rule.
  *
  * Simple inline card form (no drawer). Hydrates from the org object — there is
  * no GET /settings/general. Persists via PATCH /settings/general, which updates
@@ -61,9 +56,6 @@ export default function OrgGeneralPage() {
     values: {
       name: org?.name ?? "",
       description: org?.description ?? "",
-      email: org?.email ?? "",
-      phone: org?.phone ?? "",
-      address: org?.address ?? "",
     },
   });
 
@@ -73,9 +65,6 @@ export default function OrgGeneralPage() {
       await updateMutation.mutateAsync({
         name: data.name,
         description: data.description,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
       });
       setSavedNoticeVisible(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -143,35 +132,6 @@ export default function OrgGeneralPage() {
               rows={4}
               placeholder={t("orgSettings.general.descriptionPlaceholder")}
               {...register("description")}
-            />
-          </FormField>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label={t("orgSettings.general.email")} error={errors.email?.message}>
-              <input
-                className="pp-input w-full"
-                type="email"
-                placeholder={t("orgSettings.general.emailPlaceholder")}
-                {...register("email")}
-              />
-            </FormField>
-
-            <FormField label={t("orgSettings.general.phone")} error={errors.phone?.message}>
-              <input
-                className="pp-input w-full"
-                type="tel"
-                placeholder={t("orgSettings.general.phonePlaceholder")}
-                {...register("phone")}
-              />
-            </FormField>
-          </div>
-
-          <FormField label={t("orgSettings.general.address")} error={errors.address?.message}>
-            <textarea
-              className="pp-input w-full"
-              rows={3}
-              placeholder={t("orgSettings.general.addressPlaceholder")}
-              {...register("address")}
             />
           </FormField>
 

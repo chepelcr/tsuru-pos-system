@@ -18,14 +18,10 @@ const buildSchema = (t: (k: string) => string) =>
     phone: z.string().optional(),
     address: z.string().optional(),
     businessHours: z.string().optional(),
-    socialMedia: z
-      .object({
-        facebook: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-        instagram: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-        twitter: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-        whatsapp: z.string().optional(),
-      })
-      .optional(),
+    facebookUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
+    instagramUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
+    twitterUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
+    whatsappNumber: z.string().optional(),
   });
 
 type ContactValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -61,12 +57,10 @@ export function ContactSettingsForm({
       phone: initialValues?.phone ?? "",
       address: initialValues?.address ?? "",
       businessHours: initialValues?.businessHours ?? "",
-      socialMedia: {
-        facebook: initialValues?.socialMedia?.facebook ?? "",
-        instagram: initialValues?.socialMedia?.instagram ?? "",
-        twitter: initialValues?.socialMedia?.twitter ?? "",
-        whatsapp: initialValues?.socialMedia?.whatsapp ?? "",
-      },
+      facebookUrl: initialValues?.facebookUrl ?? "",
+      instagramUrl: initialValues?.instagramUrl ?? "",
+      twitterUrl: initialValues?.twitterUrl ?? "",
+      whatsappNumber: initialValues?.whatsappNumber ?? "",
     },
   });
 
@@ -118,39 +112,39 @@ export function ContactSettingsForm({
 
       <SectionWrapper title={t("orgSettings.contact.socialMedia")} icon={Share2}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={t("orgSettings.contact.facebook")} error={errors.socialMedia?.facebook?.message}>
+          <FormField label={t("orgSettings.contact.facebook")} error={errors.facebookUrl?.message}>
             <input
               className="pp-input w-full"
               type="url"
               placeholder={t("orgSettings.contact.facebookPlaceholder")}
-              {...register("socialMedia.facebook")}
+              {...register("facebookUrl")}
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.instagram")} error={errors.socialMedia?.instagram?.message}>
+          <FormField label={t("orgSettings.contact.instagram")} error={errors.instagramUrl?.message}>
             <input
               className="pp-input w-full"
               type="url"
               placeholder={t("orgSettings.contact.instagramPlaceholder")}
-              {...register("socialMedia.instagram")}
+              {...register("instagramUrl")}
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.twitter")} error={errors.socialMedia?.twitter?.message}>
+          <FormField label={t("orgSettings.contact.twitter")} error={errors.twitterUrl?.message}>
             <input
               className="pp-input w-full"
               type="url"
               placeholder={t("orgSettings.contact.twitterPlaceholder")}
-              {...register("socialMedia.twitter")}
+              {...register("twitterUrl")}
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.whatsapp")} error={errors.socialMedia?.whatsapp?.message}>
+          <FormField label={t("orgSettings.contact.whatsapp")} error={errors.whatsappNumber?.message}>
             <input
               className="pp-input w-full"
               type="tel"
               placeholder={t("orgSettings.contact.whatsappPlaceholder")}
-              {...register("socialMedia.whatsapp")}
+              {...register("whatsappNumber")}
             />
           </FormField>
         </div>

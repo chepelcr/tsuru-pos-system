@@ -182,17 +182,17 @@ export default function OrgSettingsPage() {
       loading: false,
       route: ROUTES.DASHBOARD_ORG_GENERAL,
     },
-    // Branding/Contact/Payment/Shipping derive from `org.settings.{...}`.
-    // TODO(verify-endpoint): if the markets-api org list does NOT include
-    // `settings`, these badges fall back to "pending"; wire the per-section
-    // GETs (useOrgSettings) as the configured source once endpoints confirmed.
+    // Branding/Contact/Payment/Shipping derive from the EMBEDDED org-response
+    // sections (shared org contract): each is the section object or null when
+    // the org hasn't configured it. (Branding reads `org.branding`, sourced
+    // from theme_settings — NOT the POS shell theme scalar.)
     {
       id: "branding",
       icon: "sparkles",
       iconClass: "icon-pill-rose-soft",
       title: t("orgSettings.tab.branding"),
       description: t("orgSettings.branding.empty.desc"),
-      configured: !!org.settings?.theme,
+      configured: !!org.branding,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_BRANDING,
     },
@@ -202,7 +202,7 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-info",
       title: t("orgSettings.tab.contact"),
       description: t("orgSettings.contact.empty.desc"),
-      configured: !!org.settings?.contact,
+      configured: !!org.contact,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_CONTACT,
     },
@@ -212,7 +212,7 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-success",
       title: t("orgSettings.tab.payment"),
       description: t("orgSettings.payment.empty.desc"),
-      configured: !!org.settings?.payment,
+      configured: !!org.payment,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_PAYMENT,
     },
@@ -222,7 +222,7 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-warning",
       title: t("orgSettings.tab.shipping"),
       description: t("orgSettings.shipping.empty.desc"),
-      configured: !!org.settings?.shipping,
+      configured: !!org.shipping,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_SHIPPING,
     },

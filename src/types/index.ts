@@ -16,7 +16,7 @@ export type { AuthUser, AuthContextValue, UserRole, UpdateProfileData } from "./
 export type {
   Organization,
   OrganizationListResponse,
-  OrganizationSettings,
+  OrgBrandingSettings,
   OrgThemeBranding,
   OrgContactSettings,
   OrgPaymentSettings,

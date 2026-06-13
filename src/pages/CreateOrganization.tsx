@@ -97,10 +97,12 @@ export default function CreateOrganization() {
     setSlugAvailable(true); // existing org already owns its slug
     setSubdomain(org.subdomain ?? org.slug ?? "");
     setSubdomainTouched(true);
-    setEmail(org.email ?? "");
-    setPhone(org.phone ?? "");
-    setAddress(org.address ?? "");
-    setSelectedThemeId(org.theme ?? org.template_name ?? DEFAULT_THEME_ID);
+    // email/phone/address now live in the embedded contact section (de-dup
+    // rule — the flat org-row fields are deprecated).
+    setEmail(org.contact?.email ?? "");
+    setPhone(org.contact?.phone ?? "");
+    setAddress(org.contact?.address ?? "");
+    setSelectedThemeId(org.template_name ?? DEFAULT_THEME_ID);
 
     const step = org.onboarding_step ?? 1;
     if (step >= 2) setStepIndex(2);
