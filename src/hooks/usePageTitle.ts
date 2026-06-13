@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const BRAND = "JMarkets POS";
+const BRAND = "Tsuru POS";
 
 /**
  * Set `document.title` from a list of breadcrumb-style segments.

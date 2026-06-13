@@ -1159,7 +1159,7 @@ const translations: Record<Language, Record<string, string>> = {
     "shell.roles": "Roles",
 
     // auth — login
-    "auth.login.title": "JMarkets",
+    "auth.login.title": "Tsuru",
     "auth.login.subtitle": "Inicia sesión en tu cuenta",
     "auth.login.email": "Email",
     "auth.login.emailPlaceholder": "tu@email.com",
@@ -3313,7 +3313,7 @@ const translations: Record<Language, Record<string, string>> = {
     "shell.roles": "Roles",
 
     // auth — login
-    "auth.login.title": "JMarkets",
+    "auth.login.title": "Tsuru",
     "auth.login.subtitle": "Sign in to your account",
     "auth.login.email": "Email",
     "auth.login.emailPlaceholder": "your@email.com",

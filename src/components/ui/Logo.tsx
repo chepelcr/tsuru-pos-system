@@ -14,7 +14,7 @@ export function Logo({ size = 32, showWord = true, orgName }: LogoProps) {
         .toUpperCase()
     : "JM";
 
-  const displayName = orgName ?? "JMarkets POS";
+  const displayName = orgName ?? "Tsuru POS";
 
   return (
     <div className="inline-flex items-center gap-2.5">
