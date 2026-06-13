@@ -1,6 +1,7 @@
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { Spinner } from "@/components/ui";
 import Routes from "@/Routes";
 
 export default function App() {
@@ -10,12 +11,7 @@ export default function App() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-5xl animate-bounce">🏪</div>
-          <div className="text-primary font-barlow text-xl font-bold animate-pulse">
-            {t("common.loading")}
-          </div>
-        </div>
+        <Spinner size={40} fullHeight label={t("common.loading")} />
       </div>
     );
   }

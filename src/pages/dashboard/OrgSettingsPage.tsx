@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useOrgConfigurations } from "@/hooks/useOrgConfigurations";
 import { useRegisteredOrganization } from "@/hooks/useRegisteredOrganization";
-import { Icon, Badge, Spinner } from "@/components/ui";
+import { Icon, Badge } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ROUTES } from "@/routePaths";
 import { FiscalInfoStepper } from "@/components/org-settings/registered-org/FiscalInfoStepper";
@@ -62,11 +62,28 @@ export default function OrgSettingsPage() {
   // `enabled: !!orgId`, so before `org` resolves their `isLoading` is `false`
   // — `!org` is the real signal that we're still on the first hop.
   if (orgLoading || !org || regLoading || configLoading) {
+    // Skeleton mirrors the configured card grid (icon pill + title + badge +
+    // description), same responsive layout as products/clients pages.
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        <div className="mb-8">
+          <div className="skeleton-block h-8 w-56 mb-2 animate-pulse" />
+          <div className="skeleton-block h-4 w-80 max-w-full animate-pulse" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card p-5 flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-muted/40 flex-shrink-0 animate-pulse" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="skeleton-block h-4 w-28 animate-pulse" />
+                  <div className="skeleton-block h-5 w-20 rounded-full animate-pulse" />
+                </div>
+                <div className="skeleton-block h-3 w-full mb-1.5 animate-pulse" />
+                <div className="skeleton-block h-3 w-2/3 animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
