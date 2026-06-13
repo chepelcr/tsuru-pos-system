@@ -19,6 +19,13 @@ export function useRegisteredOrganization(orgId: string | undefined) {
   return useQuery({
     queryKey: ["registered-organization", orgId],
     enabled: !!orgId,
+    // The registered-org rarely changes; cache it so the shared query dedups
+    // across OrgContext (wraps the whole dashboard) + the settings pages
+    // instead of refetching on every mount/navigation. Mutations still
+    // invalidate the key explicitly (useSaveRegisteredOrganization).
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
       try {
         return await salesApi.get<RegisteredOrganization>(
