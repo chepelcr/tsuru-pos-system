@@ -268,17 +268,17 @@ export default function OrgSettingsPage() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="t-h4 !mb-0">{card.title}</span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="t-h4 !mb-0 truncate">{card.title}</span>
                   {!card.loading && (
-                    <Badge variant={card.configured ? "success" : "warning"}>
+                    <Badge variant={card.configured ? "success" : "warning"} className="flex-shrink-0">
                       {card.configured
                         ? t("orgSettings.badge.configured")
                         : t("orgSettings.badge.pending")}
                     </Badge>
                   )}
                   {card.loading && (
-                    <div className="skeleton-block h-5 w-20 rounded-full animate-pulse" />
+                    <div className="skeleton-block h-5 w-20 rounded-full animate-pulse flex-shrink-0" />
                   )}
                 </div>
                 <p className="t-sm text-muted-foreground leading-relaxed">{card.description}</p>

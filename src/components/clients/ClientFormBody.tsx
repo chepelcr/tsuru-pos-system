@@ -83,7 +83,10 @@ export default function ClientFormBody({ form, setForm, error, isEditing }: Prop
       <SectionLabel>Tipo de cliente</SectionLabel>
       <div className={`flex gap-2.5 ${canEditCriticalFields ? "mb-6" : "mb-2"}`}>
         {loadingCT ? (
-          <div className="text-xs text-muted-foreground font-sans">Cargando…</div>
+          <>
+            <div className="flex-1 h-[42px] rounded-lg bg-muted/40 animate-pulse" />
+            <div className="flex-1 h-[42px] rounded-lg bg-muted/40 animate-pulse" />
+          </>
         ) : (
           customerTypes.map((ct) => {
             const selected = customerType === ct.id;

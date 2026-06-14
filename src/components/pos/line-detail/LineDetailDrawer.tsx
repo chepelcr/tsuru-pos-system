@@ -436,8 +436,19 @@ export function LineDetailDrawer({
         }
       >
       {!dataReady ? (
-        <div className="p-10 text-center text-muted-foreground">
-          {t('common.loading')}
+        // Mirrors the stack of collapsible SectionWrappers (icon + title rows)
+        // while the tax/CABYS catalogs load.
+        <div className="p-5 flex flex-col gap-2.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="card flex items-center gap-3 px-4 py-3.5 animate-pulse">
+              <div className="w-9 h-9 rounded-lg bg-muted/40 flex-shrink-0" />
+              <div className="flex-1 flex flex-col gap-1.5">
+                <div className="skeleton-block h-3.5 w-1/3" />
+                <div className="skeleton-block h-2.5 w-1/2" />
+              </div>
+              <div className="w-4 h-4 rounded bg-muted/40 flex-shrink-0" />
+            </div>
+          ))}
         </div>
       ) : (
         <FadeIn duration={0.3}>

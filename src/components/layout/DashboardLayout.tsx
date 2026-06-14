@@ -30,7 +30,6 @@ interface Session {
 }
 
 function getActiveNav(location: string): NavId {
-  console.log('[DashboardLayout] getActiveNav called with location:', location);
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
   if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
@@ -45,7 +44,10 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_ROLES))    return "roles";
   if (location.startsWith(ROUTES.DASHBOARD_GALLERY))     return "gallery";
   if (location.startsWith(ROUTES.DASHBOARD_CONTENT))     return "content";
-  if (location.startsWith(ROUTES.DASHBOARD_TEMPLATES))   return "templates";
+  // Templates was relocated into the org-settings "Plantilla" card, so it no
+  // longer has its own sidebar item — keep the org-settings item highlighted
+  // while on the templates page (otherwise the whole sidebar reads unmarked).
+  if (location.startsWith(ROUTES.DASHBOARD_TEMPLATES))   return "organization";
   if (location.startsWith(ROUTES.DASHBOARD_DEPLOYMENTS)) return "deployments";
   if (location.startsWith(ROUTES.PROFILE))            return "profile";
   if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /general, /branding, /contact, /payment, /shipping, /hacienda, /notifications sub-paths too

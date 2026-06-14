@@ -1,5 +1,4 @@
 import { Card, Icon, Badge } from "@/components/ui";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { fmt } from "@/utils/formatDate";
 import type { DashboardData } from "@/types";
 
@@ -9,10 +8,44 @@ interface SessionOverviewTabProps {
 }
 
 export function SessionOverviewTab({ dashboardData, isLoading }: SessionOverviewTabProps) {
-  const { t } = useLanguage();
-
   if (isLoading) {
-    return <div className="t-sm text-muted-foreground text-center p-8">{t("common.loading")}</div>;
+    // Mirrors the KPI grid + stand-breakdown layout below.
+    return (
+      <div className="p-6">
+        <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <div className="skeleton-block h-2.5 w-20 animate-pulse" />
+                <div className="w-7 h-7 rounded-lg bg-muted/40 animate-pulse" />
+              </div>
+              <div className="skeleton-block h-6 w-24 animate-pulse" />
+            </Card>
+          ))}
+        </div>
+        <Card className="!p-0">
+          <div className="px-5 py-4 border-b border-border">
+            <div className="skeleton-block h-4 w-44 animate-pulse" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className={`px-5 py-3.5 ${i < 2 ? "border-b border-border" : ""}`}>
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col gap-1.5">
+                  <div className="skeleton-block h-3.5 w-32 animate-pulse" />
+                  <div className="skeleton-block h-2.5 w-40 animate-pulse" />
+                </div>
+                <div className="skeleton-block h-4 w-20 animate-pulse" />
+              </div>
+              <div className="flex gap-2">
+                {Array.from({ length: 3 }).map((_, j) => (
+                  <div key={j} className="skeleton-block h-5 w-24 rounded-full animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    );
   }
 
   return (

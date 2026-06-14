@@ -1,5 +1,4 @@
 import { Card, Icon } from "@/components/ui";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { fmt } from "@/utils/formatDate";
 import type { StandData } from "@/types";
 
@@ -9,10 +8,39 @@ interface SessionSalesTabProps {
 }
 
 export function SessionSalesTab({ stands, isLoading }: SessionSalesTabProps) {
-  const { t } = useLanguage();
-
   if (isLoading) {
-    return <div className="t-sm text-muted-foreground text-center p-8">{t("common.loading")}</div>;
+    // Mirrors the per-stand sales cards (header + 3 payment progress rows).
+    return (
+      <div className="p-6">
+        <div className="grid gap-3.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-5">
+              <div className="flex justify-between items-start mb-3.5">
+                <div className="flex flex-col gap-1.5">
+                  <div className="skeleton-block h-4 w-32 animate-pulse" />
+                  <div className="skeleton-block h-2.5 w-40 animate-pulse" />
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <div className="skeleton-block h-5 w-24 animate-pulse" />
+                  <div className="skeleton-block h-2.5 w-16 animate-pulse" />
+                </div>
+              </div>
+              {Array.from({ length: 3 }).map((_, j) => (
+                <div key={j} className="mb-2">
+                  <div className="flex justify-between mb-1">
+                    <div className="skeleton-block h-2.5 w-16 animate-pulse" />
+                    <div className="skeleton-block h-2.5 w-20 animate-pulse" />
+                  </div>
+                  <div className="progress progress-thin">
+                    <div className="progress-bar bg-muted/40 animate-pulse" style={{ width: "60%" }} />
+                  </div>
+                </div>
+              ))}
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!stands || stands.length === 0) {

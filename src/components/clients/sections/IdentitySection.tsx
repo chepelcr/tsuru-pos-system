@@ -119,7 +119,10 @@ export function IdentitySection({
         <FormLabel required>Tipo de cliente</FormLabel>
         <div className="flex gap-2.5 mt-1">
           {loadingCT ? (
-            <div className="text-xs text-muted-foreground">Cargando…</div>
+            <>
+              <div className="flex-1 h-[42px] rounded-lg bg-muted/40 animate-pulse" />
+              <div className="flex-1 h-[42px] rounded-lg bg-muted/40 animate-pulse" />
+            </>
           ) : (
             customerTypes.map((ct) => {
               const selected = customerType === ct.id;

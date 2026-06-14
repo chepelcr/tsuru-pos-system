@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Icon, Pagination, Spinner } from "@/components/ui";
+import { Icon, Pagination } from "@/components/ui";
 import { useClients, clientDisplayName, type Client } from "@/hooks/useClients";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
@@ -63,8 +63,16 @@ export function ReceiverPicker({ orgId, selectedClientId, onSelect, onAddNew }: 
       {/* Table */}
       <div className="rounded-md border border-border overflow-hidden">
         {isLoading ? (
-          <div className="py-6 flex items-center justify-center">
-            <Spinner />
+          <div className="divide-y divide-border">
+            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5 animate-pulse">
+                <div className="w-8 h-8 rounded-full bg-muted/40 flex-shrink-0" />
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <div className="skeleton-block h-3 w-1/2" />
+                  <div className="skeleton-block h-2.5 w-1/3" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : rows.length === 0 ? (
           <div className="py-6 text-center text-xs text-muted-foreground">{t("common.noResults")}</div>

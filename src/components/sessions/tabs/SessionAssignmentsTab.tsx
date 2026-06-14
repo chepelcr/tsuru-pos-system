@@ -1,5 +1,4 @@
 import { Card, Icon, Badge } from "@/components/ui";
-import { useLanguage } from "@/contexts/LanguageContext";
 import type { Assignment } from "@/types";
 
 interface SessionAssignmentsTabProps {
@@ -15,10 +14,29 @@ function getUserDisplayName(a: Assignment): string {
 }
 
 export function SessionAssignmentsTab({ assignments, isLoading }: SessionAssignmentsTabProps) {
-  const { t } = useLanguage();
-
   if (isLoading) {
-    return <div className="t-sm text-muted-foreground text-center p-8">{t("common.loading")}</div>;
+    // Mirrors the assignment-card rows below.
+    return (
+      <div className="p-6">
+        <div className="grid gap-2.5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-muted/40 animate-pulse flex-shrink-0" />
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <div className="skeleton-block h-3.5 w-36 animate-pulse" />
+                  <div className="skeleton-block h-2.5 w-24 animate-pulse" />
+                </div>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <div className="skeleton-block h-5 w-16 rounded-full animate-pulse" />
+                  <div className="skeleton-block h-5 w-14 rounded-full animate-pulse" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (assignments.length === 0) {

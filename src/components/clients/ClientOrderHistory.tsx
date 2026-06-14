@@ -64,7 +64,17 @@ export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps
           description={t("clients.orders.noGlnDescription")}
         />
       ) : isLoading ? (
-        <div className="t-sm text-muted-foreground text-center py-6">{t("common.loading")}</div>
+        <div className="flex flex-col divide-y divide-border">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-3 py-3 animate-pulse">
+              <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+                <div className="skeleton-block h-3.5 w-24" />
+                <div className="skeleton-block h-2.5 w-40 max-w-full" />
+              </div>
+              <div className="skeleton-block h-3.5 w-16 flex-shrink-0" />
+            </div>
+          ))}
+        </div>
       ) : orders.length === 0 ? (
         <div className="t-sm text-muted-foreground text-center py-6">{t("clients.orders.noOrders")}</div>
       ) : (
