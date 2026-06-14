@@ -11,18 +11,16 @@ import type { Template } from "@/types";
  *      unscoped path, so this goes through the bare `api` client with no
  *      org/user prefix (CLAUDE.md §2, migration 04 §5.0/§5B).
  *   2. Apply a template to the EXISTING org (re-clone storefront content +
- *      set `Organization.template_name`). The POS app already exposes onboarding
- *      step3 (`POST userPath(userId, /organizations/{org}/onboarding/step3)`),
- *      and re-applying post-onboarding is the same clone operation, so we reuse
- *      that route. `templateId === null` ⇒ Playground / "start from scratch".
+ *      set `Organization.template_name`). Uses the DEDICATED idempotent route
+ *      `PUT userPath(userId, /organizations/{org}/template)`, NOT onboarding
+ *      step3 (step3 is registration-only — plain inserts that hit duplicate-key
+ *      on re-apply). The dedicated route clears the org's existing cloned
+ *      content first and does not touch `onboardingStep`. `templateId === null`
+ *      ⇒ Playground / "start from scratch".
  *
- * TODO(verify-endpoint): none of these endpoints are currently exercised by POS.
- * Confirm against markets-api:
+ * markets-api endpoints:
  *   • GET  /api/templates?activeOnly=true            (global, no org scope, camelCase)
- *   • POST /api/users/{u}/organizations/{o}/onboarding/step3  { templateId, includeCategories }
- *     — verify whether re-applying post-onboarding uses this same step3 route or a
- *       distinct `cloneTemplateToExistingOrg` route, and what `templateId: null` does
- *       (blank storefront vs no-op).
+ *   • PUT  /api/users/{u}/organizations/{o}/template  { templateId, includeCategories }
  */
 export function useTemplates() {
   const queryClient = useQueryClient();
@@ -58,8 +56,8 @@ export function useTemplates() {
         if (!userId) {
           throw new Error("userId is required to apply a storefront template");
         }
-        return api.post<unknown>(
-          userPath(userId, `/organizations/${orgId}/onboarding/step3`),
+        return api.put<unknown>(
+          userPath(userId, `/organizations/${orgId}/template`),
           { templateId, includeCategories }
         );
       },
