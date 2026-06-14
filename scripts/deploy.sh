@@ -6,7 +6,7 @@
 # Standalone-repo paths: build output is ./dist, CFN template is ./cloudformation.
 #
 # Expects the AWS CLI to be authenticated (GitHub Actions OIDC role, or locally
-# `AWS_PROFILE=J-CAMPOS ./scripts/deploy.sh`). Run AFTER `npm run build`.
+# `AWS_PROFILE=J-CAMPOS ./scripts/deploy.sh`). Run AFTER `pnpm run build`.
 set -euo pipefail
 
 ENVIRONMENT="${ENVIRONMENT:-dev}"
@@ -28,7 +28,7 @@ echo "  Domain      : $DOMAIN"
 echo ""
 
 if [ ! -d "$DIST_DIR" ]; then
-  echo "ERROR: $DIST_DIR not found — run 'npm run build' first."
+  echo "ERROR: $DIST_DIR not found — run 'pnpm run build' first."
   exit 1
 fi
 

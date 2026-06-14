@@ -16,11 +16,13 @@ During the transition it still physically resides at `BeautyMarket/templates/pos
 
 ### Deployment (GitHub Actions — own repo)
 
+**Package manager: pnpm** (enforced by `preinstall: npx only-allow pnpm`; `packageManager` field pins the version). Use `pnpm install` / `pnpm run <script>` / `pnpm add`. The committed lockfile is `pnpm-lock.yaml` (there is no `package-lock.json` — CI runs `pnpm install --frozen-lockfile`, so any dep change must update `pnpm-lock.yaml`). `pnpm run check` = `tsc --noEmit`.
+
 CI/CD now lives in this repo, replacing the monorepo CodePipeline stage:
-- `.github/workflows/deploy.yml` — on push to `main` (or manual dispatch). Builds the SPA (Vite → `dist/`, env from SSM `/jcampos/${ENVIRONMENT}/jmarkets/*`) and runs `scripts/deploy.sh`.
+- `.github/workflows/deploy.yml` — on push to `main` (or manual dispatch). Sets up pnpm (`pnpm/action-setup@v4`) + Node 20, runs `pnpm install --frozen-lockfile`, builds the SPA (`pnpm run build`, Vite → `dist/`, env from SSM `/jcampos/${ENVIRONMENT}/jmarkets/*`) and runs `scripts/deploy.sh`.
 - `scripts/deploy.sh` — deploys `cloudformation/frontend-site.yml` (stack `jmarkets-${ENVIRONMENT}-frontend-pos-system`), syncs `dist/` → `s3://jmarkets-${ENVIRONMENT}-pos-system`, invalidates CloudFront. Same names as the old monorepo pipeline, so it updates infra in place. Live at `pos.j-markets.jcampos.dev`.
 - AWS auth: GitHub OIDC → IAM role (no static keys). The **OIDC provider** is shared IaC in `biller-apps/Infrastructure/policies/jcampos-iam-roles.yaml` (account-global, dev-stack owned). The **deploy role** (`jcampos-tsuru-pos-system-gha-deploy`, repo-scoped) lives in `cloudformation/frontend-site.yml` — so the site stack owns it. Set its ARN as repo secret `AWS_DEPLOY_ROLE_ARN`. Routine GH deploys are IAM no-ops; changing the role requires an admin (`J-CAMPOS`) deploy.
-- Local deploy: `npm run build && AWS_PROFILE=J-CAMPOS bash scripts/deploy.sh` (uses `--capabilities CAPABILITY_NAMED_IAM`).
+- Local deploy: `pnpm run build && AWS_PROFILE=J-CAMPOS bash scripts/deploy.sh` (uses `--capabilities CAPABILITY_NAMED_IAM`).
 - **Vite `build.outDir` is repo-local `dist/`** (not the old monorepo `../../dist/templates/pos-system`).
 
 ---
