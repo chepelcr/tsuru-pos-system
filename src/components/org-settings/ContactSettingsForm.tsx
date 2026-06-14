@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MapPin, Share2 } from "lucide-react";
-import { Spinner } from "@/components/ui";
+import { Spinner, LocationSelect } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { OrgContactSettings } from "@/types";
+import type { LocationData } from "@/types/location";
 
 const buildSchema = (t: (k: string) => string) =>
   z.object({
@@ -16,7 +18,6 @@ const buildSchema = (t: (k: string) => string) =>
       .optional()
       .or(z.literal("")),
     phone: z.string().optional(),
-    address: z.string().optional(),
     businessHours: z.string().optional(),
     facebookUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
     instagramUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
@@ -55,7 +56,6 @@ export function ContactSettingsForm({
     defaultValues: {
       email: initialValues?.email ?? "",
       phone: initialValues?.phone ?? "",
-      address: initialValues?.address ?? "",
       businessHours: initialValues?.businessHours ?? "",
       facebookUrl: initialValues?.facebookUrl ?? "",
       instagramUrl: initialValues?.instagramUrl ?? "",
@@ -64,8 +64,26 @@ export function ContactSettingsForm({
     },
   });
 
+  // Structured location lives in a controlled LocationSelect (CR catalogs); its
+  // "Otras señas" textarea is the single address field (replacing the old plain
+  // address textarea). Merged into the payload on submit.
+  const [location, setLocation] = useState<LocationData>({
+    state_id: initialValues?.stateId ?? null,
+    county_id: initialValues?.countyId ?? null,
+    district_id: initialValues?.districtId ?? null,
+    neighborhood_id: initialValues?.neighborhoodId ?? null,
+    address: initialValues?.address ?? "",
+  });
+
   const submit = async (data: ContactValues) => {
-    await onSubmit(data);
+    await onSubmit({
+      ...data,
+      address: location.address ?? "",
+      stateId: location.state_id,
+      countyId: location.county_id,
+      districtId: location.district_id,
+      neighborhoodId: location.neighborhood_id,
+    });
   };
 
   return (
@@ -91,14 +109,10 @@ export function ContactSettingsForm({
           </FormField>
         </div>
 
-        <FormField label={t("orgSettings.contact.address")} error={errors.address?.message}>
-          <textarea
-            className="pp-input w-full"
-            rows={3}
-            placeholder={t("orgSettings.contact.addressPlaceholder")}
-            {...register("address")}
-          />
-        </FormField>
+        <div>
+          <div className="t-label mb-2">{t("orgs.create.fields.location")}</div>
+          <LocationSelect value={location} onChange={setLocation} />
+        </div>
 
         <FormField label={t("orgSettings.contact.businessHours")} error={errors.businessHours?.message}>
           <textarea
