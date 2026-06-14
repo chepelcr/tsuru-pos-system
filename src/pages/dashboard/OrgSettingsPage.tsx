@@ -269,7 +269,7 @@ export default function OrgSettingsPage() {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="t-h4 !mb-0 truncate">{card.title}</span>
+                  <span className="t-h4 !mb-0 truncate min-w-0 flex-1">{card.title}</span>
                   {!card.loading && (
                     <Badge variant={card.configured ? "success" : "warning"} className="flex-shrink-0">
                       {card.configured
