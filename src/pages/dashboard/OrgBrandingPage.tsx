@@ -6,7 +6,7 @@ import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateThemeBrandingSettings } from "@/hooks/useOrgSettings";
-import { Icon, Spinner } from "@/components/ui";
+import { Icon } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { BrandingSettingsForm } from "@/components/org-settings/BrandingSettingsForm";
 import { ROUTES } from "@/routePaths";
@@ -43,11 +43,38 @@ export default function OrgBrandingPage() {
   };
 
   if (orgLoading || !org) {
+    const FieldSkeleton = () => (
+      <div className="space-y-2">
+        <div className="skeleton-block animate-pulse h-3.5 w-28 rounded" />
+        <div className="skeleton-block animate-pulse h-10 w-full rounded-md" />
+        <div className="skeleton-block animate-pulse h-3 w-3/4 rounded" />
+      </div>
+    );
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        <div className="mb-6">
+          <div className="skeleton-block animate-pulse h-5 w-32 rounded mb-3" />
+          <div className="skeleton-block animate-pulse h-7 w-56 rounded mb-2" />
+          <div className="skeleton-block animate-pulse h-4 w-80 max-w-full rounded" />
+        </div>
+
+        <div className="card p-5 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FieldSkeleton />
+            <FieldSkeleton />
+          </div>
+          <FieldSkeleton />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FieldSkeleton />
+            <FieldSkeleton />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FieldSkeleton />
+            <FieldSkeleton />
+          </div>
+          <div className="flex justify-end pt-1">
+            <div className="skeleton-block animate-pulse h-9 w-24 rounded-md" />
+          </div>
         </div>
       </div>
     );

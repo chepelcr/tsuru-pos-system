@@ -6,7 +6,7 @@ import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateContactSettings } from "@/hooks/useOrgSettings";
-import { Icon, Spinner } from "@/components/ui";
+import { Icon } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ContactSettingsForm } from "@/components/org-settings/ContactSettingsForm";
 import { ROUTES } from "@/routePaths";
@@ -40,10 +40,37 @@ export default function OrgContactPage() {
 
   if (orgLoading || !org) {
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        {/* Header block: back button + title + subtitle */}
+        <div className="mb-6">
+          <div className="skeleton-block animate-pulse h-4 w-32 mb-3 rounded" />
+          <div className="skeleton-block animate-pulse h-7 w-56 mb-2 rounded" />
+          <div className="skeleton-block animate-pulse h-4 w-80 max-w-full rounded" />
+        </div>
+
+        {/* Two SectionWrapper cards, each with form fields */}
+        <div className="space-y-4">
+          {[0, 1].map((section) => (
+            <div key={section} className="card p-5">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="bg-muted/40 animate-pulse h-8 w-8 rounded-lg" />
+                <div className="skeleton-block animate-pulse h-5 w-40 rounded" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i}>
+                    <div className="skeleton-block animate-pulse h-3.5 w-24 mb-2 rounded" />
+                    <div className="skeleton-block animate-pulse h-9 w-full rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Save button */}
+        <div className="flex justify-end pt-1">
+          <div className="skeleton-block animate-pulse h-8 w-24 rounded" />
         </div>
       </div>
     );

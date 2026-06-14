@@ -13,7 +13,7 @@ import {
 } from '@/hooks/useConfirmations';
 import { usePermissions } from '@/hooks/useRbac';
 import type { OrderStatus } from '@/types/order';
-import { Card, Icon, Badge, Spinner, EmptyState, Menu, type MenuItem } from '@/components/ui';
+import { Card, Icon, Badge, EmptyState, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE, OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { AddOrdersDialog } from '@/components/confirmations/AddOrdersDialog';
 
@@ -104,7 +104,49 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
     return (
       <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto">
         {back}
-        <Spinner fullHeight label={t('common.loading')} />
+
+        {/* Hero header skeleton */}
+        <Card className="px-7 pt-7 pb-6 mb-3.5 !border-accent-rose-border bg-gradient-to-br from-accent-rose-soft to-transparent">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="skeleton-block animate-pulse h-7 w-64 mb-2.5 rounded" />
+              <div className="skeleton-block animate-pulse h-5 w-24 rounded-full" />
+            </div>
+            <div className="bg-muted/40 animate-pulse h-8 w-8 rounded-md" />
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-5 pt-5 border-t border-accent-rose-border">
+            <div className="skeleton-block animate-pulse h-4 w-40 rounded" />
+            <div className="skeleton-block animate-pulse h-4 w-32 rounded" />
+          </div>
+        </Card>
+
+        {/* Linked orders skeleton */}
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-muted/40 animate-pulse h-4 w-4 rounded" />
+            <div className="skeleton-block animate-pulse h-3.5 w-32 rounded" />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 p-3.5 rounded-md border border-border"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="skeleton-block animate-pulse h-4 w-36 mb-2 rounded" />
+                  <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                    <div className="skeleton-block animate-pulse h-3 w-28 rounded" />
+                    <div className="skeleton-block animate-pulse h-3 w-24 rounded" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="skeleton-block animate-pulse h-5 w-20 rounded-full" />
+                  <div className="bg-muted/40 animate-pulse h-8 w-8 rounded-md" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
     );
   }

@@ -75,10 +75,26 @@ export default function OrgGeneralPage() {
 
   if (orgLoading || !org) {
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        {/* Back + header */}
+        <div className="mb-6">
+          <div className="skeleton-block animate-pulse h-4 w-32 mb-4 rounded" />
+          <div className="skeleton-block animate-pulse h-8 w-56 mb-2 rounded" />
+          <div className="skeleton-block animate-pulse h-4 w-72 rounded" />
+        </div>
+
+        {/* Form card */}
+        <div className="card p-5 space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="skeleton-block animate-pulse h-3.5 w-28 rounded" />
+              <div className="skeleton-block animate-pulse h-9 w-full rounded" />
+            </div>
+          ))}
+
+          <div className="flex justify-end pt-1">
+            <div className="bg-muted/40 animate-pulse h-9 w-24 rounded-md" />
+          </div>
         </div>
       </div>
     );

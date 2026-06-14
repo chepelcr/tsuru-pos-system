@@ -6,7 +6,7 @@ import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateShippingSettings } from "@/hooks/useOrgSettings";
-import { Icon, Spinner } from "@/components/ui";
+import { Icon } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ShippingSettingsForm } from "@/components/org-settings/ShippingSettingsForm";
 import { ROUTES } from "@/routePaths";
@@ -44,10 +44,37 @@ export default function OrgShippingPage() {
 
   if (orgLoading || !org) {
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        <div className="mb-6">
+          <div className="skeleton-block animate-pulse h-7 w-44 mb-3 rounded-md" />
+          <div className="skeleton-block animate-pulse h-8 w-64 mb-2 rounded-md" />
+          <div className="skeleton-block animate-pulse h-4 w-80 rounded" />
+        </div>
+
+        <div className="card p-5 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div key={i}>
+                <div className="skeleton-block animate-pulse h-4 w-32 mb-2 rounded" />
+                <div className="skeleton-block animate-pulse h-10 w-full rounded-md" />
+                <div className="skeleton-block animate-pulse h-3 w-40 mt-1.5 rounded" />
+              </div>
+            ))}
+          </div>
+
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-start gap-3 rounded-lg border border-border p-4">
+              <div className="bg-muted/40 animate-pulse h-4 w-4 mt-0.5 flex-shrink-0 rounded" />
+              <div className="min-w-0 flex-1">
+                <div className="skeleton-block animate-pulse h-4 w-48 rounded" />
+                <div className="skeleton-block animate-pulse h-3 w-64 mt-1.5 rounded" />
+              </div>
+            </div>
+          ))}
+
+          <div className="flex justify-end pt-1">
+            <div className="skeleton-block animate-pulse h-8 w-24 rounded-md" />
+          </div>
         </div>
       </div>
     );

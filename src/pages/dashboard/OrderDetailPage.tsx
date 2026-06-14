@@ -11,7 +11,7 @@ import { usePermissions } from '@/hooks/useRbac';
 import type { Order, OrderStatus, OrderLine } from '@/types/order';
 import { fmt } from '@/lib/utils';
 import { downloadFromUrl } from '@/lib/downloadUtils';
-import { Card, Icon, Badge, Spinner, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
+import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE } from '@/components/orders/OrderStatusBadge';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
 import { ReprocessDialog } from '@/components/orders/ReprocessDialog';
@@ -308,7 +308,90 @@ export default function OrderDetailPage({ orderId }: Props) {
     return (
       <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto">
         {back}
-        <Spinner fullHeight label={t('common.loading')} />
+
+        {/* Hero header */}
+        <Card className="px-7 pt-7 pb-6 mb-3.5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="skeleton-block animate-pulse h-7 w-56 mb-2.5 rounded-md" />
+              <div className="skeleton-block animate-pulse h-5 w-24 rounded-full" />
+            </div>
+            <div className="flex items-start gap-3 flex-shrink-0">
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="skeleton-block animate-pulse h-3 w-12 rounded" />
+                <div className="skeleton-block animate-pulse h-8 w-28 rounded-md" />
+              </div>
+              <div className="w-8 h-8 rounded-md bg-muted/40 animate-pulse flex-shrink-0" />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-5 pt-5 border-t border-border">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="skeleton-block animate-pulse h-3 w-32 rounded" />
+            ))}
+          </div>
+        </Card>
+
+        <div
+          className="grid gap-3.5 items-start"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
+        >
+          {/* Left: line items + totals */}
+          <div className="flex flex-col gap-3.5">
+            <Card className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3.5 h-3.5 rounded bg-muted/40 animate-pulse" />
+                <div className="skeleton-block animate-pulse h-3 w-28 rounded" />
+              </div>
+              <div className="rounded-md border border-border overflow-hidden">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-4 px-3.5 py-3 border-b border-border last:border-b-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="skeleton-block animate-pulse h-4 w-40 mb-1.5 rounded" />
+                      <div className="skeleton-block animate-pulse h-3 w-24 rounded" />
+                    </div>
+                    <div className="skeleton-block animate-pulse h-4 w-16 rounded" />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2.5 mt-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="skeleton-block animate-pulse h-3 w-24 rounded" />
+                    <div className="skeleton-block animate-pulse h-4 w-20 rounded" />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Right: info cards */}
+          <div className="flex flex-col gap-3.5">
+            {Array.from({ length: 2 }).map((_, card) => (
+              <Card key={card} className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-3.5 h-3.5 rounded bg-muted/40 animate-pulse" />
+                  <div className="skeleton-block animate-pulse h-3 w-24 rounded" />
+                </div>
+                {Array.from({ length: 2 }).map((_, row) => (
+                  <div
+                    key={row}
+                    className="flex items-center gap-3.5 py-3 border-b border-border last:border-b-0"
+                  >
+                    <div className="w-[34px] h-[34px] rounded-md bg-muted/40 animate-pulse flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="skeleton-block animate-pulse h-3 w-16 mb-1.5 rounded" />
+                      <div className="skeleton-block animate-pulse h-4 w-36 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

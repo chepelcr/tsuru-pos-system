@@ -5,7 +5,7 @@ import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { Icon, Spinner } from "@/components/ui";
+import { Icon } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ROUTES } from "@/routePaths";
 import { THEME_LIST, type ThemeDef } from "@/theme/themes";
@@ -41,10 +41,29 @@ export default function OrgThemePage() {
 
   if (orgLoading || !org) {
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        <div className="mb-8">
+          <div className="skeleton-block animate-pulse h-7 w-40 mb-3 rounded" />
+          <div className="skeleton-block animate-pulse h-8 w-56 mb-2 rounded" />
+          <div className="skeleton-block animate-pulse h-4 w-72 rounded" />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card text-left w-full p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="skeleton-block animate-pulse h-5 w-28 rounded" />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-muted/40 animate-pulse" />
+                <span className="w-7 h-7 rounded-full bg-muted/40 animate-pulse" />
+                <span className="w-7 h-7 rounded-full bg-muted/40 animate-pulse" />
+              </div>
+
+              <div className="skeleton-block animate-pulse h-4 w-3/4 rounded" />
+            </div>
+          ))}
         </div>
       </div>
     );

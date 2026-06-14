@@ -172,8 +172,50 @@ export default function ClientDetailPage({ clientId }: Props) {
 
   if (isLoading) {
     return (
-      <div className="px-6 py-12 flex items-center justify-center gap-2.5">
-        <Icon name="refresh" size={18} className="text-muted-foreground animate-spin" />
+      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+        {/* Back button */}
+        <div className="skeleton-block animate-pulse h-4 w-24 rounded mb-5" />
+
+        {/* Hero card */}
+        <Card className="px-7 pt-7 pb-6 mb-3.5">
+          <div className="flex items-start gap-5 flex-wrap">
+            <div className="w-[72px] h-[72px] rounded-[20px] bg-muted/40 animate-pulse flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="skeleton-block animate-pulse h-7 w-48 rounded mb-2" />
+              <div className="flex items-center gap-2">
+                <div className="skeleton-block animate-pulse h-5 w-28 rounded" />
+                <div className="skeleton-block animate-pulse h-5 w-16 rounded" />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Tabs */}
+        <div className="tabs-container mb-4">
+          <div className="grid grid-cols-2 gap-1 sm:flex">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton-block animate-pulse h-9 sm:w-28 rounded" />
+            ))}
+          </div>
+        </div>
+
+        {/* Info card blocks */}
+        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="px-6 py-5">
+              <div className="skeleton-block animate-pulse h-3 w-28 rounded mb-4" />
+              {Array.from({ length: 2 }).map((__, j) => (
+                <div key={j} className="flex items-center gap-3.5 py-3 border-b border-border">
+                  <div className="w-[34px] h-[34px] rounded-[9px] bg-muted/40 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="skeleton-block animate-pulse h-2.5 w-20 rounded mb-1.5" />
+                    <div className="skeleton-block animate-pulse h-4 w-32 rounded" />
+                  </div>
+                </div>
+              ))}
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }

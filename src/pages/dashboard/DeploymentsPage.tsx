@@ -4,7 +4,6 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useDeployments } from "@/hooks/useDeployments";
-import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { DeploymentPendingCard } from "@/components/cms/DeploymentPendingCard";
@@ -108,8 +107,29 @@ export default function DeploymentsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Spinner />
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="card p-5 flex flex-col gap-4">
+              {/* Header: icon pill + build id + status badge */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-8 h-8 flex-shrink-0 rounded-md bg-muted/40 animate-pulse" />
+                  <span className="skeleton-block animate-pulse h-4 w-32 rounded" />
+                </div>
+                <span className="skeleton-block animate-pulse h-5 w-20 rounded-full" />
+              </div>
+
+              {/* Meta grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <div key={j}>
+                    <span className="skeleton-block animate-pulse h-3 w-16 rounded mb-1.5 block" />
+                    <span className="skeleton-block animate-pulse h-4 w-24 rounded block" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : activeTab === "pending" ? (
         <FadeIn key="pending">

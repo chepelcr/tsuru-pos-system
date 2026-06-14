@@ -115,7 +115,20 @@ export default function GalleryPage() {
 
       {/* Grid */}
       {listQuery.isLoading ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="card overflow-hidden">
+              <div className="aspect-square bg-muted/40 animate-pulse" />
+              <div className="p-2.5 flex flex-col gap-1.5">
+                <div className="skeleton-block animate-pulse h-3 w-3/4" />
+                <div className="flex items-center gap-1.5">
+                  <div className="skeleton-block animate-pulse h-6 w-20 rounded-md" />
+                  <div className="bg-muted/40 animate-pulse h-6 w-6 rounded-md" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : listQuery.isError ? (
         <EmptyState icon="alertTri" title={t("media.loadError")}
           action={<Button variant="outline" size="sm" icon="refresh" onClick={() => listQuery.refetch()}>{t("common.retry")}</Button>} />

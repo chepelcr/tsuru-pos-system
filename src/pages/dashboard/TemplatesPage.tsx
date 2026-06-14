@@ -95,10 +95,48 @@ export default function TemplatesPage() {
 
   if (orgLoading || !org) {
     return (
-      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-        <div className="text-center text-muted-foreground">
-          <Spinner size={28} />
-          <p className="t-sm mt-3">{t("common.loading")}</p>
+      <div className="px-6 pt-6 pb-12 max-w-[1200px] mx-auto">
+        {/* Header skeleton */}
+        <div className="mb-5">
+          <div className="skeleton-block animate-pulse h-5 w-40 rounded mb-3" />
+          <div className="skeleton-block animate-pulse h-8 w-64 rounded mb-2" />
+          <div className="skeleton-block animate-pulse h-4 w-96 max-w-full rounded" />
+        </div>
+
+        {/* Theme-vs-storefront hint skeleton */}
+        <div className="card card-surface-muted flex items-start gap-3 p-4 mb-6">
+          <div className="bg-muted/40 animate-pulse w-8 h-8 flex-shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <div className="skeleton-block animate-pulse h-3.5 w-full rounded" />
+            <div className="skeleton-block animate-pulse h-3.5 w-2/3 rounded" />
+          </div>
+        </div>
+
+        {/* Search + category filter skeleton */}
+        <div className="flex flex-col gap-3 mb-6">
+          <div className="skeleton-block animate-pulse h-10 w-full rounded" />
+          <div className="flex flex-wrap items-center gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="skeleton-block animate-pulse h-7 w-20 rounded-full" />
+            ))}
+          </div>
+        </div>
+
+        {/* Gallery grid skeleton — mirrors the template-card grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card overflow-hidden">
+              <div className="bg-muted/40 animate-pulse aspect-video w-full" />
+              <div className="p-4 space-y-3">
+                <div className="skeleton-block animate-pulse h-5 w-3/4 rounded" />
+                <div className="space-y-2">
+                  <div className="skeleton-block animate-pulse h-3.5 w-full rounded" />
+                  <div className="skeleton-block animate-pulse h-3.5 w-5/6 rounded" />
+                </div>
+                <div className="skeleton-block animate-pulse h-9 w-full rounded mt-2" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

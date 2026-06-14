@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, EmptyState, Icon, Spinner } from "@/components/ui";
+import { Button, EmptyState, Icon } from "@/components/ui";
 import { SearchInput } from "@/components/forms/SearchInput";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -81,8 +81,28 @@ export default function CategoriesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="card overflow-hidden flex flex-col p-0">
+              {/* Header color band */}
+              <div className="h-20 bg-muted/40 animate-pulse" />
+
+              <div className="p-4 flex-1 flex flex-col gap-3">
+                <div className="skeleton-block animate-pulse h-4 w-3/4 rounded" />
+                <div className="skeleton-block animate-pulse h-3 w-1/2 rounded" />
+
+                <div className="flex gap-2">
+                  <div className="w-4 h-4 rounded bg-muted/40 animate-pulse" />
+                  <div className="w-4 h-4 rounded bg-muted/40 animate-pulse" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mt-auto pt-2">
+                  <div className="skeleton-block animate-pulse h-9 rounded" />
+                  <div className="skeleton-block animate-pulse h-9 rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : categories.length === 0 ? (
         <EmptyState
