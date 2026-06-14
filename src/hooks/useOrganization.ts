@@ -42,6 +42,10 @@ interface CompleteStep2Data {
   email?: string;
   phone?: string;
   address?: string;
+  stateId?: number;
+  countyId?: number;
+  districtId?: number;
+  neighborhoodId?: number;
 }
 
 interface CompleteStep3Data {

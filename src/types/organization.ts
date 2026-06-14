@@ -34,6 +34,11 @@ export interface OrgContactSettings {
   state?: string;
   city?: string;
   postalCode?: string;
+  // Geo FK ids (markets-api response shape) — mirror Hacienda location catalog.
+  stateId?: number | null;
+  countyId?: number | null;
+  districtId?: number | null;
+  neighborhoodId?: number | null;
   facebookUrl?: string;
   instagramUrl?: string;
   twitterUrl?: string;

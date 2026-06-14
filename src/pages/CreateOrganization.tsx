@@ -8,7 +8,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { ROUTES } from "@/routePaths";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
-import { Card, CardBody, Icon, Input, Spinner } from "@/components/ui";
+import { Card, CardBody, Icon, Input, LocationSelect, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { FormField } from "@/components/forms/FormField";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
@@ -72,6 +72,10 @@ export default function CreateOrganization() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [stateId, setStateId] = useState<number | null>(null);
+  const [countyId, setCountyId] = useState<number | null>(null);
+  const [districtId, setDistrictId] = useState<number | null>(null);
+  const [neighborhoodId, setNeighborhoodId] = useState<number | null>(null);
 
   // Step 3
   const [selectedThemeId, setSelectedThemeId] = useState<string>(DEFAULT_THEME_ID);
@@ -102,6 +106,10 @@ export default function CreateOrganization() {
     setEmail(org.contact?.email ?? "");
     setPhone(org.contact?.phone ?? "");
     setAddress(org.contact?.address ?? "");
+    setStateId(org.contact?.stateId ?? null);
+    setCountyId(org.contact?.countyId ?? null);
+    setDistrictId(org.contact?.districtId ?? null);
+    setNeighborhoodId(org.contact?.neighborhoodId ?? null);
     setSelectedThemeId(org.template_name ?? DEFAULT_THEME_ID);
 
     const step = org.onboarding_step ?? 1;
@@ -188,6 +196,10 @@ export default function CreateOrganization() {
           email: email || undefined,
           phone: phone || undefined,
           address: address || undefined,
+          stateId: stateId || undefined,
+          countyId: countyId || undefined,
+          districtId: districtId || undefined,
+          neighborhoodId: neighborhoodId || undefined,
         });
         setStepIndex(2);
       } catch {
@@ -375,6 +387,27 @@ export default function CreateOrganization() {
                       placeholder={t("orgs.create.fields.addressPlaceholder")}
                     />
                   </FormField>
+
+                  <div className="flex flex-col gap-2">
+                    <h3 className="t-h4 !mb-0">{t("orgs.create.fields.location")}</h3>
+                    {/* CR default isoCode; the address field above stands, so the
+                        LocationSelect's own address is left unused. */}
+                    <LocationSelect
+                      value={{
+                        state_id: stateId,
+                        county_id: countyId,
+                        district_id: districtId,
+                        neighborhood_id: neighborhoodId,
+                        address: undefined,
+                      }}
+                      onChange={(loc) => {
+                        setStateId(loc.state_id ?? null);
+                        setCountyId(loc.county_id ?? null);
+                        setDistrictId(loc.district_id ?? null);
+                        setNeighborhoodId(loc.neighborhood_id ?? null);
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 

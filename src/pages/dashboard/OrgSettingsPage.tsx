@@ -45,11 +45,6 @@ export default function OrgSettingsPage() {
   const { can, isReady: permsReady } = usePermissions();
   const sectionVisible = (sectionId: string): boolean => {
     if (!permsReady) return true;
-    // The Plantilla card surfaces the storefront template gallery, so it is
-    // gated on the EXISTING storefront/templates permission (not a new
-    // organization/<id> submodule — no RBAC reseed needed). Every other card
-    // stays gated on organization/<cardId>.
-    if (sectionId === "plantilla") return can("storefront", "read", "templates");
     return can("organization", "read", sectionId);
   };
 
@@ -179,7 +174,7 @@ export default function OrgSettingsPage() {
       route: ROUTES.DASHBOARD_ORG_THEME,
     },
     // Plantilla (storefront template gallery) — moved here from the storefront
-    // sidebar section. Gated on storefront/templates (see sectionVisible).
+    // sidebar section. Gated as an `organization` submodule (organization/plantilla).
     {
       id: "plantilla",
       icon: "grid",
