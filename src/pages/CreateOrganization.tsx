@@ -380,31 +380,25 @@ export default function CreateOrganization() {
                       placeholder={t("orgs.create.fields.phonePlaceholder")}
                     />
                   </FormField>
-                  <FormField label={t("orgs.create.fields.address")}>
-                    <Input
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder={t("orgs.create.fields.addressPlaceholder")}
-                    />
-                  </FormField>
-
                   <div className="flex flex-col gap-2">
                     <h3 className="t-h4 !mb-0">{t("orgs.create.fields.location")}</h3>
-                    {/* CR default isoCode; the address field above stands, so the
-                        LocationSelect's own address is left unused. */}
+                    {/* CR default isoCode; LocationSelect's own "otras señas"
+                        textarea is the single address field (matches the
+                        org-settings contact form). */}
                     <LocationSelect
                       value={{
                         state_id: stateId,
                         county_id: countyId,
                         district_id: districtId,
                         neighborhood_id: neighborhoodId,
-                        address: undefined,
+                        address,
                       }}
                       onChange={(loc) => {
                         setStateId(loc.state_id ?? null);
                         setCountyId(loc.county_id ?? null);
                         setDistrictId(loc.district_id ?? null);
                         setNeighborhoodId(loc.neighborhood_id ?? null);
+                        setAddress(loc.address ?? "");
                       }}
                     />
                   </div>
