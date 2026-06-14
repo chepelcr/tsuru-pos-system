@@ -1,7 +1,6 @@
 import { Mail } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { FormLabel } from "@/components/ui";
-import { useAllCountries } from "@/hooks/useDataApi";
+import { FormLabel, PhoneField } from "@/components/ui";
 import { CountryISO } from "@/lib/enums";
 import type { CreateClientDto } from "@/hooks/useClients";
 
@@ -20,8 +19,6 @@ export function ContactSection({
   onToggle,
   disabled,
 }: ContactSectionProps) {
-  const { data: countries = [], isLoading: loadingCountries } = useAllCountries();
-
   return (
     <SectionWrapper
       title="Contacto"
@@ -42,33 +39,17 @@ export function ContactSection({
         />
       </div>
 
-      {/* Phone Country & Number */}
-      <div className="flex gap-2.5">
-        <div className="flex-1">
-          <FormLabel>País (teléfono)</FormLabel>
-          <select
-            className="pp-input"
-            value={form.phone?.country_code ?? CountryISO.COSTA_RICA}
-            onChange={(e) => setForm((f) => ({ ...f, phone: { ...f.phone, country_code: e.target.value } }))}
-            disabled={loadingCountries}
-          >
-            {countries.map((c) => (
-              <option key={c.iso_code} value={c.iso_code}>
-                {c.phone_code} {c.spanish_name || c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex-1">
-          <FormLabel>Número de teléfono</FormLabel>
-          <input
-            className="pp-input"
-            value={form.phone?.number ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, phone: { ...f.phone, number: e.target.value } }))}
-            placeholder="8888-8888"
-          />
-        </div>
+      {/* Phone: flag country picker + number (shared PhoneField) */}
+      <div>
+        <FormLabel>Teléfono</FormLabel>
+        <PhoneField
+          countryCode={form.phone?.country_code ?? CountryISO.COSTA_RICA}
+          number={form.phone?.number ?? ""}
+          numberPlaceholder="88888888"
+          onChange={({ countryCode, number }) =>
+            setForm((f) => ({ ...f, phone: { ...f.phone, country_code: countryCode, number } }))
+          }
+        />
       </div>
     </SectionWrapper>
   );
