@@ -3,10 +3,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MapPin, Share2 } from "lucide-react";
-import { Spinner, LocationSelect } from "@/components/ui";
+import { Spinner, LocationSelect, PhoneField } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CountryISO } from "@/lib/enums";
 import type { OrgContactSettings } from "@/types";
 import type { LocationData } from "@/types/location";
 
@@ -17,7 +18,6 @@ const buildSchema = (t: (k: string) => string) =>
       .email(t("orgSettings.contact.emailInvalid"))
       .optional()
       .or(z.literal("")),
-    phone: z.string().optional(),
     businessHours: z.string().optional(),
     facebookUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
     instagramUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
@@ -55,7 +55,6 @@ export function ContactSettingsForm({
     resolver: zodResolver(buildSchema(t)),
     defaultValues: {
       email: initialValues?.email ?? "",
-      phone: initialValues?.phone ?? "",
       businessHours: initialValues?.businessHours ?? "",
       facebookUrl: initialValues?.facebookUrl ?? "",
       instagramUrl: initialValues?.instagramUrl ?? "",
@@ -64,9 +63,13 @@ export function ContactSettingsForm({
     },
   });
 
-  // Structured location lives in a controlled LocationSelect (CR catalogs); its
-  // "Otras señas" textarea is the single address field (replacing the old plain
-  // address textarea). Merged into the payload on submit.
+  // Phone (country + number) via the shared PhoneField, and structured location
+  // via the shared LocationSelect — both controlled, merged into the payload on
+  // submit. LocationSelect's "otras señas" textarea is the single address field.
+  const [phone, setPhone] = useState(initialValues?.phone ?? "");
+  const [phoneCountryCode, setPhoneCountryCode] = useState(
+    initialValues?.phoneCountryCode ?? CountryISO.COSTA_RICA,
+  );
   const [location, setLocation] = useState<LocationData>({
     state_id: initialValues?.stateId ?? null,
     county_id: initialValues?.countyId ?? null,
@@ -78,6 +81,8 @@ export function ContactSettingsForm({
   const submit = async (data: ContactValues) => {
     await onSubmit({
       ...data,
+      phone,
+      phoneCountryCode,
       address: location.address ?? "",
       stateId: location.state_id,
       countyId: location.county_id,
@@ -99,12 +104,15 @@ export function ContactSettingsForm({
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.phone")} error={errors.phone?.message}>
-            <input
-              className="pp-input w-full"
-              type="tel"
-              placeholder={t("orgSettings.contact.phonePlaceholder")}
-              {...register("phone")}
+          <FormField label={t("orgSettings.contact.phone")}>
+            <PhoneField
+              countryCode={phoneCountryCode}
+              number={phone}
+              numberPlaceholder={t("orgSettings.contact.phonePlaceholder")}
+              onChange={({ countryCode, number }) => {
+                setPhoneCountryCode(countryCode);
+                setPhone(number);
+              }}
             />
           </FormField>
         </div>

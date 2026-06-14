@@ -29,6 +29,8 @@
 export interface OrgContactSettings {
   email?: string;
   phone?: string;
+  /** Phone country by ISO numeric code (e.g. "188"); mirrors fiscal-info phone. */
+  phoneCountryCode?: string | null;
   address?: string;
   country?: string;
   state?: string;
