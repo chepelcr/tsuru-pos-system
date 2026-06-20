@@ -103,22 +103,9 @@ export interface BulkContentSaveResponse {
   updated: number;
 }
 
-// ── Template (GLOBAL / public) ────────────────────────────────────────────
-
-export interface Template {
-  id: string;
-  /** Unique template identifier (e.g. "jmarkets-demo"). */
-  name: string;
-  displayName: string;
-  description?: string | null;
-  category?: string | null;
-  thumbnailUrl?: string | null;
-  previewUrl?: string | null;
-  isActive?: boolean | null;
-  sortOrder?: number | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+// ── Template ──────────────────────────────────────────────────────────────
+// The canonical `Template` type lives in `./storefront` and is re-exported by
+// `@/types`. Import it from `@/types` — do not redefine it here.
 
 // ── Deployments ─────────────────────────────────────────────────────────────
 
