@@ -17,7 +17,7 @@ interface TemplatePreviewProps {
 
 /** Live demo URL for a deployed storefront template. */
 function demoUrl(name: string): string {
-  return `https://${name}-example.j-markets.jcampos.dev`;
+  return `https://${name}.examples.tsuru.jcampos.dev`;
 }
 
 const FEATURE_KEYS = [
@@ -119,7 +119,7 @@ export function TemplatePreview({
           <div>
             <h4 className="label-section mb-1.5">{t("template.preview.liveDemo")}</h4>
             <a
-              href={demoUrl(template.name)}
+              href={template.previewUrl ?? demoUrl(template.name)}
               target="_blank"
               rel="noreferrer noopener"
               className="btn btn-outline btn-sm w-full"

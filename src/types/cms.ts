@@ -113,6 +113,7 @@ export interface Template {
   description?: string | null;
   category?: string | null;
   thumbnailUrl?: string | null;
+  previewUrl?: string | null;
   isActive?: boolean | null;
   sortOrder?: number | null;
   createdAt?: string | null;
