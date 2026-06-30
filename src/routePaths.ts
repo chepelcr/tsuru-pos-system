@@ -30,6 +30,7 @@ export const ROUTES = {
   DASHBOARD_ORG_HACIENDA: "/dashboard/organization/hacienda",
   DASHBOARD_ORG_NOTIFICATIONS: "/dashboard/organization/notifications",
   DASHBOARD_ORG_FISCAL_INFO: "/dashboard/organization/fiscal-info",
+  DASHBOARD_PROGRAMS: "/dashboard/programs",
   DASHBOARD_CONTENT: "/dashboard/content",
   DASHBOARD_GALLERY: "/dashboard/gallery",
   DASHBOARD_TEMPLATES: "/dashboard/templates",

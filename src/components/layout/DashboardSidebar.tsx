@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions, useCreatableDocTypes } from "@/hooks/useRbac";
+import { useProgramsEnabled } from "@/hooks/useProgramsEnabled";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
@@ -11,7 +12,7 @@ import type { DocTypeCode } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 import { roleLabel } from "@/lib/rbacI18n";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
 
 interface DashboardSidebarProps {
   active: NavId;
@@ -33,6 +34,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   roles:         { icon: "shield",      labelKey: "shell.roles" },
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
   reporte:       { icon: "trending",    labelKey: "shell.reports" },
+  programs:      { icon: "graduationCap", labelKey: "shell.programs" },
   content:       { icon: "fileText",    labelKey: "shell.content" },
   gallery:       { icon: "grid",        labelKey: "shell.gallery" },
   templates:     { icon: "grid",        labelKey: "shell.templates" },
@@ -64,6 +66,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   templates:     ["storefront", "templates"],
   deployments:   ["storefront", "deployments"],
   reporte:       ["reports", "general"],
+  programs:      ["programs", "programs"],
   documents:     ["documents", "emitted"],
 };
 
@@ -87,6 +90,11 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // backend rollout starts with RBAC_ENFORCEMENT=log, so the item only hides
   // once an authoritative permission set says the caller can't read roles.
   const { can, isReady: permsReady, role: orgRole } = usePermissions();
+  // Template-gated visibility (W12): the Programs item shows only when the
+  // org's selected template includes a `programs` section (detected from the
+  // org's cloned CMS content). Combined with the RBAC read check below — mirror
+  // of the storefront conditional pattern. FAIL-CLOSED (off until confirmed).
+  const { enabled: programsEnabled } = useProgramsEnabled();
   // Per-doc-type create gating (documents/<permSub>): the "+" menu only lists
   // the types this role may create — e.g. cashiers see FE/TE, never NC/ND.
   const creatableDocTypes = useCreatableDocTypes();
@@ -136,6 +144,9 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // Legacy-style nav gating: an item shows only when the role can read its
   // module/submodule (fail-open until my-permissions resolves).
   const itemVisible = (id: NavId): boolean => {
+    // Programs is template-gated: hidden unless the org's template ships a
+    // programs section (fail-closed), regardless of the RBAC grant.
+    if (id === "programs" && !programsEnabled) return false;
     const perm = NAV_PERMISSION[id];
     if (!perm || !permsReady) return true;
     return can(perm[0], "read", perm[1]);
@@ -216,6 +227,10 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
         {/* Reportes — standalone item (not wrapped in a collapsible section) */}
         <div className="mt-1.5">{renderItem("reporte")}</div>
+
+        {/* Programas — standalone, template-gated item (W12). renderItem returns
+            null when the template lacks a programs section or the role can't read it. */}
+        {itemVisible("programs") && <div className="mt-1.5">{renderItem("programs")}</div>}
 
         {/* Documentos — standalone, at the end of the menu */}
         {itemVisible("documents") && (

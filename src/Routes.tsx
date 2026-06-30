@@ -41,6 +41,7 @@ import OrgContactPage from "@/pages/dashboard/OrgContactPage";
 import OrgPaymentPage from "@/pages/dashboard/OrgPaymentPage";
 import OrgShippingPage from "@/pages/dashboard/OrgShippingPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
+import ProgramsPage from "@/pages/dashboard/ProgramsPage";
 import ContentPage from "@/pages/dashboard/ContentPage";
 import GalleryPage from "@/pages/dashboard/GalleryPage";
 import TemplatesPage from "@/pages/dashboard/TemplatesPage";
@@ -266,6 +267,13 @@ export default function Routes() {
       <Route
         path={ROUTES.DASHBOARD_CLIENTS}
         component={() => <DashboardPage><ClientsPage /></DashboardPage>}
+      />
+
+      {/* Programs — template-gated section (W12). The page itself redirects to
+          the dashboard when the org's template has no programs section. */}
+      <Route
+        path={ROUTES.DASHBOARD_PROGRAMS}
+        component={() => <DashboardPage><ProgramsPage /></DashboardPage>}
       />
 
       {/* Sitio web (storefront CMS) — content, templates, deployments */}

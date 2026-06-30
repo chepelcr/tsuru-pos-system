@@ -21,7 +21,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "profile";
+type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
 
 interface Session {
   name: string;
@@ -42,6 +42,7 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
   if (location.startsWith(ROUTES.DASHBOARD_MEMBERS))  return "members";
   if (location.startsWith(ROUTES.DASHBOARD_ROLES))    return "roles";
+  if (location.startsWith(ROUTES.DASHBOARD_PROGRAMS))    return "programs";
   if (location.startsWith(ROUTES.DASHBOARD_GALLERY))     return "gallery";
   if (location.startsWith(ROUTES.DASHBOARD_CONTENT))     return "content";
   // Templates was relocated into the org-settings "Plantilla" card, so it no
@@ -72,6 +73,7 @@ const NAV_PATHS: Record<NavId, string> = {
   gallery:     ROUTES.DASHBOARD_GALLERY,
   templates:   ROUTES.DASHBOARD_TEMPLATES,
   deployments: ROUTES.DASHBOARD_DEPLOYMENTS,
+  programs:  ROUTES.DASHBOARD_PROGRAMS,
   profile:   ROUTES.PROFILE,
 };
 

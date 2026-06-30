@@ -380,6 +380,21 @@ const translations: Record<Language, Record<string, string>> = {
     "shell.gallery": "Galería",
     "shell.templates": "Plantillas",
     "shell.deployments": "Publicaciones",
+    "shell.programs": "Programas",
+
+    // programs (template-gated section — products of type programa)
+    "programs.title": "Programas",
+    "programs.subtitle": "Gestiona los programas de tu tienda",
+    "programs.countRegistered": "{count} programas registrados",
+    "programs.new": "Nuevo programa",
+    "programs.searchPlaceholder": "Buscar programas...",
+    "programs.empty": "No hay programas",
+    "programs.emptyDescription": "Aún no has creado programas. Crea un producto de tipo programa para verlo aquí.",
+    "programs.itemName": "programas",
+    "programs.activate": "Activar programa",
+    "programs.deactivate": "Desactivar programa",
+    "programs.confirmActivate": "¿Activar \"{name}\"?",
+    "programs.confirmDeactivate": "¿Desactivar \"{name}\"?",
 
     // notifications (navbar bell)
     "notifications.title": "Notificaciones",
@@ -2552,6 +2567,21 @@ const translations: Record<Language, Record<string, string>> = {
     "shell.gallery": "Gallery",
     "shell.templates": "Templates",
     "shell.deployments": "Deployments",
+    "shell.programs": "Programs",
+
+    // programs (template-gated section — products of type program)
+    "programs.title": "Programs",
+    "programs.subtitle": "Manage your store's programs",
+    "programs.countRegistered": "{count} programs registered",
+    "programs.new": "New program",
+    "programs.searchPlaceholder": "Search programs...",
+    "programs.empty": "No programs",
+    "programs.emptyDescription": "You haven't created any programs yet. Create a product of type program to see it here.",
+    "programs.itemName": "programs",
+    "programs.activate": "Activate program",
+    "programs.deactivate": "Deactivate program",
+    "programs.confirmActivate": "Activate \"{name}\"?",
+    "programs.confirmDeactivate": "Deactivate \"{name}\"?",
 
     // notifications (navbar bell)
     "notifications.title": "Notifications",
