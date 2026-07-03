@@ -3,7 +3,7 @@
  *
  * A "storefront template" is the PAGE STRUCTURE + SECTION CONTENT of the
  * customer-facing store (the 8 designs deployed to
- * `{name}-example.j-markets.jcampos.dev`). Selecting one clones page/section
+ * `{name}.examples.tsuru.jcampos.dev`). Selecting one clones page/section
  * content rows server-side and sets `Organization.template_name`.
  *
  * This is DISTINCT from the POS shell theme (`Organization.theme`), which only

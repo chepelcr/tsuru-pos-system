@@ -1,9 +1,9 @@
 import { fetchAuthSession } from "aws-amplify/auth";
 
-const API_BASE           = import.meta.env.VITE_API_URL        || "https://markets-api.jcampos.dev";
-const CROSS_APP_API_BASE = import.meta.env.VITE_ORDERS_API_URL || "https://orders-api.jcampos.dev";
+const API_BASE           = import.meta.env.VITE_API_URL        || "https://api.tsuru.jcampos.dev";
+const CROSS_APP_API_BASE = import.meta.env.VITE_ORDERS_API_URL || "https://orders-api.tsuru.jcampos.dev";
 // Single sales API — separate Lambdas are all behind one API Gateway domain
-const SALES_API_BASE     = import.meta.env.VITE_SALES_API_URL  || "https://sales-api.jcampos.dev";
+const SALES_API_BASE     = import.meta.env.VITE_SALES_API_URL  || "https://sales-api.tsuru.jcampos.dev";
 
 console.log('[API Config] Environment variables:', {
   VITE_API_URL: import.meta.env.VITE_API_URL,
@@ -281,7 +281,7 @@ export function salesOrgPath(orgId: string, suffix: string = '') {
 
 /**
  * Path builder for the auth/organization-configurations Lambda — deployed on
- * the *same* API Gateway as the sales-api Lambda (`sales-api.jcampos.dev`),
+ * the *same* API Gateway as the sales-api Lambda (`sales-api.tsuru.jcampos.dev`),
  * but mounted at the root (`/organizations/{org}/...`) without the `/api/`
  * prefix the sales endpoints use. Routes covered:
  *   • GET    /configurations

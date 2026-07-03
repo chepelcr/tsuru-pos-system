@@ -8,7 +8,7 @@ import type {
 
 /**
  * Hooks for the auth/organization-configurations service. The Lambda is hosted
- * on the same API Gateway as sales-api (`sales-api.jcampos.dev`) but mounted
+ * on the same API Gateway as sales-api (`sales-api.tsuru.jcampos.dev`) but mounted
  * at `/organizations/{org}/...` — see `authOrgPath` in `lib/api.ts`. Calling
  * the orders-api here (the previous shape) would 404 because the route only
  * exists on the sales-api gateway.

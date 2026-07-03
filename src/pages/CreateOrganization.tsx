@@ -15,7 +15,7 @@ import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { THEME_LIST, DEFAULT_THEME_ID, type ThemeDef } from "@/theme/themes";
 
 const BASE_DOMAIN =
-  (import.meta.env.VITE_BASE_DOMAIN as string | undefined) || "j-markets.jcampos.dev";
+  (import.meta.env.VITE_BASE_DOMAIN as string | undefined) || "tsuru.jcampos.dev";
 
 /** Normalize a free-text name into a url-safe slug/subdomain candidate. */
 function slugify(value: string): string {

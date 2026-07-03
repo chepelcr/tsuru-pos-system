@@ -7,7 +7,7 @@ import type {
 
 /**
  * Hooks for the auth/registered-organizations service. Same API Gateway as the
- * existing org-configurations Lambda (`sales-api.jcampos.dev`) — both mounted
+ * existing org-configurations Lambda (`sales-api.tsuru.jcampos.dev`) — both mounted
  * at the root (`/organizations/{org}/...`) via `authOrgPath`.
  *
  * The GET returns `null` on 404 (no record yet) so the FE can branch between

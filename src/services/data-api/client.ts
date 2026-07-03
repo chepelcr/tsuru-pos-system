@@ -1,6 +1,6 @@
 import { fetchAuthSession } from "aws-amplify/auth";
 
-const DATA_API_BASE = import.meta.env.VITE_DATA_API_URL || "https://data-api.jcampos.dev";
+const DATA_API_BASE = import.meta.env.VITE_DATA_API_URL || "https://data-api.tsuru.jcampos.dev";
 
 function buildDataApiUrl(endpoint: string, params?: Record<string, any>): string {
   const clean = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;

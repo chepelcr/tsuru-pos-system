@@ -31,6 +31,7 @@ jobs:
       VITE_API_URL: https://api.tsuru.jcampos.dev
       VITE_ORDERS_API_URL: https://orders-api.tsuru.jcampos.dev
       VITE_SALES_API_URL: https://sales-api.tsuru.jcampos.dev
+      VITE_DATA_API_URL: https://data-api.tsuru.jcampos.dev
       VITE_BASE_DOMAIN: tsuru.jcampos.dev
       VITE_TEMPLATE_NAME: pos-system
       VITE_TEMPLATE_DISPLAY_NAME: Tsuru POS
