@@ -26,7 +26,9 @@ export function CrossdockingDetailsDialog({ open, onClose, order }: Crossdocking
 
   if (!open) return null;
 
+  const crossdockingPdfUrl = order.crossdocking?.attachments?.pdf_url;
   const crossdockingExcelUrl = order.crossdocking?.attachments?.excel_url;
+  const orderPdfUrl = order.attachments?.pdf_url;
   const orderExcelUrl = order.attachments?.excel_url;
   const nuevoReporteUrl = order.attachments?.nuevo_reporte_url;
 
@@ -73,6 +75,11 @@ export function CrossdockingDetailsDialog({ open, onClose, order }: Crossdocking
           </div>
 
           <footer className="px-5 py-4 border-t border-border flex flex-wrap gap-2 shrink-0 bg-card">
+            {canExport && crossdockingPdfUrl && (
+              <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(crossdockingPdfUrl)}>
+                {t('orders.crossdocking.downloadPdf')}
+              </Button>
+            )}
             {canExport && crossdockingExcelUrl && (
               <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(crossdockingExcelUrl)}>
                 {t('orders.crossdocking.downloadExcel')}
@@ -81,6 +88,11 @@ export function CrossdockingDetailsDialog({ open, onClose, order }: Crossdocking
             {canExport && nuevoReporteUrl && (
               <Button variant="outline" size="sm" icon="download" onClick={() => downloadFromUrl(nuevoReporteUrl)}>
                 {t('orders.attachments.nuevoReporte')}
+              </Button>
+            )}
+            {canExport && orderPdfUrl && (
+              <Button variant="outline" size="sm" icon="fileText" onClick={() => downloadFromUrl(orderPdfUrl)}>
+                {t('orders.attachments.orderPdf')}
               </Button>
             )}
             {canExport && orderExcelUrl && (

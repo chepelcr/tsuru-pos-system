@@ -95,9 +95,15 @@ describe('CrossdockingSummaries', () => {
     expect(itemsStat).not.toBeNull();
     expect(within(itemsStat!).getByText('4')).not.toBeNull();
 
-    const boxesStat = screen.getByText('Total de cajas').parentElement?.parentElement;
-    expect(boxesStat).not.toBeNull();
-    expect(within(boxesStat!).getByText('5')).not.toBeNull();
+    const checkoutsStat = screen.getByText('Total de cajas').parentElement?.parentElement;
+    expect(checkoutsStat).not.toBeNull();
+    expect(within(checkoutsStat!).getByText('1')).not.toBeNull();
+    expect(checkoutsStat?.classList.contains('text-center')).toBe(true);
+
+    const packagesStat = screen.getByText('Total de bultos').parentElement?.parentElement;
+    expect(packagesStat).not.toBeNull();
+    expect(within(packagesStat!).getByText('5')).not.toBeNull();
+    expect(packagesStat?.classList.contains('text-center')).toBe(true);
   });
 
   it('maps the order report color to the sale-point footer', () => {

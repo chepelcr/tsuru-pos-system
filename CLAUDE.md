@@ -276,7 +276,7 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 |---|---|
 | Auth (user, token, login/logout) | `AuthContext` in `src/contexts/AuthContext.tsx` — wraps Cognito |
 | Current org | `OrgContext` (provides `orgId`) — and `useOrganization()` hook for full org data |
-| Language (EN/ES) | `LanguageContext` + `useLanguage()` — `t(key, params?)` function |
+| Language (EN/ES) | `LanguageContext` + `useLanguage()` — `t(key, params?)`; domain dictionaries in `src/locales/{es,en}/` |
 | Dark mode | `useDarkMode()` hook |
 | Document version (electronic invoicing version) | `DocumentVersionContext` — auto-injects `document_version_id` into data-api params |
 | Cart (POS) | `zustand` store `src/store/cart.ts` |
@@ -440,7 +440,7 @@ export function MyComponent() {
 - `t(key)` → returns the string for the current language
 - `t(key, params)` → interpolates `{name}`-style placeholders. Example: `t("products.confirmDelete", { name })` for `"¿Eliminar \"{name}\"?"`
 - Missing keys fall back to the key string itself (so a bad key shows up clearly in the UI) — never use `t(key) || 'fallback'`, just add the key
-- All keys live in `src/contexts/LanguageContext.tsx`. Both `es` and `en` blocks must define the key — adding to only one is a bug
+- Keys live in matching domain JSON files under `src/locales/es/` and `src/locales/en/` (for example, `orders.json`). Both language files must define the same keys; `locales.test.ts` enforces namespace and key parity
 - Default language is ES; toggle via `useLanguageSwitch().toggle()`
 
 ### 10.2 What needs `t()`
@@ -487,7 +487,7 @@ documents.*      documents page list + drawer
 docs / branch / terminal / shell / orgs / auth / app / time / tabs / time / empty …
 ```
 
-When adding a new component, search `LanguageContext.tsx` for a key that already says what you need before inventing a new one. Reuse is preferred — for example, line-detail tabs reuse `products.discounts`, `products.otherTaxes`, `products.percentage`, `products.cabysHelp` instead of duplicating.
+When adding a new component, search `src/locales/` for a key that already says what you need before inventing a new one. Reuse is preferred — for example, line-detail tabs reuse `products.discounts`, `products.otherTaxes`, `products.percentage`, `products.cabysHelp` instead of duplicating.
 
 Param interpolation uses curly braces: `"Eliminar \"{name}\"?"` → `t(key, { name })`. Keep params named, not positional.
 
@@ -512,7 +512,7 @@ If you write a helper component or render function that produces user-visible te
 ### 10.7 Workflow when adding a new component
 
 1. Write the JSX with the strings you want.
-2. Open `src/contexts/LanguageContext.tsx`. For each string, either pick an existing key (grep first) or add a new one in **both** the `es` and `en` blocks under the right namespace.
+2. Open the matching files in `src/locales/es/` and `src/locales/en/`. For each string, either pick an existing key (grep first) or add the new key to **both** language files in the right domain.
 3. Replace the literal with `t('key')`. For dynamic substrings, use param interpolation (`t('key', { n: count })`).
 4. Toggle the language in the running app and visually confirm both renders.
 
@@ -555,7 +555,7 @@ If you write a helper component or render function that produces user-visible te
 | Tweak sidebar nav | `components/layout/DashboardSidebar.tsx` (NAV_ITEMS) |
 | Add a new data-api catalog | `hooks/useDataApi.ts` + `services/data-api/` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
-| Add a translation | `LanguageContext` — find the key map |
+| Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |
 
 ---
 

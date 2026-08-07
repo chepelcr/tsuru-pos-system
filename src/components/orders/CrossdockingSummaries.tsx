@@ -53,13 +53,13 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
   const pointTotals = salePoints.map(salePointTotals);
   const totals = pointTotals.reduce(
     (summary, current, index) => ({
-      salePoints: summary.salePoints + 1,
+      checkouts: summary.checkouts + 1,
       lineItems: summary.lineItems + (salePoints[index]?.items.length ?? 0),
-      boxes: summary.boxes + current.sent,
+      packages: summary.packages + current.sent,
       units: summary.units + current.units,
       missing: summary.missing + current.missing,
     }),
-    { salePoints: 0, lineItems: 0, boxes: 0, units: 0, missing: 0 },
+    { checkouts: 0, lineItems: 0, packages: 0, units: 0, missing: 0 },
   );
 
   const deliveryName = [value(order.delivery_location?.code), value(order.delivery_location?.name)]
@@ -94,9 +94,9 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
       </section>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <TotalStat icon="store" label={t('orders.crossdocking.totals.salePoints')} value={totals.salePoints} />
+        <TotalStat icon="store" label={t('orders.crossdocking.totals.salePoints')} value={totals.checkouts} />
         <TotalStat icon="package" label={t('orders.crossdocking.totals.items')} value={totals.lineItems} />
-        <TotalStat icon="box" label={t('orders.crossdocking.totals.boxes')} value={totals.boxes} />
+        <TotalStat icon="box" label={t('orders.crossdocking.totals.boxes')} value={totals.packages} />
         <TotalStat icon="layers" label={t('orders.crossdocking.totals.units')} value={totals.units} />
         <TotalStat
           icon="alertTri"
@@ -220,12 +220,12 @@ function TotalStat({
   warning?: boolean;
 }) {
   return (
-    <div className={`rounded-lg border px-3.5 py-3 ${warning ? 'border-warning/30 bg-warning/[0.08]' : 'border-border bg-muted/20'}`}>
-      <div className="flex items-center gap-2 t-label mb-1">
+    <div className={`min-h-[88px] rounded-lg border px-3.5 py-3 flex flex-col items-center justify-center text-center ${warning ? 'border-warning/30 bg-warning/[0.08]' : 'border-border bg-muted/20'}`}>
+      <div className="flex items-center justify-center gap-2 t-label mb-1">
         <Icon name={icon} size={13} className={warning ? 'text-warning' : 'text-muted-foreground'} />
         <span>{label}</span>
       </div>
-      <div className="t-stat">{content}</div>
+      <div className="t-stat w-full text-center">{content}</div>
     </div>
   );
 }
