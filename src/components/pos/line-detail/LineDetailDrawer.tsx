@@ -394,6 +394,7 @@ export function LineDetailDrawer({
   return (
     <>
       <Drawer
+        closeLabel={t("common.close")}
         open={open}
         onClose={onClose}
         title={t('lineDetail.title')}
@@ -536,4 +537,3 @@ export function LineDetailDrawer({
   </>
   );
 }
-

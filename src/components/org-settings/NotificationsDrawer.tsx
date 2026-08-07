@@ -49,6 +49,7 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={config?.notificationSettings

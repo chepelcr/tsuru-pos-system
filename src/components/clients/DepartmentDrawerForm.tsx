@@ -61,6 +61,7 @@ export function DepartmentDrawerForm({
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={isEdit ? t("departments.editDepartment") : t("departments.addDepartment")}

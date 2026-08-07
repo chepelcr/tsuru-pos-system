@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 
 interface FiltersModalProps {
   open: boolean;
@@ -41,6 +42,8 @@ export function FiltersModal({
   const { t } = useLanguage();
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(open);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (open) {
@@ -56,41 +59,41 @@ export function FiltersModal({
     }
   }, [open, shouldRender]);
 
-  useEffect(() => {
-    if (!shouldRender) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, [shouldRender]);
-
-  useEffect(() => {
-    if (!shouldRender) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [shouldRender, onClose]);
+  const { isTopLayer } = useOverlayLayer({
+    active: shouldRender,
+    panelRef,
+    dismissible: !isClosing,
+    onClose,
+  });
 
   if (!shouldRender) return null;
 
-  return createPortal(
+  return (
+    <OverlayPortal>
     <div
-      className={`fixed inset-0 z-modal bg-foreground/50 flex items-center justify-center p-4 ${
+      className={`fixed inset-0 z-drawer-modal bg-foreground/50 flex items-center justify-center p-4 ${
         isClosing ? "modal-overlay-exit" : "modal-overlay-enter"
       }`}
-      onClick={onClose}
+      onClick={() => { if (!isClosing && isTopLayer()) onClose(); }}
     >
       <div
-        className={`w-full ${maxWidthClass} max-h-[calc(100vh-2rem)] rounded-xl bg-card border border-border shadow-modal overflow-hidden flex flex-col ${
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={`w-full ${maxWidthClass} max-h-[calc(100dvh-2rem)] rounded-xl bg-card border border-border shadow-modal overflow-hidden flex flex-col outline-none ${
           isClosing ? "modal-panel-exit" : "modal-panel-enter"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-border flex items-center justify-between shrink-0">
-          <span className="font-display font-bold text-[16px]">{title}</span>
+          <span id={titleId} className="font-display font-bold text-[16px]">{title}</span>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground"
             aria-label={t("common.close")}
+            data-overlay-autofocus
           >
             ✕
           </button>
@@ -117,7 +120,7 @@ export function FiltersModal({
           </button>
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
+    </OverlayPortal>
   );
 }

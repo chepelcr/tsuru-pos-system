@@ -132,6 +132,7 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={isEditing ? t("categories.edit") : t("categories.new")}

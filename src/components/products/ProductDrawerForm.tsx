@@ -362,6 +362,7 @@ export function ProductDrawerForm({
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={isNew ? t("products.newProduct") : t("products.editProduct")}

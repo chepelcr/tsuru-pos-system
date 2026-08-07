@@ -1,11 +1,13 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { Spinner } from "./Spinner";
+import { OverlayPortal } from "./OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrgContext } from "@/contexts/OrgContext";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { isPreviewableImage, resolveMediaUrl, type MediaItem } from "@/lib/media";
 
 interface MediaPickerProps {
@@ -39,6 +41,10 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const close = () => setOpen(false);
+  const { isTopLayer } = useOverlayLayer({ active: open, panelRef, dismissible: true, onClose: close });
 
   const items: MediaItem[] = listQuery.data ?? [];
   const previewSrc = resolveMediaUrl(value);
@@ -139,21 +145,28 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
 
       {/* ── Library modal ─────────────────────────────────────────────── */}
       {open && (
+        <OverlayPortal>
         <div
           className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
-          onClick={() => setOpen(false)}
+          onClick={() => { if (isTopLayer()) close(); }}
         >
           <div
-            className="w-full max-w-[560px] max-h-[88vh] overflow-y-auto bg-card border border-border rounded-xl shadow-modal p-5 fade-up"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            className="w-full max-w-[560px] max-h-[88dvh] overflow-y-auto bg-card border border-border rounded-xl shadow-modal p-5 fade-up outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="t-h4 !mb-0">{t("media.title")}</h3>
+              <h3 id={titleId} className="t-h4 !mb-0">{t("media.title")}</h3>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm btn-icon"
-                onClick={() => setOpen(false)}
+                onClick={close}
                 aria-label={t("common.cancel")}
+                data-overlay-autofocus
               >
                 <Icon name="close" size={16} />
               </button>
@@ -244,6 +257,7 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
             </div>
           </div>
         </div>
+        </OverlayPortal>
       )}
     </div>
   );

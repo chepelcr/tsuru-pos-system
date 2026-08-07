@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { Icon } from "./Icon";
+import { OverlayPortal } from "./OverlayPortal";
 
 interface DrawerProps {
   open: boolean;
   onClose: () => void;
+  closeLabel: string;
+  dismissible?: boolean;
   title: string;
   subtitle?: string;
   icon?: string;
@@ -17,6 +21,8 @@ interface DrawerProps {
 export function Drawer({
   open,
   onClose,
+  closeLabel,
+  dismissible = true,
   title,
   subtitle,
   icon,
@@ -28,6 +34,8 @@ export function Drawer({
 }: DrawerProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(open);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     if (open) {
@@ -43,24 +51,15 @@ export function Drawer({
     }
   }, [open, shouldRender]);
 
-  useEffect(() => {
-    if (open && shouldRender) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    };
-  }, [open, shouldRender]);
+  const { isTopLayer } = useOverlayLayer({
+    active: shouldRender,
+    panelRef,
+    dismissible: dismissible && !isClosing,
+    onClose,
+  });
 
   const handleClose = () => {
-    if (!isClosing) {
+    if (dismissible && !isClosing && isTopLayer()) {
       onClose();
     }
   };
@@ -68,16 +67,22 @@ export function Drawer({
   if (!shouldRender) return null;
 
   return (
-    <>
+    <OverlayPortal>
+      <div className="fixed inset-0 z-drawer">
       <div
-        className={`fixed inset-0 bg-foreground/25 z-tooltip backdrop-blur-[1px] ${
+        className={`absolute inset-0 bg-foreground/25 backdrop-blur-[1px] ${
           isClosing ? "drawer-overlay-exit" : "drawer-overlay-enter"
         }`}
         onClick={handleClose}
       />
 
       <div
-        className={`fixed top-0 right-0 bottom-0 z-drawer bg-card border-l border-border flex flex-col shadow-modal ${
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={`absolute top-0 right-0 h-[100dvh] bg-card border-l border-border flex flex-col shadow-modal outline-none ${
           isClosing ? "drawer-panel-exit" : "drawer-panel-enter"
         }`}
         style={{
@@ -102,20 +107,24 @@ export function Drawer({
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="text-[17px] font-extrabold font-display tracking-[-0.01em]">
+            <div id={titleId} className="text-[17px] font-extrabold font-display tracking-[-0.01em]">
               {title}
             </div>
             {subtitle && (
               <div className="t-xs text-muted-foreground">{subtitle}</div>
             )}
           </div>
-          <button
-            className="btn btn-ghost btn-sm btn-icon"
-            onClick={handleClose}
-            type="button"
-          >
-            <Icon name="close" size={16} />
-          </button>
+          {dismissible && (
+            <button
+              className="btn btn-ghost btn-sm btn-icon"
+              onClick={handleClose}
+              type="button"
+              aria-label={closeLabel}
+              data-overlay-autofocus
+            >
+              <Icon name="close" size={16} />
+            </button>
+          )}
         </div>
 
         {/* Body */}
@@ -138,6 +147,7 @@ export function Drawer({
           </div>
         )}
       </div>
-    </>
+      </div>
+    </OverlayPortal>
   );
 }

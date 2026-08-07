@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Spinner } from "@/components/ui";
 import Routes from "@/Routes";
+import { PendingSalesSyncBridge } from "@/components/sync/PendingSalesSyncBridge";
 
 export default function App() {
   const { isLoading } = useAuthContext();
@@ -18,6 +19,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
+      <PendingSalesSyncBridge />
       <Routes />
     </ThemeProvider>
   );

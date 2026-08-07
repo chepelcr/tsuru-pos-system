@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Icon } from "@/components/ui";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentCurrencyOptional } from "@/contexts/DocumentCurrencyContext";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import type { Product } from "@/types";
 
 interface CartLineEditorProps {
@@ -19,6 +21,9 @@ export function CartLineEditor({ product, qty, lineDiscount = 0, lineNote = "", 
   const [editQty, setEditQty] = useState(String(qty));
   const [editDiscount, setEditDiscount] = useState(String(lineDiscount));
   const [editNote, setEditNote] = useState(lineNote);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { isTopLayer } = useOverlayLayer({ active: true, panelRef, dismissible: true, onClose });
 
   const parsedQty = Math.max(1, parseInt(editQty) || 1);
   const parsedDiscount = Math.min(100, Math.max(0, parseFloat(editDiscount) || 0));
@@ -31,20 +36,21 @@ export function CartLineEditor({ product, qty, lineDiscount = 0, lineNote = "", 
   };
 
   return (
+    <OverlayPortal>
     <div
-      className="fixed inset-0 bg-foreground/60 z-modal flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 bg-foreground/60 z-drawer-modal flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && isTopLayer()) onClose(); }}
     >
-      <div className="bg-card rounded-2xl w-full max-w-[420px] shadow-modal overflow-hidden">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="bg-card rounded-2xl w-full max-w-[420px] max-h-[calc(100dvh-2rem)] shadow-modal overflow-y-auto outline-none">
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-border flex items-center gap-3">
           <div className="flex-1">
             <div className="text-[11px] font-semibold text-accent-rose uppercase tracking-[0.08em] mb-0.5">
               {t('lineEditor.editLine')}
             </div>
-            <div className="font-display text-lg font-semibold text-foreground">{product.name}</div>
+            <div id={titleId} className="font-display text-lg font-semibold text-foreground">{product.name}</div>
           </div>
-          <button onClick={onClose} className="bg-transparent border-0 text-muted-foreground cursor-pointer p-1 flex">
+          <button data-overlay-autofocus aria-label={t('common.close')} onClick={onClose} className="bg-transparent border-0 text-muted-foreground cursor-pointer p-1 flex">
             <Icon name="close" size={18} />
           </button>
         </div>
@@ -149,5 +155,6 @@ export function CartLineEditor({ product, qty, lineDiscount = 0, lineNote = "", 
         </div>
       </div>
     </div>
+    </OverlayPortal>
   );
 }

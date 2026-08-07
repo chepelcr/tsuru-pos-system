@@ -469,6 +469,7 @@ export default function MembersPage() {
 
       {/* Invite Drawer */}
       <Drawer
+        closeLabel={t("common.close")}
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
         title={t("members.invite")}

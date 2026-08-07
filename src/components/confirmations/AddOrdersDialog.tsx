@@ -42,6 +42,7 @@ export function AddOrdersDialog({ open, onClose, orgId, confirmationNumber }: Ad
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={close}
       title={t('confirmations.addOrders.title')}

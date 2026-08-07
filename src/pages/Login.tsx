@@ -45,9 +45,10 @@ export default function Login() {
     }
   }, [user, isLoading, navigate]);
 
-  const goToVerification = (email: string, password: string) => {
+  const goToVerification = (email: string) => {
     sessionStorage.setItem("verificationEmail", email);
-    sessionStorage.setItem("verificationPassword", password);
+    sessionStorage.setItem("verificationOrigin", "login");
+    sessionStorage.removeItem("verificationPassword");
     navigate(ROUTES.VERIFY_EMAIL);
   };
 
@@ -58,7 +59,7 @@ export default function Login() {
       // An unconfirmed user resolves the sign-in next step to CONFIRM_SIGN_UP
       // without throwing — route to verification instead of org selection.
       if (needsVerification) {
-        goToVerification(data.email, data.password);
+        goToVerification(data.email);
         return;
       }
       // On a confirmed user the AuthContext sets `user` and the effect above
@@ -78,7 +79,7 @@ export default function Login() {
         message.includes("UserNotConfirmedException") ||
         message.includes("CONFIRM_SIGN_UP")
       ) {
-        goToVerification(data.email, data.password);
+        goToVerification(data.email);
         return;
       }
 

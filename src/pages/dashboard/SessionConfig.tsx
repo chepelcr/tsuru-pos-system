@@ -142,16 +142,6 @@ export default function SessionConfig({ onDone, onSuccess, initialSession }: Ses
   
   const canActivate = hasSelectedBranches && allBranchesAssigned && hasDate && hasProducts;
   
-  // Debug validation
-  console.log('Session validation:', {
-    hasSelectedBranches,
-    allBranchesAssigned,
-    hasDate,
-    hasProducts,
-    canActivate,
-    selectedProductsCount: selectedProducts.size
-  });
-
   // Helper functions
   const toggleBranch = (bid: string) =>
     setActiveBranches((prev) => {

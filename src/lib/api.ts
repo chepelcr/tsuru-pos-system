@@ -5,17 +5,20 @@ const CROSS_APP_API_BASE = import.meta.env.VITE_ORDERS_API_URL || "https://order
 // Single sales API — separate Lambdas are all behind one API Gateway domain
 const SALES_API_BASE     = import.meta.env.VITE_SALES_API_URL  || "https://sales-api.tsuru.jcampos.dev";
 
-console.log('[API Config] Environment variables:', {
-  VITE_API_URL: import.meta.env.VITE_API_URL,
-  VITE_ORDERS_API_URL: import.meta.env.VITE_ORDERS_API_URL,
-  VITE_SALES_API_URL: import.meta.env.VITE_SALES_API_URL,
-});
+export interface RequestOptions {
+  headers?: Record<string, string>;
+}
 
-console.log('[API Config] Resolved base URLs:', {
-  API_BASE,
-  CROSS_APP_API_BASE,
-  SALES_API_BASE,
-});
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly retriable = false,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 
 async function getToken(): Promise<string> {
   const session = await fetchAuthSession();
@@ -26,14 +29,14 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
-  baseUrl: string = API_BASE
+  baseUrl: string = API_BASE,
+  options: RequestOptions = {},
 ): Promise<T> {
-  console.log('[API] Request:', { method, path, baseUrl });
-  
   const token = await getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
+    ...options.headers,
   };
   
   // Only add x-user-id header for cross-app-be API (not for markets API)
@@ -48,15 +51,16 @@ async function request<T>(
   }
   
   const fullUrl = `${baseUrl}${path}`;
-  console.log('[API] Full URL:', fullUrl);
-  
-  const res = await fetch(fullUrl, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  console.log('[API] Response status:', res.status, res.statusText);
+  let res: Response;
+  try {
+    res = await fetch(fullUrl, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError("Network request failed", undefined, true);
+  }
 
   if (res.status === 401) {
     // Do NOT hard-redirect here. A library fetch helper navigating the whole
@@ -64,42 +68,37 @@ async function request<T>(
     // single transient 401 on a dashboard data call reloaded the page, and the
     // Login mount's forceLogout() then cleared the session. Just throw — the
     // RequireAuth guard (React state) owns auth redirects.
-    console.error('[API] Unauthorized');
-    throw new Error("Unauthorized");
+    throw new ApiError("Unauthorized", 401, true);
   }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
-    console.error('[API] Request failed:', err);
-    throw new Error(err.message || "Request failed");
+    const retriable = res.status === 408 || res.status === 429 || res.status >= 500;
+    throw new ApiError(err.message || "Request failed", res.status, retriable);
   }
 
   // Tolerate empty / no-content responses (e.g. 204 from DELETE) so callers
   // that don't expect a body (department delete, remove-order-from-confirmation)
   // don't crash on `res.json()` parsing an empty stream.
   if (res.status === 204 || res.headers.get('content-length') === '0') {
-    console.log('[API] Empty response (no content)');
     return undefined as T;
   }
 
   const text = await res.text();
   if (!text) {
-    console.log('[API] Empty response body');
     return undefined as T;
   }
 
-  const result = JSON.parse(text) as T;
-  console.log('[API] Response data:', result);
-  return result;
+  return JSON.parse(text) as T;
 }
 
 export function createClient(baseUrl: string) {
   return {
-    get: <T>(path: string) => request<T>("GET", path, undefined, baseUrl),
-    post: <T>(path: string, body: unknown) => request<T>("POST", path, body, baseUrl),
-    put: <T>(path: string, body: unknown) => request<T>("PUT", path, body, baseUrl),
-    patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body, baseUrl),
-    delete: <T>(path: string) => request<T>("DELETE", path, undefined, baseUrl),
+    get: <T>(path: string, options?: RequestOptions) => request<T>("GET", path, undefined, baseUrl, options),
+    post: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("POST", path, body, baseUrl, options),
+    put: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("PUT", path, body, baseUrl, options),
+    patch: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("PATCH", path, body, baseUrl, options),
+    delete: <T>(path: string, options?: RequestOptions) => request<T>("DELETE", path, undefined, baseUrl, options),
   };
 }
 

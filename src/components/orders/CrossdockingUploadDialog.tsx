@@ -55,6 +55,7 @@ export function CrossdockingUploadDialog({ open, onClose, order, orgId }: Crossd
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={close}
       title={t('orders.crossdocking.upload')}

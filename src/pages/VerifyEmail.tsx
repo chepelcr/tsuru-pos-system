@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { signIn } from "aws-amplify/auth";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
@@ -21,7 +20,13 @@ const MACRO_STEPS: StepperStep[] = [
 ];
 
 export default function VerifyEmail() {
-  const { confirmSignUp, getCurrentUser, completeVerification, resendSignUpCode } = useAuthContext();
+  const {
+    confirmSignUp,
+    completeAutoSignIn,
+    getCurrentUser,
+    completeVerification,
+    resendSignUpCode,
+  } = useAuthContext();
   const { t } = useLanguage();
   const { add } = useNotifications();
   const [, navigate] = useLocation();
@@ -39,6 +44,8 @@ export default function VerifyEmail() {
     const storedEmail = sessionStorage.getItem("verificationEmail");
     if (storedEmail) {
       setEmail(storedEmail);
+      // Remove credentials left by versions prior to the secure auto-sign-in flow.
+      sessionStorage.removeItem("verificationPassword");
     } else {
       navigate(ROUTES.REGISTER);
     }
@@ -66,10 +73,18 @@ export default function VerifyEmail() {
     try {
       await confirmSignUp({ username: email, confirmationCode: code });
 
-      // Auto-login after verification, then sync the verified user to the backend.
-      const password = sessionStorage.getItem("verificationPassword");
-      if (password) {
-        await signIn({ username: email, password });
+      const verificationOrigin = sessionStorage.getItem("verificationOrigin");
+      let signedIn = false;
+      if (verificationOrigin === "register") {
+        try {
+          signedIn = await completeAutoSignIn();
+        } catch {
+          // Confirmation succeeded; normal login remains a safe fallback.
+          signedIn = false;
+        }
+      }
+
+      if (signedIn) {
         const amplifyUser = await getCurrentUser();
 
         const username = sessionStorage.getItem("verificationUsername") || email;
@@ -87,6 +102,7 @@ export default function VerifyEmail() {
 
       sessionStorage.removeItem("verificationEmail");
       sessionStorage.removeItem("verificationPassword");
+      sessionStorage.removeItem("verificationOrigin");
       sessionStorage.removeItem("verificationUsername");
       sessionStorage.removeItem("verificationFirstName");
       sessionStorage.removeItem("verificationLastName");
@@ -100,7 +116,7 @@ export default function VerifyEmail() {
         bodyKey: "auth.verifyEmail.successDescription",
       });
 
-      navigate(ROUTES.CREATE_ORG);
+      navigate(signedIn ? ROUTES.CREATE_ORG : ROUTES.LOGIN);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("auth.verifyEmail.error");
       const name = (error as { name?: string })?.name ?? "";

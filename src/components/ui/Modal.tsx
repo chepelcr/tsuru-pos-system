@@ -1,6 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useId, useRef } from "react";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
+import { OverlayPortal } from "./OverlayPortal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ModalVariant = "default" | "destructive" | "success" | "warning";
 
@@ -50,23 +53,31 @@ export function Modal({
   cancel,
   children,
 }: ModalProps) {
+  const { t } = useLanguage();
   const iconName = icon ?? variantDefaultIcon[variant];
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { isTopLayer } = useOverlayLayer({
+    active: open,
+    panelRef,
+    dismissible: true,
+    onClose,
+  });
 
   if (!open) return null;
 
   return (
+    <OverlayPortal>
     <div
-      className="fixed inset-0 z-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
+      onClick={() => { if (isTopLayer()) onClose(); }}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className="w-full max-w-[400px] bg-card border border-border rounded-xl shadow-modal p-6 fade-up"
         onClick={(e) => e.stopPropagation()}
       >
@@ -74,7 +85,7 @@ export function Modal({
           <Icon name={iconName} size={24} />
         </div>
 
-        <h3 className={`t-h3 text-center ${description ? "mb-2" : ""}`}>{title}</h3>
+        <h3 id={titleId} className={`t-h3 text-center ${description ? "mb-2" : ""}`}>{title}</h3>
 
         {description && (
           <p className={`t-sm text-center text-muted-foreground ${children ? "mb-4" : ""}`}>
@@ -91,7 +102,7 @@ export function Modal({
                 {cancel.label}
               </Button>
             ) : (
-              <Button variant="outline" onClick={onClose}>Cancelar</Button>
+              <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
             )}
             {confirm && (
               <Button
@@ -99,12 +110,13 @@ export function Modal({
                 onClick={confirm.onClick}
                 disabled={confirm.disabled || confirm.loading}
               >
-                {confirm.loading ? (confirm.loadingLabel ?? "Cargando…") : confirm.label}
+                {confirm.loading ? (confirm.loadingLabel ?? t("common.loading")) : confirm.label}
               </Button>
             )}
           </div>
         )}
       </div>
     </div>
+    </OverlayPortal>
   );
 }

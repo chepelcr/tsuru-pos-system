@@ -1,15 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  getPendingSalesState,
+  subscribePendingSales,
+} from "@/services/pendingSalesSync";
 
-export type SyncStatus = "online" | "offline" | "syncing";
+export type SyncStatus = "online" | "offline" | "syncing" | "pending" | "error";
 
 export function useSync() {
-  const [status, setStatus] = useState<SyncStatus>(
-    navigator.onLine ? "online" : "offline"
+  const [online, setOnline] = useState(navigator.onLine);
+  const queue = useSyncExternalStore(
+    subscribePendingSales,
+    getPendingSalesState,
+    getPendingSalesState,
   );
 
   useEffect(() => {
-    const handleOnline = () => setStatus("online");
-    const handleOffline = () => setStatus("offline");
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
@@ -20,5 +27,9 @@ export function useSync() {
     };
   }, []);
 
-  return status;
+  if (!online) return "offline";
+  if (queue.phase === "syncing") return "syncing";
+  if (queue.phase === "error") return "error";
+  if (queue.pendingCount > 0) return "pending";
+  return "online";
 }

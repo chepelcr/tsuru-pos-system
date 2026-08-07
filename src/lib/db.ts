@@ -1,4 +1,7 @@
 import Dexie, { type Table } from "dexie";
+import type { SaleDocument } from "@/types/invoice";
+
+export type SaleSyncState = "pending" | "syncing" | "synced" | "failed";
 
 export interface SaleRecord {
   id?: number;
@@ -13,9 +16,13 @@ export interface SaleRecord {
   change?: number;
   timestamp: number;
   synced: boolean;
+  syncState?: SaleSyncState;
+  attempts?: number;
+  lastAttemptAt?: number;
+  lastError?: string;
   syncUrl?: string;
-  token?: string;
-  payload?: unknown;
+  payload?: SaleDocument;
+  response?: SaleDocument;
 }
 
 export interface AssignmentRecord {
@@ -50,6 +57,17 @@ class POSAppDB extends Dexie {
       sales: "++id, localId, assignmentId, synced, timestamp",
       assignments: "++id, assignmentId, orgId, userId",
       inventory: "++id, productId, assignmentId",
+    });
+    this.version(2).stores({
+      sales: "++id, localId, assignmentId, userId, synced, syncState, timestamp",
+      assignments: "++id, assignmentId, orgId, userId",
+      inventory: "++id, productId, assignmentId",
+    }).upgrade(async (tx) => {
+      await tx.table("sales").toCollection().modify((sale: SaleRecord) => {
+        sale.syncState = sale.synced ? "synced" : "pending";
+        sale.attempts ??= 0;
+        delete (sale as SaleRecord & { token?: string }).token;
+      });
     });
   }
 }

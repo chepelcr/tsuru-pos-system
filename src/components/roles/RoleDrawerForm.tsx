@@ -194,6 +194,7 @@ export function RoleDrawerForm({
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={title}

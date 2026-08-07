@@ -83,6 +83,7 @@ function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => v
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open} onClose={onClose}
       title={t("clients.editClient")}
       subtitle={clientDisplayName(client)}

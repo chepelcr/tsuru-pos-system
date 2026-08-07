@@ -1,17 +1,19 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
-import type { SaleResponse } from '@/types/invoice';
+import type { SaleSubmissionResult } from '@/hooks/useCartFlow';
 
 interface ReceiptProps {
-  sale?: SaleResponse;
+  result?: SaleSubmissionResult;
   cartTotal: number;
   itemCount: number;
   onClose: () => void;
 }
 
-export function Receipt({ sale, cartTotal, itemCount, onClose }: ReceiptProps) {
+export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps) {
   const { t } = useLanguage();
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
+  const sale = result?.status === 'confirmed' ? result.sale : undefined;
+  const queued = result?.status === 'queued';
   return (
     <div className="px-5 py-6 flex flex-col items-center gap-4 text-center">
       <div className="w-16 h-16 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center text-3xl">
@@ -19,14 +21,25 @@ export function Receipt({ sale, cartTotal, itemCount, onClose }: ReceiptProps) {
       </div>
 
       <div>
-        <div className="font-display font-bold text-[20px]">{t('checkout.receipt.completed')}</div>
-        {sale?.consecutive_number ? (
+        <div className="font-display font-bold text-[20px]">
+          {queued ? t('checkout.receipt.queued') : t('checkout.receipt.completed')}
+        </div>
+        {queued ? (
+          <div className="text-[12px] text-warning mt-1">
+            {t('checkout.receipt.queuedDescription')}
+          </div>
+        ) : sale?.consecutive_number ? (
           <div className="text-[13px] text-muted-foreground mt-1">
             {t('checkout.receipt.consecutive', { num: sale.consecutive_number })}
           </div>
         ) : (
           <div className="text-[12px] text-muted-foreground mt-1">
             {t('checkout.receipt.sending')}
+          </div>
+        )}
+        {queued && (
+          <div className="text-[11px] text-muted-foreground font-mono mt-2">
+            {result.localId}
           </div>
         )}
       </div>

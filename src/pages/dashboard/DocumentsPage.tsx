@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useOrganization } from '@/hooks/useOrganization';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -6,8 +6,17 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { ROUTES } from '@/routePaths';
-import { DocumentsListView } from '@/components/documents/DocumentsListView';
-import { DocumentEditor } from '@/components/documents/DocumentEditor';
+
+const DocumentsListView = lazy(() =>
+  import('@/components/documents/DocumentsListView').then((module) => ({
+    default: module.DocumentsListView,
+  })),
+);
+const DocumentEditor = lazy(() =>
+  import('@/components/documents/DocumentEditor').then((module) => ({
+    default: module.DocumentEditor,
+  })),
+);
 
 /**
  * Parses the active editor tab id from the current URL.
@@ -76,11 +85,19 @@ export default function DocumentsPage() {
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="flex-1 overflow-auto">
-        {editorTabId ? (
-          <DocumentEditor key={editorTabId} orgId={org.id} tabId={editorTabId} />
-        ) : (
-          <DocumentsListView key="list-view" orgId={org.id} />
-        )}
+        <Suspense
+          fallback={(
+            <div className="flex items-center justify-center h-[60vh]">
+              <span className="text-muted-foreground text-sm">{t('common.loading')}</span>
+            </div>
+          )}
+        >
+          {editorTabId ? (
+            <DocumentEditor key={editorTabId} orgId={org.id} tabId={editorTabId} />
+          ) : (
+            <DocumentsListView key="list-view" orgId={org.id} />
+          )}
+        </Suspense>
       </div>
     </div>
   );

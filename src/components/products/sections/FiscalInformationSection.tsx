@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Landmark, X, Search, AlertTriangle } from "lucide-react";
-import { Spinner, FormLabel } from "@/components/ui";
+import { Landmark, X, Search } from "lucide-react";
+import { Spinner, FormLabel, Modal } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCabysSearch, useAllProductTypes } from "@/hooks/useDataApi";
@@ -257,41 +257,18 @@ export function FiscalInformationSection({
         <p className="t-xs text-muted-foreground">{t("products.cabysHelp")}</p>
       </SectionWrapper>
 
-      {showConfirm && (
-        <div
-          className="fixed inset-0 z-tooltip flex items-center justify-center bg-foreground/45"
-          onClick={() => setShowConfirm(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-xl p-6 w-[360px] shadow-modal"
-          >
-            <div className="flex items-center gap-2.5 mb-3">
-              <AlertTriangle size={18} className="text-warning flex-shrink-0" />
-              <span className="text-[15px] font-bold">{t("products.changeProductType")}</span>
-            </div>
-            <p className="text-[13px] text-muted-foreground mb-5 leading-relaxed">
-              {t("products.changeProductTypeWarning")}
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => { setPendingProductTypeId(undefined); setShowConfirm(false); }}
-              >
-                {t("common.cancel")}
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={confirmProductTypeChange}
-              >
-                {t("common.continue")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showConfirm}
+        onClose={() => { setPendingProductTypeId(undefined); setShowConfirm(false); }}
+        title={t("products.changeProductType")}
+        description={t("products.changeProductTypeWarning")}
+        variant="warning"
+        cancel={{
+          label: t("common.cancel"),
+          onClick: () => { setPendingProductTypeId(undefined); setShowConfirm(false); },
+        }}
+        confirm={{ label: t("common.continue"), onClick: confirmProductTypeChange }}
+      />
     </>
   );
 }

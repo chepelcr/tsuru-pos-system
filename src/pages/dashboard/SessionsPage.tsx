@@ -233,7 +233,7 @@ export default function SessionsPage() {
       )}
 
       {/* Create/Edit Session Drawer */}
-      <Drawer open={configOpen} onClose={() => { setConfigOpen(false); setEditSession(null); }} width="min(900px, 100vw)" title={editSession ? "Editar sesión" : t("session.newSession")}>
+      <Drawer closeLabel={t("common.close")} open={configOpen} onClose={() => { setConfigOpen(false); setEditSession(null); }} width="min(900px, 100vw)" title={editSession ? "Editar sesión" : t("session.newSession")}>
         <SessionConfig initialSession={editSession ?? undefined} onSuccess={() => { setConfigOpen(false); setEditSession(null); }} />
       </Drawer>
 

@@ -90,7 +90,6 @@ export function useSales({
   enabled = true,
 }: UseSalesParams) {
   const wireSearch = toWireSearch(search);
-  console.log('[useSales] Hook called with:', { orgId, document_types, issued, search, wireSearch, page, size, enabled });
 
   const params = new URLSearchParams();
   if (document_types?.length) params.set('document_types', document_types.join(','));
@@ -103,21 +102,10 @@ export function useSales({
 
   const queryString = params.toString();
   const path = salesOrgPath(orgId, queryString ? `?${queryString}` : '');
-  console.log('[useSales] API path:', path);
 
   return useQuery<SaleListResponse>({
     queryKey: ['sales', orgId, document_types, issued, wireSearch, page, size],
-    queryFn: async () => {
-      console.log('[useSales] Fetching data from:', path);
-      try {
-        const result = await salesApi.get<SaleListResponse>(path);
-        console.log('[useSales] API response:', result);
-        return result;
-      } catch (error) {
-        console.error('[useSales] API error:', error);
-        throw error;
-      }
-    },
+    queryFn: () => salesApi.get<SaleListResponse>(path),
     enabled: enabled && !!orgId,
   });
 }

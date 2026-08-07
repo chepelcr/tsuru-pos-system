@@ -1,7 +1,8 @@
 import { useCart } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
-import { salesApi, salesOrgPath } from "@/lib/api";
+import { ApiError, salesApi, salesOrgPath } from "@/lib/api";
 import { db } from "@/lib/db";
+import { notifyPendingSalesChanged } from "@/services/pendingSalesSync";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import type {
   SaleReceiver,
@@ -24,7 +25,7 @@ import type {
  * `neighborhood_id` (LocationSelect cascade state) — the payload builder
  * resolves it to `neighborhood_name` if a name isn't already present.
  */
-interface InvoiceCheckoutData {
+export interface InvoiceCheckoutData {
   document_type: DocTypeCode;
   /** Hacienda sale condition code. */
   sale_condition: string;
@@ -52,6 +53,10 @@ interface ConfirmPaymentArgs {
   selectedClient: ClientSearchResult | null;
   invoiceData: InvoiceCheckoutData;
 }
+
+export type SaleSubmissionResult =
+  | { status: "confirmed"; sale: SaleDocument }
+  | { status: "queued"; localId: string };
 
 export interface UseCartFlowOptions {
   /**
@@ -173,7 +178,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     terminalNumber,
     selectedClient,
     invoiceData,
-  }: ConfirmPaymentArgs): Promise<SaleDocument> => {
+  }: ConfirmPaymentArgs): Promise<SaleSubmissionResult> => {
     const localId = `sale-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const receiver = buildReceiver(invoiceData.receiver, selectedClient);
@@ -271,25 +276,37 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         .join(", "),
       timestamp: Date.now(),
       synced: false,
+      syncState: "pending",
+      attempts: 0,
       syncUrl,
       payload,
     });
 
-    cartItems.forEach(({ id, qty }) => decrement(id, qty));
-
-    // POST to sales-api; on failure register background sync
+    // POST immediately with the same idempotency key used by foreground replay.
     try {
-      const sale = await salesApi.post(syncUrl, payload);
-      await db.sales.where({ localId }).modify({ synced: true });
+      const sale = await salesApi.post<SaleDocument>(syncUrl, payload, {
+        headers: { "Idempotency-Key": localId },
+      });
+      await db.sales.where({ localId }).modify({
+        synced: true,
+        syncState: "synced",
+        response: sale,
+      });
+      cartItems.forEach(({ id, qty }) => decrement(id, qty));
       clear();
-      return sale as SaleDocument;
+      notifyPendingSalesChanged(userId);
+      return { status: "confirmed", sale };
     } catch (err) {
-      if ("serviceWorker" in navigator && "SyncManager" in window) {
-        const reg = await navigator.serviceWorker.ready;
-        await (reg as any).sync.register("sync-sales");
+      const retryable = !(err instanceof ApiError) || err.retriable;
+      if (!retryable) {
+        await db.sales.where({ localId }).delete();
+        throw err;
       }
+
+      cartItems.forEach(({ id, qty }) => decrement(id, qty));
       clear();
-      throw err;
+      notifyPendingSalesChanged(userId);
+      return { status: "queued", localId };
     }
   };
 

@@ -8,6 +8,7 @@ import type {
   NumericMode,
   NumericOperator,
 } from '@/types/document';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Sales-api doesn't expose a totals bounds endpoint yet (WIP) — use a sensible
 // fallback range so the slider is usable today. Swap to a fetched min/max when
@@ -36,6 +37,7 @@ interface ComplexSearchModalProps {
  * additional FE round trip when it lands.
  */
 export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexSearchModalProps) {
+  const { t } = useLanguage();
   const [local, setLocal] = useState<ComplexSearchFilters>({ ...filters });
   const patch = (p: Partial<ComplexSearchFilters>) => setLocal((f) => ({ ...f, ...p }));
 
@@ -306,17 +308,17 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
 
       {/* Sort */}
       <div className="space-y-1">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ordenar por</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t('documents.sort.label')}</label>
         <select
           value={local.sort ?? ''}
           onChange={(e) => patch({ sort: e.target.value || undefined })}
           className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
         >
-          <option value="">Fecha desc (por defecto)</option>
-          <option value="sale_date,asc">Fecha asc</option>
-          <option value="total_amount,desc">Monto desc</option>
-          <option value="total_amount,asc">Monto asc</option>
-          <option value="consecutive_number,desc">Consecutivo desc</option>
+          <option value="">{t('documents.sort.dateDesc')}</option>
+          <option value="sale_date,asc">{t('documents.sort.dateAsc')}</option>
+          <option value="total_amount,desc">{t('documents.sort.amountDesc')}</option>
+          <option value="total_amount,asc">{t('documents.sort.amountAsc')}</option>
+          <option value="consecutive_number,desc">{t('documents.sort.consecutiveDesc')}</option>
         </select>
       </div>
     </FiltersModal>

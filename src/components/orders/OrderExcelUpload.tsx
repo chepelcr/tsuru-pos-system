@@ -41,6 +41,7 @@ export function OrderExcelUpload({ open, onClose, orgId }: OrderExcelUploadProps
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={close}
       title={t('orders.excel.title')}

@@ -109,6 +109,7 @@ export function FiscalInfoEditDrawer({ open, onClose, orgId, reg }: FiscalInfoEd
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={t("orgSettings.fiscalInfo.drawer.title")}

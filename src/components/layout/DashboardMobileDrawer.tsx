@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import { useRef } from "react";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { DashboardSidebar } from "./DashboardSidebar";
 
 type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
@@ -20,36 +22,33 @@ export function DashboardMobileDrawer({
   onNav,
   onClose,
 }: DashboardMobileDrawerProps) {
-  useEffect(() => {
-    if (open && shouldRender) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    }
-
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    };
-  }, [open, shouldRender]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { isTopLayer } = useOverlayLayer({
+    active: shouldRender,
+    panelRef,
+    dismissible: open && !isClosing,
+    onClose,
+  });
 
   if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 z-tooltip flex">
+    <OverlayPortal>
+    <div className="fixed inset-0 z-drawer flex">
       {/* Overlay */}
       <div
         className={`absolute inset-0 bg-foreground/50 backdrop-blur-[1px] ${
           isClosing ? "drawer-overlay-exit" : "drawer-overlay-enter"
         }`}
-        onClick={onClose}
+        onClick={() => { if (isTopLayer()) onClose(); }}
       />
 
       {/* Drawer panel */}
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         className={`relative w-[260px] h-[100dvh] z-drawer bg-card shadow-modal flex flex-col overflow-hidden ${
           isClosing ? "drawer-panel-left-exit" : "drawer-panel-left-enter"
         }`}
@@ -57,5 +56,6 @@ export function DashboardMobileDrawer({
         <DashboardSidebar active={active} onNav={onNav} onClose={onClose} />
       </div>
     </div>
+    </OverlayPortal>
   );
 }

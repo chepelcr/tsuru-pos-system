@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { Route, Switch, Redirect, useLocation, useParams } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -5,56 +6,115 @@ import { DocumentVersionProvider } from "@/contexts/DocumentVersionContext";
 import { CountryISO } from "@/lib/enums";
 import { ROUTES } from "@/routePaths";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { Spinner } from "@/components/ui/Spinner";
+import {
+  PermissionBoundary,
+  type PermissionRequirement,
+} from "@/components/routing/PermissionBoundary";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import VerifyEmail from "@/pages/VerifyEmail";
-import ForgotPassword from "@/pages/ForgotPassword";
-import ResetPassword from "@/pages/ResetPassword";
-import SelectOrganization from "@/pages/SelectOrganization";
-import CreateOrganization from "@/pages/CreateOrganization";
-import AcceptInvitation from "@/pages/AcceptInvitation";
-import DashboardHome from "@/pages/dashboard/DashboardPage";
-import SessionsPage from "@/pages/dashboard/SessionsPage";
-import PuestosPage from "@/pages/dashboard/PuestosPage";
-import ProductsPage from "@/pages/dashboard/ProductsPage";
-import ReportePage from "@/pages/dashboard/ReportePage";
-import DocumentsPage from "@/pages/dashboard/DocumentsPage";
-import ClientsPage from "@/pages/dashboard/ClientsPage";
-import ClientDetailPage from "@/pages/dashboard/ClientDetailPage";
-import ProductDetailPage from "@/pages/dashboard/ProductDetailPage";
-import OrgSettingsPage from "@/pages/dashboard/OrgSettingsPage";
-import OrgHaciendaPage from "@/pages/dashboard/OrgHaciendaPage";
-import OrgNotificationsPage from "@/pages/dashboard/OrgNotificationsPage";
-import OrgRegisteredOrgPage from "@/pages/dashboard/OrgRegisteredOrgPage";
-import OrgThemePage from "@/pages/dashboard/OrgThemePage";
-import MembersPage from "@/pages/dashboard/MembersPage";
-import RolesPage from "@/pages/dashboard/RolesPage";
-import OrdersPage from "@/pages/dashboard/OrdersPage";
-import OrderDetailPage from "@/pages/dashboard/OrderDetailPage";
-import ConfirmationsPage from "@/pages/dashboard/ConfirmationsPage";
-import ConfirmationDetailPage from "@/pages/dashboard/ConfirmationDetailPage";
-import CategoriesPage from "@/pages/dashboard/CategoriesPage";
-import OrgGeneralPage from "@/pages/dashboard/OrgGeneralPage";
-import OrgBrandingPage from "@/pages/dashboard/OrgBrandingPage";
-import OrgContactPage from "@/pages/dashboard/OrgContactPage";
-import OrgPaymentPage from "@/pages/dashboard/OrgPaymentPage";
-import OrgShippingPage from "@/pages/dashboard/OrgShippingPage";
-import ProfilePage from "@/pages/dashboard/ProfilePage";
-import ProgramsPage from "@/pages/dashboard/ProgramsPage";
-import ContentPage from "@/pages/dashboard/ContentPage";
-import GalleryPage from "@/pages/dashboard/GalleryPage";
-import TemplatesPage from "@/pages/dashboard/TemplatesPage";
-import DeploymentsPage from "@/pages/dashboard/DeploymentsPage";
+
+// Every page is a dynamic import. React only invokes a loader after the
+// matching route — and, for dashboard pages, its permission boundary — renders.
+const Login = lazy(() => import("@/pages/Login"));
+const Register = lazy(() => import("@/pages/Register"));
+const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const SelectOrganization = lazy(() => import("@/pages/SelectOrganization"));
+const CreateOrganization = lazy(() => import("@/pages/CreateOrganization"));
+const AcceptInvitation = lazy(() => import("@/pages/AcceptInvitation"));
+const DashboardHome = lazy(() => import("@/pages/dashboard/DashboardPage"));
+const SessionsPage = lazy(() => import("@/pages/dashboard/SessionsPage"));
+const PuestosPage = lazy(() => import("@/pages/dashboard/PuestosPage"));
+const ProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
+const ReportePage = lazy(() => import("@/pages/dashboard/ReportePage"));
+const DocumentsPage = lazy(() => import("@/pages/dashboard/DocumentsPage"));
+const ClientsPage = lazy(() => import("@/pages/dashboard/ClientsPage"));
+const ClientDetailPage = lazy(() => import("@/pages/dashboard/ClientDetailPage"));
+const ProductDetailPage = lazy(() => import("@/pages/dashboard/ProductDetailPage"));
+const OrgSettingsPage = lazy(() => import("@/pages/dashboard/OrgSettingsPage"));
+const OrgHaciendaPage = lazy(() => import("@/pages/dashboard/OrgHaciendaPage"));
+const OrgNotificationsPage = lazy(() => import("@/pages/dashboard/OrgNotificationsPage"));
+const OrgRegisteredOrgPage = lazy(() => import("@/pages/dashboard/OrgRegisteredOrgPage"));
+const OrgThemePage = lazy(() => import("@/pages/dashboard/OrgThemePage"));
+const MembersPage = lazy(() => import("@/pages/dashboard/MembersPage"));
+const RolesPage = lazy(() => import("@/pages/dashboard/RolesPage"));
+const OrdersPage = lazy(() => import("@/pages/dashboard/OrdersPage"));
+const OrderDetailPage = lazy(() => import("@/pages/dashboard/OrderDetailPage"));
+const ConfirmationsPage = lazy(() => import("@/pages/dashboard/ConfirmationsPage"));
+const ConfirmationDetailPage = lazy(() => import("@/pages/dashboard/ConfirmationDetailPage"));
+const CategoriesPage = lazy(() => import("@/pages/dashboard/CategoriesPage"));
+const OrgGeneralPage = lazy(() => import("@/pages/dashboard/OrgGeneralPage"));
+const OrgBrandingPage = lazy(() => import("@/pages/dashboard/OrgBrandingPage"));
+const OrgContactPage = lazy(() => import("@/pages/dashboard/OrgContactPage"));
+const OrgPaymentPage = lazy(() => import("@/pages/dashboard/OrgPaymentPage"));
+const OrgShippingPage = lazy(() => import("@/pages/dashboard/OrgShippingPage"));
+const ProfilePage = lazy(() => import("@/pages/dashboard/ProfilePage"));
+const ProgramsPage = lazy(() => import("@/pages/dashboard/ProgramsPage"));
+const ContentPage = lazy(() => import("@/pages/dashboard/ContentPage"));
+const GalleryPage = lazy(() => import("@/pages/dashboard/GalleryPage"));
+const TemplatesPage = lazy(() => import("@/pages/dashboard/TemplatesPage"));
+const DeploymentsPage = lazy(() => import("@/pages/dashboard/DeploymentsPage"));
 
 const DASHBOARD_ROLES = ["gerente", "supervisor", "customer", "cajero"];
+
+const ROUTE_PERMISSIONS = {
+  dashboard: [["panel", "read", "overview"]],
+  sessions: [["admin", "read", "sessions"]],
+  stations: [["admin", "read", "stations"]],
+  products: [["commercial", "read", "products"]],
+  categories: [["commercial", "read", "categories"]],
+  reports: [["reports", "read", "general"]],
+  documents: [
+    ["documents", "read", "emitted"],
+    ["documents", "read", "received"],
+    ["documents", "create", "fe"],
+    ["documents", "create", "te"],
+    ["documents", "create", "nc"],
+    ["documents", "create", "nd"],
+    ["documents", "create", "fc"],
+    ["documents", "create", "fexp"],
+  ],
+  clients: [["commercial", "read", "clients"]],
+  orders: [["commercial", "read", "orders"]],
+  confirmations: [["commercial", "read", "confirmations"]],
+  members: [["admin", "read", "members"]],
+  roles: [["admin", "read", "roles"]],
+  programs: [["programs", "read", "programs"]],
+  content: [["storefront", "read", "content"]],
+  gallery: [["storefront", "read", "gallery"]],
+  templates: [["storefront", "read", "templates"]],
+  deployments: [["storefront", "read", "deployments"]],
+  organization: [
+    ["admin", "read", "organization"],
+    ["organization", "read"],
+  ],
+  orgGeneral: [["organization", "read", "general"]],
+  orgBranding: [["organization", "read", "branding"]],
+  orgContact: [["organization", "read", "contact"]],
+  orgPayment: [["organization", "read", "payment"]],
+  orgShipping: [["organization", "read", "shipping"]],
+  orgHacienda: [["organization", "read", "hacienda"]],
+  orgNotifications: [["organization", "read", "notifications"]],
+  orgFiscalInfo: [["organization", "read", "fiscal-info"]],
+  orgTheme: [["organization", "read", "theme"]],
+} as const satisfies Record<string, readonly PermissionRequirement[]>;
+
+function RouteLoading({ fullScreen = false }: { fullScreen?: boolean }) {
+  const { t } = useLanguage();
+  return (
+    <div className={`${fullScreen ? "min-h-screen" : "min-h-[45vh]"} bg-background flex items-center justify-center`}>
+      <Spinner size={36} label={t("common.loading")} />
+    </div>
+  );
+}
 
 // Auth guard — redirects to login if unauthenticated, checks role if provided
 function RequireAuth({
   children,
   roles,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   roles?: string[];
 }) {
   const { user, isLoading } = useAuthContext();
@@ -82,12 +142,28 @@ function RequireAuth({
 }
 
 // Shorthand: protected page inside the dashboard shell
-function DashboardPage({ children }: { children: React.ReactNode }) {
+function DashboardPage({
+  children,
+  permissions,
+}: {
+  children: ReactNode;
+  permissions?: readonly PermissionRequirement[];
+}) {
+  const page = (
+    <Suspense fallback={<RouteLoading />}>
+      {children}
+    </Suspense>
+  );
+
   return (
     <RequireAuth roles={DASHBOARD_ROLES}>
       <DocumentVersionProvider isoCode={CountryISO.COSTA_RICA}>
         <DashboardLayout>
-          <PageTransition>{children}</PageTransition>
+          <PageTransition>
+            {permissions ? (
+              <PermissionBoundary requirements={permissions}>{page}</PermissionBoundary>
+            ) : page}
+          </PageTransition>
         </DashboardLayout>
       </DocumentVersionProvider>
     </RequireAuth>
@@ -98,7 +174,7 @@ function DashboardPage({ children }: { children: React.ReactNode }) {
 function ClientDetailRoute() {
   const { clientId } = useParams<{ clientId: string }>();
   return (
-    <DashboardPage>
+    <DashboardPage permissions={ROUTE_PERMISSIONS.clients}>
       <ClientDetailPage clientId={clientId ?? ""} />
     </DashboardPage>
   );
@@ -108,7 +184,7 @@ function ClientDetailRoute() {
 function ProductDetailRoute() {
   const { productId } = useParams<{ productId: string }>();
   return (
-    <DashboardPage>
+    <DashboardPage permissions={ROUTE_PERMISSIONS.products}>
       <ProductDetailPage productId={productId ?? ""} />
     </DashboardPage>
   );
@@ -118,7 +194,7 @@ function ProductDetailRoute() {
 function OrderDetailRoute() {
   const { orderId } = useParams<{ orderId: string }>();
   return (
-    <DashboardPage>
+    <DashboardPage permissions={ROUTE_PERMISSIONS.orders}>
       <OrderDetailPage orderId={orderId ?? ""} />
     </DashboardPage>
   );
@@ -128,7 +204,7 @@ function OrderDetailRoute() {
 function ConfirmationDetailRoute() {
   const { confirmationNumber } = useParams<{ confirmationNumber: string }>();
   return (
-    <DashboardPage>
+    <DashboardPage permissions={ROUTE_PERMISSIONS.confirmations}>
       <ConfirmationDetailPage confirmationNumber={confirmationNumber ?? ""} />
     </DashboardPage>
   );
@@ -138,31 +214,19 @@ function ConfirmationDetailRoute() {
 // and editor (/dashboard/documents/new/:tabId) under one mounted component
 // so the nav stays persistent and content can animate internally.
 function DocumentsRoute() {
-  console.log('[DocumentsRoute] Route component rendering');
-  try {
-    return (
-      <DashboardPage>
-        <DocumentsPage />
-      </DashboardPage>
-    );
-  } catch (error) {
-    console.error('[DocumentsRoute] Error rendering:', error);
-    return (
-      <div className="text-destructive p-5">
-        Error in DocumentsRoute: {error instanceof Error ? error.message : String(error)}
-      </div>
-    );
-  }
+  return (
+    <DashboardPage permissions={ROUTE_PERMISSIONS.documents}>
+      <DocumentsPage />
+    </DashboardPage>
+  );
 }
 
 export default function Routes() {
   const { user } = useAuthContext();
-  const [location] = useLocation();
-  
-  console.log('[Routes] Rendering - location:', location, 'User:', user?.userId);
 
   return (
-    <Switch>
+    <Suspense fallback={<RouteLoading fullScreen />}>
+      <Switch>
       {/* Public */}
       <Route path={ROUTES.LOGIN} component={Login} />
       <Route path={ROUTES.REGISTER} component={Register} />
@@ -190,11 +254,11 @@ export default function Routes() {
       {/* Dashboard — more specific paths first */}
       <Route
         path={ROUTES.DASHBOARD_SESSIONS}
-        component={() => <DashboardPage><SessionsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.sessions}><SessionsPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_STATIONS}
-        component={() => <DashboardPage><PuestosPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.stations}><PuestosPage /></DashboardPage>}
       />
       
       {/* Products — detail before list so :productId is matched first */}
@@ -204,13 +268,13 @@ export default function Routes() {
       />
       <Route
         path={ROUTES.DASHBOARD_PRODUCTS}
-        component={() => <DashboardPage><ProductsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.products}><ProductsPage /></DashboardPage>}
       />
 
       {/* Categories — standalone CRUD (drawer-hosted, no detail sub-route) */}
       <Route
         path={ROUTES.DASHBOARD_CATEGORIES}
-        component={() => <DashboardPage><CategoriesPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.categories}><CategoriesPage /></DashboardPage>}
       />
 
       {/* Orders — detail before list so :orderId is matched first */}
@@ -220,7 +284,7 @@ export default function Routes() {
       />
       <Route
         path={ROUTES.DASHBOARD_ORDERS}
-        component={() => <DashboardPage><OrdersPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orders}><OrdersPage /></DashboardPage>}
       />
 
       {/* Confirmations — detail before list so :confirmationNumber is matched first */}
@@ -230,23 +294,23 @@ export default function Routes() {
       />
       <Route
         path={ROUTES.DASHBOARD_CONFIRMATIONS}
-        component={() => <DashboardPage><ConfirmationsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.confirmations}><ConfirmationsPage /></DashboardPage>}
       />
 
       <Route
         path={ROUTES.DASHBOARD_MEMBERS}
-        component={() => <DashboardPage><MembersPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.members}><MembersPage /></DashboardPage>}
       />
 
       {/* Roles — org-scoped RBAC roles + permission matrix */}
       <Route
         path={ROUTES.DASHBOARD_ROLES}
-        component={() => <DashboardPage><RolesPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.roles}><RolesPage /></DashboardPage>}
       />
 
       <Route
         path={ROUTES.DASHBOARD_REPORTS}
-        component={() => <DashboardPage><ReportePage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.reports}><ReportePage /></DashboardPage>}
       />
       {/* Legacy POS entry — the POS now lives inside the documents editor
           (new-document tabs render POSIntegratedPage); redirect old links. */}
@@ -266,74 +330,74 @@ export default function Routes() {
       />
       <Route
         path={ROUTES.DASHBOARD_CLIENTS}
-        component={() => <DashboardPage><ClientsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.clients}><ClientsPage /></DashboardPage>}
       />
 
       {/* Programs — template-gated section (W12). The page itself redirects to
           the dashboard when the org's template has no programs section. */}
       <Route
         path={ROUTES.DASHBOARD_PROGRAMS}
-        component={() => <DashboardPage><ProgramsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.programs}><ProgramsPage /></DashboardPage>}
       />
 
       {/* Sitio web (storefront CMS) — content, templates, deployments */}
       <Route
         path={ROUTES.DASHBOARD_CONTENT}
-        component={() => <DashboardPage><ContentPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.content}><ContentPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_GALLERY}
-        component={() => <DashboardPage><GalleryPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.gallery}><GalleryPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_TEMPLATES}
-        component={() => <DashboardPage><TemplatesPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.templates}><TemplatesPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_DEPLOYMENTS}
-        component={() => <DashboardPage><DeploymentsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.deployments}><DeploymentsPage /></DashboardPage>}
       />
 
       {/* Storefront / org-settings sub-pages — more-specific paths before the hub */}
       <Route
         path={ROUTES.DASHBOARD_ORG_GENERAL}
-        component={() => <DashboardPage><OrgGeneralPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgGeneral}><OrgGeneralPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_BRANDING}
-        component={() => <DashboardPage><OrgBrandingPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgBranding}><OrgBrandingPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_CONTACT}
-        component={() => <DashboardPage><OrgContactPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgContact}><OrgContactPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_PAYMENT}
-        component={() => <DashboardPage><OrgPaymentPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgPayment}><OrgPaymentPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_SHIPPING}
-        component={() => <DashboardPage><OrgShippingPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgShipping}><OrgShippingPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_HACIENDA}
-        component={() => <DashboardPage><OrgHaciendaPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgHacienda}><OrgHaciendaPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_NOTIFICATIONS}
-        component={() => <DashboardPage><OrgNotificationsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgNotifications}><OrgNotificationsPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_FISCAL_INFO}
-        component={() => <DashboardPage><OrgRegisteredOrgPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgFiscalInfo}><OrgRegisteredOrgPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_THEME}
-        component={() => <DashboardPage><OrgThemePage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgTheme}><OrgThemePage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_ORG_SETTINGS}
-        component={() => <DashboardPage><OrgSettingsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.organization}><OrgSettingsPage /></DashboardPage>}
       />
 
       {/* Profile — available to every authenticated role; before the catch-all dashboard route */}
@@ -344,7 +408,7 @@ export default function Routes() {
 
       <Route
         path={ROUTES.DASHBOARD}
-        component={() => <DashboardPage><DashboardHome /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.dashboard}><DashboardHome /></DashboardPage>}
       />
 
       {/* Root redirect */}
@@ -355,6 +419,7 @@ export default function Routes() {
           <Redirect to={ROUTES.LOGIN} />
         )}
       </Route>
-    </Switch>
+      </Switch>
+    </Suspense>
   );
 }

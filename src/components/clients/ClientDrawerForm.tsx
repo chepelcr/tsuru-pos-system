@@ -343,6 +343,7 @@ export function ClientDrawerForm({
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={title}

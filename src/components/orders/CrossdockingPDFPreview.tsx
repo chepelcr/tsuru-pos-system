@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useId, useRef } from 'react';
 import { Button, Icon } from '@/components/ui';
+import { OverlayPortal } from '@/components/ui/OverlayPortal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useOverlayLayer } from '@/hooks/useOverlayLayer';
 import { usePermissions } from '@/hooks/useRbac';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import type { Order } from '@/types/order';
@@ -20,25 +21,14 @@ interface CrossdockingPDFPreviewProps {
  */
 export function CrossdockingPDFPreview({ open, onClose, order }: CrossdockingPDFPreviewProps) {
   const { t } = useLanguage();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { isTopLayer } = useOverlayLayer({ active: open, panelRef, dismissible: true, onClose });
 
   // RBAC action gating — downloads map to export; the preview itself stays
   // visible under read. Fail-open while my-permissions resolves (§5.1).
   const { can, isReady: permsReady } = usePermissions();
   const canExport = !permsReady || can('commercial', 'export', 'orders');
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handler);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handler);
-      document.body.style.overflow = prev;
-    };
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -53,19 +43,25 @@ export function CrossdockingPDFPreview({ open, onClose, order }: CrossdockingPDF
     ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(crossdockingPdfUrl)}`
     : '';
 
-  return createPortal(
+  return (
+    <OverlayPortal>
     <div
-      className="fixed inset-0 z-modal bg-foreground/50 flex items-center justify-center p-4 fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-drawer-modal bg-foreground/50 flex items-center justify-center p-4 fade-in"
+      onClick={() => { if (isTopLayer()) onClose(); }}
     >
       <div
-        className="w-full max-w-5xl h-[88vh] bg-card border border-border rounded-xl shadow-modal flex flex-col overflow-hidden fade-up"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="w-full max-w-5xl h-[min(88dvh,900px)] bg-card border border-border rounded-xl shadow-modal flex flex-col overflow-hidden fade-up outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <Icon name="eye" size={16} className="text-accent-rose flex-shrink-0" />
-            <span className="font-display font-bold text-[16px] truncate">
+            <span id={titleId} className="font-display font-bold text-[16px] truncate">
               {t('orders.crossdocking.preview')} #{order.document_number}
             </span>
           </div>
@@ -74,6 +70,7 @@ export function CrossdockingPDFPreview({ open, onClose, order }: CrossdockingPDF
             className="btn btn-ghost btn-sm btn-icon"
             aria-label={t('common.close')}
             type="button"
+            data-overlay-autofocus
           >
             <Icon name="close" size={16} />
           </button>
@@ -119,7 +116,7 @@ export function CrossdockingPDFPreview({ open, onClose, order }: CrossdockingPDF
           </Button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
+    </OverlayPortal>
   );
 }

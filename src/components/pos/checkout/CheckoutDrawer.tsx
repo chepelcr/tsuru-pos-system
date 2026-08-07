@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Drawer } from '@/components/ui/Drawer';
 import { useAccordionSections } from '@/hooks/useAccordionSections';
 import { useCart } from '@/store/cart';
@@ -9,8 +9,8 @@ import type {
   SalePayment,
   CurrencyCode,
   InvoiceFormData,
-  SaleResponse,
 } from '@/types/invoice';
+import type { InvoiceCheckoutData, SaleSubmissionResult } from '@/hooks/useCartFlow';
 import type { SaleReceiver } from '@/types/receiver';
 import type { SaleReference } from '@/types/reference';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
@@ -38,14 +38,16 @@ interface CheckoutDrawerProps {
   /** Active document tab id — when present, all form state is persisted per-tab */
   tabId?: string;
   onClose: () => void;
-  onConfirm: (invoiceData: any) => Promise<void>;
+  onCompleted: () => void;
+  onConfirm: (invoiceData: InvoiceCheckoutData) => Promise<SaleSubmissionResult>;
   onEditReceiver: () => void;
   onSelectClient: (c: ClientSearchResult | null) => void;
 }
 
 const DEFAULT_DOC_DATA = {
   sale_condition: '01',
-  activity_code: '722000',
+  activity_code: '',
+  credit_term: '0',
   currency: { currency_code: 'CRC', exchange_rate: 1 } as CurrencyCode,
   notes: '',
 };
@@ -60,6 +62,7 @@ export function CheckoutDrawer({
   orgId,
   tabId,
   onClose,
+  onCompleted,
   onConfirm,
   onEditReceiver,
   onSelectClient,
@@ -68,8 +71,17 @@ export function CheckoutDrawer({
   const { t } = useLanguage();
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
   const [step, setStep] = useState<Step>('payment');
-  const [sale] = useState<SaleResponse | undefined>();
+  const [result, setResult] = useState<SaleSubmissionResult>();
+  const [receiptSummary, setReceiptSummary] = useState({ total: 0, itemCount: 0 });
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setStep('payment');
+    setResult(undefined);
+    setReceiptSummary({ total: 0, itemCount: 0 });
+    setError(null);
+  }, [open]);
 
   // ─── Per-tab form state ────────────────────────────────────────────────
   const tabData = useDocumentStore((s) =>
@@ -94,6 +106,7 @@ export function CheckoutDrawer({
   const docData = {
     sale_condition: data.sale_condition ?? DEFAULT_DOC_DATA.sale_condition,
     activity_code:  data.activity_code  ?? DEFAULT_DOC_DATA.activity_code,
+    credit_term:    data.credit_term    ?? DEFAULT_DOC_DATA.credit_term,
     currency:       data.currency       ?? DEFAULT_DOC_DATA.currency,
     notes:          data.notes          ?? DEFAULT_DOC_DATA.notes,
   };
@@ -115,6 +128,7 @@ export function CheckoutDrawer({
 
   const validate = (): string | null => {
     if (!isPaid) return t('checkout.error.notPaid');
+    if (!docData.activity_code) return t('checkout.error.activityRequired');
     if (needsReceiver && !hasReceiver) return t('checkout.error.receiverRequired');
     if (needsReferences && references.length === 0) return t('checkout.error.referencesRequired');
     // Hacienda payment code "99" (Otros) requires `other_type` description.
@@ -129,6 +143,7 @@ export function CheckoutDrawer({
     const err = validate();
     if (err) { setError(err); return; }
     setError(null);
+    setReceiptSummary({ total: cartTotal, itemCount: cartItems.length });
     setStep('processing');
 
     const invoiceData = {
@@ -145,10 +160,11 @@ export function CheckoutDrawer({
     };
 
     try {
-      await onConfirm(invoiceData);
+      const submission = await onConfirm(invoiceData);
+      setResult(submission);
       setStep('done');
-    } catch (e: any) {
-      setError(e.message || t('checkout.error.processing'));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : t('checkout.error.processing'));
       setStep('payment');
     }
   };
@@ -177,8 +193,10 @@ export function CheckoutDrawer({
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
-      onClose={step === 'processing' ? () => {} : onClose}
+      dismissible={step !== 'processing'}
+      onClose={step === 'done' ? onCompleted : onClose}
       title={title}
       icon="cart"
       width={520}
@@ -248,10 +266,10 @@ export function CheckoutDrawer({
 
       {step === 'done' && (
         <Receipt
-          sale={sale}
-          cartTotal={cartTotal}
-          itemCount={cartItems.length}
-          onClose={onClose}
+          result={result}
+          cartTotal={receiptSummary.total}
+          itemCount={receiptSummary.itemCount}
+          onClose={onCompleted}
         />
       )}
     </Drawer>

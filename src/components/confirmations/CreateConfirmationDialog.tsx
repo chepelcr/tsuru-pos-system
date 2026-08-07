@@ -52,6 +52,7 @@ export function CreateConfirmationDialog({ open, onClose, orgId }: CreateConfirm
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={close}
       title={t('confirmations.create.title')}

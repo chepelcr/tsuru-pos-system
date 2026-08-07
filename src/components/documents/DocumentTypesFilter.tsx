@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DOCUMENT_TYPES } from '@/types/invoice';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocumentTypesFilterProps {
   /** Hacienda document type codes ("01", "04", ...). */
@@ -15,6 +16,7 @@ interface DocumentTypesFilterProps {
  * and a "Todos" sentinel that clears the selection.
  */
 export function DocumentTypesFilter({ selectedTypes, onChange }: DocumentTypesFilterProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -32,10 +34,10 @@ export function DocumentTypesFilter({ selectedTypes, onChange }: DocumentTypesFi
   const allSelected = selectedTypes.length === 0;
 
   const label = allSelected
-    ? 'Todos los tipos'
+    ? t('documents.types.allTypes')
     : selectedTypes.length === 1
-      ? DOCUMENT_TYPES.find((d) => d.code === selectedTypes[0])?.short ?? 'Tipos'
-      : `${selectedTypes.length} tipos`;
+      ? DOCUMENT_TYPES.find((d) => d.code === selectedTypes[0])?.short ?? t('documents.types.types')
+      : t('documents.types.count', { count: selectedTypes.length });
 
   const toggle = (code: string) => {
     onChange(
@@ -79,7 +81,7 @@ export function DocumentTypesFilter({ selectedTypes, onChange }: DocumentTypesFi
             >
               {allSelected && <Check size={12} strokeWidth={3} />}
             </span>
-            <span className="label-section">Todos</span>
+            <span className="label-section">{t('common.all')}</span>
           </button>
 
           <div className="h-px bg-border my-1 mx-2" />

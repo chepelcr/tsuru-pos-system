@@ -17,6 +17,7 @@ import {
   updatePassword,
   getCurrentUser,
   fetchAuthSession,
+  autoSignIn,
 } from "aws-amplify/auth";
 import "../lib/amplify";
 import { api, userPath } from "../lib/api";
@@ -65,6 +66,7 @@ interface AuthContextValue {
   // aws-amplify/auth thin wrappers (mirror dashboard useAuth)
   signUp: (args: SignUpArgs) => Promise<{ needsVerification: boolean; userId?: string }>;
   confirmSignUp: (args: { username: string; confirmationCode: string }) => Promise<void>;
+  completeAutoSignIn: () => Promise<boolean>;
   resendSignUpCode: (args: { username: string }) => Promise<void>;
   resetPassword: (args: { username: string }) => Promise<void>;
   confirmResetPassword: (args: {
@@ -94,33 +96,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     
-    console.log('[AuthContext] Initializing, checking for existing session...');
-    
     (async () => {
       try {
         const cognitoUser = await getCurrentUser();
-        console.log('[AuthContext] Found Cognito user:', cognitoUser.userId);
         
         const session = await fetchAuthSession();
         const token = session.tokens?.idToken;
         if (!token) throw new Error("No token");
 
         if (!cancelled) {
-          console.log('[AuthContext] Fetching user profile...');
           const profile = await api.get<AuthUser>(
             userPath(cognitoUser.userId, "/profile")
           );
-          console.log('[AuthContext] Profile loaded:', profile);
           setUser({ ...profile, userId: cognitoUser.userId });
         }
-      } catch (err) {
-        console.log('[AuthContext] No existing session or error:', err);
+      } catch {
         if (!cancelled) {
           setUser(null);
         }
       } finally {
         if (!cancelled) {
-          console.log('[AuthContext] Initialization complete');
           setIsLoading(false);
         }
       }
@@ -191,6 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: args.username,
         password: args.password,
         options: {
+          autoSignIn: true,
           userAttributes: {
             email: args.email,
             given_name: args.firstName,
@@ -217,6 +213,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  const completeAutoSignIn = useCallback(async () => {
+    const result = await autoSignIn();
+    return result.isSignedIn;
+  }, []);
 
   const resendSignUpCodeWrapper = useCallback(
     async (args: { username: string }) => {
@@ -294,6 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         forceLogout,
         signUp: signUpWrapper,
         confirmSignUp: confirmSignUpWrapper,
+        completeAutoSignIn,
         resendSignUpCode: resendSignUpCodeWrapper,
         resetPassword: resetPasswordWrapper,
         confirmResetPassword: confirmResetPasswordWrapper,

@@ -247,6 +247,7 @@ export default function ContentPage() {
 
       {/* Page drawer — all the page's sections as collapsible sub-sections */}
       <Drawer
+        closeLabel={t("common.close")}
         open={!!openPage}
         onClose={() => setEditingSlug(null)}
         title={openPage ? pageLabel(openPage) : ""}

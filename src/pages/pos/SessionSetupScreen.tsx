@@ -243,6 +243,7 @@ export default function SessionSetupScreen({ org }: Props) {
 
       {/* Add terminal drawer */}
       <Drawer
+        closeLabel={t("common.close")}
         open={addTermOpen}
         onClose={() => { setAddTermOpen(false); setTermError(null); }}
         title={t("setup.newTerminal")}

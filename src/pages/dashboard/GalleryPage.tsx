@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useOrgContext } from "@/contexts/OrgContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -11,6 +11,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FadeIn } from "@/components/ui/FadeIn";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { resolveMediaUrl, type MediaItem } from "@/lib/media";
 
 /**
@@ -44,6 +46,15 @@ export default function GalleryPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const addPanelRef = useRef<HTMLDivElement>(null);
+  const addTitleId = useId();
+  const closeAdd = () => setAddOpen(false);
+  const { isTopLayer: isAddTopLayer } = useOverlayLayer({
+    active: addOpen,
+    panelRef: addPanelRef,
+    dismissible: true,
+    onClose: closeAdd,
+  });
 
   const doUpload = async (file: File) => {
     setError(null);
@@ -164,18 +175,24 @@ export default function GalleryPage() {
 
       {/* Add modal — dropzone + add-by-URL (like the import modal) */}
       {addOpen && (
+        <OverlayPortal>
         <div
-          className="fixed inset-0 z-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
-          onClick={() => setAddOpen(false)}
+          className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
+          onClick={() => { if (isAddTopLayer()) closeAdd(); }}
         >
           <div
-            className="w-full max-w-[480px] bg-card border border-border rounded-xl shadow-modal p-5 fade-up"
+            ref={addPanelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={addTitleId}
+            tabIndex={-1}
+            className="w-full max-w-[480px] max-h-[calc(100dvh-2rem)] overflow-y-auto bg-card border border-border rounded-xl shadow-modal p-5 fade-up outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="t-h4 !mb-0">{t("gallery.addTitle")}</h3>
+              <h3 id={addTitleId} className="t-h4 !mb-0">{t("gallery.addTitle")}</h3>
               <button type="button" className="btn btn-ghost btn-sm btn-icon"
-                onClick={() => setAddOpen(false)} aria-label={t("common.close")}>
+                onClick={closeAdd} aria-label={t("common.close")} data-overlay-autofocus>
                 <Icon name="close" size={16} />
               </button>
             </div>
@@ -219,10 +236,11 @@ export default function GalleryPage() {
             )}
 
             <div className="flex justify-end mt-4">
-              <Button variant="primary" size="sm" onClick={() => setAddOpen(false)}>{t("common.close")}</Button>
+              <Button variant="primary" size="sm" onClick={closeAdd}>{t("common.close")}</Button>
             </div>
           </div>
         </div>
+        </OverlayPortal>
       )}
 
       <ConfirmModal />

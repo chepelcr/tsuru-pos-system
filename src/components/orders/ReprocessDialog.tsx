@@ -43,6 +43,7 @@ export function ReprocessDialog({ open, onClose, order, orgId }: ReprocessDialog
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={t('orders.actions.reprocess')}

@@ -212,6 +212,7 @@ export default function PuestosPage() {
 
       {/* Branch drawer */}
       <Drawer
+        closeLabel={t("common.close")}
         open={branchDrawer}
         onClose={() => { setBranchDrawer(false); setEditingBranch(null); }}
         title={editingBranch ? t("common.edit") + " " + t("puestos.title") : t("puestos.newStation")}
@@ -249,6 +250,7 @@ export default function PuestosPage() {
 
       {/* Terminal drawer */}
       <Drawer
+        closeLabel={t("common.close")}
         open={termDrawer}
         onClose={() => { setTermDrawer(false); setAddTermBranch(null); }}
         title={t("puestos.addTerminal")}

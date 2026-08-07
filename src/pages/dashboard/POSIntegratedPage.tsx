@@ -33,22 +33,12 @@ interface POSIntegratedPageProps {
 }
 
 export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageProps = {}) {
-  console.log('[POSIntegratedPage] Component rendering with docType:', docType, 'tabId:', tabId);
-  
   const syncStatus = useSync();
   const { user } = useAuthContext();
-  console.log('[POSIntegratedPage] User:', user?.userId);
-  
   const { useDefaultOrganization } = useOrganization();
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
-  console.log('[POSIntegratedPage] Org loading:', orgLoading, 'org:', org?.id);
-  
   const { data: assignment, isLoading: assignmentLoading } = useAssignment();
-  console.log('[POSIntegratedPage] Assignment loading:', assignmentLoading, 'assignment:', assignment?.assignment_id);
-  
   const sessionCtx = useSessionContext();
-  console.log('[POSIntegratedPage] Session context:', sessionCtx);
-  
   const { t } = useLanguage();
   // When rendered as the editor body for a document tab, let DocumentsPage own
   // the title (`Documents - New - {docType}`). Only set the POS shell title for
@@ -176,23 +166,19 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
       invoiceData,
     });
 
-    // On success, close the document tab so the dirty flag clears.
-    // The Receipt step shows briefly via the modal; closing the tab routes the user
-    // back to the list (via DocumentsPage's stale-tab redirect) when they tap "Nueva venta".
-    if (tabId) {
-      useDocumentStore.getState().removeDocumentTab(tabId);
-    }
-
     return result;
   };
 
+  const handleCompletedSale = () => {
+    setShowCheckout(false);
+    if (tabId) useDocumentStore.getState().removeDocumentTab(tabId);
+  };
+
   if (orgLoading || assignmentLoading) {
-    console.log('[POSIntegratedPage] Loading state - showing skeleton');
     return <POSPageSkeleton />;
   }
 
   if (!org) {
-    console.log('[POSIntegratedPage] No organization - showing error');
     return (
       <div className="flex items-center justify-center h-[60vh] bg-background">
         <span className="text-muted-foreground text-sm">{t("empty.noOrganization")}</span>
@@ -201,11 +187,8 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
   }
 
   if (!sessionCtx.branch_code || !sessionCtx.terminal_code) {
-    console.log('[POSIntegratedPage] No session setup - showing SessionSetupScreen');
     return <SessionSetupScreen org={org} />;
   }
-
-  console.log('[POSIntegratedPage] Rendering POS interface');
 
   const cartSidebar = (
     <CartSidebar
@@ -335,7 +318,8 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
         orgId={org.id}
         tabId={tabId}
         onClose={() => setShowCheckout(false)}
-        onConfirm={async (d) => { await handleConfirm(d); }}
+        onCompleted={handleCompletedSale}
+        onConfirm={handleConfirm}
         onEditReceiver={() => setReceiverDrawerOpen(true)}
         onSelectClient={setSelectedClient}
       />

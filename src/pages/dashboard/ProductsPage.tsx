@@ -495,6 +495,7 @@ export default function ProductsPage() {
 
       {/* Bulk import (Excel/CSV) */}
       <Drawer
+        closeLabel={t("common.close")}
         open={importOpen}
         onClose={() => { setImportOpen(false); setImportedCount(null); }}
         title={t("products.import.title")}

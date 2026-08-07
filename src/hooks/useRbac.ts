@@ -222,6 +222,8 @@ export interface UsePermissionsResult {
   /** True once my-permissions resolved with data — gating only applies then. */
   isReady: boolean;
   isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
   role: MyPermissionsDto["role"] | null;
 }
 
@@ -279,6 +281,8 @@ export function usePermissions(): UsePermissionsResult {
     isAdmin: data?.isAdmin ?? false,
     isReady: !!data,
     isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: () => { void query.refetch(); },
     role: data?.role ?? null,
   };
 }

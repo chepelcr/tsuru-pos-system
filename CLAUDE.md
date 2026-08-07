@@ -42,7 +42,7 @@ It is deployed independently per organization to its own subdomain (`{org}.j-mar
 - **Client state**: `zustand` v4 (cart, inventory, sessionContext, documentStore) + React Context (auth, org, language, dark mode, doc version)
 - **Forms**: `react-hook-form` + `zod`
 - **Auth**: `aws-amplify/auth` (Cognito) — token injected into every request via `getToken()` in `src/lib/api.ts`
-- **Local DB**: `dexie` (IndexedDB) for offline inventory cache (`src/lib/db.ts`)
+- **Local DB**: `dexie` (IndexedDB) for offline inventory and queued-sale replay (`src/lib/db.ts`)
 - **Icons**: `lucide-react` directly, OR the project's `<Icon name="..." />` wrapper in `src/components/ui/Icon.tsx` (custom curated set with `IconName` union)
 - **Styling**: Tailwind CSS 3.4 + custom design-system CSS in `src/index.css`. See §3.
 
@@ -86,6 +86,7 @@ Colors:  --background --foreground --card --primary --secondary
 Fonts:   --font-sans (Barlow) --font-display (Barlow Condensed) --font-mono (JetBrains Mono)
 Radius:  --radius (0.5rem)
 Z-index: --z-dropdown(30) --z-overlay(40) --z-modal(50) --z-tooltip(100)
+         --z-drawer(200) --z-drawer-modal(210)  ← viewport overlays + overlays nested above drawers
 Shadows: --shadow-card --shadow-card-hover --shadow-dropdown --shadow-dropdown-up --shadow-modal
 ```
 
@@ -97,7 +98,7 @@ Shadows: --shadow-card --shadow-card-hover --shadow-dropdown --shadow-dropdown-u
 | Color bg | `bg-card / bg-background / bg-muted / bg-primary / bg-success / bg-accent-rose-soft` etc. With opacity: `bg-muted/30`, `bg-primary/[0.06]` |
 | Border | `border border-border`, `border-primary/30`, `border-accent-rose-border` |
 | Shadow | `shadow-card / shadow-card-hover / shadow-dropdown / shadow-dropdown-up / shadow-modal` |
-| Z-index | `z-dropdown / z-overlay / z-modal / z-tooltip` |
+| Z-index | `z-dropdown / z-overlay / z-modal / z-tooltip / z-drawer / z-drawer-modal` |
 | Fonts | `font-sans / font-display / font-mono` |
 
 ### 3.3 Component classes (defined in `src/index.css` — prefer these over recomposing)
@@ -210,9 +211,9 @@ Use this pattern for any new multi-step form.
 
 ### 4.2 Drawer pattern
 
-Most edit/create flows use `<Drawer>` from `components/ui/Drawer.tsx` (right-side, 450ms slide animation). It accepts `title`, `subtitle`, `icon`, `iconBg`, `iconColor`, `width`, `footer`, and `children`. The drawer locks body scroll while open.
+Most edit/create flows use `<Drawer>` from `components/ui/Drawer.tsx` (right-side, 450ms slide animation). It accepts `title`, `subtitle`, `icon`, `iconBg`, `iconColor`, `width`, `footer`, `children`, required localized `closeLabel`, and optional `dismissible`. It portals to `document.body`, uses the shared overlay stack (`useOverlayLayer`) for reference-counted body locking, topmost-only Escape/backdrop dismissal, focus trapping/restoration, and `role="dialog"` semantics. Never render a page-local fixed drawer or duplicate body-lock logic.
 
-Mobile-specific drawers: `DashboardMobileDrawer` (left, main nav) and `DocumentsMobileDrawer` (right, doc tabs). They share the animation keyframes defined in `index.css` — never re-declare keyframes inside `<style>` blocks in components.
+Mobile-specific drawers: `DashboardMobileDrawer` (left, main nav) and `DocumentsMobileDrawer` (right, doc tabs). They also portal through `OverlayPortal` and join the shared overlay stack. They share the animation keyframes defined in `index.css` — never re-declare keyframes inside `<style>` blocks in components.
 
 ---
 
@@ -239,7 +240,7 @@ POS standalone flow (cashier device):
 /pos/success   → SuccessScreen
 ```
 
-**Adding a new page**: define route constant in `routePaths.ts`, register it in `Routes.tsx`, and add the navigation entry in `DashboardSidebar.tsx` (the `NAV_ITEMS` array) if it belongs to the dashboard.
+**Adding a new page**: define the route constant in `routePaths.ts`, add the page to `Routes.tsx` with `lazy(() => import(...))`, register the route with its `ROUTE_PERMISSIONS` entry, and add the navigation entry in `DashboardSidebar.tsx` (the `NAV_ITEMS` array) if it belongs to the dashboard. Do not statically import route pages into `Routes.tsx`.
 
 ### 5.1 RBAC catalog rule (load-bearing)
 
@@ -254,7 +255,15 @@ Current mapping: `panel`(overview) · `documents`(emitted, received — **POS be
 
 **Fine-grained twin exception:** a sidebar item whose page hosts multiple config sections can get its own module mirroring those sections. `organization` is the canonical case: the sidebar item stays gated by `admin/organization`, while each org-settings CARD (`OrgSettingsPage.tsx` card ids) is a submodule of the `organization` module (read/update only) — cards are filtered with `can("organization","read",cardId)`. If you add/rename an org-settings card, update the `organization` submodules in `rbac-seed.ts` in the same change (card id = submodule name) and reseed.
 
-Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesPage gates on `admin/…/roles`, MembersPage on `admin/update/members`, the sidebar "+" document button on `documents/create/emitted`. Fail-open while `my-permissions` loads (RBAC_ENFORCEMENT=log rollout); flip to fail-closed when enforcement is on.
+Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesPage gates on `admin/…/roles`, MembersPage on `admin/update/members`, the sidebar "+" document button on `documents/create/emitted`. Existing action controls remain fail-open while `my-permissions` loads (RBAC_ENFORCEMENT=log rollout). Route loading is deliberately stricter: `PermissionBoundary` waits for permission data and fails closed on loading/error/denial before its lazy child can render.
+
+### 5.2 Route bundles and permission-aware loading
+
+- Keep the authenticated dashboard shell eager so navigation remains stable, but load every page through `React.lazy`.
+- Put `PermissionBoundary` **outside** the page's `Suspense` boundary. This ordering prevents React from invoking an unauthorized page's dynamic-import loader.
+- Split heavy optional flows below the page level when users do not always need them. `DocumentsPage` independently loads the list/editor, and the dashboard loads `QrShareModal` only after it opens.
+- `vite.config.ts` emits `.vite/manifest.json`; use it with `dist/index.html` to audit which files are entry imports versus dynamic imports. Protected page chunks must not appear as `modulepreload` links.
+- Chunk gating reduces bandwidth and exposure of unused UI code; it is not an authorization boundary. The backend must continue enforcing every protected operation.
 
 ---
 
@@ -405,8 +414,8 @@ const updateMutation = useMutation({
 </div>
 ```
 
-### POS-specific: lock body scroll
-Drawer components manage `document.body.style.overflow` themselves. Don't duplicate.
+### POS-specific: overlays and body scroll
+`useOverlayLayer` owns body-scroll locking for drawers and full-viewport modals. It reference-counts nested overlays and restores the original body styles only after the last overlay closes. Don't write directly to `document.body.style.overflow` in a component.
 
 ---
 

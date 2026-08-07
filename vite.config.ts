@@ -13,6 +13,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks: {

@@ -118,6 +118,7 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={config ? t("orgSettings.hacienda.edit") : t("orgSettings.hacienda.configure")}

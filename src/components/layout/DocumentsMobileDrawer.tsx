@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useLocation } from "wouter";
 import { useDocumentStore } from "@/store/documentStore";
 import { useMaxVisibleTabs } from "@/store/uiStore";
@@ -8,6 +8,8 @@ import { getDocumentTypeInfo } from "@/types/invoice";
 import { Icon } from "@/components/ui";
 import { NewDocumentButton } from "@/components/documents/NewDocumentButton";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 
 interface DocumentsMobileDrawerProps {
   open: boolean;
@@ -42,6 +44,13 @@ export function DocumentsMobileDrawer({
   const isDesktop = useIsDesktop(769);
   const maxVisible = useMaxVisibleTabs();
   const { t } = useLanguage();
+  const panelRef = useRef<HTMLElement>(null);
+  const { isTopLayer } = useOverlayLayer({
+    active: shouldRender,
+    panelRef,
+    dismissible: open && !isClosing,
+    onClose,
+  });
 
   const editorMatch = location.match(/^\/dashboard\/documents\/new\/([^/?#]+)/);
   const activeTabId = editorMatch?.[1] ?? null;
@@ -52,21 +61,6 @@ export function DocumentsMobileDrawer({
     () => (isDesktop ? open_documents.slice(maxVisible) : open_documents),
     [isDesktop, maxVisible, open_documents]
   );
-
-  useEffect(() => {
-    if (open && shouldRender) {
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = "hidden";
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    } else {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = "";
-    };
-  }, [open, shouldRender]);
 
   if (!shouldRender) return null;
 
@@ -101,18 +95,23 @@ export function DocumentsMobileDrawer({
   };
 
   return (
+    <OverlayPortal>
     <div
-      className="fixed inset-0 z-tooltip flex justify-end"
+      className="fixed inset-0 z-drawer flex justify-end"
       style={{ isolation: "isolate" }}
     >
       <div
         className={`absolute inset-0 overlay-backdrop-dim ${
           isClosing ? "drawer-overlay-exit" : "drawer-overlay-enter"
         }`}
-        onClick={onClose}
+        onClick={() => { if (isTopLayer()) onClose(); }}
       />
 
       <aside
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         className={`relative w-[280px] h-[100dvh] bg-card shadow-modal flex flex-col overflow-hidden ${
           isClosing ? "drawer-panel-right-exit" : "drawer-panel-right-enter"
         }`}
@@ -199,5 +198,6 @@ export function DocumentsMobileDrawer({
         </div>
       </aside>
     </div>
+    </OverlayPortal>
   );
 }

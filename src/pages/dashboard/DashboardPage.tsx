@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { lazy, Suspense, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -12,10 +13,14 @@ import { TopProductsPanel } from "@/components/dashboard/TopProductsPanel";
 import { DashboardStatSkeleton } from "@/components/dashboard/DashboardStatSkeleton";
 import { ChartSkeleton } from "@/components/dashboard/ChartSkeleton";
 import { QuickDocActionsCard } from "@/components/dashboard/QuickDocActionsCard";
-import { QrShareModal } from "@/components/dashboard/QrShareModal";
 import { constructSiteUrl } from "@/lib/siteUrl";
-import { useState } from "react";
 import type { StandData, DashboardData } from "@/types";
+
+const QrShareModal = lazy(() =>
+  import("@/components/dashboard/QrShareModal").then((module) => ({
+    default: module.QrShareModal,
+  })),
+);
 
 const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
 const fmtAgo = (ts: number) => {
@@ -83,12 +88,16 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <QrShareModal
-        open={qrOpen}
-        onClose={() => setQrOpen(false)}
-        siteUrl={siteUrl}
-        subdomain={org?.subdomain}
-      />
+      {qrOpen && (
+        <Suspense fallback={null}>
+          <QrShareModal
+            open
+            onClose={() => setQrOpen(false)}
+            siteUrl={siteUrl}
+            subdomain={org?.subdomain}
+          />
+        </Suspense>
+      )}
 
       {/* Hero stat card */}
       <Card className="fade-up px-6 py-5 mb-4 !border-primary/25 bg-gradient-to-br from-primary/[0.12] to-primary/[0.02] relative overflow-hidden">

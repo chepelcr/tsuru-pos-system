@@ -1,4 +1,5 @@
 import { useDocumentStore } from '@/store/documentStore';
+import { useLanguage } from '@/contexts/LanguageContext';
 import POSIntegratedPage from '@/pages/dashboard/POSIntegratedPage';
 
 interface DocumentEditorProps {
@@ -15,6 +16,7 @@ interface DocumentEditorProps {
  * is hydrated from the active tab via useDocumentStore selectors.
  */
 export function DocumentEditor({ orgId: _orgId, tabId }: DocumentEditorProps) {
+  const { t } = useLanguage();
   const activeTab = useDocumentStore((s) =>
     s.open_documents.find((d) => d.id === tabId) ?? null
   );
@@ -22,7 +24,7 @@ export function DocumentEditor({ orgId: _orgId, tabId }: DocumentEditorProps) {
   if (!activeTab) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-        Pestaña no encontrada.
+        {t('documents.tabNotFound')}
       </div>
     );
   }

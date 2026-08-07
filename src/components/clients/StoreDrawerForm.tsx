@@ -57,6 +57,7 @@ export function StoreDrawerForm({ open, onClose, onSubmit, store, saving }: Stor
 
   return (
     <Drawer
+      closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
       title={isEdit ? t("stores.editStore") : t("stores.addStore")}

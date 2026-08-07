@@ -1,24 +1,28 @@
 import { Badge } from "./Badge";
 import { Icon } from "./Icon";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-type SyncState = "online" | "offline" | "syncing";
+type SyncState = "online" | "offline" | "syncing" | "pending" | "error";
 
 interface SyncPillProps {
   state?: SyncState;
 }
 
 const stateMap = {
-  online: { variant: "success" as const, icon: "wifi", label: "En línea" },
-  offline: { variant: "warning" as const, icon: "wifiOff", label: "Offline" },
-  syncing: { variant: "info" as const, icon: "refresh", label: "Sincronizando" },
+  online: { variant: "success" as const, icon: "wifi", labelKey: "sync.online" },
+  offline: { variant: "warning" as const, icon: "wifiOff", labelKey: "sync.offline" },
+  syncing: { variant: "info" as const, icon: "refresh", labelKey: "sync.syncing" },
+  pending: { variant: "warning" as const, icon: "clock", labelKey: "sync.pending" },
+  error: { variant: "destructive" as const, icon: "alertTri", labelKey: "sync.error" },
 };
 
 export function SyncPill({ state = "online" }: SyncPillProps) {
+  const { t } = useLanguage();
   const m = stateMap[state] ?? stateMap.online;
   return (
     <Badge variant={m.variant} style={{ gap: 6 }}>
       <Icon name={m.icon} size={11} strokeWidth={2.4} />
-      {m.label}
+      {t(m.labelKey)}
     </Badge>
   );
 }

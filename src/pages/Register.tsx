@@ -138,7 +138,7 @@ export default function Register() {
 
       if (result.needsVerification) {
         sessionStorage.setItem("verificationEmail", step1Data.email);
-        sessionStorage.setItem("verificationPassword", values.password);
+        sessionStorage.setItem("verificationOrigin", "register");
         sessionStorage.setItem("verificationUsername", step1Data.username);
         sessionStorage.setItem("verificationFirstName", step1Data.firstName);
         sessionStorage.setItem("verificationLastName", step1Data.lastName);

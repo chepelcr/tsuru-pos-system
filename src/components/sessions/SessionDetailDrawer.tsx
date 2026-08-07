@@ -49,7 +49,7 @@ export function SessionDetailDrawer({
   const isActive = session.status === 1;
 
   return (
-    <Drawer open={open} onClose={onClose} width="min(860px, 100vw)" title={session.name}>
+    <Drawer closeLabel={t("common.close")} open={open} onClose={onClose} width="min(860px, 100vw)" title={session.name}>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="px-6 py-5 border-b border-border flex-shrink-0">

@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useId, useRef } from "react";
 import { Icon, Button } from "@/components/ui";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { usePermissions } from "@/hooks/useRbac";
 import { templateCategoryIcon } from "./templateCategory";
 import type { Template } from "@/types";
@@ -44,28 +46,28 @@ export function TemplatePreview({
   disabled,
 }: TemplatePreviewProps) {
   const { t } = useLanguage();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { isTopLayer } = useOverlayLayer({ active: open && !!template, panelRef, dismissible: true, onClose });
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can, isReady: permsReady } = usePermissions();
   const canApply = !permsReady || can("storefront", "update", "templates");
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
   if (!open || !template) return null;
 
   return (
+    <OverlayPortal>
     <div
-      className="fixed inset-0 z-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
+      onClick={() => { if (isTopLayer()) onClose(); }}
     >
       <div
-        className="w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-card border border-border rounded-xl shadow-modal fade-up"
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="w-full max-w-[560px] max-h-[90dvh] overflow-y-auto bg-card border border-border rounded-xl shadow-modal fade-up outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -74,7 +76,7 @@ export function TemplatePreview({
             <Icon name={templateCategoryIcon(template.category)} size={20} />
           </span>
           <div className="flex-1 min-w-0">
-            <h3 className="t-h3 !mb-0.5 truncate">{template.displayName}</h3>
+            <h3 id={titleId} className="t-h3 !mb-0.5 truncate">{template.displayName}</h3>
             <p className="t-xs text-muted-foreground">{t("template.preview.title")}</p>
           </div>
           <button
@@ -82,6 +84,7 @@ export function TemplatePreview({
             className="btn btn-ghost btn-icon btn-sm flex-shrink-0"
             onClick={onClose}
             aria-label={t("common.cancel")}
+            data-overlay-autofocus
           >
             <Icon name="close" size={18} />
           </button>
@@ -162,5 +165,6 @@ export function TemplatePreview({
         </div>
       </div>
     </div>
+    </OverlayPortal>
   );
 }
