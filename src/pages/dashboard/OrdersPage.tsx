@@ -211,10 +211,7 @@ export default function OrdersPage() {
       />
 
       {isLoading ? (
-        <div
-          className="grid gap-3.5"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
-        >
+        <div className="grid-auto-fill-300 gap-3.5">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <OrderCardSkeleton key={i} />
           ))}
@@ -244,10 +241,7 @@ export default function OrdersPage() {
         </div>
       ) : (
         <>
-          <div
-            className="grid gap-3.5"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
-          >
+          <div className="grid-auto-fill-300 gap-3.5">
             {orders.map((order, i) => (
               <FadeIn key={order.order_id ?? order.document_number} delay={i * 0.04} duration={0.3}>
                 <OrderListCard

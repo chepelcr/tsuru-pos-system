@@ -12,7 +12,7 @@ export function SessionOverviewTab({ dashboardData, isLoading }: SessionOverview
     // Mirrors the KPI grid + stand-breakdown layout below.
     return (
       <div className="p-6">
-        <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+        <div className="grid-auto-fit-160 gap-3 mb-5">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="p-4">
               <div className="flex justify-between items-center mb-3">
@@ -51,7 +51,7 @@ export function SessionOverviewTab({ dashboardData, isLoading }: SessionOverview
   return (
     <div className="p-6">
       {/* KPI Cards */}
-      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+      <div className="grid-auto-fit-160 gap-3 mb-5">
         {[
           { label: "Ventas totales", value: fmt(dashboardData?.total_revenue ?? 0), icon: "dollar", color: "primary" },
           { label: "Órdenes", value: String(dashboardData?.total_sales ?? 0), icon: "cart", color: "info" },

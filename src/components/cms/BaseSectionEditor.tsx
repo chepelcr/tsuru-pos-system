@@ -4,6 +4,7 @@ import { ContentField } from "./ContentField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
 import type { ContentSection } from "@/types/content";
+import { EDITOR_COLORS } from "@/theme/editorColors";
 
 interface BaseSectionEditorProps {
   /** The grouping key `${page.slug}-${section.sectionType}`. */
@@ -69,7 +70,7 @@ export function BaseSectionEditor({
         updates.backgroundStyle = JSON.stringify({
           type: "color",
           mode: newMode,
-          value: "#ffffff",
+          value: EDITOR_COLORS.white,
         });
       }
     }
@@ -80,21 +81,24 @@ export function BaseSectionEditor({
           const colorData = JSON.parse(item.value || "{}");
           colorData.mode = newMode;
           if (newMode === "single") {
-            colorData.value = colorData.lightValue || colorData.value || "#000000";
+            colorData.value = colorData.lightValue || colorData.value || EDITOR_COLORS.black;
           } else if (newMode === "both") {
-            colorData.lightValue = colorData.lightValue || colorData.value || "#000000";
-            colorData.darkValue = colorData.darkValue || "#ffffff";
+            colorData.lightValue = colorData.lightValue || colorData.value || EDITOR_COLORS.black;
+            colorData.darkValue = colorData.darkValue || EDITOR_COLORS.white;
           }
           updates[key] = JSON.stringify(colorData);
         } catch {
-          const currentColor = item.value || "#000000";
+          const currentColor = item.value || EDITOR_COLORS.black;
           if (newMode === "single") {
             updates[key] = JSON.stringify({ mode: "single", value: currentColor });
           } else {
             updates[key] = JSON.stringify({
               mode: "both",
               lightValue: currentColor,
-              darkValue: currentColor === "#000000" ? "#ffffff" : "#000000",
+              darkValue:
+                currentColor === EDITOR_COLORS.black
+                  ? EDITOR_COLORS.white
+                  : EDITOR_COLORS.black,
             });
           }
         }

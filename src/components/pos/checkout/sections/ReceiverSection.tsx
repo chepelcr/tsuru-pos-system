@@ -45,13 +45,7 @@ export function ReceiverSection({
     >
       <div className="flex flex-col">
         {/* Selected receiver chip — slides down in, fades up out */}
-        <div
-          className="grid transition-all duration-300 ease-out"
-          style={{
-            gridTemplateRows: hasReceiver ? '1fr' : '0fr',
-            opacity: hasReceiver ? 1 : 0,
-          }}
-        >
+        <div className="collapse-grid" data-open={hasReceiver}>
           <div className="min-h-0 overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-accent-rose-border bg-accent-rose-soft mb-3">
               <div className="w-8 h-8 rounded-full bg-card border border-accent-rose-border flex items-center justify-center flex-shrink-0">
@@ -89,14 +83,7 @@ export function ReceiverSection({
         )}
 
         {/* Picker — slides down in when no receiver, slides up out when one is picked */}
-        <div
-          className="grid transition-all duration-300 ease-out"
-          style={{
-            gridTemplateRows: hasReceiver ? '0fr' : '1fr',
-            opacity: hasReceiver ? 0 : 1,
-          }}
-          aria-hidden={hasReceiver}
-        >
+        <div className="collapse-grid" data-open={!hasReceiver} aria-hidden={hasReceiver}>
           <div className="min-h-0 overflow-hidden">
             <ReceiverPicker
               orgId={orgId}

@@ -97,8 +97,7 @@ export function DocumentsMobileDrawer({
   return (
     <OverlayPortal>
     <div
-      className="fixed inset-0 z-drawer flex justify-end"
-      style={{ isolation: "isolate" }}
+      className="fixed inset-0 z-drawer flex justify-end isolate"
     >
       <div
         className={`absolute inset-0 overlay-backdrop-dim ${
@@ -154,10 +153,7 @@ export function DocumentsMobileDrawer({
                         : "bg-transparent border-transparent hover:bg-muted"
                     }`}
                   >
-                    <span
-                      className="w-1 h-7 rounded-sm flex-shrink-0"
-                      style={{ background: info?.dotColor }}
-                    />
+                    <span className={`w-1 h-7 rounded-sm flex-shrink-0 bg-current ${info?.color ?? "text-muted-foreground"}`} />
                     <div className="flex-1 min-w-0">
                       <div className="t-label !text-[10px] !tracking-[0.06em]">
                         {info?.short ?? "?"}

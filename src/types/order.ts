@@ -38,26 +38,12 @@ export const ORDER_STATUS_CODES: Record<OrderStatus, number> = {
 };
 
 // ─── Report colour schemes ─────────────────────────────────────────────────
-// The hex literals live ONLY in this data object (REPORT_COLOR_OPTIONS) and are
-// consumed via data-driven inline `style={{ background }}` — the legit §3.6
-// exception. Do NOT scatter these hexes into classNames.
+// The visual values live in the theme layer; re-export the public contract here
+// so existing order consumers keep a stable import path.
 
-export type ReportColorScheme = 'green' | 'orange' | 'blue' | 'green_alt';
-
-export interface ReportColorOption {
-  value: ReportColorScheme;
-  /** i18n key for the label, e.g. `orders.colorScheme.green` (resolve via t()). */
-  label: string;
-  /** Data-driven hex — rendered only via inline style (CLAUDE.md §3.6). */
-  hex: string;
-}
-
-export const REPORT_COLOR_OPTIONS: ReportColorOption[] = [
-  { value: 'green', label: 'orders.colorScheme.green', hex: '#0e5c23' },
-  { value: 'orange', label: 'orders.colorScheme.orange', hex: '#c65811' },
-  { value: 'blue', label: 'orders.colorScheme.blue', hex: '#1e4e77' },
-  { value: 'green_alt', label: 'orders.colorScheme.green_alt', hex: '#375522' },
-];
+import type { ReportColorScheme } from '@/theme/reportColors';
+export { REPORT_COLOR_OPTIONS } from '@/theme/reportColors';
+export type { ReportColorOption, ReportColorPalette, ReportColorScheme } from '@/theme/reportColors';
 
 // ─── Sub-types matching backend DTOs ────────────────────────────────────────
 
@@ -127,18 +113,20 @@ export interface OrderTotals {
 
 export interface CrossdockingSalePointItem {
   internal_code: string;
-  code: string;
+  original_code: string;
   description: string;
   units_per_box: number;
-  boxes: number;
-  units: number;
+  quantity: number;
   total_units: number;
+  sent: number;
+  missing: number;
 }
 
 export interface CrossdockingSalePoint {
-  store_code: string;
+  store_number: string;
   store_name: string;
-  gln: string;
+  full_name: string;
+  slot_id?: string | null;
   items: CrossdockingSalePointItem[];
   total_boxes: number;
   total_units: number;
@@ -146,7 +134,7 @@ export interface CrossdockingSalePoint {
 
 export interface CrossdockingItemSummary {
   internal_code: string;
-  code: string;
+  original_code: string;
   description: string;
   units_per_box: number;
   total_boxes: number;
@@ -154,15 +142,16 @@ export interface CrossdockingItemSummary {
 }
 
 export interface CrossdockingBoxSummary {
-  store_code: string;
-  store_name: string;
+  items_per_box: number;
+  box_count: number;
   total_boxes: number;
+  total_units: number;
 }
 
 export interface CrossdockingTotals {
   total_boxes: number;
   total_units: number;
-  total_items: number;
+  total_line_items: number;
   total_sale_points: number;
 }
 
@@ -172,7 +161,7 @@ export interface CrossdockingAttachments {
 }
 
 export interface Crossdocking {
-  attachments: CrossdockingAttachments;
+  attachments?: CrossdockingAttachments | null;
   sale_points: CrossdockingSalePoint[];
   item_summary: CrossdockingItemSummary[];
   box_summary: CrossdockingBoxSummary[];
@@ -194,10 +183,8 @@ export interface Order {
   client: OrderParty;
   supplier: OrderParty;
   delivery_location: DeliveryLocation;
-  // NOTE: some org responses send these as objects; the type stays `string`
-  // for consumer compatibility and the UI coerces via `text()` at render.
   event: string;
-  department: string;
+  department: string | OrderDepartment | null;
   comment: string;
   line_count: number;
   total_quantities: number;
@@ -208,6 +195,8 @@ export interface Order {
   grand_total: number;
   /** BGM/011 reference document number (nullable). */
   bgm011: string | null;
+  confirmation_id?: number | null;
+  confirmation_number?: string | null;
   /** Report colour scheme applied during reprocess. */
   report_color?: ReportColorScheme;
   attachments: OrderAttachments;

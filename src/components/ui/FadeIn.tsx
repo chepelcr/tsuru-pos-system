@@ -11,25 +11,14 @@ interface FadeInProps {
 export function FadeIn({ children, delay = 0, duration = 0.6, className, style }: FadeInProps) {
   return (
     <div
-      className={className}
+      className={`fade-in-up ${className ?? ""}`}
       style={{
         ...style,
-        animation: `fadeInUp ${duration}s ease-out ${delay}s both`,
-      }}
+        "--fade-duration": `${duration}s`,
+        "--fade-delay": `${delay}s`,
+      } as React.CSSProperties}
     >
       {children}
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { ORDER_STATUS_BADGE } from '@/components/orders/OrderStatusBadge';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
 import { ReprocessDialog } from '@/components/orders/ReprocessDialog';
 import { CrossdockingUploadDialog } from '@/components/orders/CrossdockingUploadDialog';
-import { CrossdockingPDFPreview } from '@/components/orders/CrossdockingPDFPreview';
+import { CrossdockingDetailsDialog } from '@/components/orders/CrossdockingDetailsDialog';
 
 const STATUS_BADGE = ORDER_STATUS_BADGE;
 
@@ -332,10 +332,7 @@ export default function OrderDetailPage({ orderId }: Props) {
           </div>
         </Card>
 
-        <div
-          className="grid gap-3.5 items-start"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
-        >
+        <div className="order-detail-grid">
           {/* Left: line items + totals */}
           <div className="flex flex-col gap-3.5">
             <Card className="p-6">
@@ -558,7 +555,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         </div>
       </Card>
 
-      <div className="grid gap-3.5 items-start" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+      <div className="order-detail-grid">
         {/* Left: line items + timeline */}
         <div className="flex flex-col gap-3.5">
           <LineItems order={order} />
@@ -627,7 +624,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         />
       )}
       {hasCrossdocking && (
-        <CrossdockingPDFPreview
+        <CrossdockingDetailsDialog
           open={crossdockPreviewOpen}
           onClose={() => setCrossdockPreviewOpen(false)}
           order={order}

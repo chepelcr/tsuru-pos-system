@@ -39,18 +39,9 @@ export function DashboardHeader({
   const hasOverflow = overflowCount > 0;
 
   return (
-    <header
-      className="nav-bar"
-      style={{
-        padding: "10px 16px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 10,
-      }}
-    >
+    <header className="nav-bar flex items-center justify-between gap-2.5 px-4 py-2.5">
       {/* LEFT SLOT — hamburger · page title · documents toolbar · live badge */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <button
           className="btn btn-ghost btn-sm btn-icon dashboard-hamburger"
           onClick={onMenuClick}
@@ -59,34 +50,22 @@ export function DashboardHeader({
         </button>
 
         {/* Desktop-only documents toolbar (Documentos tab + open tab strip) */}
-        <div className="documents-toolbar-desktop" style={{ minWidth: 0, display: "none" }}>
+        <div className="documents-toolbar-desktop">
           <DocumentsToolbar />
         </div>
 
         {/* Live session badge — kept on the left after the toolbar */}
         {sessionName && (
           <>
-            <Badge variant="success" style={{ gap: 6, flexShrink: 0 }}>
-              <span
-                className="status-dot status-dot-live"
-                style={{ width: 6, height: 6 }}
-              />
+            <Badge variant="success" className="gap-1.5 shrink-0">
+              <span className="status-dot status-dot-live !w-1.5 !h-1.5" />
               {t("shell.liveLabel")}
             </Badge>
-            <div style={{ minWidth: 0, flexShrink: 0 }}>
-              <div className="t-label" style={{ fontSize: 10 }}>
+            <div className="min-w-0 shrink-0">
+              <div className="t-label !text-[10px]">
                 {t("shell.activeSession")}
               </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  maxWidth: 200,
-                }}
-              >
+              <div className="text-[13px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">
                 {sessionName}
                 {sessionLocation && ` · ${sessionLocation}`}
               </div>
@@ -96,7 +75,7 @@ export function DashboardHeader({
       </div>
 
       {/* RIGHT SLOT — + Nuevo · 🔔 · flag · dark · sync · 📄 (mobile drawer toggle) */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div className="flex items-center gap-2 shrink-0">
         {/* New Document button — always visible; collapses to icon-only on sm+ */}
         <NewDocumentButton />
 
@@ -112,7 +91,7 @@ export function DashboardHeader({
           <img
             src={language === "es" ? "https://flagcdn.com/w20/cr.png" : "https://flagcdn.com/w20/us.png"}
             alt={language === "es" ? "Costa Rica" : "United States"}
-            style={{ width: 20, height: "auto", borderRadius: 2 }}
+            className="w-5 h-auto rounded-sm"
           />
         </button>
 
@@ -154,20 +133,6 @@ export function DashboardHeader({
         )}
       </div>
 
-      <style>{`
-        /* Default (hidden) — flip visibility per viewport + overflow state */
-        .documents-drawer-toggle { display: none; }
-        @media (min-width: 769px) {
-          .documents-toolbar-desktop { display: flex !important; align-items: center; }
-          /* Desktop: drawer toggle only when there are overflow tabs */
-          .documents-drawer-toggle.has-overflow { display: inline-flex !important; }
-        }
-        @media (max-width: 768px) {
-          .documents-toolbar-desktop { display: none !important; }
-          /* Mobile: drawer toggle always visible (it's the only doc access) */
-          .documents-drawer-toggle { display: inline-flex !important; }
-        }
-      `}</style>
     </header>
   );
 }

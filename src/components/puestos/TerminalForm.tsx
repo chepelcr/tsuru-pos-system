@@ -37,7 +37,7 @@ export function TerminalForm({ branchId, onSave, isSaving, onClose, renderButton
 
   return (
     <FadeIn duration={0.3}>
-      <form id="terminal-form" onSubmit={handleSubmit} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+      <form id="terminal-form" onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
         {/* General Section */}
         <TerminalGeneralSection
           name={name}

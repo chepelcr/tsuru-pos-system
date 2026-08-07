@@ -42,7 +42,7 @@ export function ProductGridView({
   const { t } = useLanguage();
 
   return (
-    <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
+    <div className="grid-auto-fill-220 gap-3.5">
       {products.map((p, i) => (
         <FadeIn key={p.product_id} delay={i * 0.03} duration={0.4}>
           <Card
@@ -58,7 +58,6 @@ export function ProductGridView({
                 name={p.name}
                 size={0}
                 className="w-full h-auto aspect-square !rounded-none object-cover"
-                style={{ width: "100%", height: "auto" }}
               />
               <div className="absolute top-2 left-2">
                 <input

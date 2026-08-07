@@ -19,13 +19,12 @@ export function Logo({ size = 32, showWord = true, orgName }: LogoProps) {
   return (
     <div className="inline-flex items-center gap-2.5">
       <div
-        className="bg-primary text-primary-foreground flex items-center justify-center font-display font-extrabold flex-shrink-0"
+        className="bg-primary text-primary-foreground flex items-center justify-center font-display font-extrabold flex-shrink-0 tracking-[0.5px]"
         style={{
           width: size,
           height: size,
           borderRadius: Math.round(size * 0.25),
           fontSize: Math.round(size * 0.52),
-          letterSpacing: 0.5,
         }}
       >
         {initials}

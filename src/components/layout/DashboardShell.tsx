@@ -72,10 +72,7 @@ export default function DashboardShell({
 
   return (
     <div className="min-h-screen flex">
-      <div
-        className="dashboard-sidebar-full sticky top-0 h-screen flex-shrink-0 overflow-hidden z-50 bg-card transition-[width] duration-[250ms] ease-out"
-        style={{ width: sidebarCollapsed ? 0 : 240, display: "none" }}
-      >
+      <div className={`dashboard-sidebar-full sticky top-0 h-screen flex-shrink-0 overflow-hidden z-50 bg-card transition-[width] duration-[250ms] ease-out ${sidebarCollapsed ? "w-0" : "w-60"}`}>
         <DashboardSidebar active={active} onNav={handleNav} />
       </div>
 

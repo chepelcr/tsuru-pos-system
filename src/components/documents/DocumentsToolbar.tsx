@@ -18,9 +18,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
  *   - text + 5%-alpha background also in the doc-type colour on active
  *   - muted-foreground on inactive tabs
  *
- * Inline `style={{ color: info.dotColor }}` on the active tab lets
- * `border-current text-current bg-current/5` all resolve to the
- * doc-type hex without dynamic Tailwind class composition.
+ * Centralized `text-doc-*` classes make `border-current` and `bg-current/5`
+ * inherit each document type's semantic accent.
  */
 export function DocumentsToolbar() {
   const { open_documents, removeDocumentTab, promoteTabToVisible } = useDocumentStore();
@@ -101,17 +100,14 @@ export function DocumentsToolbar() {
             className={cn(
               'relative flex items-center gap-2 px-3 py-2 cursor-pointer select-none shrink-0',
               'border-b-2 transition-colors',
+              isActive && info?.color,
               isActive
                 ? 'border-current bg-current/5'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
-            style={isActive ? { color: info?.dotColor } : undefined}
           >
             {!isActive && info && (
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: info.dotColor }}
-              />
+              <span className={cn('w-1.5 h-1.5 rounded-full shrink-0 bg-current', info.color)} />
             )}
             <span className="text-[10px] font-display font-bold uppercase tracking-wider opacity-70">
               {info?.short ?? '?'}

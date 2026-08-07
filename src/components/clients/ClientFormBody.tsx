@@ -5,13 +5,9 @@ import type { CreateClientDto } from "@/hooks/useClients";
 import { useAllCustomerTypes, useAllIdentifications, useAllCountries } from "@/hooks/useDataApi";
 import { CountryISO, CustomerType, IdTypeCode, DEFAULT_ID_TYPE, allowedIdCodes } from "@/lib/enums";
 
-// Re-exported for legacy consumers — prefer the `.client-input` className going forward.
-export const inputStyle: React.CSSProperties = {};
-export const clientInputClass = "client-input";
-
 export function Field({ label, children, half }: { label: string; children: React.ReactNode; half?: boolean }) {
   return (
-    <div style={{ flex: half ? "0 0 calc(50% - 6px)" : "0 0 100%" }}>
+    <div className={half ? "flex-[0_0_calc(50%-6px)]" : "basis-full grow-0 shrink-0"}>
       <label className="block text-[11px] font-bold uppercase tracking-[0.07em] text-muted-foreground mb-1.5 font-sans">
         {label}
       </label>

@@ -273,9 +273,6 @@ export default function SessionsPage() {
         confirm={{ label: t("session.endSession"), variant: "secondary", onClick: () => endConfirmId && endSessionMutation.mutate(endConfirmId, { onSuccess: () => setEndConfirmId(null) }), loading: endSessionMutation.isPending, loadingLabel: t("common.loading") }}
       />
 
-      <style>{`
-        @media (max-width: 768px) { .session-actions { flex-direction: column !important; } }
-      `}</style>
     </div>
   );
 }

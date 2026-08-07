@@ -5,6 +5,11 @@ import { MediaPicker } from "@/components/ui/MediaPicker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
 import type { SectionContent } from "@/types/content";
+import {
+  DEFAULT_BACKGROUND_VALUE,
+  DEFAULT_COLOR_VALUE,
+  EDITOR_COLORS,
+} from "@/theme/editorColors";
 
 interface ContentFieldProps {
   item: SectionContent;
@@ -75,14 +80,14 @@ export function ContentField({
   const renderColorInput = () => {
     let colorData: Record<string, string>;
     try {
-      colorData = JSON.parse(value || '{"mode":"single","value":"#000000"}');
+      colorData = JSON.parse(value || DEFAULT_COLOR_VALUE);
     } catch {
       // Plain hex value — bare swatch + hex text.
       return (
         <div className="flex gap-2 items-center">
           <input
             type="color"
-            value={value || "#000000"}
+            value={value || EDITOR_COLORS.black}
             disabled={disabled}
             onChange={(e) => onChange(e.target.value)}
             className="w-12 h-10 p-1 rounded-md border border-border bg-card cursor-pointer"
@@ -93,7 +98,7 @@ export function ContentField({
             value={value}
             disabled={disabled}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="#000000"
+            placeholder={EDITOR_COLORS.black}
             className="flex-1"
           />
         </div>
@@ -108,7 +113,7 @@ export function ContentField({
             <div className="flex gap-2 items-center">
               <input
                 type="color"
-                value={colorData.lightValue || colorData.value || "#000000"}
+                value={colorData.lightValue || colorData.value || EDITOR_COLORS.black}
                 disabled={disabled}
                 onChange={(e) => {
                   colorData.mode = "both";
@@ -120,14 +125,14 @@ export function ContentField({
               />
               <Input
                 type="text"
-                value={colorData.lightValue || colorData.value || "#000000"}
+                value={colorData.lightValue || colorData.value || EDITOR_COLORS.black}
                 disabled={disabled}
                 onChange={(e) => {
                   colorData.mode = "both";
                   colorData.lightValue = e.target.value;
                   onChange(JSON.stringify(colorData));
                 }}
-                placeholder="#000000"
+                placeholder={EDITOR_COLORS.black}
                 className="flex-1"
               />
             </div>
@@ -137,7 +142,7 @@ export function ContentField({
             <div className="flex gap-2 items-center">
               <input
                 type="color"
-                value={colorData.darkValue || "#ffffff"}
+                value={colorData.darkValue || EDITOR_COLORS.white}
                 disabled={disabled}
                 onChange={(e) => {
                   colorData.mode = "both";
@@ -149,14 +154,14 @@ export function ContentField({
               />
               <Input
                 type="text"
-                value={colorData.darkValue || "#ffffff"}
+                value={colorData.darkValue || EDITOR_COLORS.white}
                 disabled={disabled}
                 onChange={(e) => {
                   colorData.mode = "both";
                   colorData.darkValue = e.target.value;
                   onChange(JSON.stringify(colorData));
                 }}
-                placeholder="#ffffff"
+                placeholder={EDITOR_COLORS.white}
                 className="flex-1"
               />
             </div>
@@ -169,7 +174,7 @@ export function ContentField({
       <div className="flex gap-2 items-center">
         <input
           type="color"
-          value={colorData.value || value || "#000000"}
+          value={colorData.value || value || EDITOR_COLORS.black}
           disabled={disabled}
           onChange={(e) => {
             colorData.mode = "single";
@@ -181,14 +186,14 @@ export function ContentField({
         />
         <Input
           type="text"
-          value={colorData.value || value || "#000000"}
+          value={colorData.value || value || EDITOR_COLORS.black}
           disabled={disabled}
           onChange={(e) => {
             colorData.mode = "single";
             colorData.value = e.target.value;
             onChange(JSON.stringify(colorData));
           }}
-          placeholder="#000000"
+          placeholder={EDITOR_COLORS.black}
           className="flex-1"
         />
       </div>
@@ -199,9 +204,9 @@ export function ContentField({
   const renderBackgroundInput = () => {
     let bgData: Record<string, any>;
     try {
-      bgData = JSON.parse(value || '{"type":"color","value":"#ffffff","mode":"both"}');
+      bgData = JSON.parse(value || DEFAULT_BACKGROUND_VALUE);
     } catch {
-      bgData = { type: "color", value: "#ffffff", mode: "both" };
+      bgData = { type: "color", value: EDITOR_COLORS.white, mode: "both" };
     }
 
     return (
@@ -216,9 +221,13 @@ export function ContentField({
               onChange={(e) => {
                 bgData.type = e.target.value;
                 if (e.target.value === "color") {
-                  bgData.value = bgData.color || "#ffffff";
+                  bgData.value = bgData.color || EDITOR_COLORS.white;
                 } else if (e.target.value === "gradient") {
-                  bgData.gradient = bgData.gradient || { from: "#ffffff", to: "#000000", direction: "to-r" };
+                  bgData.gradient = bgData.gradient || {
+                    from: EDITOR_COLORS.white,
+                    to: EDITOR_COLORS.black,
+                    direction: "to-r",
+                  };
                 } else if (e.target.value === "image") {
                   bgData.image = bgData.image || { url: "", opacity: 1 };
                 }
@@ -253,7 +262,7 @@ export function ContentField({
                   <div className="flex gap-2 items-center">
                     <input
                       type="color"
-                      value={bgData.lightValue || bgData.value || "#ffffff"}
+                      value={bgData.lightValue || bgData.value || EDITOR_COLORS.white}
                       disabled={disabled}
                       onChange={(e) => {
                         bgData.lightValue = e.target.value;
@@ -264,13 +273,13 @@ export function ContentField({
                     />
                     <Input
                       type="text"
-                      value={bgData.lightValue || bgData.value || "#ffffff"}
+                      value={bgData.lightValue || bgData.value || EDITOR_COLORS.white}
                       disabled={disabled}
                       onChange={(e) => {
                         bgData.lightValue = e.target.value;
                         onChange(JSON.stringify(bgData));
                       }}
-                      placeholder="#ffffff"
+                      placeholder={EDITOR_COLORS.white}
                       className="flex-1"
                     />
                   </div>
@@ -280,7 +289,7 @@ export function ContentField({
                   <div className="flex gap-2 items-center">
                     <input
                       type="color"
-                      value={bgData.darkValue || "#000000"}
+                      value={bgData.darkValue || EDITOR_COLORS.black}
                       disabled={disabled}
                       onChange={(e) => {
                         bgData.darkValue = e.target.value;
@@ -291,13 +300,13 @@ export function ContentField({
                     />
                     <Input
                       type="text"
-                      value={bgData.darkValue || "#000000"}
+                      value={bgData.darkValue || EDITOR_COLORS.black}
                       disabled={disabled}
                       onChange={(e) => {
                         bgData.darkValue = e.target.value;
                         onChange(JSON.stringify(bgData));
                       }}
-                      placeholder="#000000"
+                      placeholder={EDITOR_COLORS.black}
                       className="flex-1"
                     />
                   </div>
@@ -307,7 +316,7 @@ export function ContentField({
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
-                  value={bgData.value || "#ffffff"}
+                  value={bgData.value || EDITOR_COLORS.white}
                   disabled={disabled}
                   onChange={(e) => {
                     bgData.value = e.target.value;
@@ -318,13 +327,13 @@ export function ContentField({
                 />
                 <Input
                   type="text"
-                  value={bgData.value || "#ffffff"}
+                  value={bgData.value || EDITOR_COLORS.white}
                   disabled={disabled}
                   onChange={(e) => {
                     bgData.value = e.target.value;
                     onChange(JSON.stringify(bgData));
                   }}
-                  placeholder="#ffffff"
+                  placeholder={EDITOR_COLORS.white}
                   className="flex-1"
                 />
               </div>

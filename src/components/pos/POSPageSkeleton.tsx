@@ -26,7 +26,7 @@ export function POSPageSkeleton() {
 
         {/* Product grid skeleton */}
         <div className="flex-1 overflow-y-auto p-5">
-          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
+          <div className="grid-auto-fill-140 gap-3">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="bg-card border border-border rounded-lg p-3">
                 <div className="w-full h-20 bg-muted rounded-md mb-2.5 animate-pulse" />

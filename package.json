@@ -9,7 +9,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit",
+    "check": "pnpm run check:styles && tsc --noEmit",
+    "check:styles": "node scripts/check-styles.mjs",
     "test": "vitest run"
   },
   "dependencies": {

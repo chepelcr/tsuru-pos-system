@@ -166,7 +166,7 @@ export default function PuestosPage() {
 
       {/* Content */}
       {isLoading ? (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+        <div className="grid-auto-fill-320 gap-3.5">
           {Array.from({ length: pageSize }).map((_, i) => <BranchSkeletonCard key={i} />)}
         </div>
       ) : branches.length === 0 ? (
@@ -181,7 +181,7 @@ export default function PuestosPage() {
           ) : undefined}
         />
       ) : (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+        <div className="grid-auto-fill-320 gap-3.5">
           {branches.map((branch, i) => (
             <BranchCard
               key={branch.branch_id}

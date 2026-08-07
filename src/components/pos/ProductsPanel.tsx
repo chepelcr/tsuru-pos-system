@@ -47,9 +47,7 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
     setPage(1);
   }, []);
 
-  const gridColumnsStyle = {
-    gridTemplateColumns: isDesktop ? "repeat(auto-fill, minmax(160px, 1fr))" : "repeat(2, 1fr)",
-  };
+  const gridClassName = `grid gap-3 ${isDesktop ? "grid-auto-fill-160" : "grid-cols-2"}`;
 
   const renderCategoryButton = (id: string, label: string) => {
     const active = (id === "" && !categoryId) || categoryId === id;
@@ -94,7 +92,7 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
       {/* Grid */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {isLoading ? (
-          <div className="grid gap-3" style={gridColumnsStyle}>
+          <div className={gridClassName}>
             {Array.from({ length: isDesktop ? 12 : 6 }).map((_, i) => (
               <ProductGridSkeleton key={i} />
             ))}
@@ -102,7 +100,7 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
         ) : products.length === 0 ? (
           <div className="text-center pt-12 text-muted-foreground">{t('productsPanel.noProducts')}</div>
         ) : (
-          <div className="grid gap-3" style={gridColumnsStyle}>
+          <div className={gridClassName}>
             {products.map((p, i) => {
               const lowStock = (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= 5;
               const inCart = cartItems.find((c) => c.id === p.product_id);
@@ -120,8 +118,7 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
                       imageUrl={p.image_url}
                       name={p.name ?? ""}
                       size={0}
-                      className="w-full h-auto !rounded-none object-cover"
-                      style={{ width: "100%", height: "auto", aspectRatio: "4/3" }}
+                      className="w-full h-auto aspect-[4/3] !rounded-none object-cover"
                     />
                     <div className="px-3 pt-2.5 pb-3">
                       <div className="flex justify-between items-start gap-1">

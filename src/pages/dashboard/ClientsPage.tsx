@@ -134,7 +134,7 @@ export default function ClientsPage() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(265px, 1fr))" }}>
+        <div className="grid-auto-fill-265 gap-3.5">
           {Array.from({ length: 8 }).map((_, i) => <ClientSkeletonCard key={i} />)}
         </div>
       ) : clients.length === 0 ? (
@@ -151,7 +151,7 @@ export default function ClientsPage() {
           {!term && canCreate && <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.addClient")}</Button>}
         </div>
       ) : (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(265px, 1fr))" }}>
+        <div className="grid-auto-fill-265 gap-3.5">
           {clients.map((c, i) => (
             <ClientCard key={c.client_id} client={c} orgId={orgId} onNavigate={() => goToDetail(c.client_id)} onEdit={openEdit} onToggleActive={handleToggleActive} delay={i * 0.03} />
           ))}

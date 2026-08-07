@@ -144,12 +144,12 @@ export default function DashboardPage() {
 
       {/* Main 2-col */}
       {isLoading ? (
-        <div className="grid gap-3.5 mb-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+        <div className="grid-auto-fit-320 gap-3.5 mb-3.5">
           <ChartSkeleton />
           <DashboardStatSkeleton />
         </div>
       ) : (
-        <div className="grid gap-3.5 mb-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+        <div className="grid-auto-fit-320 gap-3.5 mb-3.5">
           <FadeIn duration={0.4}>
             <Card className="p-[22px] min-w-0">
               <div className="flex justify-between items-start mb-[18px] flex-wrap gap-2.5">
@@ -176,7 +176,7 @@ export default function DashboardPage() {
       )}
 
       {/* Bottom row */}
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+      <div className="grid-auto-fit-280 gap-3.5">
         <Card className="p-[22px] min-w-0">
           <TopProductsPanel ranking={ranking} isLoading={isLoading} fmt={fmt} />
         </Card>

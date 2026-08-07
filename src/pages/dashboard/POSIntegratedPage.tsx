@@ -234,14 +234,14 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     <DocumentCurrencyProvider currency={currency}>
       {/* Desktop layout */}
       {isDesktop ? (
-        <div className="flex flex-col bg-background overflow-hidden" style={{ height: "calc(100vh - 56px)" }}>
+        <div className="pos-workspace-height flex flex-col bg-background overflow-hidden">
           <PosHeader
             branchName={sessionCtx.branch_name ?? ""}
             terminalCode={sessionCtx.terminal_code ?? 0}
             userName={user?.firstName ?? user?.name ?? t("pos.cashier")}
             syncStatus={syncStatus}
           />
-          <div className="flex-1 grid overflow-hidden" style={{ gridTemplateColumns: "1fr 360px" }}>
+          <div className="pos-workspace-grid flex-1 grid overflow-hidden">
             <div className="flex flex-col border-r border-border overflow-hidden">
               {leftPane}
             </div>
@@ -250,7 +250,7 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
         </div>
       ) : (
         /* Mobile layout */
-        <div className="flex flex-col bg-background overflow-hidden" style={{ height: "calc(100vh - 56px)" }}>
+        <div className="pos-workspace-height flex flex-col bg-background overflow-hidden">
           <div className="h-12 flex items-center justify-between px-4 border-b border-border bg-card shrink-0">
             <span className="font-display font-bold text-[18px]">
               {sessionCtx.branch_name ?? t("pos.header.fallbackTitle")}

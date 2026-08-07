@@ -216,9 +216,8 @@ export function FiscalInformationSection({
             {showResults && (searchResults.length > 0 || (!loading && searchResults.length === 0)) && createPortal(
               <div
                 ref={dropdownRef}
-                className="z-popover bg-card border border-border rounded-lg shadow-dropdown overflow-hidden max-h-[260px] overflow-y-auto"
+                className="absolute z-popover bg-card border border-border rounded-lg shadow-dropdown overflow-hidden max-h-[260px] overflow-y-auto"
                 style={{
-                  position: "absolute",
                   top: dropdownPosition.top,
                   left: dropdownPosition.left,
                   width: dropdownPosition.width,

@@ -310,12 +310,7 @@ function WelcomeGhost({
   cta: string;
 }) {
   return (
-    <div
-      className="min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12"
-      style={{
-        animation: "welcome-ghost 0.8s cubic-bezier(0.16, 1, 0.3, 1) both",
-      }}
-    >
+    <div className="welcome-ghost-enter min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
       <div className="text-center max-w-[560px]">
         <div className="icon-pill icon-pill-lg icon-pill-primary-soft w-24 h-24 mx-auto mb-7">
           <Icon name="user" size={42} />
@@ -336,12 +331,6 @@ function WelcomeGhost({
         </button>
       </div>
 
-      <style>{`
-        @keyframes welcome-ghost {
-          from { opacity: 0; transform: scale(0.96) translateY(8px); filter: blur(4px); }
-          to   { opacity: 1; transform: scale(1) translateY(0);    filter: blur(0); }
-        }
-      `}</style>
     </div>
   );
 }

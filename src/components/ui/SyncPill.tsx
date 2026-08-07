@@ -20,7 +20,7 @@ export function SyncPill({ state = "online" }: SyncPillProps) {
   const { t } = useLanguage();
   const m = stateMap[state] ?? stateMap.online;
   return (
-    <Badge variant={m.variant} style={{ gap: 6 }}>
+    <Badge variant={m.variant} className="gap-1.5">
       <Icon name={m.icon} size={11} strokeWidth={2.4} />
       {t(m.labelKey)}
     </Badge>

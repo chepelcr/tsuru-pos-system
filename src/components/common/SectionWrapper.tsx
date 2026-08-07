@@ -79,25 +79,21 @@ export function SectionWrapper({
       </button>
 
       {/* Content */}
-      <div
-        className="transition-[max-height] duration-300 ease-in-out"
-        style={{
-          maxHeight: isExpanded ? 9999 : 0,
-          overflow: isExpanded ? "visible" : "hidden",
-        }}
-      >
-        <div className="px-4 py-3.5 flex flex-col gap-3">
-          {loading && (
-            <div className="text-center py-2 text-xs text-muted-foreground">
-              {t("common.loading")}
-            </div>
-          )}
-          {error && (
-            <div className="px-2.5 py-2 bg-destructive/[0.08] rounded-md text-xs text-destructive">
-              {error}
-            </div>
-          )}
-          {!loading && children}
+      <div className="section-collapse" data-open={isExpanded}>
+        <div className="section-collapse-content">
+          <div className="px-4 py-3.5 flex flex-col gap-3">
+            {loading && (
+              <div className="text-center py-2 text-xs text-muted-foreground">
+                {t("common.loading")}
+              </div>
+            )}
+            {error && (
+              <div className="px-2.5 py-2 bg-destructive/[0.08] rounded-md text-xs text-destructive">
+                {error}
+              </div>
+            )}
+            {!loading && children}
+          </div>
         </div>
       </div>
     </div>

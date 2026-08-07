@@ -152,7 +152,7 @@ export default function ProgramsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+        <div className="grid-auto-fill-240 gap-3.5">
           {Array.from({ length: pageSize }).map((_, i) => <ProductSkeletonCard key={i} />)}
         </div>
       ) : programs.length === 0 ? (

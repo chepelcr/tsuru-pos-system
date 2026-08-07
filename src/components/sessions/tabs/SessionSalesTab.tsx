@@ -32,7 +32,7 @@ export function SessionSalesTab({ stands, isLoading }: SessionSalesTabProps) {
                     <div className="skeleton-block h-2.5 w-20 animate-pulse" />
                   </div>
                   <div className="progress progress-thin">
-                    <div className="progress-bar bg-muted/40 animate-pulse" style={{ width: "60%" }} />
+                    <div className="progress-bar bg-muted/40 animate-pulse w-3/5" />
                   </div>
                 </div>
               ))}

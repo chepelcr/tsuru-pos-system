@@ -11,13 +11,13 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 export function Input({ inputSize = "md", className = "", style, ...rest }: InputProps) {
   const szClass = inputSize === "md" ? "input" : `input input-${inputSize}`;
-  return <input className={`${szClass} ${className}`} style={{ width: "100%", ...style }} {...rest} />;
+  return <input className={`${szClass} w-full ${className}`} style={style} {...rest} />;
 }
 
 export function Select({ inputSize = "md", className = "", children, style, ...rest }: SelectProps) {
   const szClass = inputSize === "md" ? "input" : `input input-${inputSize}`;
   return (
-    <select className={`${szClass} ${className}`} style={{ width: "100%", ...style }} {...rest}>
+    <select className={`${szClass} w-full ${className}`} style={style} {...rest}>
       {children}
     </select>
   );

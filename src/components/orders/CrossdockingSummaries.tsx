@@ -1,153 +1,240 @@
 import { Icon } from '@/components/ui';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Crossdocking } from '@/types/order';
+import { type CrossdockingSalePoint, type Order } from '@/types/order';
+import { getReportPaletteProperties } from '@/theme/reportColors';
+
+function value(v: unknown): string {
+  if (v == null) return '';
+  if (typeof v === 'string' || typeof v === 'number') return String(v);
+  return '';
+}
+
+function departmentLabel(department: Order['department']): string {
+  if (!department || typeof department === 'string') return department ?? '';
+  const code = value(department.department_code);
+  const name = value(department.name);
+  return code && name ? `${code} - ${name}` : code || name;
+}
+
+function missingQuantity(quantity: number, sent: number, missing: number): number {
+  return Math.max(Number(missing) || (Number(quantity) || 0) - (Number(sent) || 0), 0);
+}
+
+function salePointTotals(salePoint: CrossdockingSalePoint) {
+  return salePoint.items.reduce(
+    (totals, item) => {
+      const ordered = Number(item.quantity) || 0;
+      const sent = Number(item.sent) || 0;
+      const unitsPerBox = Number(item.units_per_box) || 0;
+      const missing = missingQuantity(ordered, sent, item.missing);
+      return {
+        ordered: totals.ordered + ordered,
+        sent: totals.sent + sent,
+        missing: totals.missing + missing,
+        units: totals.units + sent * unitsPerBox,
+      };
+    },
+    { ordered: 0, sent: 0, missing: 0, units: 0 },
+  );
+}
 
 /**
- * Renders the structured cross-docking data (sale points, item summary, box
- * summary, totals) as native POS tables — an enhancement over the dashboard
- * preview (which only embedded the PDF). All design-system classes.
+ * Native counterpart of orders-be's crossdocking HTML template. It renders the
+ * complete API dataset instead of the PDF's fixed three-row labels and derives
+ * displayed totals from those rows so the summary cannot drift from the table.
  */
-export function CrossdockingSummaries({ crossdocking }: { crossdocking: Crossdocking }) {
+export function CrossdockingSummaries({ order }: { order: Order }) {
   const { t } = useLanguage();
-  const { sale_points, item_summary, box_summary, totals } = crossdocking;
+  const crossdocking = order.crossdocking;
+
+  if (!crossdocking) return null;
+
+  const salePoints = crossdocking.sale_points ?? [];
+  const pointTotals = salePoints.map(salePointTotals);
+  const totals = pointTotals.reduce(
+    (summary, current, index) => ({
+      salePoints: summary.salePoints + 1,
+      lineItems: summary.lineItems + (salePoints[index]?.items.length ?? 0),
+      boxes: summary.boxes + current.sent,
+      units: summary.units + current.units,
+      missing: summary.missing + current.missing,
+    }),
+    { salePoints: 0, lineItems: 0, boxes: 0, units: 0, missing: 0 },
+  );
+
+  const deliveryName = [value(order.delivery_location?.code), value(order.delivery_location?.name)]
+    .filter(Boolean)
+    .join(' - ');
+  const confirmation = value(order.confirmation_number) || value(order.bgm011);
+  const supplierCode = value(order.supplier?.internal_code);
 
   return (
-    <div className="p-5 space-y-5">
-      {/* Totals */}
-      {totals && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <TotalStat label={t('orders.crossdocking.totals.salePoints')} value={totals.total_sale_points} />
-          <TotalStat label={t('orders.crossdocking.totals.items')} value={totals.total_items} />
-          <TotalStat label={t('orders.crossdocking.totals.boxes')} value={totals.total_boxes} />
-          <TotalStat label={t('orders.crossdocking.totals.units')} value={totals.total_units} />
+    <div className="crossdocking-report space-y-5" style={getReportPaletteProperties(order.report_color)}>
+      <section className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="crossdocking-report-hero px-5 py-4 text-center">
+          <div className="t-xs font-semibold uppercase tracking-[0.16em] opacity-80">
+            {t('orders.crossdocking.distributionCenter')}
+          </div>
+          <h2 className="font-display font-bold text-[20px] mt-1">
+            {deliveryName || t('orders.detail.deliveryLocation')}
+          </h2>
+          <div className="t-sm font-semibold mt-1 opacity-90">
+            {t('orders.crossdocking.distributionBySalePoint')}
+          </div>
         </div>
-      )}
 
-      {/* Sale points */}
-      {sale_points?.length > 0 && (
-        <Section icon="store" title={t('orders.crossdocking.salePoints')}>
-          <div className="space-y-3">
-            {sale_points.map((sp) => (
-              <div key={sp.store_code} className="rounded-md border border-border overflow-hidden">
-                <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-muted/30 border-b border-border">
-                  <div className="min-w-0">
-                    <div className="t-body font-semibold truncate">{sp.store_name}</div>
-                    <div className="t-xs text-muted-foreground">{sp.store_code}</div>
-                  </div>
-                  <div className="t-xs text-muted-foreground text-right flex-shrink-0">
-                    <div>{t('orders.crossdocking.totals.boxes')}: {sp.total_boxes}</div>
-                    <div>{t('orders.crossdocking.totals.units')}: {sp.total_units}</div>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="pp-th">{t('orders.lineItems.product')}</th>
-                        <th className="pp-th text-center">{t('orders.crossdocking.unitsPerBox')}</th>
-                        <th className="pp-th text-center">{t('orders.crossdocking.boxes')}</th>
-                        <th className="pp-th text-center">{t('orders.crossdocking.units')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sp.items.map((it) => (
-                        <tr key={`${sp.store_code}-${it.internal_code}`} className="border-b border-border last:border-b-0">
-                          <td className="pp-td">
-                            <div className="font-semibold text-foreground">{it.description}</div>
-                            <div className="t-xs text-muted-foreground">{it.code} · {it.internal_code}</div>
-                          </td>
-                          <td className="pp-td text-center">{it.units_per_box}</td>
-                          <td className="pp-td text-center">{it.boxes}</td>
-                          <td className="pp-td text-center">{it.total_units}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
+          <Metadata label={t('orders.crossdocking.legalName')} value={value(order.supplier?.name)} />
+          <Metadata label={t('orders.crossdocking.confirmation')} value={confirmation} emphasized />
+          <Metadata label={t('orders.crossdocking.supplierCode')} value={supplierCode} />
+          <Metadata label={t('orders.crossdocking.deliveryGln')} value={value(order.delivery_location?.gln)} />
+          <Metadata label={t('orders.crossdocking.purchaseOrder')} value={order.document_number} emphasized />
+          <Metadata label={t('orders.crossdocking.department')} value={departmentLabel(order.department)} />
+        </div>
+      </section>
 
-      {/* Item summary */}
-      {item_summary?.length > 0 && (
-        <Section icon="package" title={t('orders.crossdocking.itemSummary')}>
-          <div className="rounded-md border border-border overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="pp-th">{t('orders.lineItems.product')}</th>
-                  <th className="pp-th text-center">{t('orders.crossdocking.unitsPerBox')}</th>
-                  <th className="pp-th text-center">{t('orders.crossdocking.boxes')}</th>
-                  <th className="pp-th text-center">{t('orders.crossdocking.units')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {item_summary.map((it) => (
-                  <tr key={it.internal_code} className="border-b border-border last:border-b-0">
-                    <td className="pp-td">
-                      <div className="font-semibold text-foreground">{it.description}</div>
-                      <div className="t-xs text-muted-foreground">{it.code} · {it.internal_code}</div>
-                    </td>
-                    <td className="pp-td text-center">{it.units_per_box}</td>
-                    <td className="pp-td text-center">{it.total_boxes}</td>
-                    <td className="pp-td text-center">{it.total_units}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      )}
-
-      {/* Box summary */}
-      {box_summary?.length > 0 && (
-        <Section icon="box" title={t('orders.crossdocking.boxSummary')}>
-          <div className="rounded-md border border-border overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="pp-th">{t('orders.crossdocking.store')}</th>
-                  <th className="pp-th text-center">{t('orders.crossdocking.totals.boxes')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {box_summary.map((b) => (
-                  <tr key={b.store_code} className="border-b border-border last:border-b-0">
-                    <td className="pp-td">
-                      <div className="font-semibold text-foreground">{b.store_name}</div>
-                      <div className="t-xs text-muted-foreground">{b.store_code}</div>
-                    </td>
-                    <td className="pp-td text-center">{b.total_boxes}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-function TotalStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-md border border-border bg-muted/20 px-3.5 py-3">
-      <div className="t-label mb-1">{label}</div>
-      <div className="t-stat">{value ?? 0}</div>
-    </div>
-  );
-}
-
-function Section({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon name={icon} size={14} className="text-accent-rose" />
-        <span className="label-section">{title}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <TotalStat icon="store" label={t('orders.crossdocking.totals.salePoints')} value={totals.salePoints} />
+        <TotalStat icon="package" label={t('orders.crossdocking.totals.items')} value={totals.lineItems} />
+        <TotalStat icon="box" label={t('orders.crossdocking.totals.boxes')} value={totals.boxes} />
+        <TotalStat icon="layers" label={t('orders.crossdocking.totals.units')} value={totals.units} />
+        <TotalStat
+          icon="alertTri"
+          label={t('orders.crossdocking.totals.missing')}
+          value={totals.missing}
+          warning={totals.missing > 0}
+        />
       </div>
-      {children}
+
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Icon name="store" size={15} className="text-accent-rose" />
+          <span className="label-section">{t('orders.crossdocking.salePoints')}</span>
+        </div>
+
+        {salePoints.length > 0 ? (
+          <div className="space-y-4">
+            {salePoints.map((salePoint, pointIndex) => {
+              const pointTotal = pointTotals[pointIndex];
+              return (
+                <article
+                  key={`${salePoint.store_number}-${pointIndex}`}
+                  className="rounded-lg border border-border overflow-hidden bg-card"
+                >
+                  <div className="crossdocking-report-point-header flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <div className="t-xs font-semibold uppercase tracking-wide opacity-80">
+                        {t('orders.crossdocking.salePoint')} {salePoint.store_number}
+                      </div>
+                      <div className="font-display font-bold text-[16px] truncate">
+                        {salePoint.store_name || salePoint.full_name}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-right">
+                      {salePoint.slot_id && (
+                        <span className="rounded-md border border-current/30 px-2 py-1 t-xs font-semibold">
+                          {t('orders.crossdocking.slot')}: {salePoint.slot_id}
+                        </span>
+                      )}
+                      <span className="rounded-md border border-current/30 px-2 py-1 t-xs font-semibold">
+                        {t('orders.crossdocking.box')} {pointIndex + 1} {t('orders.crossdocking.of')} {salePoints.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[820px] border-collapse">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="pp-th">{t('orders.crossdocking.itemCode')}</th>
+                          <th className="pp-th">{t('orders.crossdocking.description')}</th>
+                          <th className="pp-th">{t('orders.crossdocking.originalCode')}</th>
+                          <th className="pp-th text-center">{t('orders.crossdocking.unitsPerBox')}</th>
+                          <th className="pp-th text-center">{t('orders.crossdocking.ordered')}</th>
+                          <th className="pp-th text-center">{t('orders.crossdocking.sent')}</th>
+                          <th className="pp-th text-center">{t('orders.crossdocking.missing')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salePoint.items.map((item, itemIndex) => (
+                          <tr
+                            key={`${salePoint.store_number}-${item.internal_code}-${itemIndex}`}
+                            className="crossdocking-report-row border-b border-border last:border-b-0"
+                          >
+                            <td className="pp-td font-semibold">{item.internal_code || '—'}</td>
+                            <td className="pp-td min-w-[240px]">{item.description || '—'}</td>
+                            <td className="pp-td">{item.original_code || '—'}</td>
+                            <td className="pp-td text-center">{item.units_per_box ?? 0}</td>
+                            <td className="pp-td text-center">{item.quantity ?? 0}</td>
+                            <td className="pp-td text-center font-bold">{item.sent ?? 0}</td>
+                            <td className="pp-td text-center">
+                              <MissingValue value={missingQuantity(item.quantity, item.sent, item.missing)} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="crossdocking-report-total font-bold">
+                          <td className="pp-td text-right" colSpan={4}>
+                            {t('orders.crossdocking.total')}
+                          </td>
+                          <td className="pp-td text-center">{pointTotal.ordered}</td>
+                          <td className="pp-td text-center">{pointTotal.sent}</td>
+                          <td className="pp-td text-center">{pointTotal.missing}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+            {t('orders.crossdocking.noSalePoints')}
+          </div>
+        )}
+      </section>
     </div>
+  );
+}
+
+function Metadata({ label, value: content, emphasized }: { label: string; value: string; emphasized?: boolean }) {
+  return (
+    <div className="bg-card px-4 py-3 min-w-0">
+      <div className="t-label mb-1">{label}</div>
+      <div className={`t-body break-words ${emphasized ? 'font-bold' : 'font-semibold'}`}>{content || '—'}</div>
+    </div>
+  );
+}
+
+function TotalStat({
+  icon,
+  label,
+  value: content,
+  warning,
+}: {
+  icon: string;
+  label: string;
+  value: number;
+  warning?: boolean;
+}) {
+  return (
+    <div className={`rounded-lg border px-3.5 py-3 ${warning ? 'border-warning/30 bg-warning/[0.08]' : 'border-border bg-muted/20'}`}>
+      <div className="flex items-center gap-2 t-label mb-1">
+        <Icon name={icon} size={13} className={warning ? 'text-warning' : 'text-muted-foreground'} />
+        <span>{label}</span>
+      </div>
+      <div className="t-stat">{content}</div>
+    </div>
+  );
+}
+
+function MissingValue({ value: missing }: { value: number }) {
+  if (missing <= 0) return <span className="text-muted-foreground">0</span>;
+  return (
+    <span className="inline-flex min-w-7 justify-center rounded-full bg-warning/15 px-2 py-0.5 font-bold text-warning-foreground">
+      {missing}
+    </span>
   );
 }

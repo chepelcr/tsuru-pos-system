@@ -13,7 +13,7 @@ interface FormFooterProps {
 export function FormFooter({ onCancel, onSubmit, saving, submitLabel, cancelLabel, style }: FormFooterProps) {
   const { t } = useLanguage();
   return (
-    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", ...style }}>
+    <div className="flex gap-2.5 justify-end" style={style}>
       <Button variant="outline" onClick={onCancel} disabled={saving}>
         {cancelLabel ?? t("common.cancel")}
       </Button>

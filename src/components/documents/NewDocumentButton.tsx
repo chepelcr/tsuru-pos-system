@@ -134,10 +134,7 @@ export function NewDocumentButton({
               onClick={() => createDoc(dt)}
               className="w-full px-4 py-2.5 text-left text-[13px] hover:bg-muted flex items-center gap-3 transition-colors"
             >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ background: dt.dotColor }}
-              />
+              <span className={cn('w-2 h-2 rounded-full shrink-0 bg-current', dt.color)} />
               <span className={cn('text-[11px] font-bold', dt.color)}>{dt.short}</span>
               <span>{t(`docTypes.${dt.code}`)}</span>
             </button>

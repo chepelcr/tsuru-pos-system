@@ -37,7 +37,6 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
   const [expanded, setExpanded] = useState(false);
   const isActive = branch.status === 1;
   const typeColorClass = typeOpt?.color === "info" ? "text-info" : "text-primary";
-  const typeBorderColor = `hsl(var(--${typeOpt?.color === "info" ? "info" : "primary"}))`;
 
   const { data: terminalsData } = useQuery({
     queryKey: ["terminals", orgId, branch.code],
@@ -57,8 +56,9 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
   return (
     <FadeIn delay={delay} duration={0.4}>
       <Card
-        className={`fade-up !p-0 overflow-hidden border-l-[3px] ${branch.status === 3 ? "opacity-55" : "opacity-100"}`}
-        style={{ borderLeftColor: isActive ? typeBorderColor : "hsl(var(--border))" }}
+        className={`fade-up !p-0 overflow-hidden border-l-[3px] ${
+          branch.status === 3 ? "opacity-55" : "opacity-100"
+        } ${isActive ? (typeOpt?.color === "info" ? "border-l-info" : "border-l-primary") : "border-l-border"}`}
       >
         {/* Header */}
         <div className="px-5 pt-[18px] pb-3.5">

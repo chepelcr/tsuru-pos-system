@@ -71,7 +71,7 @@ export default function ConfirmationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+        <div className="grid-auto-fill-300 gap-3.5">
           {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
             <ConfirmationCardSkeleton key={i} />
           ))}
@@ -106,7 +106,7 @@ export default function ConfirmationsPage() {
         </div>
       ) : (
         <>
-          <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+          <div className="grid-auto-fill-300 gap-3.5">
             {confirmations.map((c, i) => (
               <FadeIn key={c.confirmation_id ?? c.confirmation_number} delay={i * 0.04} duration={0.3}>
                 <ConfirmationCard

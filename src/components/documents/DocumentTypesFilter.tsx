@@ -104,10 +104,7 @@ export function DocumentTypesFilter({ selectedTypes, onChange }: DocumentTypesFi
                 >
                   {isSelected && <Check size={12} strokeWidth={3} />}
                 </span>
-                <span
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ background: dt.dotColor }}
-                />
+                <span className={cn('w-2 h-2 rounded-full shrink-0 bg-current', dt.color)} />
                 <span className={cn('label-section !text-[10px]', dt.color)}>
                   {dt.short}
                 </span>

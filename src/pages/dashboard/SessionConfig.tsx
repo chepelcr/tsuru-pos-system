@@ -302,7 +302,7 @@ export default function SessionConfig({ onDone, onSuccess, initialSession }: Ses
 
         {/* Tab Content */}
         {tab === "details" && (
-          <div className="grid gap-3.5" style={{ gridTemplateColumns: "1.5fr 1fr" }}>
+          <div className="grid-session gap-3.5">
             <div>
               <SessionTypeSelector
                 sessionType={sessionType}

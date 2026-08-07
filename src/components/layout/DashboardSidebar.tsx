@@ -271,7 +271,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
                     onClick={() => handleCreateDoc(dt)}
                     className="flex items-center gap-2 px-2.5 py-2 bg-transparent border-0 rounded-md cursor-pointer text-xs text-foreground text-left w-full hover:bg-muted"
                   >
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dt.dotColor }} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 bg-current ${dt.color}`} />
                     <span className="font-bold text-[10px] opacity-70">{dt.short}</span>
                     <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{dt.label}</span>
                   </button>

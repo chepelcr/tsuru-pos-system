@@ -5,6 +5,7 @@ import { Spinner, MediaPicker } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { OrgThemeBranding } from "@/types";
+import { EDITOR_COLORS } from "@/theme/editorColors";
 
 // Font and icon option values are data identifiers (not translatable copy, §10.3).
 const FONT_FAMILIES = [
@@ -83,8 +84,8 @@ export function BrandingSettingsForm({
   } = useForm<BrandingValues>({
     resolver: zodResolver(buildSchema(t)),
     defaultValues: {
-      primaryColor: initialValues?.primaryColor || "#e91e63",
-      secondaryColor: initialValues?.secondaryColor || "#9c27b0",
+      primaryColor: initialValues?.primaryColor || EDITOR_COLORS.brandPrimary,
+      secondaryColor: initialValues?.secondaryColor || EDITOR_COLORS.brandSecondary,
       fontFamily: initialValues?.fontFamily || "Inter",
       logoUrl: initialValues?.logoUrl ?? "",
       faviconUrl: initialValues?.faviconUrl ?? "",
@@ -120,7 +121,7 @@ export function BrandingSettingsForm({
           <div className="flex items-center gap-2">
             <input
               type="color"
-              value={HEX_RE.test(field.value) ? field.value : "#000000"}
+              value={HEX_RE.test(field.value) ? field.value : EDITOR_COLORS.black}
               onChange={(e) => field.onChange(e.target.value)}
               className="h-10 w-14 rounded-md border border-border bg-card cursor-pointer flex-shrink-0 p-1"
               aria-label={label}
@@ -147,14 +148,14 @@ export function BrandingSettingsForm({
           name="primaryColor"
           label={t("orgSettings.branding.primaryColor")}
           desc={t("orgSettings.branding.primaryColorDesc")}
-          placeholder="#e91e63"
+          placeholder={EDITOR_COLORS.brandPrimary}
           error={errors.primaryColor?.message}
         />
         <ColorRow
           name="secondaryColor"
           label={t("orgSettings.branding.secondaryColor")}
           desc={t("orgSettings.branding.secondaryColorDesc")}
-          placeholder="#9c27b0"
+          placeholder={EDITOR_COLORS.brandSecondary}
           error={errors.secondaryColor?.message}
         />
       </div>

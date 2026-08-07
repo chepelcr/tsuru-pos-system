@@ -11,6 +11,7 @@ import {
   type CategoryRequestPayload,
 } from "@/hooks/useCategories";
 import type { Category } from "@/types";
+import { EDITOR_COLORS } from "@/theme/editorColors";
 
 interface CategoryDrawerFormProps {
   open: boolean;
@@ -30,12 +31,12 @@ interface CategoryDrawerFormProps {
  */
 export function getContrastingColor(backgroundColor: string): string {
   const hex = backgroundColor.replace("#", "");
-  if (hex.length < 6) return "#1a1a1a";
+  if (hex.length < 6) return EDITOR_COLORS.darkText;
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
   const b = parseInt(hex.substr(4, 2), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? "#1a1a1a" : "#ffffff";
+  return luminance > 0.5 ? EDITOR_COLORS.darkText : EDITOR_COLORS.white;
 }
 
 interface FormData {
@@ -53,8 +54,8 @@ const DEFAULTS: FormData = {
   name: "",
   slug: "",
   description: "",
-  background_color: "#fce7f3",
-  button_color: "#e91e63",
+  background_color: EDITOR_COLORS.categoryBackground,
+  button_color: EDITOR_COLORS.brandPrimary,
   image1_url: "",
   image2_url: "",
   sort_order: 0,

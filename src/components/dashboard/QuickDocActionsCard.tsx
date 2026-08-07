@@ -9,23 +9,17 @@ import { Card, Icon } from "@/components/ui";
 interface ActionButtonProps {
   label: string;
   icon: string;
-  accent: string;
+  accentClass: string;
   onClick: () => void;
 }
 
-function ActionButton({ label, icon, accent, onClick }: ActionButtonProps) {
+function ActionButton({ label, icon, accentClass, onClick }: ActionButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="flex-1 min-w-0 flex flex-col items-center justify-center gap-2 px-3 py-4 bg-card border border-border rounded-lg cursor-pointer transition-all hover:-translate-y-px"
-      style={{ borderColor: undefined }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = accent; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = ""; }}
+      className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-2 px-3 py-4 bg-card border border-border rounded-lg cursor-pointer transition-all hover:-translate-y-px ${accentClass}`}
     >
-      <div
-        className="w-9 h-9 rounded-lg text-white flex items-center justify-center"
-        style={{ background: accent }}
-      >
+      <div className="action-icon w-9 h-9 rounded-lg text-white flex items-center justify-center">
         <Icon name={icon} size={18} />
       </div>
       <span className="text-xs font-semibold font-display text-foreground text-center">
@@ -71,7 +65,7 @@ export function QuickDocActionsCard() {
         <ActionButton
           label="Crear factura"
           icon="fileText"
-          accent="hsl(var(--success))"
+          accentClass="hover:border-success [&_.action-icon]:bg-success"
           onClick={() => openNewDoc('01')}
         />
         )}
@@ -79,14 +73,14 @@ export function QuickDocActionsCard() {
         <ActionButton
           label="Crear tiquete"
           icon="cash"
-          accent="hsl(var(--info))"
+          accentClass="hover:border-info [&_.action-icon]:bg-info"
           onClick={() => openNewDoc('04')}
         />
         )}
         <ActionButton
           label="Ver documentos"
           icon="layers"
-          accent="hsl(var(--primary))"
+          accentClass="hover:border-primary [&_.action-icon]:bg-primary"
           onClick={() => setLocation(ROUTES.DASHBOARD_DOCUMENTS)}
         />
       </div>

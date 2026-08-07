@@ -1,10 +1,11 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { REPORT_COLOR_OPTIONS, type ReportColorScheme } from '@/types/order';
+import { type OrderDepartment } from '@/types/order';
+import { REPORT_COLOR_OPTIONS, type ReportColorScheme } from '@/theme/reportColors';
 
 /**
  * Report-color scheme picker. The swatch backgrounds use data-driven inline
  * `style={{ background: option.hex }}` — the legit CLAUDE.md §3.6 exception
- * (hex literals live only in REPORT_COLOR_OPTIONS in types/order.ts).
+ * (palette values live only in the shared report theme).
  */
 
 interface ReportColorSelectorProps {
@@ -13,9 +14,10 @@ interface ReportColorSelectorProps {
 }
 
 /** Default color derived from department: 22 → orange, 26 → green_alt, else green. */
-export function getDefaultColorForDepartment(dept: string): ReportColorScheme {
-  if (dept === '22') return 'orange';
-  if (dept === '26') return 'green_alt';
+export function getDefaultColorForDepartment(dept: string | OrderDepartment | null): ReportColorScheme {
+  const code = typeof dept === 'string' ? dept : dept?.department_code;
+  if (code === '22') return 'orange';
+  if (code === '26') return 'green_alt';
   return 'green';
 }
 

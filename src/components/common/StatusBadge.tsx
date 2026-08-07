@@ -14,7 +14,7 @@ export function StatusBadge({ active, activeLabel, inactiveLabel, showDot = true
   const resolvedInactive = inactiveLabel ?? t("common.inactive");
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div className="flex items-center gap-1.5">
       {showDot && (
         <span className={`status-dot status-dot-${active ? "success" : "warning"}`} />
       )}

@@ -7,11 +7,9 @@ interface DashboardToggleButtonProps {
 
 export function DashboardToggleButton({ collapsed, onClick }: DashboardToggleButtonProps) {
   return (
-    <>
       <button
-        className="dashboard-sidebar-toggle"
+        className={`dashboard-sidebar-toggle ${collapsed ? "left-0 hover:left-1.5" : "left-[220px] hover:left-60"}`}
         onClick={onClick}
-        style={{ left: collapsed ? 0 : 220 }}
         aria-label={collapsed ? "Show sidebar" : "Hide sidebar"}
       >
         <Icon
@@ -20,13 +18,5 @@ export function DashboardToggleButton({ collapsed, onClick }: DashboardToggleBut
           className="text-muted-foreground"
         />
       </button>
-
-      <style>{`
-        .dashboard-sidebar-toggle:hover {
-          left: ${collapsed ? '6' : '240'}px !important;
-          background: hsl(var(--accent)) !important;
-        }
-      `}</style>
-    </>
   );
 }

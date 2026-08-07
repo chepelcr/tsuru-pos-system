@@ -127,7 +127,7 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
       )}
 
       {/* Hero KPIs */}
-      <div className="grid gap-3.5 mb-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+      <div className="grid-auto-fit-220 gap-3.5 mb-5">
         {/* Main KPI */}
         <Card className="p-[22px] !border-primary/30 bg-gradient-to-br from-primary/[0.12] to-primary/[0.02]">
           <div className="t-label !text-primary mb-1.5">{t("report.grossIncome")}</div>

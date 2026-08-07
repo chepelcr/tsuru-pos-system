@@ -53,7 +53,7 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
   return (
     <OverlayPortal>
     <div className="fixed inset-0 z-drawer-modal bg-foreground/50 flex items-center justify-center p-4" onClick={() => { if (isTopLayer()) onClose(); }}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(event) => event.stopPropagation()} className="w-full max-w-lg rounded-xl bg-card border border-border shadow-xl overflow-hidden flex flex-col outline-none" style={{ maxHeight: '88vh' }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(event) => event.stopPropagation()} className="document-action-panel w-full max-w-lg rounded-xl bg-card border border-border shadow-modal overflow-hidden flex flex-col outline-none">
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-border flex items-center justify-between shrink-0">
           <span id={titleId} className="font-display font-bold text-[16px]">{viewLabel(view)}</span>

@@ -135,11 +135,14 @@ Toggled via `class="dark"` on `<html>` (managed by `useDarkMode` hook). Every CS
 
 ### 3.6 Legitimate remaining inline styles
 
-A few cases still use inline `style={{}}`:
+`pnpm check:styles` rejects static JSX style properties and application-owned
+hex literals outside `src/theme`. Remaining inline `style={{}}` usage must be
+genuinely runtime-driven:
 1. **Dynamic widths** computed from data (e.g. `style={{ width: \`${pct}%\` }}` for progress bars)
 2. **SVG attributes** in `SalesChart.tsx` — `stroke`, `fill`, `stopColor` require actual values
 3. **Prop fallback defaults** in `Drawer`, `DrawerHeader`, `StatCard`, `IconPill` — these accept caller-supplied colors and fall back to CSS var defaults
 4. **Dynamic CSS-var name interpolation** — `` style={{ background: `hsl(var(--${color}))` }} `` where `color` is data-driven
+5. **Order report palettes** — cross-docking report colors are centralized in `src/theme/reportColors.ts`, injected once as `--report-*` variables, and consumed by shared `.crossdocking-report-*` classes so the native view stays aligned with orders-be output
 
 These are OK because they're still design-system-driven. **Do not** add new inline styles for static values.
 

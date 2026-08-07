@@ -51,6 +51,14 @@
   --accent-rose-border: 32 53% 64% / 0.2;
   --accent-rose-shadow: 0 4px 20px hsl(var(--accent-rose) / 0.35);
 
+  /* Canonical Hacienda document accents. */
+  --doc-fe: 142 71% 45%;
+  --doc-te: 217 91% 60%;
+  --doc-nc: 0 84% 60%;
+  --doc-nd: 48 96% 47%;
+  --doc-fc: 271 81% 56%;
+  --doc-fexp: 239 84% 67%;
+
   /* Z-index scale */
   --z-dropdown: 30;
   --z-overlay: 40;
@@ -480,6 +488,26 @@
   position: absolute;
   left: -24px; right: -8px; top: -8px; bottom: -8px;
 }
+.dashboard-sidebar-toggle:hover { background: hsl(var(--accent)); }
+
+/* Route and item entrance animations live here rather than in per-render style tags. */
+.page-transition-enter { animation: pageTransitionIn 0.5s ease-out; }
+.page-transition-exit { animation: fadeOut 0.15s ease-out; opacity: 0; }
+.fade-in-up {
+  animation: fadeInUp var(--fade-duration, 0.6s) ease-out var(--fade-delay, 0s) both;
+}
+@keyframes pageTransitionIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes welcome-ghost {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); filter: blur(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+}
 
 /* Drawer animations (used by mobile drawers) */
 .drawer-overlay-enter { animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -618,6 +646,90 @@
     background: hsl(var(--destructive) / 0.1);
     border: 1px solid hsl(var(--destructive) / 0.25);
     color: hsl(var(--destructive));
+  }
+
+  /* Document-type accents: canonical classes consumed by navigation and tabs. */
+  .text-doc-fe { color: hsl(var(--doc-fe)); }
+  .text-doc-te { color: hsl(var(--doc-te)); }
+  .text-doc-nc { color: hsl(var(--doc-nc)); }
+  .text-doc-nd { color: hsl(var(--doc-nd)); }
+  .text-doc-fc { color: hsl(var(--doc-fc)); }
+  .text-doc-fexp { color: hsl(var(--doc-fexp)); }
+
+  /* Reusable responsive grids; min(100%, …) prevents narrow-screen overflow. */
+  .grid-auto-fit-120 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); }
+  .grid-auto-fit-160 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); }
+  .grid-auto-fit-220 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+  .grid-auto-fit-280 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+  .grid-auto-fit-300 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+  .grid-auto-fit-320 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .grid-auto-fill-140 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); }
+  .grid-auto-fill-160 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); }
+  .grid-auto-fill-220 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); }
+  .grid-auto-fill-240 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+  .grid-auto-fill-265 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 265px), 1fr)); }
+  .grid-auto-fill-280 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+  .grid-auto-fill-300 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .grid-auto-fill-320 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+
+  .grid-station-assignment { display: grid; grid-template-columns: 2fr 1.5fr 1fr auto; }
+  .pos-workspace-height { height: calc(100dvh - 56px); }
+  .pos-workspace-grid { grid-template-columns: minmax(0, 1fr) 360px; }
+  .document-action-panel { max-height: 88dvh; }
+  .welcome-ghost-enter { animation: welcome-ghost 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .collapse-grid {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 300ms ease-out, opacity 300ms ease-out;
+  }
+  .collapse-grid[data-open="true"] { grid-template-rows: 1fr; opacity: 1; }
+  .section-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease-in-out; }
+  .section-collapse[data-open="true"] { grid-template-rows: 1fr; }
+  .section-collapse[data-open="true"] > .section-collapse-content { overflow: visible; }
+  .section-collapse-content { min-height: 0; overflow: hidden; }
+
+  .documents-toolbar-desktop { display: none; min-width: 0; }
+  .documents-drawer-toggle { display: none; }
+  @media (min-width: 769px) {
+    .documents-toolbar-desktop { display: flex; align-items: center; }
+    .documents-drawer-toggle.has-overflow { display: inline-flex; }
+  }
+  @media (max-width: 768px) {
+    .documents-drawer-toggle { display: inline-flex; }
+    .session-actions { flex-direction: column; }
+  }
+
+  /* Cross-docking report palette is injected once on `.crossdocking-report`. */
+  .crossdocking-report-hero {
+    background-color: var(--report-header);
+    color: var(--report-header-text);
+  }
+  .crossdocking-report-point-header {
+    background-color: var(--report-header-light);
+    color: var(--report-header-light-text);
+  }
+  .crossdocking-report-row {
+    background-color: var(--report-row-light);
+    color: var(--report-row-text);
+  }
+  .crossdocking-report-row:nth-child(even) {
+    background-color: var(--report-row-alternate);
+  }
+  .crossdocking-report-total {
+    background-color: var(--report-header-medium);
+    color: var(--report-header-text);
+  }
+  .order-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0.875rem;
+  }
+  @media (min-width: 720px) {
+    .order-detail-grid {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
   }
 }
 

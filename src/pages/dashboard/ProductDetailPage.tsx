@@ -284,7 +284,7 @@ export default function ProductDetailPage({ productId }: Props) {
         </Card>
 
         {/* Info sections placeholder */}
-        <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+        <div className="grid-auto-fit-300 gap-3.5">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="px-6 py-5">
               <div className="skeleton-block animate-pulse h-3 w-28 rounded mb-4" />
@@ -398,7 +398,7 @@ export default function ProductDetailPage({ productId }: Props) {
       </Card>
 
       {/* Info sections */}
-      <div className="grid gap-3.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+      <div className="grid-auto-fit-300 gap-3.5">
         {/* Basic Info */}
         <Section title="Información básica" icon="info">
           <InfoRow icon="dollarSign" label="Precio" value={`₡${product.price.toLocaleString("es-CR")}`} />

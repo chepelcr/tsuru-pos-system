@@ -90,10 +90,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
       {/* Content area — the ONLY scrollable region */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {isLoading ? (
-          <div
-            className="grid gap-3 p-4"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-          >
+          <div className="grid-auto-fill-280 gap-3 p-4">
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
               <DocumentCardSkeleton key={i} />
             ))}
@@ -132,10 +129,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
           </div>
         ) : (
           <div className="p-4">
-            <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-            >
+            <div className="grid-auto-fill-280 gap-3">
               {docs.map((doc, i) => (
                 <FadeIn key={doc.sale_id} delay={i * 0.04} duration={0.3}>
                   <DocumentCard

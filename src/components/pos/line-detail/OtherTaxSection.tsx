@@ -324,10 +324,7 @@ function TaxCard({
 
       {needsSpecialFields && (
         <>
-          <div
-            className="grid gap-2"
-            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}
-          >
+          <div className="grid-auto-fit-120 gap-2">
             {taxAmounts.length > 0 && (
               <div>
                 <FormLabel>{t('lineDetail.taxAmount')}</FormLabel>

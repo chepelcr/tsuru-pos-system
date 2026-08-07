@@ -47,10 +47,7 @@ export function PageTransition({ children }: PageTransitionProps) {
 
   return (
     <div
-      style={{
-        animation: transitionStage === "fadeOut" ? "fadeOut 0.15s ease-out" : "fadeIn 0.5s ease-out",
-        opacity: transitionStage === "fadeOut" ? 0 : 1,
-      }}
+      className={transitionStage === "fadeOut" ? "page-transition-exit" : "page-transition-enter"}
       onAnimationEnd={() => {
         if (transitionStage === "fadeOut") {
           setDisplayLocation(location);
@@ -59,26 +56,6 @@ export function PageTransition({ children }: PageTransitionProps) {
       }}
     >
       {children}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fadeOut {
-          from {
-            opacity: 1;
-          }
-          to {
-            opacity: 0;
-          }
-        }
-      `}</style>
     </div>
   );
 }

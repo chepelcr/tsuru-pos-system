@@ -182,11 +182,7 @@ export default function StationAssignments({
                         );
 
                         return (
-                          <div
-                            key={memberIndex}
-                            className="grid gap-2.5 items-end"
-                            style={{ gridTemplateColumns: "2fr 1.5fr 1fr auto" }}
-                          >
+                          <div key={memberIndex} className="grid-station-assignment gap-2.5 items-end">
                             <div>
                               <label className="label !text-[10px]">{t("session.member")}</label>
                               <select
