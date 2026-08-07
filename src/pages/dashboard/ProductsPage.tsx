@@ -26,7 +26,7 @@ type ProductStatusValue = "1" | "2" | "all";
 const PRODUCT_STATUS_OPTIONS: readonly StatusOption<ProductStatusValue>[] = [
   { value: "1", labelKey: "products.statusActive" },
   { value: "2", labelKey: "products.statusInactive" },
-  { value: "all", labelKey: "products.statusAll" },
+  { value: "all", labelKey: "common.all" },
 ];
 
 
@@ -399,7 +399,7 @@ export default function ProductsPage() {
         statusValue={statusFilter}
         onStatusChange={(next) => { setStatusFilter(next); setPage(1); }}
         statusOptions={PRODUCT_STATUS_OPTIONS}
-        statusAriaLabelKey="products.statusFilter"
+        statusAriaLabelKey="common.status"
         secondary={
           <select
             className="pp-input h-10 w-full"
@@ -414,7 +414,7 @@ export default function ProductsPage() {
         }
         onAdvancedClick={() => setShowAdvanced(true)}
         hasAdvancedFilters={hasAdvancedFilters}
-        advancedLabelKey="products.advancedFilters"
+        advancedLabelKey="common.filters"
       />
 
       {/* Bulk actions bar */}

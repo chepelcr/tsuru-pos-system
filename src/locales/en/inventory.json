@@ -19,8 +19,5 @@
   "inv.cashLabel": "Initial cash",
   "inv.stockValue": "Stock value",
   "inv.items": "{n} items",
-  "inv.saveError": "Error saving. Please try again.",
-  "inv.saving": "Saving…",
-  "inv.cancel": "Cancel",
-  "inv.confirm": "Confirm"
+  "inv.saveError": "Error saving. Please try again."
 }

@@ -38,6 +38,13 @@ function salePointTotals(salePoint: CrossdockingSalePoint) {
   );
 }
 
+function productIdentity(item: CrossdockingSalePoint['items'][number], fallback: string): string {
+  return value(item.internal_code).trim()
+    || value(item.original_code).trim()
+    || value(item.description).trim()
+    || fallback;
+}
+
 /**
  * Native counterpart of orders-be's crossdocking HTML template. It renders the
  * complete API dataset instead of the PDF's fixed three-row labels and derives
@@ -51,15 +58,19 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
 
   const salePoints = crossdocking.sale_points ?? [];
   const pointTotals = salePoints.map(salePointTotals);
+  const uniqueProducts = new Set(
+    salePoints.flatMap((salePoint, pointIndex) =>
+      salePoint.items.map((item, itemIndex) => productIdentity(item, `${pointIndex}-${itemIndex}`)),
+    ),
+  ).size;
   const totals = pointTotals.reduce(
-    (summary, current, index) => ({
+    (summary, current) => ({
       checkouts: summary.checkouts + 1,
-      lineItems: summary.lineItems + (salePoints[index]?.items.length ?? 0),
       packages: summary.packages + current.sent,
       units: summary.units + current.units,
       missing: summary.missing + current.missing,
     }),
-    { checkouts: 0, lineItems: 0, packages: 0, units: 0, missing: 0 },
+    { checkouts: 0, packages: 0, units: 0, missing: 0 },
   );
 
   const deliveryName = [value(order.delivery_location?.code), value(order.delivery_location?.name)]
@@ -95,7 +106,7 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <TotalStat icon="store" label={t('orders.crossdocking.totals.salePoints')} value={totals.checkouts} />
-        <TotalStat icon="package" label={t('orders.crossdocking.totals.items')} value={totals.lineItems} />
+        <TotalStat icon="package" label={t('orders.crossdocking.totals.items')} value={uniqueProducts} />
         <TotalStat icon="box" label={t('orders.crossdocking.totals.boxes')} value={totals.packages} />
         <TotalStat icon="layers" label={t('orders.crossdocking.totals.units')} value={totals.units} />
         <TotalStat
@@ -147,7 +158,7 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
                       <thead>
                         <tr className="border-b border-border bg-muted/30">
                           <th className="pp-th">{t('orders.crossdocking.itemCode')}</th>
-                          <th className="pp-th">{t('orders.crossdocking.description')}</th>
+                          <th className="pp-th">{t('common.description')}</th>
                           <th className="pp-th">{t('orders.crossdocking.originalCode')}</th>
                           <th className="pp-th text-center">{t('orders.crossdocking.unitsPerBox')}</th>
                           <th className="pp-th text-center">{t('orders.crossdocking.ordered')}</th>
@@ -176,7 +187,7 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
                       <tfoot>
                         <tr className="crossdocking-report-total font-bold">
                           <td className="pp-td text-right" colSpan={4}>
-                            {t('orders.crossdocking.total')}
+                            {t('common.total')}
                           </td>
                           <td className="pp-td text-center">{pointTotal.ordered}</td>
                           <td className="pp-td text-center">{pointTotal.sent}</td>

@@ -69,7 +69,7 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
     onChange({ ...value, neighborhood_id: id });
   };
 
-  const selectPlaceholder = (loading: boolean) => (loading ? t("common.loading") : t("location.select"));
+  const selectPlaceholder = (loading: boolean) => (loading ? t("common.loading") : t("placeholder.selectOption"));
 
   return (
     <div className="flex flex-col gap-3.5">

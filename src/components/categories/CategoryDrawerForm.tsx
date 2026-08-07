@@ -143,7 +143,7 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
       footer={
         <div className="flex gap-2.5 px-6 py-4 justify-end">
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
-            {t("categories.form.cancel")}
+            {t("common.cancel")}
           </Button>
           {canSubmit && (
             <Button variant="primary" size="sm" onClick={() => onSubmit()} disabled={saving}>
@@ -159,7 +159,7 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
         onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
         className="p-6 flex flex-col gap-4"
       >
-        <FormField label={t("categories.form.name")} required error={formState.errors.name?.message}>
+        <FormField label={t("common.name")} required error={formState.errors.name?.message}>
           <Input
             placeholder={t("categories.form.namePlaceholder")}
             {...register("name", {
@@ -169,11 +169,11 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
           />
         </FormField>
 
-        <FormField label={t("categories.form.slug")}>
+        <FormField label={t("categories.slug")}>
           <Input placeholder={t("categories.form.slugPlaceholder")} disabled {...register("slug")} />
         </FormField>
 
-        <FormField label={t("categories.form.description")}>
+        <FormField label={t("common.description")}>
           <textarea
             className="input w-full min-h-[80px]"
             placeholder={t("categories.form.descriptionPlaceholder")}
@@ -182,7 +182,7 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
         </FormField>
 
         <div className="grid grid-cols-2 gap-4">
-          <FormField label={t("categories.form.backgroundColor")}>
+          <FormField label={t("categories.backgroundColor")}>
             {/* Data-driven color value (persisted to BE) — §3.6 allows the
                 native color input; auto-derive a contrasting button color. */}
             <input
@@ -193,7 +193,7 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
               })}
             />
           </FormField>
-          <FormField label={t("categories.form.buttonColor")}>
+          <FormField label={t("categories.buttonColor")}>
             <input type="color" className="input w-full h-10 p-1" {...register("button_color")} />
           </FormField>
         </div>
@@ -213,7 +213,7 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
           </FormField>
         </div>
 
-        <FormField label={t("categories.form.sortOrder")}>
+        <FormField label={t("categories.order")}>
           <Input
             type="number"
             placeholder={t("categories.form.sortOrderPlaceholder")}

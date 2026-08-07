@@ -235,7 +235,7 @@ export default function TemplatesPage() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="search"
-            title={t("storefront.noResults")}
+            title={t("common.noResults")}
             description={t("storefront.noResultsDescription")}
           />
         ) : (

@@ -220,9 +220,9 @@ export function RoleDrawerForm({
               disabled={saving}
             >
               {saving
-                ? t("roles.form.saving")
+                ? t("common.saving")
                 : isEdit
-                  ? t("roles.form.save")
+                  ? t("common.save")
                   : t("roles.form.create")}
             </Button>
           )}
@@ -240,7 +240,7 @@ export function RoleDrawerForm({
 
         {readOnly && sourceRole && (
           <div>
-            <div className="label-section mb-1">{t("roles.form.description")}</div>
+            <div className="label-section mb-1">{t("common.description")}</div>
             <p className="t-sm text-muted-foreground">
               {roleDescription(t, sourceRole.name, sourceRole.description) ||
                 t("roles.form.noDescription")}
@@ -250,7 +250,7 @@ export function RoleDrawerForm({
 
         {!readOnly && (
           <>
-            <FormField label={t("roles.form.name")} required>
+            <FormField label={t("common.name")} required>
               <Input
                 value={displayName}
                 placeholder={t("roles.form.namePlaceholder")}
@@ -258,7 +258,7 @@ export function RoleDrawerForm({
               />
             </FormField>
 
-            <FormField label={t("roles.form.description")}>
+            <FormField label={t("common.description")}>
               <textarea
                 className="input min-h-[72px] w-full resize-y"
                 value={description}

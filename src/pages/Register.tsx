@@ -295,7 +295,7 @@ export default function Register() {
                 </div>
 
                 <Button type="submit" variant="primary" className="w-full mt-1" iconRight="arrowRight">
-                  {t("auth.register.continue")}
+                  {t("common.continue")}
                 </Button>
               </form>
             )}
@@ -371,7 +371,7 @@ export default function Register() {
                     onClick={goBackToStep1}
                     disabled={submitting}
                   >
-                    {t("auth.register.back")}
+                    {t("common.back")}
                   </Button>
                   <Button type="submit" variant="primary" className="flex-1" disabled={submitting}>
                     {submitting && <Spinner size={16} />}

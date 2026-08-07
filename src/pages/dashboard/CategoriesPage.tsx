@@ -76,7 +76,7 @@ export default function CategoriesPage() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder={t("categories.searchPlaceholder")}
+          placeholder={t("common.search")}
         />
       </div>
 
@@ -120,11 +120,11 @@ export default function CategoriesPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="search"
-          title={t("categories.noResults")}
+          title={t("common.noResults")}
           description={t("categories.noResultsDescription")}
           action={
             <Button variant="outline" size="sm" onClick={() => setSearch("")}>
-              {t("categories.clearSearch")}
+              {t("common.clear")}
             </Button>
           }
         />

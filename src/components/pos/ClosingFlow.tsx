@@ -118,7 +118,7 @@ export default function ClosingFlow({
         <button
           className="btn btn-ghost btn-sm btn-icon"
           onClick={onClose}
-          aria-label={t("closing.back")}
+          aria-label={t("common.back")}
         >
           <Icon name="arrowLeft" size={18} />
         </button>
@@ -418,7 +418,7 @@ export default function ClosingFlow({
               onClick={() => setStep((s) => s - 1)}
               className="flex-[0.8]"
             >
-              <Icon name="arrowLeft" size={16} /> {t("closing.back")}
+              <Icon name="arrowLeft" size={16} /> {t("common.back")}
             </Button>
           )}
           {step < 3 ? (
@@ -429,7 +429,7 @@ export default function ClosingFlow({
               disabled={step === 1 && filledCount < activeProducts.length}
               className="flex-1"
             >
-              {t("closing.continue")} <Icon name="arrowRight" size={16} />
+              {t("common.continue")} <Icon name="arrowRight" size={16} />
             </Button>
           ) : (
             <Button

@@ -308,7 +308,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
 
       {/* Sort */}
       <div className="space-y-1">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t('documents.sort.label')}</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t('common.sortBy')}</label>
         <select
           value={local.sort ?? ''}
           onChange={(e) => patch({ sort: e.target.value || undefined })}

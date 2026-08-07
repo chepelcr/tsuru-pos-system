@@ -69,7 +69,7 @@ export function ProductGridView({
                 />
               </div>
               <div className="absolute top-2 right-2 flex gap-1">
-                {p.status === 0 && <Badge variant="secondary">{t("products.inactive")}</Badge>}
+                {p.status === 0 && <Badge variant="secondary">{t("common.inactive")}</Badge>}
                 {lowStock(p) && <Badge variant="warning">{t("products.stock", { n: String(p.stock_quantity) })}</Badge>}
               </div>
             </div>

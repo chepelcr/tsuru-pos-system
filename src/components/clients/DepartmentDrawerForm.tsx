@@ -89,7 +89,7 @@ export function DepartmentDrawerForm({
           />
         </FormField>
 
-        <FormField label={t("departments.fields.name")}>
+        <FormField label={t("common.name")}>
           <input
             className="pp-input w-full"
             value={form.name ?? ""}

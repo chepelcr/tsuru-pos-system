@@ -111,7 +111,7 @@ export function TaxesTab({
                 value={ivaTax?.code ?? ''}
                 onChange={(e) => setIva({ code: e.target.value || undefined })}
               >
-                <option value="">{t('checkout.receiver.idTypePlaceholder')}</option>
+                <option value="">{t('placeholder.selectOption')}</option>
                 {(taxTypes ?? [])
                   .filter((tt: any) => IVA_CODES.includes(tt.code))
                   .map((tt: any) => (

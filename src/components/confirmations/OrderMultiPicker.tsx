@@ -77,7 +77,7 @@ export function OrderMultiPicker({ orgId, value, onChange }: OrderMultiPickerPro
         <input
           type="text"
           className="pp-input w-full pl-9"
-          placeholder={t('confirmations.searchOrders')}
+          placeholder={t('common.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

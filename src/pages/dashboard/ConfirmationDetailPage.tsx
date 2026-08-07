@@ -198,7 +198,7 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
               message: t('orders.status.cancelConfirmDescription'),
               variant: 'destructive',
               confirmLabel: t('orders.status.cancelConfirmYes'),
-              cancelLabel: t('orders.status.cancelConfirmNo'),
+              cancelLabel: t('common.no'),
               onConfirm: () => changeStatus('cancelled'),
             }),
         }
@@ -295,14 +295,14 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm btn-icon text-muted-foreground hover:text-destructive disabled:opacity-40"
-                      aria-label={t('confirmations.removeOrder')}
+                      aria-label={t('common.remove')}
                       disabled={removeOrder.isPending}
                       onClick={() =>
                         confirm({
-                          title: t('confirmations.removeOrder'),
+                          title: t('common.remove'),
                           message: t('confirmations.removeOrder.confirm'),
                           variant: 'destructive',
-                          confirmLabel: t('confirmations.removeOrder'),
+                          confirmLabel: t('common.remove'),
                           cancelLabel: t('common.cancel'),
                           onConfirm: () => handleRemoveOrder(order.document_number),
                         })

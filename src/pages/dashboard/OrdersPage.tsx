@@ -112,7 +112,7 @@ function OrderListCard({ order, onClick }: { order: Order; onClick: () => void }
       )}
 
       <div className="pt-3 border-t border-border flex items-center justify-between">
-        <span className="t-sm text-muted-foreground">{t('orders.total')}</span>
+        <span className="t-sm text-muted-foreground">{t('common.total')}</span>
         <span className="t-stat">{fmt(order.grand_total)}</span>
       </div>
     </Card>
@@ -207,7 +207,7 @@ export default function OrdersPage() {
         searchPlaceholderKey="orders.searchPlaceholder"
         onAdvancedClick={() => setFiltersOpen(true)}
         hasAdvancedFilters={hasAdvancedFilters}
-        advancedLabelKey="orders.filters.title"
+        advancedLabelKey="common.filters"
       />
 
       {isLoading ? (
@@ -233,7 +233,7 @@ export default function OrdersPage() {
         <div className="py-12">
           <EmptyState
             icon="bag"
-            title={hasAnyFilter ? t('orders.empty.filteredTitle') : t('orders.empty.title')}
+            title={hasAnyFilter ? t('common.noResults') : t('orders.empty.title')}
             description={
               hasAnyFilter ? t('orders.empty.filteredDescription') : t('orders.empty.description')
             }

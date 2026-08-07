@@ -38,7 +38,7 @@ export function CrossdockingUploadDialog({ open, onClose, order, orgId }: Crossd
 
   const handleUpload = async () => {
     if (!file) return;
-    add({ source: 'fe', level: 'info', titleKey: 'orders.crossdocking.uploading' });
+    add({ source: 'fe', level: 'info', titleKey: 'common.uploading' });
     try {
       await upload.mutateAsync({ file, color });
       add({ source: 'fe', level: 'info', titleKey: 'orders.crossdocking.uploadSuccess' });
@@ -74,7 +74,7 @@ export function CrossdockingUploadDialog({ open, onClose, order, orgId }: Crossd
             onClick={handleUpload}
             disabled={upload.isPending || !file}
           >
-            {upload.isPending ? t('orders.crossdocking.uploading') : t('orders.crossdocking.upload')}
+            {upload.isPending ? t('common.uploading') : t('orders.crossdocking.upload')}
           </Button>
         </div>
       }

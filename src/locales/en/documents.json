@@ -1,6 +1,5 @@
 {
   "documents.searchPlaceholder": "Search by number, name…",
-  "documents.advancedFilters": "Filters",
   "documents.validation": "Validation",
   "documents.validationHacienda": "Tax Authority Validation",
   "documents.validationReceiver": "Receiver validation",
@@ -13,7 +12,6 @@
   "documents.closeTab": "Close tab",
   "documents.unsavedChanges": "Unsaved changes",
   "documents.newDocument": "Create document",
-  "documents.newShort": "New",
   "documents.drawer.openHeader": "Open",
   "documents.drawer.untabbedHeader": "Untabbed",
   "documents.drawer.emptyDesktop": "All open documents are already in the top bar.",
@@ -29,7 +27,6 @@
   "documents.types.allTypes": "All document types",
   "documents.types.types": "Types",
   "documents.types.count": "{count} types",
-  "documents.sort.label": "Sort by",
   "documents.sort.dateDesc": "Date desc. (default)",
   "documents.sort.dateAsc": "Date asc.",
   "documents.sort.amountDesc": "Amount desc.",

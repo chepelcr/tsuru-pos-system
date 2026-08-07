@@ -128,7 +128,7 @@ export function CartSidebar({
               onClick={() => useCart.getState().clear()}
               className="text-[11px] text-muted-foreground hover:text-destructive flex items-center gap-1 shrink-0"
             >
-              {t('cart.clear')}
+              {t('common.clear')}
             </button>
           )}
         </div>
@@ -238,7 +238,7 @@ export function CartSidebar({
             <span className="font-mono t-num">{fmt(taxAmount)}</span>
           </div>
           <div className="flex justify-between text-[15px] font-display font-extrabold pt-1">
-            <span>{t('cart.total')}</span>
+            <span>{t('common.total')}</span>
             <span className="font-mono t-num text-primary">{fmt(cartTotal)}</span>
           </div>
           <button

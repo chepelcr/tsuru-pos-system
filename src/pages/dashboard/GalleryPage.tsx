@@ -209,7 +209,7 @@ export default function GalleryPage() {
                   }`}
                 >
                   {busy ? (
-                    <><Spinner /><span className="t-xs text-muted-foreground">{t("media.uploading")}</span></>
+                    <><Spinner /><span className="t-xs text-muted-foreground">{t("common.uploading")}</span></>
                   ) : (
                     <><Icon name="upload" size={26} className="text-muted-foreground" />
                       <span className="t-xs text-muted-foreground text-center px-3">{t("media.uploadHint")}</span></>
@@ -230,7 +230,7 @@ export default function GalleryPage() {
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void onAddUrl(); } }} />
                 </div>
                 <Button variant="outline" size="sm" icon="plus" onClick={() => void onAddUrl()} disabled={!urlDraft.trim() || busy}>
-                  {t("media.add")}
+                  {t("common.add")}
                 </Button>
               </div>
             )}

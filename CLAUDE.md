@@ -440,7 +440,7 @@ export function MyComponent() {
 - `t(key)` → returns the string for the current language
 - `t(key, params)` → interpolates `{name}`-style placeholders. Example: `t("products.confirmDelete", { name })` for `"¿Eliminar \"{name}\"?"`
 - Missing keys fall back to the key string itself (so a bad key shows up clearly in the UI) — never use `t(key) || 'fallback'`, just add the key
-- Keys live in matching domain JSON files under `src/locales/es/` and `src/locales/en/` (for example, `orders.json`). Both language files must define the same keys; `locales.test.ts` enforces namespace and key parity
+- Keys live in matching domain JSON files under `src/locales/es/` and `src/locales/en/` (for example, `orders.json`). Both language files must define the same keys; reuse `common.*` for generic copy. `locales.test.ts` enforces namespace/key parity, rejects accidental duplicates of common copy, and verifies literal `t()` keys used by source files
 - Default language is ES; toggle via `useLanguageSwitch().toggle()`
 
 ### 10.2 What needs `t()`

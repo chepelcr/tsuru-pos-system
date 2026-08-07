@@ -24,7 +24,7 @@ type BranchStatusValue = "1" | "2" | "all";
 const BRANCH_STATUS_OPTIONS: readonly StatusOption<BranchStatusValue>[] = [
   { value: "1", labelKey: "puestos.statusActive" },
   { value: "2", labelKey: "puestos.statusInactive" },
-  { value: "all", labelKey: "puestos.statusAll" },
+  { value: "all", labelKey: "common.all" },
 ];
 
 export default function PuestosPage() {
@@ -151,10 +151,10 @@ export default function PuestosPage() {
         statusValue={statusFilter}
         onStatusChange={(next) => { setStatusFilter(next); setPage(1); }}
         statusOptions={BRANCH_STATUS_OPTIONS}
-        statusAriaLabelKey="puestos.statusFilter"
+        statusAriaLabelKey="common.status"
         onAdvancedClick={() => setShowAdvanced(true)}
         hasAdvancedFilters={hasAdvancedFilters}
-        advancedLabelKey="puestos.advancedFilters"
+        advancedLabelKey="common.filters"
       />
 
       <BranchAdvancedFiltersModal

@@ -181,7 +181,7 @@ export default function SessionsPage() {
         statusValue={statusFilter}
         onStatusChange={setStatusFilter}
         statusOptions={SESSION_STATUS_OPTIONS}
-        statusAriaLabelKey="session.statusFilter"
+        statusAriaLabelKey="common.status"
       />
 
       {/* Sessions list */}

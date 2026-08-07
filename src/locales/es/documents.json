@@ -1,6 +1,5 @@
 {
   "documents.searchPlaceholder": "Buscar por número, nombre…",
-  "documents.advancedFilters": "Filtros",
   "documents.validation": "Validación",
   "documents.validationHacienda": "Validación Hacienda",
   "documents.validationReceiver": "Validación receptor",
@@ -13,7 +12,6 @@
   "documents.closeTab": "Cerrar pestaña",
   "documents.unsavedChanges": "Cambios sin guardar",
   "documents.newDocument": "Crear documento",
-  "documents.newShort": "Nuevo",
   "documents.drawer.openHeader": "Abiertos",
   "documents.drawer.untabbedHeader": "Sin pestaña",
   "documents.drawer.emptyDesktop": "Todos los documentos abiertos ya están en la barra superior.",
@@ -29,7 +27,6 @@
   "documents.types.allTypes": "Todos los tipos",
   "documents.types.types": "Tipos",
   "documents.types.count": "{count} tipos",
-  "documents.sort.label": "Ordenar por",
   "documents.sort.dateDesc": "Fecha desc. (por defecto)",
   "documents.sort.dateAsc": "Fecha asc.",
   "documents.sort.amountDesc": "Monto desc.",

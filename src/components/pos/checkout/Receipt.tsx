@@ -50,7 +50,7 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
           <span className="font-semibold">{itemCount}</span>
         </div>
         <div className="flex justify-between px-4 py-2">
-          <span className="text-muted-foreground">{t('cart.total')}</span>
+          <span className="text-muted-foreground">{t('common.total')}</span>
           <span className="font-mono t-num font-bold text-primary">{fmt(cartTotal)}</span>
         </div>
         {sale?.pdf_url ? (

@@ -95,7 +95,7 @@ export function ContactSettingsForm({
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <SectionWrapper title={t("orgSettings.contact.title")} icon={MapPin}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={t("orgSettings.contact.email")} error={errors.email?.message}>
+          <FormField label={t("common.email")} error={errors.email?.message}>
             <input
               className="pp-input w-full"
               type="email"
@@ -104,7 +104,7 @@ export function ContactSettingsForm({
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.phone")}>
+          <FormField label={t("common.phone")}>
             <PhoneField
               countryCode={phoneCountryCode}
               number={phone}

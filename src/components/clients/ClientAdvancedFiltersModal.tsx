@@ -38,10 +38,10 @@ export function ClientAdvancedFiltersModal({ open, filters, onApply, onClose }: 
     <FiltersModal
       open={open}
       onClose={onClose}
-      title={t("clients.advancedFilters")}
+      title={t("common.filters")}
       onClear={() => setLocal({})}
       onApply={() => { onApply(local); onClose(); }}
-      applyLabel={t("clients.applyFilters")}
+      applyLabel={t("common.applyFilters")}
     >
       <div className="space-y-1">
         <label className="t-label">{t("clients.customerType")}</label>
@@ -56,7 +56,7 @@ export function ClientAdvancedFiltersModal({ open, filters, onApply, onClose }: 
           }
           className="pp-input"
         >
-          <option value="">{t("clients.customerTypeAll")}</option>
+          <option value="">{t("common.all")}</option>
           {CUSTOMER_TYPE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {t(opt.labelKey)}
@@ -66,7 +66,7 @@ export function ClientAdvancedFiltersModal({ open, filters, onApply, onClose }: 
       </div>
 
       <div className="space-y-1">
-        <label className="t-label">{t("clients.sortBy")}</label>
+        <label className="t-label">{t("common.sortBy")}</label>
         <select
           value={local.sort ?? ""}
           onChange={(e) => patch({ sort: e.target.value || undefined })}

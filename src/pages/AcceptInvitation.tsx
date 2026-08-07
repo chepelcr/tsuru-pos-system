@@ -204,7 +204,7 @@ export default function AcceptInvitation() {
           <div className="card-surface-muted rounded-md p-4 text-left space-y-3 mb-6">
             <div className="flex justify-between items-center gap-3">
               <span className="t-sm text-muted-foreground">
-                {t("members.email")}
+                {t("common.email")}
               </span>
               <span className="t-sm font-semibold text-foreground truncate">
                 {invitation?.email}
@@ -223,7 +223,7 @@ export default function AcceptInvitation() {
             {invitation?.role && (
               <div className="flex justify-between items-center gap-3">
                 <span className="t-sm text-muted-foreground">
-                  {t("members.role")}
+                  {t("common.role")}
                 </span>
                 <Badge variant="primary-soft">
                   {invitation.role.displayName}

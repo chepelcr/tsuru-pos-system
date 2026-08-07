@@ -60,7 +60,7 @@ export function StoreDrawerForm({ open, onClose, onSubmit, store, saving }: Stor
       closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
-      title={isEdit ? t("stores.editStore") : t("stores.addStore")}
+      title={isEdit ? t("stores.editStore") : t("common.add")}
       subtitle={isEdit ? store?.store_code : undefined}
       icon="store"
       width={460}

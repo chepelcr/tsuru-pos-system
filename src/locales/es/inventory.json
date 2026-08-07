@@ -19,8 +19,5 @@
   "inv.cashLabel": "Efectivo inicial",
   "inv.stockValue": "Valor en stock",
   "inv.items": "{n} items",
-  "inv.saveError": "Error al guardar. Intentá de nuevo.",
-  "inv.saving": "Guardando…",
-  "inv.cancel": "Cancelar",
-  "inv.confirm": "Confirmar"
+  "inv.saveError": "Error al guardar. Intentá de nuevo."
 }

@@ -44,7 +44,7 @@ export function GeneralTab({ detail, onChange, isExpanded, onToggle, isExportInv
         {/* Description */}
         <div>
           <FormLabel required>
-            {t('products.description')}
+            {t('common.description')}
           </FormLabel>
           <input
             className="pp-input"

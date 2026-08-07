@@ -236,12 +236,12 @@ export default function InventoryOpening({
         variant="success"
         title={t("inv.confirmTitle")}
         description={t("inv.confirmMessage")}
-        cancel={{ label: t("inv.cancel"), onClick: () => setConfirmOpen(false) }}
+        cancel={{ label: t("common.cancel"), onClick: () => setConfirmOpen(false) }}
         confirm={{
-          label: t("inv.confirm"),
+          label: t("common.confirm"),
           onClick: () => mutation.mutate(),
           loading: mutation.isPending,
-          loadingLabel: t("inv.saving"),
+          loadingLabel: t("common.saving"),
         }}
       >
         <Card className="p-3 !bg-muted/50 text-left">

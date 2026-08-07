@@ -63,7 +63,7 @@ export function BranchGeneralSection({
         {/* Name */}
         <div>
           <FormLabel htmlFor="b-name" required>
-            {t("products.name")}
+            {t("common.name")}
           </FormLabel>
           <Input
             id="b-name"

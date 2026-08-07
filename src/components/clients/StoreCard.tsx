@@ -36,13 +36,13 @@ export function StoreCard({ store, onEdit, onStatusChange, delay = 0 }: StoreCar
   const menuItems: MenuItem[] = [
     { label: t("common.edit"), icon: "edit", action: () => onEdit(store), hidden: !canUpdate },
     {
-      label: t("stores.activate"),
+      label: t("common.activate"),
       icon: "checkCircle",
       action: () => onStatusChange(store.store_id, 1),
       hidden: store.status !== 2 || !canUpdate,
     },
     {
-      label: t("stores.deactivate"),
+      label: t("common.deactivate"),
       icon: "xCircle",
       action: () => onStatusChange(store.store_id, 2),
       hidden: store.status !== 1 || !canUpdate,

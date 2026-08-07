@@ -21,7 +21,7 @@ type ClientStatusValue = "1" | "2" | "all";
 const CLIENT_STATUS_OPTIONS: readonly StatusOption<ClientStatusValue>[] = [
   { value: "1", labelKey: "clients.statusActive" },
   { value: "2", labelKey: "clients.statusInactive" },
-  { value: "all", labelKey: "clients.statusAll" },
+  { value: "all", labelKey: "common.all" },
 ];
 
 export default function ClientsPage() {
@@ -126,10 +126,10 @@ export default function ClientsPage() {
         statusValue={statusFilter}
         onStatusChange={(next) => { setStatusFilter(next); setPage(1); }}
         statusOptions={CLIENT_STATUS_OPTIONS}
-        statusAriaLabelKey="clients.statusFilter"
+        statusAriaLabelKey="common.status"
         onAdvancedClick={() => setShowAdvanced(true)}
         hasAdvancedFilters={hasAdvancedFilters}
-        advancedLabelKey="clients.advancedFilters"
+        advancedLabelKey="common.filters"
       />
 
       {/* Grid */}

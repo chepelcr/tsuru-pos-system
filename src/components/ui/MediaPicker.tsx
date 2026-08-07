@@ -185,7 +185,7 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
               {busy ? (
                 <>
                   <Spinner />
-                  <span className="t-xs text-muted-foreground">{t("media.uploading")}</span>
+                  <span className="t-xs text-muted-foreground">{t("common.uploading")}</span>
                 </>
               ) : (
                 <>
@@ -221,7 +221,7 @@ export function MediaPicker({ value, onChange, disabled = false, className }: Me
                 />
               </div>
               <Button variant="outline" size="sm" icon="plus" onClick={onAddUrl} disabled={!urlDraft.trim()}>
-                {t("media.add")}
+                {t("common.add")}
               </Button>
             </div>
 

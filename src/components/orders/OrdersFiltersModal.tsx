@@ -55,7 +55,7 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
     <FiltersModal
       open={open}
       onClose={onClose}
-      title={t('orders.filters.title')}
+      title={t('common.filters')}
       onClear={() => setLocal({ ...EMPTY_ORDERS_FILTERS })}
       onApply={() => {
         onApply(local);
@@ -64,7 +64,7 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
     >
       {/* Multi-status */}
       <div className="space-y-2">
-        <label className="label-section">{t('orders.filters.status')}</label>
+        <label className="label-section">{t('common.status')}</label>
         {/* Mobile: 6-col grid → 3 buttons (col-span-2) on row 1, 2 (col-span-3) on
             row 2 so each row fills evenly. sm+: natural flex-wrap row. */}
         <div className="grid grid-cols-6 gap-2 sm:flex sm:flex-wrap">

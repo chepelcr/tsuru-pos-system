@@ -36,7 +36,7 @@ export function GeneralInfoSection({
       onToggle={onToggle}
     >
       <div>
-        <FormLabel required>{t("products.name")}</FormLabel>
+        <FormLabel required>{t("common.name")}</FormLabel>
         <input
           className="pp-input"
           placeholder={t("products.namePlaceholder")}
@@ -46,7 +46,7 @@ export function GeneralInfoSection({
       </div>
 
       <div>
-        <FormLabel>{t("products.description")}</FormLabel>
+        <FormLabel>{t("common.description")}</FormLabel>
         <textarea
           className="pp-input resize-y"
           rows={2}

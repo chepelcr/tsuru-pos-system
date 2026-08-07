@@ -83,7 +83,7 @@ export default function DashboardPage() {
             {t("qr.shareStore")}
           </Button>
           <Button variant="outline" size="sm" icon="refresh" onClick={() => void refetch()} disabled={isRefetching}>
-            {isRefetching ? t("dash.refreshing") : t("dash.refresh")}
+            {isRefetching ? t("dash.refreshing") : t("common.refresh")}
           </Button>
         </div>
       </div>

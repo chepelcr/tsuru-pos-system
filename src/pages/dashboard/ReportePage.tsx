@@ -112,7 +112,7 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
             {canExport && (
               <>
                 <Button variant="outline" icon="print" onClick={handlePrint}>
-                  {t("report.print")}
+                  {t("common.print")}
                 </Button>
                 <Button variant="primary" icon="download">
                   {t("report.downloadPdf")}
@@ -258,7 +258,7 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
               <tfoot>
                 <tr className="bg-muted/60">
                   <td className="pp-td" />
-                  <td className="pp-td font-extrabold">{t("report.total")}</td>
+                  <td className="pp-td font-extrabold">{t("common.total")}</td>
                   <td className="pp-td t-num !text-right font-extrabold font-display">
                     {topProducts.reduce((s, t) => s + t.qty, 0)}
                   </td>

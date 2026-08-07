@@ -21,7 +21,7 @@ export function LiveStationsPanel({ stands, isLoading, fmt }: LiveStationsPanelP
         <Badge variant="success">{t("dash.active", { n: String(stands.length) })}</Badge>
       </div>
       {isLoading ? (
-        <div className="t-sm text-muted-foreground">{t("dash.loading")}</div>
+        <div className="t-sm text-muted-foreground">{t("common.loading")}</div>
       ) : stands.length === 0 ? (
         <div className="t-sm text-muted-foreground text-center py-6">{t("dash.noActiveStations")}</div>
       ) : (

@@ -20,7 +20,7 @@ export function TopProductsPanel({ ranking, isLoading, fmt }: TopProductsPanelPr
         </div>
       </div>
       {isLoading ? (
-        <div className="t-sm text-muted-foreground">{t("dash.loading")}</div>
+        <div className="t-sm text-muted-foreground">{t("common.loading")}</div>
       ) : ranking.length === 0 ? (
         <div className="t-sm text-muted-foreground py-4">{t("dash.noSalesData")}</div>
       ) : (

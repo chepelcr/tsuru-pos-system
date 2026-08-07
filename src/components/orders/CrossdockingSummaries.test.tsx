@@ -116,4 +116,33 @@ describe('CrossdockingSummaries', () => {
     expect(container.querySelector('.crossdocking-report')?.getAttribute('style')).toContain('--report-header-medium: #c65811');
     expect(container.querySelector('tfoot tr')?.classList.contains('crossdocking-report-total')).toBe(true);
   });
+
+  it('counts unique products instead of repeating them for every checkout', () => {
+    const distributedOrder = structuredClone(order);
+    distributedOrder.crossdocking.sale_points = Array.from({ length: 13 }, (_, index) => ({
+      store_number: String(index + 1),
+      store_name: `Caja ${index + 1}`,
+      full_name: `${index + 1} - Caja ${index + 1}`,
+      slot_id: '',
+      items: [
+        item({ internal_code: 'PRODUCT-A', description: 'Producto A' }),
+        item({ internal_code: 'PRODUCT-B', description: 'Producto B' }),
+      ],
+      total_boxes: 2,
+      total_units: 12,
+    }));
+
+    render(
+      <LanguageProvider>
+        <CrossdockingSummaries order={distributedOrder} />
+      </LanguageProvider>,
+    );
+
+    const productsStat = screen.getByText('Total de artículos').parentElement?.parentElement;
+    expect(productsStat).not.toBeNull();
+    expect(within(productsStat!).getByText('2')).not.toBeNull();
+    const checkoutsStat = screen.getByText('Total de cajas').parentElement?.parentElement;
+    expect(checkoutsStat).not.toBeNull();
+    expect(within(checkoutsStat!).getByText('13')).not.toBeNull();
+  });
 });

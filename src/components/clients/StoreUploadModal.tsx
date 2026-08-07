@@ -71,11 +71,11 @@ export function StoreUploadModal({ open, onClose, onUpload }: StoreUploadModalPr
         result
           ? { label: t("common.close"), onClick: handleClose, variant: "primary" }
           : {
-              label: uploading ? t("stores.uploading") : t("stores.uploadExcel"),
+              label: uploading ? t("common.uploading") : t("stores.uploadExcel"),
               onClick: handleUpload,
               variant: "primary",
               loading: uploading,
-              loadingLabel: t("stores.uploading"),
+              loadingLabel: t("common.uploading"),
               disabled: !selectedFile || uploading,
             }
       }

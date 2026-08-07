@@ -227,7 +227,7 @@ export default function ProfilePage() {
               </div>
               {!isEditing && (
                 <Button variant="outline" size="sm" icon="edit" onClick={startEdit}>
-                  {t("profile.edit")}
+                  {t("common.edit")}
                 </Button>
               )}
             </div>
@@ -251,7 +251,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
                 <div>
-                  <div className="t-label">{t("profile.email")}</div>
+                  <div className="t-label">{t("common.email")}</div>
                   <p className="t-body font-medium text-foreground">
                     {user?.email || placeholder}
                   </p>
@@ -263,7 +263,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
                 <div>
-                  <div className="t-label">{t("profile.role")}</div>
+                  <div className="t-label">{t("common.role")}</div>
                   <span className="badge badge-primary-soft mt-1">{roleLabel}</span>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function ProfilePage() {
                 </FormField>
 
                 {/* Email is a Cognito-managed attribute — read-only, never sent in PUT. */}
-                <FormField label={t("profile.email")}>
+                <FormField label={t("common.email")}>
                   <Input value={user?.email ?? ""} readOnly disabled />
                 </FormField>
 
@@ -330,7 +330,7 @@ export default function ProfilePage() {
                     onClick={cancelEdit}
                     disabled={updateProfile.isPending}
                   >
-                    {t("profile.cancel")}
+                    {t("common.cancel")}
                   </Button>
                 </div>
               </form>

@@ -60,7 +60,7 @@ export function OrderExcelUpload({ open, onClose, orgId }: OrderExcelUploadProps
             onClick={handleUpload}
             disabled={upload.isPending || !file}
           >
-            {upload.isPending ? t('orders.excel.processing') : t('orders.excel.parseOrder')}
+            {upload.isPending ? t('common.processing') : t('orders.excel.parseOrder')}
           </Button>
         </div>
       }

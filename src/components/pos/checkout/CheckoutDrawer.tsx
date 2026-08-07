@@ -171,7 +171,7 @@ export function CheckoutDrawer({
 
   const title =
     step === 'payment'    ? t('checkout.finalize')   :
-    step === 'processing' ? t('checkout.processing') :
+    step === 'processing' ? t('common.processing') :
                             t('checkout.completed');
 
   const footer =

@@ -95,7 +95,7 @@ export function NewDocumentButton({
           )}
         >
           <Plus size={16} className="shrink-0" />
-          <span className="flex-1 text-left">{t('documents.newShort')}</span>
+          <span className="flex-1 text-left">{t('common.new')}</span>
         </button>
       ) : (
         // Navbar: shows `+ Nuevo` on mobile and shrinks to an icon-only square on
@@ -113,7 +113,7 @@ export function NewDocumentButton({
         >
           <Plus size={16} className="shrink-0" />
           <span className="text-[13px] font-semibold sm:hidden">
-            {t('documents.newShort')}
+            {t('common.new')}
           </span>
         </button>
       )}

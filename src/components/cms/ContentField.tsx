@@ -485,7 +485,7 @@ export function ContentField({
                   disabled={disabled}
                   onClick={() => remove(idx)}
                 >
-                  {t("content.field.remove")}
+                  {t("common.remove")}
                 </Button>
               </div>
             )}
@@ -531,7 +531,7 @@ export function ContentField({
         [
           { key: "icon", label: t("content.field.icon") },
           { key: "title", label: t("content.field.itemTitle") },
-          { key: "description", label: t("content.field.itemDescription") },
+          { key: "description", label: t("common.description") },
         ],
         { icon: "", title: "", description: "" },
         t("content.field.addItem")
@@ -541,8 +541,8 @@ export function ContentField({
     if (key === "items" && section.includes("testimonial")) {
       return renderRepeater(
         [
-          { key: "name", label: t("content.field.name") },
-          { key: "role", label: t("content.field.role") },
+          { key: "name", label: t("common.name") },
+          { key: "role", label: t("common.role") },
           { key: "rating", label: t("content.field.rating"), type: "number" },
           { key: "text", label: t("content.field.testimonialText") },
         ],

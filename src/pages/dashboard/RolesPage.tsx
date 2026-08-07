@@ -89,7 +89,7 @@ export default function RolesPage() {
       message: t("roles.deleteConfirm", { name: role.displayName }),
       variant: "destructive",
       icon: "trash",
-      confirmLabel: t("roles.delete"),
+      confirmLabel: t("common.delete"),
       cancelLabel: t("common.cancel"),
       onConfirm: async () => {
         if (!userId || !orgId) return;
@@ -141,7 +141,7 @@ export default function RolesPage() {
               {isSystem ? t("roles.systemBadge") : t("roles.customBadge")}
             </Badge>
             {!role.isActive && (
-              <Badge variant="warning">{t("roles.inactiveBadge")}</Badge>
+              <Badge variant="warning">{t("common.inactive")}</Badge>
             )}
           </div>
           {descText && (
@@ -159,7 +159,7 @@ export default function RolesPage() {
                 icon="eye"
                 onClick={() => openView(role)}
               >
-                {t("roles.view")}
+                {t("common.view")}
               </Button>
               {canCreate && (
                 <Button
@@ -180,7 +180,7 @@ export default function RolesPage() {
                 icon={canUpdate ? "edit" : "eye"}
                 onClick={() => (canUpdate ? openEdit(role) : openView(role))}
               >
-                {canUpdate ? t("roles.edit") : t("roles.view")}
+                {canUpdate ? t("common.edit") : t("common.view")}
               </Button>
               {canCreate && (
                 <Button
@@ -198,8 +198,8 @@ export default function RolesPage() {
                   size="sm"
                   icon="trash"
                   className="text-destructive"
-                  aria-label={t("roles.delete")}
-                  title={t("roles.delete")}
+                  aria-label={t("common.delete")}
+                  title={t("common.delete")}
                   onClick={() => handleDelete(role)}
                 />
               )}
@@ -251,7 +251,7 @@ export default function RolesPage() {
             icon="refresh"
             onClick={() => rolesQuery.refetch()}
           >
-            {t("roles.retry")}
+            {t("common.retry")}
           </Button>
         </div>
       ) : (

@@ -287,7 +287,7 @@ function TerminalForm({ branchId, isSaving, error, onSave, onClose }: TerminalFo
   return (
     <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
       <div>
-        <FormLabel required>{t("products.name")}</FormLabel>
+        <FormLabel required>{t("common.name")}</FormLabel>
         <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder={t("terminal.namePlaceholder")} />
       </div>
       <div>
@@ -324,7 +324,7 @@ function TerminalForm({ branchId, isSaving, error, onSave, onClose }: TerminalFo
       <div className="flex gap-2.5 justify-end pt-1">
         <Button variant="outline" size="sm" type="button" onClick={onClose} disabled={isSaving}>{t("common.cancel")}</Button>
         <Button variant="primary" size="sm" type="submit" disabled={isSaving || !name.trim() || !code}>
-          {isSaving ? t("setup.creating") : t("setup.createTerminal")}
+          {isSaving ? t("common.saving") : t("setup.createTerminal")}
         </Button>
       </div>
     </form>

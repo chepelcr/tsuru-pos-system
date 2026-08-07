@@ -34,10 +34,10 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
     <FiltersModal
       open={open}
       onClose={onClose}
-      title={t("puestos.advancedFilters")}
+      title={t("common.filters")}
       onClear={() => setLocal({})}
       onApply={() => { onApply(local); onClose(); }}
-      applyLabel={t("puestos.applyFilters")}
+      applyLabel={t("common.applyFilters")}
     >
       <div className="space-y-1">
         <label className="t-label">{t("puestos.type")}</label>
@@ -46,7 +46,7 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
           onChange={(e) => patch({ type: e.target.value || undefined })}
           className="pp-input"
         >
-          <option value="">{t("puestos.all")}</option>
+          <option value="">{t("common.all")}</option>
           {typeOptions.map((opt) => (
             <option key={opt.code} value={opt.code}>{opt.name}</option>
           ))}
@@ -54,7 +54,7 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
       </div>
 
       <div className="space-y-1">
-        <label className="t-label">{t("puestos.sortBy")}</label>
+        <label className="t-label">{t("common.sortBy")}</label>
         <select
           value={local.sort ?? ""}
           onChange={(e) => patch({ sort: e.target.value || undefined })}

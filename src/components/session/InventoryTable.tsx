@@ -68,7 +68,7 @@ export default function InventoryTable({
               {selectedBranches.length === 0 && (
                 <th className="pp-th !text-center">{t("session.selectFirst")}</th>
               )}
-              <th className="pp-th !text-right">{t("session.total")}</th>
+              <th className="pp-th !text-right">{t("common.total")}</th>
             </tr>
           </thead>
           <tbody>

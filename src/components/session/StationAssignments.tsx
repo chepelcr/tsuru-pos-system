@@ -192,7 +192,7 @@ export default function StationAssignments({
                                   updateMember(branch.branch_id, memberIndex, "userId", e.target.value)
                                 }
                               >
-                                <option value="">{t("session.select")}</option>
+                                <option value="">{t("placeholder.selectOption")}</option>
                                 {availableForSlot.map((m) => (
                                   <option key={m.userId} value={m.userId}>
                                     {[m.user.firstName, m.user.lastName].filter(Boolean).join(" ") || m.user.email}
@@ -220,7 +220,7 @@ export default function StationAssignments({
                             </div>
 
                             <div>
-                              <label className="label !text-[10px]">{t("session.role")}</label>
+                              <label className="label !text-[10px]">{t("common.role")}</label>
                               <select
                                 className="input input-sm"
                                 value={branchHasSupervisor ? "cashier" : member.role}

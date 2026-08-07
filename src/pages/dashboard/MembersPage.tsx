@@ -184,7 +184,7 @@ export default function MembersPage() {
       message: t("members.cancelInviteConfirm", { email: inv.email }),
       variant: "destructive",
       icon: "close",
-      confirmLabel: t("members.cancelInvite"),
+      confirmLabel: t("common.cancel"),
       cancelLabel: t("common.cancel"),
       onConfirm: async () => {
         if (!userId || !orgId) return;
@@ -296,7 +296,7 @@ export default function MembersPage() {
       ) : filteredMembers.length === 0 ? (
         <EmptyState
           icon="users"
-          title={term ? t("members.noResults") : t("members.noMembers")}
+          title={term ? t("common.noResults") : t("members.noMembers")}
           description={
             term ? t("members.tryOtherSearch") : t("members.noMembersDescription")
           }
@@ -457,7 +457,7 @@ export default function MembersPage() {
                       className="text-destructive"
                       onClick={() => handleCancelInvite(inv)}
                     >
-                      {t("members.cancelInvite")}
+                      {t("common.cancel")}
                     </Button>
                   </div>
                 )}
@@ -500,7 +500,7 @@ export default function MembersPage() {
         }
       >
         <div className="p-6 space-y-5">
-          <FormField label={t("members.email")} required>
+          <FormField label={t("common.email")} required>
             <input
               className="input w-full"
               type="email"
@@ -513,7 +513,7 @@ export default function MembersPage() {
             />
           </FormField>
 
-          <FormField label={t("members.role")} required>
+          <FormField label={t("common.role")} required>
             <Select
               value={inviteRoleId}
               onChange={(e) => setInviteRoleId(e.target.value)}

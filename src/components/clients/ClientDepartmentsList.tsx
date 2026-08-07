@@ -80,7 +80,7 @@ export function ClientDepartmentsList({ orgId, clientId }: ClientDepartmentsList
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder={t("departments.search")}
+          placeholder={t("common.search")}
           className="flex-1 min-w-[200px]"
         />
         {canCreate && (

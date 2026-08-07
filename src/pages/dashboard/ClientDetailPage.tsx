@@ -331,13 +331,13 @@ export default function ClientDetailPage({ clientId }: Props) {
 
             {hasContact && (
               <Section title={t("clients.contact")} icon="smartphone">
-                {client.email && <InfoRow icon="mail" label={t("clients.email")} value={client.email} />}
-                {phone && <InfoRow icon="smartphone" label={t("clients.phone")} value={phone} />}
+                {client.email && <InfoRow icon="mail" label={t("common.email")} value={client.email} />}
+                {phone && <InfoRow icon="smartphone" label={t("common.phone")} value={phone} />}
               </Section>
             )}
 
             {hasAddress && (
-              <Section title={t("clients.address")} icon="mapPin">
+              <Section title={t("common.address")} icon="mapPin">
                 <InfoRow icon="mapPin" label={t("clients.exactAddress")} value={client.residence!.address!} />
               </Section>
             )}

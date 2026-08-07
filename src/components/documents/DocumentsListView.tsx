@@ -84,7 +84,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
         }
         onAdvancedClick={() => setShowAdvanced(true)}
         hasAdvancedFilters={hasAdvancedFilters}
-        advancedLabelKey="documents.advancedFilters"
+        advancedLabelKey="common.filters"
       />
 
       {/* Content area — the ONLY scrollable region */}

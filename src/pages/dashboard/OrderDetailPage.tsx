@@ -216,7 +216,7 @@ function LineItems({ order }: { order: Order }) {
               <th className="pp-th">{t('orders.lineItems.product')}</th>
               <th className="pp-th text-right">{t('orders.lineItems.price')}</th>
               <th className="pp-th text-center">{t('orders.lineItems.quantity')}</th>
-              <th className="pp-th text-right">{t('orders.lineItems.total')}</th>
+              <th className="pp-th text-right">{t('common.total')}</th>
             </tr>
           </thead>
           <tbody>
@@ -285,8 +285,8 @@ export default function OrderDetailPage({ orderId }: Props) {
       add({
         source: 'fe',
         level: 'destructive',
-        titleKey: 'orders.status.updateError',
-        bodyKey: e instanceof Error ? e.message : 'orders.status.updateError',
+        titleKey: 'common.error',
+        bodyKey: e instanceof Error ? e.message : 'common.error',
       });
     }
   };
@@ -439,7 +439,7 @@ export default function OrderDetailPage({ orderId }: Props) {
               message: t('orders.status.cancelConfirmDescription'),
               variant: 'destructive',
               confirmLabel: t('orders.status.cancelConfirmYes'),
-              cancelLabel: t('orders.status.cancelConfirmNo'),
+              cancelLabel: t('common.no'),
               onConfirm: () => changeStatus('cancelled'),
             }),
         }
@@ -449,7 +449,7 @@ export default function OrderDetailPage({ orderId }: Props) {
       : null,
     hasCrossdocking
       ? {
-          label: t('orders.crossdocking.viewCrossdocking'),
+          label: t('common.view'),
           icon: 'eye',
           action: () => setCrossdockPreviewOpen(true),
         }
@@ -487,7 +487,7 @@ export default function OrderDetailPage({ orderId }: Props) {
           </div>
           <div className="flex items-start gap-3 flex-shrink-0">
             <div className="flex flex-col items-end gap-1">
-              <span className="t-label">{t('orders.total')}</span>
+              <span className="t-label">{t('common.total')}</span>
               <span className="t-stat-xl">{fmt(order.grand_total)}</span>
             </div>
             {menuItems.length > 0 && (
@@ -566,7 +566,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         <div className="flex flex-col gap-3.5">
           {order.client && (
             <SectionCard title={t('orders.detail.customer')} icon="user">
-              <InfoRow icon="user" label={t('orders.detail.name')} value={text(order.client.name)} />
+              <InfoRow icon="user" label={t('common.name')} value={text(order.client.name)} />
               {text(order.client.gln) && (
                 <InfoRow icon="layers" label={t('orders.detail.gln')} value={text(order.client.gln)} />
               )}
@@ -582,7 +582,7 @@ export default function OrderDetailPage({ orderId }: Props) {
 
           {order.supplier && (
             <SectionCard title={t('orders.detail.supplier')} icon="store">
-              <InfoRow icon="store" label={t('orders.detail.name')} value={text(order.supplier.name)} />
+              <InfoRow icon="store" label={t('common.name')} value={text(order.supplier.name)} />
               {text(order.supplier.gln) && (
                 <InfoRow icon="layers" label={t('orders.detail.gln')} value={text(order.supplier.gln)} />
               )}

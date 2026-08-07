@@ -1,6 +1,5 @@
 {
   "session.searchPlaceholder": "Buscar sesión por nombre…",
-  "session.statusFilter": "Estado",
   "session.statusActive": "Activas",
   "session.statusClosed": "Cerradas",
   "session.statusAll": "Todas",
@@ -42,12 +41,9 @@
   "session.assignedCount": "{n}/{total} puestos con cajero asignado",
   "session.cashier": "Cajero",
   "session.unassigned": "Sin asignar",
-  "session.role": "Rol",
-  "session.select": "Seleccionar…",
   "session.inventoryTitle": "Inventario inicial por puesto",
   "session.inventoryDesc": "Cantidad de cada producto a entregar al abrir turno",
   "session.selectFirst": "(Selecciona puestos primero)",
-  "session.total": "Total",
   "session.noActiveProducts": "No hay productos activos.",
   "session.addMember": "Agregar miembro",
   "session.noMembers": "Sin miembros asignados",
@@ -65,6 +61,12 @@
   "session.startTime": "Hora de inicio",
   "session.endTime": "Hora de fin",
   "session.endSession": "Finalizar sesión",
+  "session.closed": "Cerrada",
+  "session.start": "Inicio",
+  "session.end": "Fin",
+  "session.expected": "Esperado",
+  "session.viewDetail": "Ver detalle",
+  "session.noInventoryTracking": "Sin control de inventario",
   "session.confirmEnd": "¿Estás seguro de que quieres finalizar esta sesión?",
   "session.confirmDelete": "¿Estás seguro de que quieres eliminar esta sesión?"
 }

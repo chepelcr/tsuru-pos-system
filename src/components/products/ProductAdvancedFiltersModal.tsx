@@ -95,10 +95,10 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
     <FiltersModal
       open={open}
       onClose={onClose}
-      title={t("products.advancedFilters")}
+      title={t("common.filters")}
       onClear={() => setLocal({})}
       onApply={() => { onApply(local); onClose(); }}
-      applyLabel={t("products.applyFilters")}
+      applyLabel={t("common.applyFilters")}
     >
       {/* Price filter — label on the left, mode toggle right-aligned. */}
       <div className="flex items-center justify-between gap-3">
@@ -204,7 +204,7 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
       )}
 
       <div className="space-y-1">
-        <label className="t-label">{t("products.sortBy")}</label>
+        <label className="t-label">{t("common.sortBy")}</label>
         <select
           value={local.sort ?? ""}
           onChange={(e) => patch({ sort: e.target.value || undefined })}

@@ -373,7 +373,7 @@ export default function CreateOrganization() {
                       placeholder={t("orgs.create.fields.emailPlaceholder")}
                     />
                   </FormField>
-                  <FormField label={t("orgs.create.fields.phone")}>
+                  <FormField label={t("common.phone")}>
                     <Input
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}

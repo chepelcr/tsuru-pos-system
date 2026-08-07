@@ -133,7 +133,7 @@ export default function OrgGeneralPage() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="card p-5 space-y-4">
-          <FormField label={t("orgSettings.general.name")} required error={errors.name?.message}>
+          <FormField label={t("common.name")} required error={errors.name?.message}>
             <input
               className="pp-input w-full"
               type="text"
@@ -142,7 +142,7 @@ export default function OrgGeneralPage() {
             />
           </FormField>
 
-          <FormField label={t("orgSettings.general.description")} error={errors.description?.message}>
+          <FormField label={t("common.description")} error={errors.description?.message}>
             <textarea
               className="pp-input w-full"
               rows={4}

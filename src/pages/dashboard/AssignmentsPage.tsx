@@ -198,7 +198,7 @@ export default function AssignmentsPage() {
                 {t("assignments.session")}
               </FormLabel>
               <Select value={sessionId} onChange={(e) => setSessionId(e.target.value)}>
-                <option value="">{t("session.select")}</option>
+                <option value="">{t("placeholder.selectOption")}</option>
                 {sessions.map((s) => (
                   <option key={s.session_id} value={s.session_id}>
                     {s.name} ({s.type === "match" ? t("session.match") : t("session.regular")})
@@ -213,7 +213,7 @@ export default function AssignmentsPage() {
                 {t("assignments.seller")}
               </FormLabel>
               <Select value={userId} onChange={(e) => setUserId(e.target.value)}>
-                <option value="">{t("session.select")}</option>
+                <option value="">{t("placeholder.selectOption")}</option>
                 {members.map((m) => (
                   <option key={m.userId} value={m.userId}>
                     {[m.user.firstName, m.user.lastName].filter(Boolean).join(" ") || m.user.email}
@@ -229,7 +229,7 @@ export default function AssignmentsPage() {
                   {t("puestos.title")}
                 </FormLabel>
                 <Select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-                  <option value="">{t("session.select")}</option>
+                  <option value="">{t("placeholder.selectOption")}</option>
                   {branches.map((b) => (
                     <option key={b.branch_id} value={b.branch_id}>{b.name}</option>
                   ))}
@@ -237,7 +237,7 @@ export default function AssignmentsPage() {
               </div>
               <div>
                 <FormLabel>
-                  {t("assignments.role")}
+                  {t("common.role")}
                 </FormLabel>
                 <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
                   <option value="cashier">{t("assignments.cashier")}</option>

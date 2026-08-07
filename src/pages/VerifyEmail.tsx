@@ -160,7 +160,7 @@ export default function VerifyEmail() {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : t("auth.verifyEmail.resendErrorDescription");
-      add({ source: "fe", level: "destructive", titleKey: "auth.verifyEmail.resendError", bodyKey: message });
+      add({ source: "fe", level: "destructive", titleKey: "common.error", bodyKey: message });
     } finally {
       setResending(false);
     }

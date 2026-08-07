@@ -101,7 +101,7 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
         )}
         {canCreate && (
           <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
-            {t("stores.addStore")}
+            {t("common.add")}
           </Button>
         )}
       </div>
@@ -121,7 +121,7 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
           action={
             canCreate ? (
               <Button variant="primary" size="sm" icon="plus" onClick={openAdd}>
-                {t("stores.addStore")}
+                {t("common.add")}
               </Button>
             ) : undefined
           }
