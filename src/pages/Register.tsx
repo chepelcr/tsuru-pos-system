@@ -179,7 +179,7 @@ export default function Register() {
           <CardDescription>{t("auth.register.subtitle")}</CardDescription>
         </CardHeader>
         <CardBody>
-          <Stepper steps={MACRO_STEPS} current={0} hideFooter>
+          <Stepper steps={MACRO_STEPS} current={0} hideFooter stackedRail>
             {currentStep === "info" && (
               <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -276,16 +276,22 @@ export default function Register() {
                             />
                           )}
                         />
+                        {/* Revert to the <select>. onMouseDown (not onClick): the text input
+                          * is normally focused when the user reaches for this control, and
+                          * letting the blur land first re-rendered the field out from under the
+                          * pointer, so the mouseup never completed a click and the button needed
+                          * several presses. preventDefault keeps focus put until we move it. */}
                         <button
                           type="button"
-                          onClick={() => {
+                          onMouseDown={(e) => {
+                            e.preventDefault();
                             setShowGenderInput(false);
                             step1Form.setValue("gender", "");
                             step1Form.setValue("genderOther", "");
                             setTimeout(() => document.getElementById(genderSelectId)?.focus(), 0);
                           }}
                           aria-label={t("auth.register.gender.change")}
-                          className="btn btn-ghost btn-icon btn-sm absolute right-1 top-1/2 -translate-y-1/2"
+                          className="btn btn-ghost btn-icon btn-sm absolute right-1 top-1/2 -translate-y-1/2 z-10"
                         >
                           <Icon name="chevronDown" size={16} />
                         </button>

@@ -19,6 +19,14 @@ interface StepperProps {
   hideFooter?: boolean;
   /** Hide the step rail (used on the welcome step so the rail doesn't compete with the hero). */
   hideRail?: boolean;
+  /**
+   * Keep the two-row grid rail at every breakpoint instead of switching to the
+   * single-row flex layout at >=640px. Use it when the stepper lives in a narrow
+   * column (the auth card beside the brand-story panel): there the flex row wraps,
+   * which leaves a connector segment dangling after the last chip of a row and
+   * pushes the wrapped chips off-centre.
+   */
+  stackedRail?: boolean;
   /** Disables the Next/Save button (parent indicates validation state). */
   canAdvance?: boolean;
   isSaving?: boolean;
@@ -40,6 +48,7 @@ export function Stepper({
   welcomeMode = false,
   hideFooter = false,
   hideRail = false,
+  stackedRail = false,
   canAdvance = true,
   isSaving = false,
   onPrev,
@@ -112,6 +121,8 @@ export function Stepper({
        * ≥640px: the outer container switches to `flex flex-wrap` and the
        * `gridColumn` inline style on each chip becomes a no-op, so the chips
        * revert to the inline single-row layout with connector segments.
+       *
+       * `stackedRail` opts out of that switch and keeps the grid at every width.
        */}
       {!hideRail && visibleSteps.length > 1 && (() => {
         const topCount = Math.ceil(visibleSteps.length / 2);
@@ -122,7 +133,9 @@ export function Stepper({
         return (
           <nav
             aria-label={t("common.steps")}
-            className="grid grid-cols-6 gap-2 pb-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-2"
+            className={`grid grid-cols-6 gap-2 pb-1 ${
+              stackedRail ? "" : "sm:flex sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-2"
+            }`}
           >
             {visibleSteps.map((step, idx) => {
               const isActive = idx === visibleIndex;
@@ -139,7 +152,9 @@ export function Stepper({
                   aria-current={isActive ? "step" : undefined}
                 >
                   <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors w-full justify-center sm:w-auto sm:justify-start ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors w-full justify-center ${
+                      stackedRail ? "" : "sm:w-auto sm:justify-start"
+                    } ${
                       isActive
                         ? "border-primary bg-primary/10 text-primary"
                         : isComplete
@@ -163,12 +178,16 @@ export function Stepper({
                         idx + 1
                       )}
                     </span>
-                    <span className="t-sm font-medium truncate sm:whitespace-nowrap">
+                    <span
+                      className={`t-sm font-medium truncate ${
+                        stackedRail ? "" : "sm:whitespace-nowrap"
+                      }`}
+                    >
                       {t(step.titleKey)}
                     </span>
                   </div>
 
-                  {idx < visibleSteps.length - 1 && (
+                  {!stackedRail && idx < visibleSteps.length - 1 && (
                     <div
                       className={`hidden sm:block h-px w-6 flex-shrink-0 ${
                         isUpcoming ? "bg-border" : "bg-success/40"

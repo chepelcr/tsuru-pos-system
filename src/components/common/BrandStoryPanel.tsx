@@ -15,7 +15,7 @@ export function BrandStoryPanel() {
         <Sprout className="w-5 h-5" />
       </div>
       <h2 className="t-h3 mb-4">{t("auth.story.title")}</h2>
-      <div className="flex flex-col gap-3 text-primary-foreground/90 t-sm leading-relaxed">
+      <div className="flex flex-col gap-3 text-primary-foreground/90 t-sm leading-relaxed text-justify hyphens-auto">
         <p>{t("auth.story.p1")}</p>
         <p>{t("auth.story.p2")}</p>
         <p>{t("auth.story.p3")}</p>
