@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
+import { isOfflineError } from "@/lib/offline";
+import { cacheClients, readCachedClients } from "@/services/offlineCatalog";
 
 export interface ClientSearchResult {
   client_id: string;
@@ -36,7 +38,21 @@ export function useClientSearch(orgId: string | undefined, enabled: boolean) {
         );
         setClients(res.data ?? []);
         setHasLoaded(true);
-      } catch { /* silent */ }
+        // Mirror what the picker just saw so the same search works offline.
+        void cacheClients(orgId, (res.data ?? []) as Parameters<typeof cacheClients>[1]);
+      } catch (error) {
+        // Offline: serve the picker from the IndexedDB mirror rather than
+        // leaving the cashier with an empty client list. Any other failure
+        // stays silent, as before.
+        if (isOfflineError(error)) {
+          const cached = await readCachedClients(orgId, {
+            search: query ? `status:1,(client_name:${query})` : "status:1",
+            pageSize: 50,
+          });
+          setClients(cached.data);
+          setHasLoaded(true);
+        }
+      }
       finally { setIsLoading(false); }
     }, 300);
 

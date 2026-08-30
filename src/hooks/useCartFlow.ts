@@ -7,7 +7,7 @@ import {
   salesApi,
   salesOrgPath,
 } from "@/lib/api";
-import { db } from "@/lib/db";
+import { db, type OutboxTarget } from "@/lib/db";
 import { notifyPendingSalesChanged } from "@/services/pendingSalesSync";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import type {
@@ -72,13 +72,35 @@ interface ConfirmPaymentArgs {
 
 export type SaleSubmissionResult =
   | { status: "confirmed"; sale: SaleDocument }
-  | { status: "queued"; localId: string }
+  | { status: "queued"; localId: string; target: OutboxTarget }
   /**
    * A manual order (`PM`) was persisted to the orders API. It has no
    * consecutive number, no XML and no Hacienda round-trip — the receipt
    * renders the order's document number instead.
    */
   | { status: "order"; order: Order };
+
+/**
+ * Human-readable payment label stored on the outbox record.
+ *
+ * This is offline bookkeeping copy, not UI: the record is written from a
+ * mutation with no `t()` in scope and is only ever read back in the local
+ * sync log, so it stays in Spanish rather than being routed through i18n.
+ */
+function describePayments(payments: SalePayment[]): string {
+  return payments
+    .map((p) => {
+      switch (p.type) {
+        case "01": return "Efectivo";
+        case "02": return "Tarjeta";
+        case "03": return "Cheque";
+        case "04": return "Transferencia";
+        case "06": return "SINPE";
+        default:   return p.type === "99" ? (p.other_type || "Otro") : "Otro";
+      }
+    })
+    .join(", ");
+}
 
 export interface UseCartFlowOptions {
   /**
@@ -207,10 +229,9 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
 
     // ── Manual order (`PM`) ────────────────────────────────────────────────
     // Same cart, same line details, different destination: the orders API.
-    // Deliberately NOT queued through `db.sales` — that queue replays every
-    // record against `salesApi` (see services/pendingSalesSync.ts), so an
-    // orders path would be retried against the wrong gateway. A failed manual
-    // order surfaces to the checkout drawer and the user retries.
+    // Queued through the same outbox as a sale — each record names its
+    // `target`, so `pendingSalesSync` replays this one against the orders
+    // gateway instead of sales-api.
     if (isManualOrderDocType(invoiceData.document_type)) {
       const manualFields = invoiceData.manual_order ?? {};
 
@@ -284,14 +305,57 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         },
       };
 
-      const order = await ordersStoreApi.post<Order>(
-        ordersStoreOrgPath(orgId, "/orders"),
-        orderPayload,
-      );
+      const orderSyncUrl = ordersStoreOrgPath(orgId, "/orders");
 
-      cartItems.forEach(({ id, qty }) => decrement(id, qty));
-      clear();
-      return { status: "order", order };
+      // Persist first, exactly like a sale: a pedido captured with no signal
+      // must survive a reload and replay when connectivity returns.
+      await db.sales.add({
+        localId,
+        assignmentId,
+        orgId,
+        userId,
+        target: "orders",
+        items: cartItems.map((c) => ({
+          productId: parseInt(c.id, 10),
+          name: c.name,
+          price: c.price,
+          qty: c.qty,
+        })),
+        total: invoiceData.total_amount,
+        paymentMethod: describePayments(invoiceData.payments),
+        timestamp: Date.now(),
+        synced: false,
+        syncState: "pending",
+        attempts: 0,
+        syncUrl: orderSyncUrl,
+        payload: orderPayload,
+      });
+
+      try {
+        const order = await ordersStoreApi.post<Order>(orderSyncUrl, orderPayload, {
+          headers: { "Idempotency-Key": localId },
+        });
+        await db.sales.where({ localId }).modify({
+          synced: true,
+          syncState: "synced",
+          response: order,
+        });
+        cartItems.forEach(({ id, qty }) => decrement(id, qty));
+        clear();
+        notifyPendingSalesChanged(userId);
+        return { status: "order", order };
+      } catch (err) {
+        const retryable = !(err instanceof ApiError) || err.retriable;
+        if (!retryable) {
+          await db.sales.where({ localId }).delete();
+          throw err;
+        }
+
+        cartItems.forEach(({ id, qty }) => decrement(id, qty));
+        clear();
+        notifyPendingSalesChanged(userId);
+        return { status: "queued", localId, target: "orders" };
+      }
     }
 
     // ── Build the canonical DocumentDTO payload ────────────────────────────
@@ -373,18 +437,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         qty: c.qty,
       })),
       total: invoiceData.total_amount,
-      paymentMethod: invoiceData.payments
-        .map((p) => {
-          switch (p.type) {
-            case "01": return "Efectivo";
-            case "02": return "Tarjeta";
-            case "03": return "Cheque";
-            case "04": return "Transferencia";
-            case "06": return "SINPE";
-            default:   return p.type === "99" ? (p.other_type || "Otro") : "Otro";
-          }
-        })
-        .join(", "),
+      paymentMethod: describePayments(invoiceData.payments),
       timestamp: Date.now(),
       synced: false,
       syncState: "pending",
@@ -417,7 +470,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       cartItems.forEach(({ id, qty }) => decrement(id, qty));
       clear();
       notifyPendingSalesChanged(userId);
-      return { status: "queued", localId };
+      return { status: "queued", localId, target: "sales" };
     }
   };
 

@@ -14,6 +14,9 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
   const sale = result?.status === 'confirmed' ? result.sale : undefined;
   const queued = result?.status === 'queued';
+  // A queued manual order and a queued sale are both "will sync later", but
+  // they are different objects to the user — word them apart.
+  const queuedOrder = result?.status === 'queued' && result.target === 'orders';
   // Manual order (`PM`): persisted to the orders API, so there is no
   // consecutive number, no XML and no Hacienda PDF to link — the order's own
   // document number is the receipt.
@@ -28,9 +31,11 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
         <div className="font-display font-bold text-[20px]">
           {order
             ? t('manualOrder.receipt.created')
-            : queued
-              ? t('checkout.receipt.queued')
-              : t('checkout.receipt.completed')}
+            : queuedOrder
+              ? t('manualOrder.receipt.queued')
+              : queued
+                ? t('checkout.receipt.queued')
+                : t('checkout.receipt.completed')}
         </div>
         {order ? (
           <div className="text-[13px] text-muted-foreground mt-1">
@@ -38,7 +43,9 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
           </div>
         ) : queued ? (
           <div className="text-[12px] text-warning mt-1">
-            {t('checkout.receipt.queuedDescription')}
+            {queuedOrder
+              ? t('manualOrder.receipt.queuedDescription')
+              : t('checkout.receipt.queuedDescription')}
           </div>
         ) : sale?.consecutive_number ? (
           <div className="text-[13px] text-muted-foreground mt-1">
@@ -65,7 +72,7 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
           <span className="text-muted-foreground">{t('common.total')}</span>
           <span className="font-mono t-num font-bold text-primary">{fmt(cartTotal)}</span>
         </div>
-        {order ? null : sale?.pdf_url ? (
+        {order || queuedOrder ? null : sale?.pdf_url ? (
           <div className="flex justify-between px-4 py-2">
             <span className="text-muted-foreground">{t('checkout.receipt.pdf')}</span>
             <a
@@ -89,7 +96,9 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
         onClick={onClose}
         className="w-full h-11 rounded-md bg-primary text-primary-foreground font-semibold text-[13px]"
       >
-        {order ? t('manualOrder.receipt.newOrder') : t('checkout.receipt.newSale')}
+        {order || queuedOrder
+          ? t('manualOrder.receipt.newOrder')
+          : t('checkout.receipt.newSale')}
       </button>
     </div>
   );

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ordersApi, ordersOrgPath } from "../lib/api";
+import { isOfflineError } from "../lib/offline";
+import { cacheCategories, readCachedCategories } from "../services/offlineCatalog";
 import type { Category } from "../types";
 
 interface CategoryListResponse {
@@ -11,10 +13,19 @@ export function useCategories(orgId: string | undefined) {
     queryKey: ["categories", orgId],
     enabled: !!orgId,
     staleTime: 1000 * 60 * 15,
-    queryFn: () =>
-      ordersApi.get<CategoryListResponse>(
-        ordersOrgPath(orgId!, "/categories?page_size=100")
-      ),
+    // Mirrors to IndexedDB and reads back when offline (docs/OFFLINE.md).
+    queryFn: async () => {
+      try {
+        const response = await ordersApi.get<CategoryListResponse>(
+          ordersOrgPath(orgId!, "/categories?page_size=100")
+        );
+        void cacheCategories(orgId!, response.data ?? []);
+        return response;
+      } catch (error) {
+        if (!isOfflineError(error)) throw error;
+        return readCachedCategories(orgId!);
+      }
+    },
   });
 }
 

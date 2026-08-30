@@ -289,6 +289,7 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 | Document editor tabs | `zustand` `src/store/documentStore.ts` (`open_documents`, `is_received`, `addDocumentTab`, `removeDocumentTab`, `newDocTabId`) |
 | Confirm modals | `useConfirmModal()` hook → returns `{ confirm, ConfirmModal }`. Always render `<ConfirmModal/>` at the end of the page |
 | Server state | React Query (`@tanstack/react-query`). Query keys convention: `[resource, orgId, ...filters]` |
+| Offline data | 4 layers — SW app shell, React Query→localStorage (reference catalogs + account context), IndexedDB mirrors (org catalog), IndexedDB outbox (unsent sales/orders). Warmed once per org per day by `useOfflineBootstrap()`. **`org-configurations` is never persisted** (certificate + PIN). `docs/OFFLINE.md` |
 
 ---
 
@@ -562,6 +563,7 @@ If you write a helper component or render function that produces user-visible te
 | Add a new data-api catalog | `hooks/useDataApi.ts` + `services/data-api/` |
 | Touch the IVA declaration report | `pages/dashboard/IvaReportPage.tsx` + `components/reports/` + `hooks/useIvaReport.ts` + `docs/IVA_TAX_REPORT.md` |
 | Touch manual orders (pedidos manuales) | `types/invoice.ts` (`PM` doc type) + `hooks/useCartFlow.ts` + `components/pos/checkout/` + `docs/MANUAL_ORDERS.md` |
+| Change anything offline / PWA | `services/offlineCatalog.ts` + `services/offlineBootstrap.ts` + `lib/db.ts` + `lib/queryClient.ts` + `scripts/sw-template.js` + `docs/OFFLINE.md` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |
 

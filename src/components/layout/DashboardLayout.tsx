@@ -4,6 +4,7 @@ import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { OrgProvider } from "@/contexts/OrgContext";
+import { useOfflineBootstrap } from "@/hooks/useOfflineBootstrap";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { CountryISO } from "@/lib/enums";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
@@ -86,6 +87,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [location, navigate] = useLocation();
 
   const active = getActiveNav(location);
+
+  // First-login warm-up: pulls the Hacienda catalogs, the org context and the
+  // org's own product/client catalog while there IS a connection, so the POS
+  // still works when there isn't. No-ops when already fresh (docs/OFFLINE.md).
+  useOfflineBootstrap();
 
   const handleNav = (id: NavId) => {
     navigate(NAV_PATHS[id]);

@@ -169,5 +169,7 @@
   "manualOrder.error.clientRequired": "Select the order's client.",
   "manualOrder.receipt.created": "Order recorded",
   "manualOrder.receipt.number": "Order #{num}",
-  "manualOrder.receipt.newOrder": "New order"
+  "manualOrder.receipt.newOrder": "New order",
+  "manualOrder.receipt.queued": "Order queued",
+  "manualOrder.receipt.queuedDescription": "Saved on this device; it will be sent when the connection returns."
 }

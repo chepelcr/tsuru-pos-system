@@ -169,5 +169,7 @@
   "manualOrder.error.clientRequired": "Seleccioná el cliente del pedido.",
   "manualOrder.receipt.created": "Pedido registrado",
   "manualOrder.receipt.number": "Pedido #{num}",
-  "manualOrder.receipt.newOrder": "Nuevo pedido"
+  "manualOrder.receipt.newOrder": "Nuevo pedido",
+  "manualOrder.receipt.queued": "Pedido en cola",
+  "manualOrder.receipt.queuedDescription": "Se guardó en este dispositivo y se enviará cuando vuelva la conexión."
 }

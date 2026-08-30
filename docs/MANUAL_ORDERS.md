@@ -58,7 +58,7 @@ viaja por el estado del editor (pestaña, carrito, checkout). `isManualOrderDocT
 | Correos de copia | Sí | No (no hay servicio de notificación) |
 | Pago completo para confirmar | Requerido | **No** — un pedido se paga después |
 | Sección extra | — | Entrega: fecha, punto, evento, comentario |
-| Cola offline (`db.sales`) | Sí | **No** — ver §6 |
+| Cola offline (`db.sales`) | Sí | Sí — ver §6 |
 | Cuenta para la declaración de IVA | Sí | **No** (`manual_orders_excluded`) |
 
 ## 4. Dónde aparece
@@ -107,15 +107,19 @@ src/locales/{es,en}/documents.json                        `docTypes.PM`
 src/index.css                                             `--doc-pm` / `.text-doc-pm`
 ```
 
-## 6. Sin cola offline — a propósito
+## 6. Funciona sin conexión
 
-Las ventas se persisten primero en IndexedDB (`db.sales`) y se reintentan. Esa cola **siempre**
-reenvía contra `salesApi` (`src/services/pendingSalesSync.ts`), así que meter un pedido ahí lo
-reintentaría contra el gateway equivocado. El pedido manual se envía directo; si falla, el error
-sube al drawer de checkout y el usuario reintenta con el carrito intacto.
+El pedido manual usa la misma bandeja de salida que una venta. Cada registro de `db.sales` nombra
+su `target` (`"sales"` | `"orders"`) y `pendingSalesSync` elige el cliente HTTP a partir de eso —
+antes la cola reenviaba todo contra `salesApi`, que es la razón por la que el pedido manual no
+podía encolarse.
 
-Darle resiliencia offline al pedido manual exige generalizar la cola a "URL + cliente", no solo
-"URL". Queda fuera de alcance y anotado en §9.
+El flujo es idéntico al de una venta: se persiste **antes** del POST con una `Idempotency-Key`
+estable (`localId`), se intenta enviar de inmediato, y un fallo reintentable deja el pedido en
+cola para el próximo sync. El comprobante en pantalla lo dice (`manualOrder.receipt.queued`).
+
+Los productos y los clientes que el pedido necesita también están disponibles sin conexión — ver
+[`OFFLINE.md`](./OFFLINE.md).
 
 ## 7. Restricción conocida: se necesita sesión de POS
 
@@ -182,7 +186,11 @@ Reglas para el BE:
    para que el reporte de IVA los excluya (`manual_orders_excluded`).
 5. **`order_type`** debe quedar distinto de `'73'`: un pedido manual nunca entra al flujo de
    cross-docking.
-6. **Idempotencia.** El FE no manda `Idempotency-Key` todavía; aceptar el header si aparece.
+6. **Idempotencia — obligatoria.** El FE manda `Idempotency-Key` con el `localId` de la bandeja de
+   salida, y **reusa el mismo valor en cada reintento**. Un pedido capturado sin conexión se
+   reenvía cuando vuelve la señal, y sin deduplicación por ese header el reintento crea un
+   pedido duplicado. Guardar la clave con el pedido y devolver el registro existente en un
+   reintento.
 7. **Autorización.** Requiere `commercial:orders:create`. El BE **debe** rechazar el `POST` si la
    organización sí tiene facturación electrónica activa, o aceptarlo explícitamente: el gate del FE
    es de producto, no de seguridad.
@@ -210,5 +218,6 @@ de datos no lo bloquea: por eso se persiste el CABYS en un documento que hoy no 
 
 - [ ] `cross-app-be`: `POST /orders` con `source: "manual"` (§8.1) y migración (§8.2).
 - [ ] Exponer `source` en el `Order` y filtrar por él en el listado de Pedidos.
-- [ ] Generalizar la cola offline a "URL + cliente" para dar resiliencia al pedido manual (§6).
+- [ ] Deduplicación por `Idempotency-Key` en el BE (§8.1, punto 6) — sin eso, un pedido
+      capturado sin conexión puede duplicarse al reintentar.
 - [ ] Conversión pedido → factura electrónica (§8.3).
