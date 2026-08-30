@@ -1,6 +1,12 @@
 import { useCart } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
-import { ApiError, salesApi, salesOrgPath } from "@/lib/api";
+import {
+  ApiError,
+  ordersStoreApi,
+  ordersStoreOrgPath,
+  salesApi,
+  salesOrgPath,
+} from "@/lib/api";
 import { db } from "@/lib/db";
 import { notifyPendingSalesChanged } from "@/services/pendingSalesSync";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
@@ -11,12 +17,20 @@ import type {
   ResidenceLocalState,
 } from "@/types/receiver";
 import type { SaleReference } from "@/types/reference";
+import { isManualOrderDocType } from "@/types/invoice";
 import type {
   CurrencyCode,
-  DocTypeCode,
+  EditorDocTypeCode,
   SaleDocument,
   SalePayment,
 } from "@/types/invoice";
+import { MANUAL_ORDER_SOURCE } from "@/types/order";
+import type {
+  ManualOrderFields,
+  ManualOrderLinePayload,
+  ManualOrderPayload,
+  Order,
+} from "@/types/order";
 
 /**
  * Inputs the checkout drawer assembles before calling submit.
@@ -26,7 +40,7 @@ import type {
  * resolves it to `neighborhood_name` if a name isn't already present.
  */
 export interface InvoiceCheckoutData {
-  document_type: DocTypeCode;
+  document_type: EditorDocTypeCode;
   /** Hacienda sale condition code. */
   sale_condition: string;
   activity_code: string;
@@ -42,6 +56,8 @@ export interface InvoiceCheckoutData {
   discount_amount: number;
   tax_amount: number;
   total_amount: number;
+  /** Present only on manual-order (`PM`) checkouts. */
+  manual_order?: ManualOrderFields;
 }
 
 interface ConfirmPaymentArgs {
@@ -56,7 +72,13 @@ interface ConfirmPaymentArgs {
 
 export type SaleSubmissionResult =
   | { status: "confirmed"; sale: SaleDocument }
-  | { status: "queued"; localId: string };
+  | { status: "queued"; localId: string }
+  /**
+   * A manual order (`PM`) was persisted to the orders API. It has no
+   * consecutive number, no XML and no Hacienda round-trip — the receipt
+   * renders the order's document number instead.
+   */
+  | { status: "order"; order: Order };
 
 export interface UseCartFlowOptions {
   /**
@@ -182,6 +204,95 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     const localId = `sale-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const receiver = buildReceiver(invoiceData.receiver, selectedClient);
+
+    // ── Manual order (`PM`) ────────────────────────────────────────────────
+    // Same cart, same line details, different destination: the orders API.
+    // Deliberately NOT queued through `db.sales` — that queue replays every
+    // record against `salesApi` (see services/pendingSalesSync.ts), so an
+    // orders path would be retried against the wrong gateway. A failed manual
+    // order surfaces to the checkout drawer and the user retries.
+    if (isManualOrderDocType(invoiceData.document_type)) {
+      const manualFields = invoiceData.manual_order ?? {};
+
+      const lines: ManualOrderLinePayload[] = cartItems.map((item, index) => {
+        const discountFactor = 1 - (item.lineDiscount || 0) / 100;
+        const grossBase = item.netPrice * item.qty;
+        const discount = grossBase * ((item.lineDiscount || 0) / 100);
+        // Tax scales with the discounted base, the way the Hacienda cascade
+        // treats it — the BE recomputes authoritative amounts regardless.
+        const tax = Math.max(0, (item.price - item.netPrice) * item.qty * discountFactor);
+        const taxableBase = grossBase - discount;
+
+        return {
+          line_number: index + 1,
+          product_id: item.id,
+          description: item.lineNote || item.name,
+          quantity: item.qty,
+          unit_price: item.netPrice,
+          discount,
+          tax,
+          line_total: taxableBase + tax,
+          cabys:
+            (typeof (item as any).cabys === "string"
+              ? (item as any).cabys
+              : (item as any).cabys?.code) ?? item.lineDetail?.cabys,
+        };
+      });
+
+      const clientName =
+        receiver?.name ||
+        selectedClient?.business_name ||
+        selectedClient?.client_name ||
+        "";
+
+      const orderPayload: ManualOrderPayload = {
+        source: MANUAL_ORDER_SOURCE,
+        document_type: invoiceData.document_type,
+        client_id: selectedClient?.client_id ?? null,
+        client: {
+          name: clientName,
+          gln: selectedClient?.client_gln ?? "",
+          internal_code: selectedClient?.identification?.number ?? undefined,
+        },
+        delivery_date: manualFields.delivery_date || undefined,
+        delivery_location: manualFields.delivery_location_name
+          ? {
+              name: manualFields.delivery_location_name,
+              code: manualFields.delivery_location_code || undefined,
+            }
+          : undefined,
+        event: manualFields.event || undefined,
+        comment: manualFields.comment || invoiceData.notes || undefined,
+        currency_code: invoiceData.currency?.currency_code ?? "CRC",
+        exchange_rate: invoiceData.currency?.exchange_rate ?? 1,
+        assignment_id: assignmentId,
+        branch_number: branchNumber,
+        terminal_number: terminalNumber,
+        payments: invoiceData.payments.map((p) => ({
+          type: p.type,
+          other_type: p.other_type,
+          amount: p.amount,
+        })),
+        lines,
+        totals: {
+          total_lines: lines.length,
+          total_quantity_ordered: cartItems.reduce((sum, i) => sum + i.qty, 0),
+          subtotal: invoiceData.subtotal,
+          discounts: invoiceData.discount_amount,
+          taxes: invoiceData.tax_amount,
+          grand_total: invoiceData.total_amount,
+        },
+      };
+
+      const order = await ordersStoreApi.post<Order>(
+        ordersStoreOrgPath(orgId, "/orders"),
+        orderPayload,
+      );
+
+      cartItems.forEach(({ id, qty }) => decrement(id, qty));
+      clear();
+      return { status: "order", order };
+    }
 
     // ── Build the canonical DocumentDTO payload ────────────────────────────
     const payload: SaleDocument = {

@@ -279,6 +279,15 @@ export function salesOrgPath(orgId: string, suffix: string = '') {
 }
 
 /**
+ * /api/organizations/{org}/tax-reports[suffix] — sales-api tax reporting.
+ * Backs the IVA declaration support report (formulario D-150). Contract:
+ * `docs/IVA_TAX_REPORT.md`.
+ */
+export function salesTaxReportPath(orgId: string, suffix: string = '') {
+  return `/api/organizations/${orgId}/tax-reports${suffix}`;
+}
+
+/**
  * Path builder for the auth/organization-configurations Lambda — deployed on
  * the *same* API Gateway as the sales-api Lambda (`sales-api.tsuru.jcampos.dev`),
  * but mounted at the root (`/organizations/{org}/...`) without the `/api/`

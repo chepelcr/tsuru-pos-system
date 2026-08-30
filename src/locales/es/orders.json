@@ -152,5 +152,22 @@
   "orders.status.cancelConfirmTitle": "Cancelar pedido",
   "orders.status.cancelConfirmDescription": "¿Seguro que deseas cancelar este pedido? Esta acción no se puede deshacer.",
   "orders.status.cancelConfirmYes": "Sí, cancelar",
-  "orders.upload.tooLarge": "El archivo es demasiado grande"
+  "orders.upload.tooLarge": "El archivo es demasiado grande",
+  "manualOrder.new": "Nuevo pedido",
+  "manualOrder.newHint": "Registrá un pedido en el POS sin emitir un comprobante electrónico.",
+  "manualOrder.section": "Datos del pedido",
+  "manualOrder.deliveryDate": "Fecha de entrega",
+  "manualOrder.deliveryLocation": "Punto de entrega",
+  "manualOrder.deliveryLocationPlaceholder": "Bodega, sucursal o dirección",
+  "manualOrder.event": "Evento o campaña",
+  "manualOrder.eventPlaceholder": "Feria de setiembre",
+  "manualOrder.comment": "Comentario",
+  "manualOrder.finalize": "Registrar pedido",
+  "manualOrder.confirmWith": "Registrar pedido por {amount}",
+  "manualOrder.processing": "Registrando pedido…",
+  "manualOrder.error.noLines": "Agregá al menos un producto al pedido.",
+  "manualOrder.error.clientRequired": "Seleccioná el cliente del pedido.",
+  "manualOrder.receipt.created": "Pedido registrado",
+  "manualOrder.receipt.number": "Pedido #{num}",
+  "manualOrder.receipt.newOrder": "Nuevo pedido"
 }

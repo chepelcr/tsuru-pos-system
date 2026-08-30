@@ -152,5 +152,22 @@
   "orders.status.cancelConfirmTitle": "Cancel order",
   "orders.status.cancelConfirmDescription": "Are you sure you want to cancel this order? This action cannot be undone.",
   "orders.status.cancelConfirmYes": "Yes, cancel",
-  "orders.upload.tooLarge": "The file is too large"
+  "orders.upload.tooLarge": "The file is too large",
+  "manualOrder.new": "New order",
+  "manualOrder.newHint": "Record an order in the POS without issuing an electronic document.",
+  "manualOrder.section": "Order details",
+  "manualOrder.deliveryDate": "Delivery date",
+  "manualOrder.deliveryLocation": "Delivery point",
+  "manualOrder.deliveryLocationPlaceholder": "Warehouse, branch or address",
+  "manualOrder.event": "Event or campaign",
+  "manualOrder.eventPlaceholder": "September fair",
+  "manualOrder.comment": "Comment",
+  "manualOrder.finalize": "Record order",
+  "manualOrder.confirmWith": "Record order for {amount}",
+  "manualOrder.processing": "Recording order…",
+  "manualOrder.error.noLines": "Add at least one product to the order.",
+  "manualOrder.error.clientRequired": "Select the order's client.",
+  "manualOrder.receipt.created": "Order recorded",
+  "manualOrder.receipt.number": "Order #{num}",
+  "manualOrder.receipt.newOrder": "New order"
 }

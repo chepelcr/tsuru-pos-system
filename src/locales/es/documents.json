@@ -24,6 +24,7 @@
   "docTypes.04": "Tiquete Electrónico",
   "docTypes.08": "Factura de Compra",
   "docTypes.09": "Factura de Exportación",
+  "docTypes.PM": "Pedido Manual",
   "documents.types.allTypes": "Todos los tipos",
   "documents.types.types": "Tipos",
   "documents.types.count": "{count} tipos",

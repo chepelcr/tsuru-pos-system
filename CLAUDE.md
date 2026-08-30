@@ -57,7 +57,7 @@ Requests are split across **three independent API Gateways**. Always use the hel
 | `api` | `VITE_API_URL` (markets-api) | User profile, org membership | `orgPath(userId, orgId, endpoint)` → `/api/users/{u}/memberships/organization/{o}{e}`, `userPath(userId, endpoint)` |
 | `crossAppApi` | `VITE_ORDERS_API_URL` (cross-app-be) | Sessions, assignments, branches, terminals, dashboard, closings, clients, dataApi | `crossAppOrgPath(orgId, endpoint)` → `/api/organizations/{o}{e}`, `crossAppUserOrgPath(userId, orgId, endpoint)` |
 | `ordersApi` | same base as crossApp | Products, categories | `ordersOrgPath(orgId, endpoint)` |
-| `salesApi` | `VITE_SALES_API_URL` (sales-api) | Electronic invoices, validation, XML, notifications | `salesOrgPath(orgId, suffix)`, `validationPath`, `xmlPath`, `notifyPath` |
+| `salesApi` | `VITE_SALES_API_URL` (sales-api) | Electronic invoices, validation, XML, notifications, tax reports | `salesOrgPath(orgId, suffix)`, `validationPath`, `xmlPath`, `notifyPath`, `salesTaxReportPath(orgId, suffix)` |
 
 **Important quirk**: `crossAppApi` requests automatically include `x-user-id` header extracted from the Cognito JWT `sub` claim. The markets-api does not.
 
@@ -190,6 +190,9 @@ src/components/
 │                               InventorySection, FiscalInformationSection, IvaTaxSection,
 │                               OtherTaxSection, DiscountsSection, ImageUploadSection,
 │                               PackagingSection}
+├── reports/        ← IVA declaration report (D-150): IvaPeriodPicker, IvaSummaryCards,
+│                     IvaSalesSection, IvaPurchasesSection, IvaProportionalitySection,
+│                     IvaSettlementSection, IvaWarnings, IvaReportSkeleton
 ├── puestos/        ← Stations: BranchCard, BranchForm, BranchSkeletonCard, TerminalRow,
 │                     TerminalForm, sections/{BranchGeneralSection, BranchContactSection,
 │                                              BranchLocationSection, TerminalGeneralSection}
@@ -232,6 +235,7 @@ DASHBOARD_SESSIONS /dashboard/sessions → SessionsPage
 DASHBOARD_STATIONS /dashboard/stations → PuestosPage
 DASHBOARD_PRODUCTS /dashboard/products → ProductsPage (+ /:id ProductDetailPage)
 DASHBOARD_REPORTS  /dashboard/reports  → ReportePage
+DASHBOARD_REPORTS_IVA /dashboard/reports/iva → IvaReportPage (declaración de IVA, D-150)
 DASHBOARD_POS      /dashboard/pos      → POSIntegratedPage
 DASHBOARD_DOCUMENTS /dashboard/documents → DocumentsPage (+ documentEditorPath(tabId))
 DASHBOARD_CLIENTS  /dashboard/clients  → ClientsPage (+ /:id ClientDetailPage)
@@ -243,7 +247,7 @@ POS standalone flow (cashier device):
 /pos/success   → SuccessScreen
 ```
 
-**Adding a new page**: define the route constant in `routePaths.ts`, add the page to `Routes.tsx` with `lazy(() => import(...))`, register the route with its `ROUTE_PERMISSIONS` entry, and add the navigation entry in `DashboardSidebar.tsx` (the `NAV_ITEMS` array) if it belongs to the dashboard. Do not statically import route pages into `Routes.tsx`.
+**Adding a new page**: define the route constant in `routePaths.ts`, add the page to `Routes.tsx` with `lazy(() => import(...))`, register the route with its `ROUTE_PERMISSIONS` entry, and add the navigation entry in `DashboardSidebar.tsx` (`ITEM_META` + `SECTIONS`) if it belongs to the dashboard. The `NavId` union lives in **one** place — `src/components/layout/navIds.ts` — and is imported by DashboardLayout/Shell/MobileDrawer/Sidebar; add the id there, then its `NAV_PERMISSION` pair and its `NAV_PATHS` entry. Do not statically import route pages into `Routes.tsx`.
 
 ### 5.1 RBAC catalog rule (load-bearing)
 
@@ -254,7 +258,7 @@ The RBAC catalog in the platform API **mirrors this sidebar 1:1** (legacy factur
 2. Map it in the seeded catalog in `tsuru-platform-api` → `src/seeds/rbac-seed.ts`: the module (`defaultModules` + `DEFAULT_ORG_MODULE_NAMES`), its submodules (`defaultSubmodules`), **all its grantable actions** (`submoduleActionMatrix`), and the system-role grants (`rolePermissionMatrix`).
 3. Run `pnpm run db:reseed-rbac` in tsuru-platform-api (destructive catalog reseed; aborts if custom org roles exist unless `--force`).
 
-Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general).
+Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`).
 
 **Fine-grained twin exception:** a sidebar item whose page hosts multiple config sections can get its own module mirroring those sections. `organization` is the canonical case: the sidebar item stays gated by `admin/organization`, while each org-settings CARD (`OrgSettingsPage.tsx` card ids) is a submodule of the `organization` module (read/update only) — cards are filtered with `can("organization","read",cardId)`. If you add/rename an org-settings card, update the `organization` submodules in `rbac-seed.ts` in the same change (card id = submodule name) and reseed.
 
@@ -484,6 +488,8 @@ products.*       product catalog + product form sections (reused in line-detail 
 clients.*        client list + selector
 session.*        session create/list/detail
 documents.*      documents page list + drawer
+iva.*            IVA declaration report (namespace `reports`)
+manualOrder.*    manual order (pedido manual) capture — namespace `orders`
 docs / branch / terminal / shell / orgs / auth / app / time / tabs / time / empty …
 ```
 
@@ -554,6 +560,8 @@ If you write a helper component or render function that produces user-visible te
 | Adjust documents list/editor | `components/documents/` + `store/documentStore.ts` |
 | Tweak sidebar nav | `components/layout/DashboardSidebar.tsx` (NAV_ITEMS) |
 | Add a new data-api catalog | `hooks/useDataApi.ts` + `services/data-api/` |
+| Touch the IVA declaration report | `pages/dashboard/IvaReportPage.tsx` + `components/reports/` + `hooks/useIvaReport.ts` + `docs/IVA_TAX_REPORT.md` |
+| Touch manual orders (pedidos manuales) | `types/invoice.ts` (`PM` doc type) + `hooks/useCartFlow.ts` + `components/pos/checkout/` + `docs/MANUAL_ORDERS.md` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |
 

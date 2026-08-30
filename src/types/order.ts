@@ -219,3 +219,80 @@ export interface OrdersListResult {
   data: Order[];
   pagination: OrdersPagination;
 }
+
+// ─── Manual orders (pedidos manuales) ───────────────────────────────────────
+/**
+ * Orders captured by hand in the POS document editor instead of arriving via
+ * the B2B Excel import. They exist for organizations that do not issue
+ * Hacienda electronic documents (see `useHaciendaEnabled`): the cart, the
+ * line-detail drawer and the checkout drawer are reused verbatim, and only the
+ * persistence target changes — orders API, no XML, no signature, no ATV.
+ *
+ * Wire contract: `docs/MANUAL_ORDERS.md`.
+ */
+
+/** Discriminator persisted on the order so the BE and the UI can tell them apart. */
+export const MANUAL_ORDER_SOURCE = 'manual' as const;
+
+/** Extra fields the checkout collects for a manual order. */
+export interface ManualOrderFields {
+  /** ISO date (`YYYY-MM-DD`). */
+  delivery_date?: string;
+  /** Free-text campaign/event label, mirrors `Order.event`. */
+  event?: string;
+  /** Delivery point name — the org's own label, not a GLN-registered one. */
+  delivery_location_name?: string;
+  delivery_location_code?: string;
+  /** Free-text note carried into `Order.comment`. */
+  comment?: string;
+}
+
+export interface ManualOrderLinePayload {
+  line_number: number;
+  /** Catalog product when the line came from the product grid. */
+  product_id?: string;
+  internal_code?: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  /** Absolute discount amount for the line (already cascaded). */
+  discount: number;
+  /** Absolute tax amount for the line. */
+  tax: number;
+  line_total: number;
+  /** Kept even though the order is not fiscal: it makes a later FE trivial. */
+  cabys?: string;
+}
+
+export interface ManualOrderTotalsPayload {
+  total_lines: number;
+  total_quantity_ordered: number;
+  subtotal: number;
+  discounts: number;
+  taxes: number;
+  grand_total: number;
+}
+
+export interface ManualOrderPayload {
+  /** Always `'manual'` — lets the BE keep imported and hand-made orders apart. */
+  source: typeof MANUAL_ORDER_SOURCE;
+  /** Internal editor doc type (`'PM'`), never a Hacienda code. */
+  document_type: string;
+  /** Catalog client when one was selected in the POS. */
+  client_id?: string | null;
+  client: OrderParty;
+  delivery_date?: string;
+  delivery_location?: Partial<DeliveryLocation>;
+  event?: string;
+  comment?: string;
+  currency_code: string;
+  exchange_rate: number;
+  /** Session context, when the order was captured from a POS terminal. */
+  assignment_id?: string;
+  branch_number?: number;
+  terminal_number?: number;
+  /** Payment methods recorded at capture time; may be empty for an open order. */
+  payments: { type: string; other_type?: string; amount: number }[];
+  lines: ManualOrderLinePayload[];
+  totals: ManualOrderTotalsPayload;
+}

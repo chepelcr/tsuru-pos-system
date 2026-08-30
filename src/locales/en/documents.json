@@ -24,6 +24,7 @@
   "docTypes.04": "Electronic Ticket",
   "docTypes.08": "Purchase Invoice",
   "docTypes.09": "Export Invoice",
+  "docTypes.PM": "Manual Order",
   "documents.types.allTypes": "All document types",
   "documents.types.types": "Types",
   "documents.types.count": "{count} types",

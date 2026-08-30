@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { InvoiceFormData, DocTypeCode } from '@/types/invoice';
+import type { InvoiceFormData, EditorDocTypeCode } from '@/types/invoice';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
 
 /**
@@ -27,7 +27,7 @@ export interface DocumentTab {
   id: string;
   type: 'new' | 'existing';
   title: string;
-  doc_type: DocTypeCode;
+  doc_type: EditorDocTypeCode;
   /** Invoice form state — receiver, references, payments, copy_emails, sale_condition_id, currency_code, etc. */
   data?: Partial<InvoiceFormData>;
   is_dirty?: boolean;

@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import { ROUTES } from '@/routePaths';
+import { ROUTES, documentEditorPath } from '@/routePaths';
 import { useOrgContext } from '@/contexts/OrgContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useOrders } from '@/hooks/useOrders';
 import { usePermissions } from '@/hooks/useRbac';
+import { useHaciendaEnabled } from '@/hooks/useHaciendaEnabled';
+import { useDocumentStore, newDocTabId } from '@/store/documentStore';
+import { MANUAL_ORDER_DOC_TYPE } from '@/types/invoice';
 import type { Order } from '@/types/order';
 import { fmt } from '@/lib/utils';
 import type { OrderSearchFilters } from '@/lib/orderSearchBuilder';
@@ -131,6 +134,28 @@ export default function OrdersPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canCreate = !permsReady || can('commercial', 'create', 'orders');
 
+  // Manual orders are the POS surface for orgs without electronic invoicing:
+  // the button opens a `PM` tab in the document editor rather than a bespoke
+  // form (see docs/MANUAL_ORDERS.md). FAIL-CLOSED while the Hacienda setup
+  // resolves, so it never flashes for a registered org.
+  const hacienda = useHaciendaEnabled(orgId);
+  const canCreateManual = canCreate && !hacienda.isLoading && !hacienda.enabled;
+  const addDocumentTab = useDocumentStore((s) => s.addDocumentTab);
+
+  const openManualOrder = () => {
+    const tabId = newDocTabId();
+    addDocumentTab({
+      id: tabId,
+      type: 'new',
+      title: t('docTypes.PM'),
+      doc_type: MANUAL_ORDER_DOC_TYPE,
+      data: { document_type: MANUAL_ORDER_DOC_TYPE },
+      is_dirty: false,
+      opened_at: Date.now(),
+    });
+    navigate(documentEditorPath(tabId));
+  };
+
   const [term, setTerm] = useState('');
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<OrdersAdvancedFilters>({ ...EMPTY_ORDERS_FILTERS });
@@ -194,11 +219,27 @@ export default function OrdersPage() {
           <h1 className="t-h1 mb-1.5">{t('orders.title')}</h1>
           <p className="t-body text-muted-foreground">{t('orders.subtitle')}</p>
         </div>
-        {canCreate && (
-          <Button variant="primary" icon="upload" onClick={() => setImportOpen(true)}>
-            {t('orders.excel.import')}
-          </Button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {canCreateManual && (
+            <Button
+              variant="primary"
+              icon="plus"
+              onClick={openManualOrder}
+              title={t('manualOrder.newHint')}
+            >
+              {t('manualOrder.new')}
+            </Button>
+          )}
+          {canCreate && (
+            <Button
+              variant={canCreateManual ? 'outline' : 'primary'}
+              icon="upload"
+              onClick={() => setImportOpen(true)}
+            >
+              {t('orders.excel.import')}
+            </Button>
+          )}
+        </div>
       </div>
 
       <ListToolbar

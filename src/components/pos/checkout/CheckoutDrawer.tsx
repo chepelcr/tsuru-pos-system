@@ -5,11 +5,13 @@ import { useCart } from '@/store/cart';
 import { useDocumentStore } from '@/store/documentStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
+import { isManualOrderDocType } from '@/types/invoice';
 import type {
   SalePayment,
   CurrencyCode,
   InvoiceFormData,
 } from '@/types/invoice';
+import type { ManualOrderFields } from '@/types/order';
 import type { InvoiceCheckoutData, SaleSubmissionResult } from '@/hooks/useCartFlow';
 import type { SaleReceiver } from '@/types/receiver';
 import type { SaleReference } from '@/types/reference';
@@ -18,12 +20,13 @@ import { PaymentSection } from './sections/PaymentSection';
 import { ReceiverSection } from './sections/ReceiverSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { ReferencesSection } from './sections/ReferencesSection';
+import { ManualOrderSection } from './sections/ManualOrderSection';
 import { CopiesSection } from './sections/CopiesSection';
 import { Receipt } from './Receipt';
 
 
 type Step = 'payment' | 'processing' | 'done';
-type SectionId = 'payment' | 'receiver' | 'document' | 'references' | 'copies';
+type SectionId = 'payment' | 'receiver' | 'document' | 'references' | 'copies' | 'manualOrder';
 
 interface CartItem { id: string; name: string; price: number; qty: number; }
 
@@ -112,21 +115,36 @@ export function CheckoutDrawer({
   };
 
   // ─── Doc-type derived flags (Hacienda code strings) ────────────────────
-  const needsReceiver = doc_type !== '04'; // All except Tiquete
+  // `PM` is the internal manual-order type: not a fiscal document, so no
+  // activity code, no Hacienda references, and no requirement that the order
+  // be paid in full at capture time (a pedido is normally settled later).
+  const isManualOrder = isManualOrderDocType(doc_type);
+  const needsReceiver = isManualOrder || doc_type !== '04'; // All except Tiquete
   const needsReferences = doc_type === '03' || doc_type === '02'; // NC / ND
-  const isPaid = payments.reduce((s, p) => s + p.amount, 0) >= cartTotal;
+  const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
+  const isPaid = paidTotal >= cartTotal;
   const hasReceiver = !!(receiver.name || selectedClient?.business_name || selectedClient?.client_name);
+  const manualOrder: ManualOrderFields = data.manual_order ?? {};
+  const hasLines = cartItems.length > 0;
 
   // ─── Section expansion (drawer is orchestrator only) ───────────────────
   const { expanded, toggle } = useAccordionSections<SectionId>({
-    payment: true,
+    // A manual order opens on its delivery data, not on payment: capturing
+    // when it ships is the point, and payment may not exist yet.
+    payment: !isManualOrder,
     receiver: needsReceiver && !hasReceiver,
     document: false,
     references: needsReferences && references.length === 0,
     copies: false,
+    manualOrder: isManualOrder,
   });
 
   const validate = (): string | null => {
+    if (isManualOrder) {
+      if (!hasLines) return t('manualOrder.error.noLines');
+      if (!hasReceiver) return t('manualOrder.error.clientRequired');
+      return null;
+    }
     if (!isPaid) return t('checkout.error.notPaid');
     if (!docData.activity_code) return t('checkout.error.activityRequired');
     if (needsReceiver && !hasReceiver) return t('checkout.error.receiverRequired');
@@ -157,6 +175,7 @@ export function CheckoutDrawer({
       tax_amount: taxAmount,
       discount_amount: 0,
       total_amount: cartTotal,
+      manual_order: isManualOrder ? manualOrder : undefined,
     };
 
     try {
@@ -170,7 +189,7 @@ export function CheckoutDrawer({
   };
 
   const title =
-    step === 'payment'    ? t('checkout.finalize')   :
+    step === 'payment'    ? (isManualOrder ? t('manualOrder.finalize') : t('checkout.finalize')) :
     step === 'processing' ? t('common.processing') :
                             t('checkout.completed');
 
@@ -182,10 +201,12 @@ export function CheckoutDrawer({
         )}
         <button
           onClick={handleConfirm}
-          disabled={!isPaid}
+          disabled={isManualOrder ? !hasLines : !isPaid}
           className="w-full h-12 rounded-md bg-primary text-primary-foreground font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm shadow-primary/30 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {t('checkout.confirmWith', { amount: fmt(cartTotal) })}
+          {isManualOrder
+            ? t('manualOrder.confirmWith', { amount: fmt(cartTotal) })
+            : t('checkout.confirmWith', { amount: fmt(cartTotal) })}
           <span>›</span>
         </button>
       </div>
@@ -198,7 +219,7 @@ export function CheckoutDrawer({
       dismissible={step !== 'processing'}
       onClose={step === 'done' ? onCompleted : onClose}
       title={title}
-      icon="cart"
+      icon={isManualOrder ? 'package' : 'cart'}
       width={520}
       footer={footer}
     >
@@ -231,6 +252,17 @@ export function CheckoutDrawer({
             onChange={(p) => updateData(p)}
           />
 
+          {isManualOrder && (
+            <ManualOrderSection
+              isExpanded={expanded.manualOrder}
+              onToggle={() => toggle('manualOrder')}
+              data={manualOrder}
+              onChange={(patch) =>
+                updateData({ manual_order: { ...manualOrder, ...patch } })
+              }
+            />
+          )}
+
           {needsReferences && (
             <ReferencesSection
               isExpanded={expanded.references}
@@ -240,26 +272,34 @@ export function CheckoutDrawer({
             />
           )}
 
-          <CopiesSection
-            isExpanded={expanded.copies}
-            onToggle={() => toggle('copies')}
-            emails={copyEmails}
-            onChange={(next) => updateData({ copy_emails: next })}
-          />
+          {/* Copy recipients are a Hacienda notification concern — a manual
+              order is never emailed by the invoicing service. */}
+          {!isManualOrder && (
+            <CopiesSection
+              isExpanded={expanded.copies}
+              onToggle={() => toggle('copies')}
+              emails={copyEmails}
+              onChange={(next) => updateData({ copy_emails: next })}
+            />
+          )}
         </div>
       )}
 
       {step === 'processing' && (
         <div className="px-6 py-16 flex flex-col items-center text-center gap-4">
           <div className="w-16 h-16 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <div className="font-display font-bold text-[18px]">{t('checkout.processingSale')}</div>
+          <div className="font-display font-bold text-[18px]">
+            {isManualOrder ? t('manualOrder.processing') : t('checkout.processingSale')}
+          </div>
           <div className="text-[12px] text-muted-foreground space-y-1">
             <div>{t('checkout.step.validating')}</div>
             <div>{t('checkout.step.saving')}</div>
-            <div className="flex items-center justify-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              {t('checkout.step.sending')}
-            </div>
+            {!isManualOrder && (
+              <div className="flex items-center justify-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                {t('checkout.step.sending')}
+              </div>
+            )}
           </div>
         </div>
       )}

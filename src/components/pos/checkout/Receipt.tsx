@@ -14,6 +14,10 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
   const sale = result?.status === 'confirmed' ? result.sale : undefined;
   const queued = result?.status === 'queued';
+  // Manual order (`PM`): persisted to the orders API, so there is no
+  // consecutive number, no XML and no Hacienda PDF to link — the order's own
+  // document number is the receipt.
+  const order = result?.status === 'order' ? result.order : undefined;
   return (
     <div className="px-5 py-6 flex flex-col items-center gap-4 text-center">
       <div className="w-16 h-16 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center text-3xl">
@@ -22,9 +26,17 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
 
       <div>
         <div className="font-display font-bold text-[20px]">
-          {queued ? t('checkout.receipt.queued') : t('checkout.receipt.completed')}
+          {order
+            ? t('manualOrder.receipt.created')
+            : queued
+              ? t('checkout.receipt.queued')
+              : t('checkout.receipt.completed')}
         </div>
-        {queued ? (
+        {order ? (
+          <div className="text-[13px] text-muted-foreground mt-1">
+            {t('manualOrder.receipt.number', { num: order.document_number })}
+          </div>
+        ) : queued ? (
           <div className="text-[12px] text-warning mt-1">
             {t('checkout.receipt.queuedDescription')}
           </div>
@@ -37,7 +49,7 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
             {t('checkout.receipt.sending')}
           </div>
         )}
-        {queued && (
+        {result?.status === 'queued' && (
           <div className="text-[11px] text-muted-foreground font-mono mt-2">
             {result.localId}
           </div>
@@ -53,7 +65,7 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
           <span className="text-muted-foreground">{t('common.total')}</span>
           <span className="font-mono t-num font-bold text-primary">{fmt(cartTotal)}</span>
         </div>
-        {sale?.pdf_url ? (
+        {order ? null : sale?.pdf_url ? (
           <div className="flex justify-between px-4 py-2">
             <span className="text-muted-foreground">{t('checkout.receipt.pdf')}</span>
             <a
@@ -77,7 +89,7 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
         onClick={onClose}
         className="w-full h-11 rounded-md bg-primary text-primary-foreground font-semibold text-[13px]"
       >
-        {t('checkout.receipt.newSale')}
+        {order ? t('manualOrder.receipt.newOrder') : t('checkout.receipt.newSale')}
       </button>
     </div>
   );

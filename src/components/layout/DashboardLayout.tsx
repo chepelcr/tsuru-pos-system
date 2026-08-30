@@ -21,7 +21,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
+import type { NavId } from "./navIds";
 
 interface Session {
   name: string;
@@ -34,6 +34,7 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
   if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
   if (location.startsWith(ROUTES.DASHBOARD_PRODUCTS)) return "productos";
+  if (location.startsWith(ROUTES.DASHBOARD_REPORTS_IVA)) return "ivaReport";
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS))  return "reporte";
   // Document editor and list both highlight the "documents" sidebar item
   if (location.startsWith(ROUTES.DASHBOARD_DOCUMENTS)) return "documents";
@@ -62,6 +63,7 @@ const NAV_PATHS: Record<NavId, string> = {
   productos: ROUTES.DASHBOARD_PRODUCTS,
   categories: ROUTES.DASHBOARD_CATEGORIES,
   reporte:   ROUTES.DASHBOARD_REPORTS,
+  ivaReport: ROUTES.DASHBOARD_REPORTS_IVA,
   documents: ROUTES.DASHBOARD_DOCUMENTS,
   clients:   ROUTES.DASHBOARD_CLIENTS,
   orders:    ROUTES.DASHBOARD_ORDERS,
