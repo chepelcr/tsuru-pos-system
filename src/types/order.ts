@@ -81,6 +81,15 @@ export interface OrderAttachments {
 
 export interface OrderLine {
   line_number: number;
+  /**
+   * Catalog product this line came from. Sent on every manual order
+   * (`ManualOrderLinePayload`); the BE echoes it back so a later invoice can
+   * resolve the line to the real product — with its CABYS, taxes and
+   * discounts — instead of guessing from the description.
+   */
+  product_id?: string;
+  /** CABYS code captured with the line, when it had one. */
+  cabys?: string;
   internal_code: string;
   code: string;
   client_article_code: string;
@@ -204,6 +213,29 @@ export interface Order {
   order_totals: OrderTotals;
   /** Present only after a cross-docking upload on a type-`73` order. */
   crossdocking?: Crossdocking | null;
+
+  // ── Manual orders ─────────────────────────────────────────────────────────
+  /** `'manual'` for orders captured in the POS; absent/`'import'` otherwise. */
+  source?: string;
+  /** Catalog client, when the order was captured with one selected. */
+  client_id?: string | null;
+  /**
+   * Set once the order has been billed. Present on ANY order, not just manual
+   * ones — a pedido is not always invoiced, and this is what records that it
+   * finally was. Written by the BE when the sale is linked back
+   * (`docs/MANUAL_ORDERS.md` §7).
+   */
+  invoice?: OrderInvoiceLink | null;
+}
+
+/** The electronic document that billed an order. */
+export interface OrderInvoiceLink {
+  sale_id?: string;
+  /** Hacienda document type of the invoice ("01" FE, "04" TE, …). */
+  document_type?: string;
+  consecutive_number?: string;
+  document_key?: string;
+  issued_on?: string;
 }
 
 // ─── Pagination + list envelope ──────────────────────────────────────────────

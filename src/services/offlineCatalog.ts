@@ -123,6 +123,30 @@ export async function readCachedProducts(
   };
 }
 
+/**
+ * Look up specific products in the mirror.
+ *
+ * Used when rebuilding a cart from an existing order: the order's lines carry
+ * `product_id`, and the invoice needs the full product (CABYS, taxes,
+ * discounts), not the line's flattened copy. Reads the mirror rather than the
+ * network so it also works offline, and because the login warm-up has already
+ * pulled the whole catalog.
+ */
+export async function readCachedProductsByIds(
+  orgId: string,
+  productIds: readonly string[],
+): Promise<Map<string, Product>> {
+  const wanted = new Set(productIds.filter(Boolean));
+  if (wanted.size === 0) return new Map();
+
+  const rows = await db.products.where("orgId").equals(orgId).toArray();
+  const found = new Map<string, Product>();
+  for (const row of rows) {
+    if (wanted.has(row.productId)) found.set(row.productId, row.product);
+  }
+  return found;
+}
+
 export async function readCachedCategories(orgId: string): Promise<{ data: Category[] }> {
   const rows = await db.categories.where("orgId").equals(orgId).toArray();
   return {

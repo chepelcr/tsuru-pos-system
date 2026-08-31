@@ -296,23 +296,24 @@ export function usePermissions(): UsePermissionsResult {
 /**
  * Editor types the current role may CREATE.
  *
- * The org's fiscal mode decides WHICH SET is on offer; RBAC then filters it.
- * The two sets are mutually exclusive, because they describe two different
- * kinds of organization (see `useFiscalMode` and `docs/MANUAL_ORDERS.md`):
+ * Two independent gates, because the menu mixes two kinds of thing:
  *
- *   • `orders-only` — no registered organization, so no cédula to sign with
- *     and no economic activity to put on a line. Electronic documents are not
- *     merely unsent, they are unbuildable. The manual order (`PM`) is the
- *     whole menu, gated on `commercial/create/orders`.
- *   • `electronic` — the org is a registered taxpayer. It gets the Hacienda
- *     document types, each gated on `documents/<permSub>` (credit/debit notes
- *     are restricted per role; cashiers only get FE/TE), and NOT the manual
- *     order — a taxpayer recording an off-book pedido is a compliance problem,
- *     not a feature.
+ *   • **Hacienda documents** — offered only in `electronic` mode. Without a
+ *     registered organization there is no cédula to sign with and no economic
+ *     activity for a line, so these are not merely unsent, they are
+ *     unbuildable. Each is then gated on `documents/<permSub>` (credit/debit
+ *     notes are restricted per role; cashiers only get FE/TE).
+ *   • **The manual order (`PM`)** — offered to EVERY org, gated on
+ *     `commercial/create/orders`. A pedido is not a fiscal document and is not
+ *     always billed: what ships, and whether it is invoiced afterwards, is the
+ *     user's call. A registered taxpayer invoices a delivered order from the
+ *     order page (`docs/MANUAL_ORDERS.md` §7); an `orders-only` org simply
+ *     never does.
  *
  * RBAC fails open until my-permissions resolves, as everywhere else. The
- * fiscal mode fails CLOSED: while it is unknown the menu is empty rather than
- * briefly showing a set that may be the wrong one.
+ * fiscal mode fails CLOSED for the Hacienda half: while it is unknown those
+ * types stay hidden rather than offering a document the org may not be able
+ * to build.
  */
 export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
   const { can, isReady } = usePermissions();
@@ -322,17 +323,16 @@ export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
   const fiscal = useFiscalMode(org?.id);
 
   return useMemo(() => {
-    if (fiscal.ordersOnly) {
-      const canCreateOrders = !isReady || can("commercial", "create", "orders");
-      return canCreateOrders ? [MANUAL_ORDER_DOCUMENT_TYPE] : [];
+    const types: EditorDocumentTypeInfo[] = fiscal.isElectronic
+      ? DOCUMENT_TYPES.filter((dt) => !isReady || can("documents", "create", dt.permSub))
+      : [];
+
+    if (!isReady || can("commercial", "create", "orders")) {
+      types.push(MANUAL_ORDER_DOCUMENT_TYPE);
     }
 
-    if (!fiscal.isElectronic) return [];
-
-    return DOCUMENT_TYPES.filter(
-      (dt) => !isReady || can("documents", "create", dt.permSub)
-    );
-  }, [can, isReady, fiscal.ordersOnly, fiscal.isElectronic]);
+    return types;
+  }, [can, isReady, fiscal.isElectronic]);
 }
 
 /**

@@ -7,7 +7,6 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useOrders } from '@/hooks/useOrders';
 import { usePermissions } from '@/hooks/useRbac';
-import { useFiscalMode } from '@/hooks/useFiscalMode';
 import { useDocumentStore, newDocTabId } from '@/store/documentStore';
 import { MANUAL_ORDER_DOC_TYPE } from '@/types/invoice';
 import type { Order } from '@/types/order';
@@ -134,12 +133,10 @@ export default function OrdersPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canCreate = !permsReady || can('commercial', 'create', 'orders');
 
-  // Manual orders are the POS surface for orgs with no registered organization:
-  // the button opens a `PM` tab in the document editor rather than a bespoke
-  // form (see docs/MANUAL_ORDERS.md). FAIL-CLOSED while the fiscal mode
-  // resolves, so it never flashes for a registered taxpayer.
-  const fiscal = useFiscalMode(orgId);
-  const canCreateManual = canCreate && fiscal.ordersOnly;
+  // Manual orders are available to every org: a pedido is not a fiscal
+  // document and is not always billed. The button opens a `PM` tab in the
+  // document editor rather than a bespoke form (docs/MANUAL_ORDERS.md).
+  const canCreateManual = canCreate;
   const addDocumentTab = useDocumentStore((s) => s.addDocumentTab);
 
   const openManualOrder = () => {

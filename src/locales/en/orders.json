@@ -171,5 +171,17 @@
   "manualOrder.receipt.number": "Order #{num}",
   "manualOrder.receipt.newOrder": "New order",
   "manualOrder.receipt.queued": "Order queued",
-  "manualOrder.receipt.queuedDescription": "Saved on this device; it will be sent when the connection returns."
+  "manualOrder.receipt.queuedDescription": "Saved on this device; it will be sent when the connection returns.",
+  "orders.invoice.action": "Invoice order",
+  "orders.invoice.title": "Invoice order",
+  "orders.invoice.description": "A new document opens with the order's lines and client. Nothing is issued yet — you review taxes, receiver and payment at checkout, like any other sale.",
+  "orders.invoice.documentType": "Document type",
+  "orders.invoice.noDocTypes": "Your role cannot create invoices or tickets.",
+  "orders.invoice.checkingLines": "Checking the order's lines…",
+  "orders.invoice.matchedLines": "{matched} of {total} lines were rebuilt from the catalog.",
+  "orders.invoice.unmatchedHint": "{n} lines could not be linked to a catalog product — add them by hand in the document.",
+  "orders.invoice.reviewHint": "The order stays as it is until the invoice is issued.",
+  "orders.invoice.continue": "Continue to document",
+  "orders.invoice.invoiced": "Invoiced",
+  "orders.invoice.invoicedWith": "Invoiced · {num}"
 }

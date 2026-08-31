@@ -59,6 +59,7 @@ viaja por el estado del editor (pestaña, carrito, checkout). `isManualOrderDocT
 | Pago completo para confirmar | Requerido | **No** — un pedido se paga después |
 | Sección extra | — | Entrega: fecha, punto, evento, comentario |
 | Cola offline (`db.sales`) | Sí | Sí — ver §6 |
+| Se puede facturar después | n/a | Sí, una vez entregado — ver §7 |
 | Cuenta para la declaración de IVA | Sí | **No** (`manual_orders_excluded`) |
 
 ## 4. Dónde aparece — el modo fiscal de la organización
@@ -78,21 +79,21 @@ pueda *enviar* — no se puede *construir*.
                                        modo "electronic", canTransmit true
 ```
 
-`useFiscalMode(orgId)` resuelve eso. **Los dos conjuntos son excluyentes:**
+`useFiscalMode(orgId)` resuelve eso. **El pedido manual está disponible en los dos modos:**
 
 | Modo | Tipos creables |
 |---|---|
 | `orders-only` | Solo `PM`, sujeto a `commercial/create/orders` |
-| `electronic` | Los seis tipos de Hacienda, cada uno sujeto a `documents/<permSub>`. **No** `PM` |
+| `electronic` | Los seis tipos de Hacienda (cada uno sujeto a `documents/<permSub>`) **y** `PM` |
 
-Que una organización registrada NO vea el pedido manual es deliberado: un contribuyente
-registrando ventas fuera de la facturación electrónica es un problema de cumplimiento, no una
-funcionalidad.
+Que una organización registrada también tenga el pedido manual es deliberado: **un pedido no
+siempre se factura**. Se toma la orden, se decide qué se despacha, y solo cuando el pedido se
+entrega —si corresponde— se emite el comprobante. Ese último paso es §7.
 
-Las credenciales de ATV son un paso posterior y **no** cambian el modo. Una organización con
-identidad fiscal pero sin certificado no es otro tipo de negocio: es un contribuyente a medio
-configurar. Conserva los tipos electrónicos; lo que todavía no puede es *transmitirlos*
-(`canTransmit`).
+El modo solo decide si los tipos **electrónicos** están disponibles. Las credenciales de ATV son
+un paso posterior y **no** cambian el modo: una organización con identidad fiscal pero sin
+certificado no es otro tipo de negocio, es un contribuyente a medio configurar. Conserva los tipos
+electrónicos; lo que todavía no puede es *transmitirlos* (`canTransmit`).
 
 El modo falla **cerrado**: mientras es desconocido el menú queda vacío en lugar de mostrar
 brevemente el conjunto equivocado. Sin conexión se resuelve solo, porque
@@ -101,10 +102,11 @@ nada, se recurre al último modo conocido (`pos-fiscal-mode:{orgId}`, un valor q
 
 Puntos de entrada:
 
-1. **Menú "+"** de la barra lateral y de la barra superior: `useCreatableDocTypes()` devuelve
-   únicamente `PM`.
+1. **Menú "+"** de la barra lateral y de la barra superior: `useCreatableDocTypes()` incluye
+   siempre `PM`, junto a los tipos electrónicos cuando el modo lo permite.
 2. **Página de Pedidos** — botón "Nuevo pedido", que abre una pestaña `PM` y navega al editor.
-3. **Tarjeta de acciones rápidas** del panel — "Crear pedido" en lugar de "Crear factura".
+3. **Tarjeta de acciones rápidas** del panel — "Crear pedido", junto a factura y tiquete cuando
+   están disponibles.
 
 Y en sentido contrario: si una pestaña de documento electrónico sobrevive a un cambio de modo (las
 pestañas se persisten), `DocumentEditor` la bloquea con un aviso y un enlace a la información
@@ -134,6 +136,8 @@ src/components/pos/checkout/CheckoutDrawer.tsx            Modo pedido manual
 src/components/pos/checkout/sections/ManualOrderSection.tsx  Datos de entrega
 src/components/pos/checkout/Receipt.tsx                   Comprobante del pedido
 src/components/documents/DocumentEditor.tsx                Bloqueo de pestañas electrónicas
+src/lib/orderToInvoice.ts                                 Pedido → pestaña de documento (+ .test.ts)
+src/components/orders/InvoiceOrderModal.tsx               "Facturar pedido"
 src/components/dashboard/QuickDocActionsCard.tsx           Acción rápida "Crear pedido"
 src/pages/dashboard/OrdersPage.tsx                        Botón "Nuevo pedido"
 src/locales/{es,en}/orders.json                           Claves `manualOrder.*`
@@ -155,18 +159,62 @@ cola para el próximo sync. El comprobante en pantalla lo dice (`manualOrder.rec
 Los productos y los clientes que el pedido necesita también están disponibles sin conexión — ver
 [`OFFLINE.md`](./OFFLINE.md).
 
-## 7. Restricción conocida: se necesita sesión de POS
+## 7. Facturar un pedido entregado
+
+Un pedido no es un documento fiscal y no siempre termina en uno. Cuando sí, la página del pedido
+tiene **"Facturar pedido"**.
+
+Condiciones para que aparezca:
+
+- modo `electronic` (sin identidad fiscal no hay comprobante posible),
+- `order_status === 'delivered'` — se factura lo que se entregó, no lo que se pidió,
+- el pedido no está facturado ya (`order.invoice`),
+- el rol puede crear el documento (`documents/create/fe`).
+
+Qué hace: abre una pestaña nueva del editor con el carrito reconstruido a partir del pedido y el
+cliente seleccionado, y **nada más**. No emite. El usuario revisa impuestos, receptor y pago en el
+mismo checkout que cualquier otra venta, porque ahí es donde viven las decisiones fiscales.
+
+**Las líneas se enlazan por `product_id`**, no por descripción. La línea del pedido es plana —no
+tiene estructura de impuestos ni descuentos— y una factura electrónica los necesita. Una línea que
+no se puede enlazar se **reporta**, no se inventa: fabricar un `product_id` mandaría al BE algo que
+no existe, y fabricar un CABYS pondría una tarifa equivocada en un documento fiscal. El modal dice
+"3 de 5 líneas" antes de continuar, y el usuario agrega el resto a mano.
+
+Los productos se leen del espejo offline (`readCachedProductsByIds`), que la precarga de inicio de
+sesión ya llenó — así la reconstrucción también funciona sin conexión.
+
+### Enlace de vuelta — **pendiente en el BE**
+
+Hoy el vínculo es el número de pedido en las `notes` del documento. Falta cerrarlo de verdad:
+
+```
+POST /api/organizations/{org}/orders/{document_number}/invoice
+     { sale_id, document_type, consecutive_number, document_key, issued_on }
+```
+
+El BE guarda eso en `orders.invoice` y lo devuelve en el `Order` (tipo `OrderInvoiceLink`). Con eso:
+
+- el badge "Facturado · {consecutivo}" aparece en el pedido,
+- el botón desaparece, evitando la doble facturación,
+- el reporte de IVA puede dejar de excluir el pedido, porque ya está representado por su
+  comprobante.
+
+Mientras no exista, **nada impide facturar dos veces el mismo pedido** — el FE solo puede ocultar
+el botón cuando el BE le dice que ya está facturado.
+
+## 8. Restricción conocida: se necesita sesión de POS
 
 El editor es el POS: `POSIntegratedPage` muestra `SessionSetupScreen` si no hay sucursal y terminal
 en `sessionContext`, y el checkout exige una asignación activa. Un pedido manual hereda ambas
 condiciones — es el precio de reutilizar la pantalla, y a cambio el pedido queda atribuido a su
 sucursal, terminal y cajero, y el inventario local se descuenta igual que en una venta.
 
-## 8. Contrato backend (`cross-app-be`, dominio orders)
+## 9. Contrato backend (`cross-app-be`, dominio orders)
 
 Base: `VITE_ORDERS_API_URL`. Helper: `ordersStoreOrgPath(orgId, endpoint)`.
 
-### 8.1 `POST /api/organizations/{organization_id}/orders`
+### 9.1 `POST /api/organizations/{organization_id}/orders`
 
 Cuerpo (`ManualOrderPayload`):
 
@@ -229,7 +277,7 @@ Reglas para el BE:
    organización sí tiene facturación electrónica activa, o aceptarlo explícitamente: el gate del FE
    es de producto, no de seguridad.
 
-### 8.2 Cambios en el modelo
+### 9.2 Cambios en el modelo
 
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -240,18 +288,22 @@ Reglas para el BE:
 | `orders.assignment_id` / `branch_number` / `terminal_number` | nullable | Atribución de POS |
 | `order_lines.cabys` | `varchar(13)` nullable | Se conserva para poder facturarlo después |
 
-### 8.3 Después: convertir un pedido en factura
+### 9.3 Ya cubierto: convertir un pedido en factura
 
-Cuando la organización complete su registro ante Hacienda, sus pedidos manuales deberían poder
-convertirse en FE. Ya están las piezas: cada línea guarda CABYS, cantidad, precio neto, descuentos
-e impuestos — exactamente lo que necesita `POST /sales`. Falta el endpoint
-(`POST /orders/{document_number}/invoice`) y el botón. Fuera de alcance por ahora, pero el modelo
-de datos no lo bloquea: por eso se persiste el CABYS en un documento que hoy no es fiscal.
+El botón ya existe (§7) y reconstruye el carrito desde el pedido. Lo que falta del lado del BE es
+el **enlace de vuelta**: el endpoint `POST /orders/{document_number}/invoice` y el campo
+`orders.invoice`. Sin eso el pedido no sabe que fue facturado y puede facturarse dos veces.
 
-## 9. Pendientes
+Para que la reconstrucción funcione, el BE **debe devolver `product_id` en cada `OrderLine`** — se
+lo mandamos al crear el pedido (§9.1), y es la única forma de recuperar el producto completo con su
+CABYS, impuestos y descuentos.
 
-- [ ] `cross-app-be`: `POST /orders` con `source: "manual"` (§8.1) y migración (§8.2).
+## 10. Pendientes
+
+- [ ] `cross-app-be`: `POST /orders` con `source: "manual"` (§9.1) y migración (§9.2).
 - [ ] Exponer `source` en el `Order` y filtrar por él en el listado de Pedidos.
-- [ ] Deduplicación por `Idempotency-Key` en el BE (§8.1, punto 6) — sin eso, un pedido
+- [ ] Deduplicación por `Idempotency-Key` en el BE (§9.1, punto 6) — sin eso, un pedido
       capturado sin conexión puede duplicarse al reintentar.
-- [ ] Conversión pedido → factura electrónica (§8.3).
+- [ ] `POST /orders/{document_number}/invoice` + campo `orders.invoice` (§7, §9.3) — **sin esto un
+      pedido se puede facturar dos veces.**
+- [ ] Devolver `product_id` (y `cabys`) en cada `OrderLine` (§9.3).
