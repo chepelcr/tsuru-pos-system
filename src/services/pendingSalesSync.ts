@@ -1,6 +1,20 @@
-import { ApiError, salesApi } from "@/lib/api";
-import { db, type SaleRecord } from "@/lib/db";
+import { ApiError, ordersStoreApi, salesApi } from "@/lib/api";
+import { db, type OutboxTarget, type SaleRecord } from "@/lib/db";
 import type { SaleDocument } from "@/types/invoice";
+import type { Order } from "@/types/order";
+
+/**
+ * Client per outbox target. A record queued before schema v3 has no `target`
+ * and is a sale — that is the only reason for the default.
+ */
+const OUTBOX_CLIENTS: Record<OutboxTarget, typeof salesApi> = {
+  sales: salesApi,
+  orders: ordersStoreApi,
+};
+
+function clientFor(target: OutboxTarget | undefined) {
+  return OUTBOX_CLIENTS[target ?? "sales"] ?? salesApi;
+}
 
 export interface PendingSalesSyncState {
   phase: "idle" | "syncing" | "error";
@@ -75,9 +89,11 @@ async function syncRecord(record: SaleRecord): Promise<boolean> {
   });
 
   try {
-    const response = await salesApi.post<SaleDocument>(record.syncUrl, record.payload, {
-      headers: { "Idempotency-Key": record.localId },
-    });
+    const response = await clientFor(record.target).post<SaleDocument | Order>(
+      record.syncUrl,
+      record.payload,
+      { headers: { "Idempotency-Key": record.localId } },
+    );
     await db.sales.update(record.id, {
       synced: true,
       syncState: "synced",

@@ -4,9 +4,8 @@ import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDocumentStore, newDocTabId } from '@/store/documentStore';
 import { documentEditorPath } from '@/routePaths';
-import { DOCUMENT_TYPES } from '@/types/invoice';
-import type { DocTypeCode } from '@/types/invoice';
-import { useCreatableDocTypes, usePermissions } from '@/hooks/useRbac';
+import type { EditorDocTypeCode, EditorDocumentTypeInfo } from '@/types/invoice';
+import { useCanOpenCreateMenu, useCreatableDocTypes } from '@/hooks/useRbac';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface NewDocumentButtonProps {
@@ -40,7 +39,7 @@ export function NewDocumentButton({
   const containerRef = useRef<HTMLDivElement>(null);
   // Per-doc-type create gating: only list the types this role may create.
   const creatableDocTypes = useCreatableDocTypes();
-  const { can, isReady: permsReady } = usePermissions();
+  const canOpenCreateMenu = useCanOpenCreateMenu();
 
   // Close on click-outside via document-level listener. This is more robust
   // than a backdrop div because it isn't subject to stacking-context bugs
@@ -61,19 +60,19 @@ export function NewDocumentButton({
 
   // RBAC: hide the trigger entirely when the role can't create any document
   // (mirrors the sidebar's "+" guard in DashboardSidebar.tsx).
-  if (!((!permsReady || can('documents', 'create', 'emitted')) && creatableDocTypes.length > 0)) {
+  if (!canOpenCreateMenu) {
     return null;
   }
 
-  const createDoc = (docType: typeof DOCUMENT_TYPES[number]) => {
+  const createDoc = (docType: EditorDocumentTypeInfo) => {
     setOpen(false);
     const tabId = newDocTabId();
     addDocumentTab({
       id: tabId,
       type: 'new',
       title: docType.label,
-      doc_type: docType.code as DocTypeCode,
-      data: { document_type: docType.code as DocTypeCode },
+      doc_type: docType.code as EditorDocTypeCode,
+      data: { document_type: docType.code as EditorDocTypeCode },
       is_dirty: false,
       opened_at: Date.now(),
     });

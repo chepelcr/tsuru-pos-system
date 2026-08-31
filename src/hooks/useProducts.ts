@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ordersApi, ordersOrgPath } from "../lib/api";
+import { isOfflineError } from "../lib/offline";
+import { cacheProducts, readCachedProducts } from "../services/offlineCatalog";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useOrganization } from "./useOrganization";
 import type { ProductListResponse } from "../types";
@@ -51,15 +53,30 @@ export function useProducts(options: UseProductsOptions = {}) {
     queryKey: ["products", org?.id, searchParam, page, page_size],
     enabled: !!user && !!org && enabled,
     staleTime: 1000 * 60 * 5,
-    queryFn: () => {
+    // Offline-capable: every successful page refreshes the IndexedDB mirror,
+    // and a connectivity failure reads back from it so the POS grid keeps
+    // working with no signal. See docs/OFFLINE.md.
+    queryFn: async () => {
       const params = new URLSearchParams({
         search: searchParam,
         page: String(page),
         page_size: String(page_size),
       });
-      return ordersApi.get<ProductListResponse>(
-        ordersOrgPath(org!.id, `/products?${params.toString()}`)
-      );
+      try {
+        const response = await ordersApi.get<ProductListResponse>(
+          ordersOrgPath(org!.id, `/products?${params.toString()}`)
+        );
+        void cacheProducts(org!.id, response.data ?? []);
+        return response;
+      } catch (error) {
+        if (!isOfflineError(error)) throw error;
+        return readCachedProducts(org!.id, {
+          search,
+          categoryId: category_id,
+          page,
+          pageSize: page_size,
+        });
+      }
     },
   });
 }

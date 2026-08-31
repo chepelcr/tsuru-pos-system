@@ -24,6 +24,7 @@
   "docTypes.04": "Electronic Ticket",
   "docTypes.08": "Purchase Invoice",
   "docTypes.09": "Export Invoice",
+  "docTypes.PM": "Manual Order",
   "documents.types.allTypes": "All document types",
   "documents.types.types": "Types",
   "documents.types.count": "{count} types",
@@ -58,5 +59,16 @@
   "documents.action.accepted": "Accepted",
   "documents.action.pending": "Pending",
   "documents.action.rejected": "Rejected",
-  "documents.tabNotFound": "Tab not found."
+  "documents.tabNotFound": "Tab not found.",
+  "documents.ordersOnlyTitle": "This organization only records orders",
+  "documents.ordersOnlyBody": "There is no fiscal information on file, so a {type} cannot be issued. Complete the organization's fiscal information to enable electronic invoicing.",
+  "documents.ordersOnlyAction": "Complete fiscal information",
+  "documents.ordersOnlyClose": "Close this tab",
+  "quickDoc.title": "Create document",
+  "quickDoc.subtitle": "Start an electronic invoice, a ticket, or browse your documents.",
+  "quickDoc.subtitleOrders": "Record an order or browse your documents.",
+  "quickDoc.newInvoice": "New invoice",
+  "quickDoc.newTicket": "New ticket",
+  "quickDoc.newOrder": "New order",
+  "quickDoc.viewDocuments": "View documents"
 }

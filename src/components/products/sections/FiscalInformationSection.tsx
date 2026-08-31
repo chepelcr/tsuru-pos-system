@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import { Landmark, X, Search } from "lucide-react";
 import { Spinner, FormLabel, Modal } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
+import { CabysManualEntry } from "@/components/common/CabysManualEntry";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCabysSearch, useAllProductTypes } from "@/hooks/useDataApi";
+import { useIsOnline } from "@/hooks/useIsOnline";
 import { CountryISO } from "@/lib/enums";
 import type { ProductFormState } from "@/types/productForm";
 import type { CabysItem } from "@/services/data-api";
@@ -42,6 +44,10 @@ export function FiscalInformationSection({
   const productTypes = productTypesData ?? [];
 
   const [searchResults, setSearchResults] = useState<CabysItem[]>([]);
+  // Manual code entry. Offline it is the only way in — the CABYS catalog is a
+  // server search with no local mirror (docs/OFFLINE.md).
+  const online = useIsOnline();
+  const [manualEntry, setManualEntry] = useState(false);
 
   const { refetch: runSearch, isFetching: isFetchingSearch } = useCabysSearch(
     {
@@ -179,6 +185,29 @@ export function FiscalInformationSection({
               <X size={14} />
             </button>
           </div>
+        ) : (!online || manualEntry) ? (
+          <div className="docs-fade-in">
+            <CabysManualEntry
+              onSubmit={(code) => {
+                // Only the code — the IVA rate arrives with a search result and
+                // must not be guessed. `CabysManualEntry` warns about it.
+                onChange({ cabys: code, cabysDescription: "" });
+                setManualEntry(false);
+                setSearchTerm("");
+              }}
+              offline={!online}
+              disabled={disabled || !form.productTypeId}
+            />
+            {online && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs mt-1.5"
+                onClick={() => setManualEntry(false)}
+              >
+                {t("cabys.backToSearch")}
+              </button>
+            )}
+          </div>
         ) : (
           <div className="relative">
             <FormLabel required>{t("products.searchCabys")}</FormLabel>
@@ -254,6 +283,15 @@ export function FiscalInformationSection({
         )}
 
         <p className="t-xs text-muted-foreground">{t("products.cabysHelp")}</p>
+        {!form.cabys && online && !manualEntry && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs self-start"
+            onClick={() => setManualEntry(true)}
+          >
+            {t("cabys.enterCodeInstead")}
+          </button>
+        )}
       </SectionWrapper>
 
       <Modal

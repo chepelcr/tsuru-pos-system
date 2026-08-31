@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Product } from "../types";
-import type { DocTypeCode } from "../types/invoice";
+import type { EditorDocTypeCode } from "../types/invoice";
 import type { LineDetail } from "../types/lineDetail";
 
 export interface CartItem {
@@ -13,7 +13,7 @@ export interface CartItem {
 
 interface CartStore {
   items: Record<string, CartItem>;
-  doc_type: DocTypeCode;
+  doc_type: EditorDocTypeCode;
   add: (product: Product) => void;
   remove: (productId: string) => void;
   updateLine: (productId: string, patch: { 
@@ -26,7 +26,7 @@ interface CartStore {
   setItems: (items: Record<string, CartItem>) => void; // New method
   total: () => number;
   count: () => number;
-  setDocType: (code: DocTypeCode) => void;
+  setDocType: (code: EditorDocTypeCode) => void;
 }
 
 export const useCart = create<CartStore>((set, get) => ({

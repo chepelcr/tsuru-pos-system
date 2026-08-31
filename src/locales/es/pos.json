@@ -204,6 +204,7 @@
   "sync.syncing": "Sincronizando",
   "sync.pending": "Ventas pendientes",
   "sync.error": "Revisar sincronización",
+  "sync.preparing": "Preparando modo sin conexión",
   "sync.sales.successTitle": "Ventas sincronizadas",
   "sync.sales.successDescription": "Las ventas pendientes se enviaron correctamente.",
   "sync.sales.errorTitle": "No se pudieron sincronizar algunas ventas",

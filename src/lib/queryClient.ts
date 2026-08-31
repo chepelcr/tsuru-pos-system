@@ -53,6 +53,32 @@ export const CATALOG_QUERY_KEY_PREFIXES: ReadonlySet<string> = new Set([
   "taxRates",
   "taxes",
   "documentVersions",
+  // Location + currency catalogs. Also slow-changing Hacienda reference data;
+  // added so address and currency pickers keep working offline. `neighborhoods`
+  // is deliberately excluded — it is the one cascade level with thousands of
+  // rows per country, and the persister writes the whole cache as a single
+  // localStorage string.
+  "countries",
+  "currencies",
+  "states",
+  "counties",
+  "districts",
+]);
+
+/**
+ * Account-scoped keys that are also persisted.
+ *
+ * These are not catalogs, but without them a reload with no connection lands
+ * on a shell that knows neither which org it is in nor what the user may see.
+ *
+ * `org-configurations` is deliberately absent and must stay that way: it
+ * carries the Hacienda certificate blob, its PIN and the ATV password.
+ */
+export const PERSISTED_ACCOUNT_QUERY_KEY_PREFIXES: ReadonlySet<string> = new Set([
+  "user-organizations",
+  "registered-organization",
+  "org-theme",
+  "rbac",
 ]);
 
 const PERSIST_STORAGE_KEY = "pos-system-rq-cache";
@@ -71,7 +97,11 @@ if (typeof window !== "undefined") {
     dehydrateOptions: {
       shouldDehydrateQuery: (query: Query) => {
         const head = query.queryKey?.[0];
-        return typeof head === "string" && CATALOG_QUERY_KEY_PREFIXES.has(head);
+        if (typeof head !== "string") return false;
+        return (
+          CATALOG_QUERY_KEY_PREFIXES.has(head) ||
+          PERSISTED_ACCOUNT_QUERY_KEY_PREFIXES.has(head)
+        );
       },
     },
   });

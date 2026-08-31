@@ -28,6 +28,7 @@ const SessionsPage = lazy(() => import("@/pages/dashboard/SessionsPage"));
 const PuestosPage = lazy(() => import("@/pages/dashboard/PuestosPage"));
 const ProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
 const ReportePage = lazy(() => import("@/pages/dashboard/ReportePage"));
+const IvaReportPage = lazy(() => import("@/pages/dashboard/IvaReportPage"));
 const DocumentsPage = lazy(() => import("@/pages/dashboard/DocumentsPage"));
 const ClientsPage = lazy(() => import("@/pages/dashboard/ClientsPage"));
 const ClientDetailPage = lazy(() => import("@/pages/dashboard/ClientDetailPage"));
@@ -65,6 +66,7 @@ const ROUTE_PERMISSIONS = {
   products: [["commercial", "read", "products"]],
   categories: [["commercial", "read", "categories"]],
   reports: [["reports", "read", "general"]],
+  reportsIva: [["reports", "read", "iva"]],
   documents: [
     ["documents", "read", "emitted"],
     ["documents", "read", "received"],
@@ -74,6 +76,11 @@ const ROUTE_PERMISSIONS = {
     ["documents", "create", "nd"],
     ["documents", "create", "fc"],
     ["documents", "create", "fexp"],
+    // The editor route also hosts manual orders (`PM` tabs), which are gated by
+    // the orders submodule, not by `documents` — see docs/MANUAL_ORDERS.md.
+    // Without this, a role whose only creatable editor type is the manual
+    // order would be locked out of the surface that creates it.
+    ["commercial", "create", "orders"],
   ],
   clients: [["commercial", "read", "clients"]],
   orders: [["commercial", "read", "orders"]],
@@ -308,6 +315,12 @@ export default function Routes() {
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.roles}><RolesPage /></DashboardPage>}
       />
 
+      {/* Reportes — IVA declaration support report before the session report,
+          so the more specific path wins. */}
+      <Route
+        path={ROUTES.DASHBOARD_REPORTS_IVA}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.reportsIva}><IvaReportPage /></DashboardPage>}
+      />
       <Route
         path={ROUTES.DASHBOARD_REPORTS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.reports}><ReportePage /></DashboardPage>}

@@ -54,6 +54,8 @@
   "shell.documents": "Documents",
   "shell.pos": "POS",
   "shell.reports": "Reports",
+  "shell.reportsGeneral": "Session report",
+  "shell.reportsIva": "VAT return",
   "shell.logout": "Log out",
   "shell.liveLabel": "Live",
   "shell.activeSession": "Active session",

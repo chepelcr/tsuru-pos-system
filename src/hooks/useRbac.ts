@@ -1,9 +1,15 @@
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, orgRbacPath } from "@/lib/api";
-import { DOCUMENT_TYPES } from "@/types/invoice";
+import {
+  DOCUMENT_TYPES,
+  MANUAL_ORDER_DOC_TYPE,
+  MANUAL_ORDER_DOCUMENT_TYPE,
+} from "@/types/invoice";
+import type { EditorDocumentTypeInfo } from "@/types/invoice";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useFiscalMode } from "@/hooks/useFiscalMode";
 import type {
   AvailableMatrixDto,
   MyPermissionsDto,
@@ -288,18 +294,61 @@ export function usePermissions(): UsePermissionsResult {
 }
 
 /**
- * DOCUMENT_TYPES filtered to the ones the current role may CREATE — each doc
- * type maps to a `documents/<permSub>` submodule (sensitive types like credit/
- * debit notes are restricted per role; cashiers only get FE/TE). Fail-open
- * (all types) until my-permissions resolves, like the rest of the nav gating.
+ * Editor types the current role may CREATE.
+ *
+ * Two independent gates, because the menu mixes two kinds of thing:
+ *
+ *   • **Hacienda documents** — offered only in `electronic` mode. Without a
+ *     registered organization there is no cédula to sign with and no economic
+ *     activity for a line, so these are not merely unsent, they are
+ *     unbuildable. Each is then gated on `documents/<permSub>` (credit/debit
+ *     notes are restricted per role; cashiers only get FE/TE).
+ *   • **The manual order (`PM`)** — offered to EVERY org, gated on
+ *     `commercial/create/orders`. A pedido is not a fiscal document and is not
+ *     always billed: what ships, and whether it is invoiced afterwards, is the
+ *     user's call. A registered taxpayer invoices a delivered order from the
+ *     order page (`docs/MANUAL_ORDERS.md` §7); an `orders-only` org simply
+ *     never does.
+ *
+ * RBAC fails open until my-permissions resolves, as everywhere else. The
+ * fiscal mode fails CLOSED for the Hacienda half: while it is unknown those
+ * types stay hidden rather than offering a document the org may not be able
+ * to build.
  */
-export function useCreatableDocTypes() {
+export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
   const { can, isReady } = usePermissions();
-  return useMemo(
-    () =>
-      DOCUMENT_TYPES.filter(
-        (dt) => !isReady || can("documents", "create", dt.permSub)
-      ),
-    [can, isReady]
-  );
+  const { user } = useAuthContext();
+  const { useDefaultOrganization } = useOrganization();
+  const { data: org } = useDefaultOrganization(user?.userId);
+  const fiscal = useFiscalMode(org?.id);
+
+  return useMemo(() => {
+    const types: EditorDocumentTypeInfo[] = fiscal.isElectronic
+      ? DOCUMENT_TYPES.filter((dt) => !isReady || can("documents", "create", dt.permSub))
+      : [];
+
+    if (!isReady || can("commercial", "create", "orders")) {
+      types.push(MANUAL_ORDER_DOCUMENT_TYPE);
+    }
+
+    return types;
+  }, [can, isReady, fiscal.isElectronic]);
+}
+
+/**
+ * Whether the "+" create trigger (sidebar and navbar) should render at all.
+ *
+ * It used to gate purely on `documents/create/emitted`, which is right for
+ * fiscal documents but would hide the menu from an org whose only creatable
+ * entry is the manual order — exactly the org that needs it. So: show the
+ * trigger when there is something creatable AND the caller may create either
+ * an emitted document or that manual order.
+ */
+export function useCanOpenCreateMenu(): boolean {
+  const { can, isReady } = usePermissions();
+  const creatable = useCreatableDocTypes();
+
+  const hasManualOrder = creatable.some((dt) => dt.code === MANUAL_ORDER_DOC_TYPE);
+  if (creatable.length === 0) return false;
+  return !isReady || can("documents", "create", "emitted") || hasManualOrder;
 }

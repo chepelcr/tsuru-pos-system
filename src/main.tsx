@@ -9,12 +9,23 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./index.css";
 
-// Register service worker
+// Register the service worker. In production it precaches the app shell so the
+// POS opens with no connection; in dev `public/sw.js` is a no-op (see there).
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // SW registration failed — app still works online
     });
+  });
+
+  // A new worker taking control means a new build's assets are being served.
+  // Reload once so the running page isn't a mix of two builds. The flag guards
+  // against the reload loop this pattern is famous for.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
   });
 }
 

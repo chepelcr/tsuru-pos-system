@@ -210,5 +210,14 @@
   "stores.uploadExcel": "Subir Excel",
   "stores.selectFile": "Seleccionar archivo",
   "stores.uploadSuccess": "Tiendas importadas correctamente",
-  "stores.uploadError": "No se pudieron importar las tiendas"
+  "stores.uploadError": "No se pudieron importar las tiendas",
+  "cabys.manualLabel": "Código CABYS",
+  "cabys.manualPlaceholder": "13 dígitos",
+  "cabys.manualApply": "Usar este código",
+  "cabys.manualHelp": "Escribí el código si ya lo conocés.",
+  "cabys.manualOfflineHelp": "Sin conexión no se puede buscar en el catálogo: escribí el código CABYS.",
+  "cabys.manualLengthHint": "El código debe tener {n} dígitos ({current} hasta ahora).",
+  "cabys.manualRateWarning": "Al escribir el código no se obtiene la tarifa de IVA: revisala en la pestaña de impuestos.",
+  "cabys.enterCodeInstead": "Escribir el código",
+  "cabys.backToSearch": "Volver a la búsqueda"
 }

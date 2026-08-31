@@ -1,7 +1,20 @@
 import Dexie, { type Table } from "dexie";
 import type { SaleDocument } from "@/types/invoice";
+import type { Category, Product } from "@/types";
+import type { Client } from "@/hooks/useClients";
+import type { ManualOrderPayload, Order } from "@/types/order";
 
 export type SaleSyncState = "pending" | "syncing" | "synced" | "failed";
+
+/**
+ * Which API a queued record replays against.
+ *
+ * The outbox started life as "pending sales" and hard-coded `salesApi`. Manual
+ * orders (`PM`) go to a different gateway, so every record now names its
+ * target and `pendingSalesSync` picks the client from it. Records written
+ * before v3 have no target and are treated as `"sales"`.
+ */
+export type OutboxTarget = "sales" | "orders";
 
 export interface SaleRecord {
   id?: number;
@@ -21,8 +34,10 @@ export interface SaleRecord {
   lastAttemptAt?: number;
   lastError?: string;
   syncUrl?: string;
-  payload?: SaleDocument;
-  response?: SaleDocument;
+  /** Defaults to `"sales"` when absent (records queued before schema v3). */
+  target?: OutboxTarget;
+  payload?: SaleDocument | ManualOrderPayload;
+  response?: SaleDocument | Order;
 }
 
 export interface AssignmentRecord {
@@ -46,10 +61,50 @@ export interface InventoryRecord {
   currentStock: number;
 }
 
+/**
+ * Offline catalog mirrors.
+ *
+ * React Query's localStorage persister only carries the Hacienda catalogs
+ * (see `CATALOG_QUERY_KEY_PREFIXES`) — org-scoped business data was left
+ * in-memory, which meant a cashier who lost connectivity lost the product grid
+ * and the client picker. These tables mirror the org's catalog into IndexedDB
+ * so the POS keeps working with no network.
+ *
+ * `searchName` is the lowercased display name: it lets an offline search do a
+ * substring match without deserializing every row's payload.
+ */
+export interface CachedProductRecord {
+  orgId: string;
+  productId: string;
+  searchName: string;
+  categoryId: string;
+  /** Epoch ms of the last write — drives staleness display. */
+  cachedAt: number;
+  product: Product;
+}
+
+export interface CachedCategoryRecord {
+  orgId: string;
+  categoryId: string;
+  cachedAt: number;
+  category: Category;
+}
+
+export interface CachedClientRecord {
+  orgId: string;
+  clientId: string;
+  searchName: string;
+  cachedAt: number;
+  client: Client;
+}
+
 class POSAppDB extends Dexie {
   sales!: Table<SaleRecord>;
   assignments!: Table<AssignmentRecord>;
   inventory!: Table<InventoryRecord>;
+  products!: Table<CachedProductRecord>;
+  categories!: Table<CachedCategoryRecord>;
+  clients!: Table<CachedClientRecord>;
 
   constructor() {
     super("pos-system-db");
@@ -67,6 +122,21 @@ class POSAppDB extends Dexie {
         sale.syncState = sale.synced ? "synced" : "pending";
         sale.attempts ??= 0;
         delete (sale as SaleRecord & { token?: string }).token;
+      });
+    });
+    // v3 — offline catalog mirrors + outbox routing. Compound primary keys so
+    // a re-sync upserts by natural id instead of duplicating rows.
+    this.version(3).stores({
+      sales: "++id, localId, assignmentId, userId, synced, syncState, target, timestamp",
+      assignments: "++id, assignmentId, orgId, userId",
+      inventory: "++id, productId, assignmentId",
+      products: "[orgId+productId], orgId, searchName, categoryId",
+      categories: "[orgId+categoryId], orgId",
+      clients: "[orgId+clientId], orgId, searchName",
+    }).upgrade(async (tx) => {
+      // Everything queued before v3 predates manual orders, so it is a sale.
+      await tx.table("sales").toCollection().modify((sale: SaleRecord) => {
+        sale.target ??= "sales";
       });
     });
   }

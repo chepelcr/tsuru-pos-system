@@ -3,7 +3,7 @@ import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { DashboardSidebar } from "./DashboardSidebar";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
+import type { NavId } from "./navIds";
 
 interface DashboardMobileDrawerProps {
   open: boolean;

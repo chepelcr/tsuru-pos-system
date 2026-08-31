@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
+import { isOfflineError } from "@/lib/offline";
+import { cacheClients, readCachedClients } from "@/services/offlineCatalog";
 
 // ─── Sub-types matching backend DTOs ──────────────────────────────────────
 
@@ -97,10 +99,24 @@ export function useClients(
   return useQuery({
     queryKey: ["clients", orgId, filters],
     enabled: !!orgId,
-    queryFn: () =>
-      crossAppApi.get<ClientListResponse>(
-        crossAppOrgPath(orgId!, `/clients?${searchParam}${pageParam}${sizeParam}`)
-      ),
+    // Offline-capable: mirrors each page into IndexedDB and reads back from it
+    // when connectivity fails (docs/OFFLINE.md).
+    queryFn: async () => {
+      try {
+        const response = await crossAppApi.get<ClientListResponse>(
+          crossAppOrgPath(orgId!, `/clients?${searchParam}${pageParam}${sizeParam}`)
+        );
+        void cacheClients(orgId!, response.data ?? []);
+        return response;
+      } catch (error) {
+        if (!isOfflineError(error)) throw error;
+        return readCachedClients(orgId!, {
+          search: filters?.search,
+          page: filters?.page,
+          pageSize: filters?.page_size ?? 24,
+        });
+      }
+    },
   });
 }
 

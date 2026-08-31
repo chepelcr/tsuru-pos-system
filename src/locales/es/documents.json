@@ -24,6 +24,7 @@
   "docTypes.04": "Tiquete Electrónico",
   "docTypes.08": "Factura de Compra",
   "docTypes.09": "Factura de Exportación",
+  "docTypes.PM": "Pedido Manual",
   "documents.types.allTypes": "Todos los tipos",
   "documents.types.types": "Tipos",
   "documents.types.count": "{count} tipos",
@@ -58,5 +59,16 @@
   "documents.action.accepted": "Aceptado",
   "documents.action.pending": "Pendiente",
   "documents.action.rejected": "Rechazado",
-  "documents.tabNotFound": "Pestaña no encontrada."
+  "documents.tabNotFound": "Pestaña no encontrada.",
+  "documents.ordersOnlyTitle": "Esta organización solo registra pedidos",
+  "documents.ordersOnlyBody": "No hay información fiscal registrada, así que no se puede emitir un documento de tipo {type}. Completá la información fiscal de la organización para habilitar la facturación electrónica.",
+  "documents.ordersOnlyAction": "Completar información fiscal",
+  "documents.ordersOnlyClose": "Cerrar esta pestaña",
+  "quickDoc.title": "Crear documento",
+  "quickDoc.subtitle": "Empezá una factura electrónica, un tiquete o consultá tus documentos.",
+  "quickDoc.subtitleOrders": "Registrá un pedido o consultá tus documentos.",
+  "quickDoc.newInvoice": "Crear factura",
+  "quickDoc.newTicket": "Crear tiquete",
+  "quickDoc.newOrder": "Crear pedido",
+  "quickDoc.viewDocuments": "Ver documentos"
 }

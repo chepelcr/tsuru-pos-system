@@ -20,14 +20,14 @@ import { CheckoutDrawer } from "@/components/pos/checkout/CheckoutDrawer";
 import { ClientDrawerForm } from "@/components/clients/ClientDrawerForm";
 import { POSPageSkeleton } from "@/components/pos/POSPageSkeleton";
 import SessionSetupScreen from "@/pages/pos/SessionSetupScreen";
-import type { CurrencyCode, DocTypeCode, InvoiceFormData } from "@/types/invoice";
+import type { CurrencyCode, EditorDocTypeCode, InvoiceFormData } from "@/types/invoice";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import type { SaleReceiver } from "@/types/receiver";
 
 
 interface POSIntegratedPageProps {
   /** When rendered inside DocumentEditor: drives the doc-type badge in CartSidebar */
-  docType?: DocTypeCode;
+  docType?: EditorDocTypeCode;
   /** Active document tab id — drives per-tab state hydration */
   tabId?: string;
 }

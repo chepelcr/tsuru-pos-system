@@ -7,7 +7,7 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-sw.mjs",
     "preview": "vite preview",
     "check": "pnpm run check:styles && tsc --noEmit",
     "check:styles": "node scripts/check-styles.mjs",

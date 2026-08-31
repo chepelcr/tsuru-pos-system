@@ -4,6 +4,7 @@ import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { OrgProvider } from "@/contexts/OrgContext";
+import { useOfflineBootstrap } from "@/hooks/useOfflineBootstrap";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { CountryISO } from "@/lib/enums";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
@@ -21,7 +22,7 @@ function NotificationsBridge() {
   return null;
 }
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
+import type { NavId } from "./navIds";
 
 interface Session {
   name: string;
@@ -34,6 +35,7 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
   if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
   if (location.startsWith(ROUTES.DASHBOARD_PRODUCTS)) return "productos";
+  if (location.startsWith(ROUTES.DASHBOARD_REPORTS_IVA)) return "ivaReport";
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS))  return "reporte";
   // Document editor and list both highlight the "documents" sidebar item
   if (location.startsWith(ROUTES.DASHBOARD_DOCUMENTS)) return "documents";
@@ -62,6 +64,7 @@ const NAV_PATHS: Record<NavId, string> = {
   productos: ROUTES.DASHBOARD_PRODUCTS,
   categories: ROUTES.DASHBOARD_CATEGORIES,
   reporte:   ROUTES.DASHBOARD_REPORTS,
+  ivaReport: ROUTES.DASHBOARD_REPORTS_IVA,
   documents: ROUTES.DASHBOARD_DOCUMENTS,
   clients:   ROUTES.DASHBOARD_CLIENTS,
   orders:    ROUTES.DASHBOARD_ORDERS,
@@ -84,6 +87,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [location, navigate] = useLocation();
 
   const active = getActiveNav(location);
+
+  // First-login warm-up: pulls the Hacienda catalogs, the org context and the
+  // org's own product/client catalog while there IS a connection, so the POS
+  // still works when there isn't. No-ops when already fresh (docs/OFFLINE.md).
+  useOfflineBootstrap();
 
   const handleNav = (id: NavId) => {
     navigate(NAV_PATHS[id]);

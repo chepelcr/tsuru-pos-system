@@ -110,21 +110,14 @@ export const api = {
   delete: <T>(path: string) => request<T>("DELETE", path),
 };
 
-export const crossAppApi = {
-  get: <T>(path: string) => request<T>("GET", path, undefined, CROSS_APP_API_BASE),
-  post: <T>(path: string, body: unknown) => request<T>("POST", path, body, CROSS_APP_API_BASE),
-  put: <T>(path: string, body: unknown) => request<T>("PUT", path, body, CROSS_APP_API_BASE),
-  patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body, CROSS_APP_API_BASE),
-  delete: <T>(path: string) => request<T>("DELETE", path, undefined, CROSS_APP_API_BASE),
-};
+// Both built through `createClient` so they accept per-call `RequestOptions`.
+// They used to be hand-rolled literals whose `post` took only (path, body):
+// passing an `Idempotency-Key` compiled — the extra argument is assignable —
+// and was then silently dropped at runtime, which the manual-order outbox
+// replay depends on.
+export const crossAppApi = createClient(CROSS_APP_API_BASE);
 
-export const ordersApi = {
-  get: <T>(path: string) => request<T>("GET", path, undefined, CROSS_APP_API_BASE),
-  post: <T>(path: string, body: unknown) => request<T>("POST", path, body, CROSS_APP_API_BASE),
-  put: <T>(path: string, body: unknown) => request<T>("PUT", path, body, CROSS_APP_API_BASE),
-  patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body, CROSS_APP_API_BASE),
-  delete: <T>(path: string) => request<T>("DELETE", path, undefined, CROSS_APP_API_BASE),
-};
+export const ordersApi = createClient(CROSS_APP_API_BASE);
 
 /**
  * Store-facing orders client (orders/products domain — `cross-app-be`).
@@ -276,6 +269,15 @@ export const salesApi = createClient(SALES_API_BASE);
 /** /api/organizations/{org}/sales[suffix] */
 export function salesOrgPath(orgId: string, suffix: string = '') {
   return `/api/organizations/${orgId}/sales${suffix}`;
+}
+
+/**
+ * /api/organizations/{org}/tax-reports[suffix] — sales-api tax reporting.
+ * Backs the IVA declaration support report (formulario D-150). Contract:
+ * `docs/IVA_TAX_REPORT.md`.
+ */
+export function salesTaxReportPath(orgId: string, suffix: string = '') {
+  return `/api/organizations/${orgId}/tax-reports${suffix}`;
 }
 
 /**

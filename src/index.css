@@ -58,6 +58,8 @@
   --doc-nd: 48 96% 47%;
   --doc-fc: 271 81% 56%;
   --doc-fexp: 239 84% 67%;
+  /* Internal (non-Hacienda) editor type: pedido manual. */
+  --doc-pm: 174 72% 40%;
 
   /* Z-index scale */
   --z-dropdown: 30;
@@ -659,6 +661,7 @@
   .text-doc-nd { color: hsl(var(--doc-nd)); }
   .text-doc-fc { color: hsl(var(--doc-fc)); }
   .text-doc-fexp { color: hsl(var(--doc-fexp)); }
+  .text-doc-pm { color: hsl(var(--doc-pm)); }
 
   /* Reusable responsive grids; min(100%, …) prevents narrow-screen overflow. */
   .grid-auto-fit-120 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); }

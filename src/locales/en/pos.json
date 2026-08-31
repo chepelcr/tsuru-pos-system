@@ -204,6 +204,7 @@
   "sync.syncing": "Syncing",
   "sync.pending": "Pending sales",
   "sync.error": "Review sync",
+  "sync.preparing": "Preparing offline mode",
   "sync.sales.successTitle": "Sales synchronized",
   "sync.sales.successDescription": "Pending sales were sent successfully.",
   "sync.sales.errorTitle": "Some sales could not be synchronized",

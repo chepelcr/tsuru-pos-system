@@ -13,6 +13,9 @@ import { fmt } from '@/lib/utils';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE } from '@/components/orders/OrderStatusBadge';
+import { InvoiceOrderModal } from '@/components/orders/InvoiceOrderModal';
+import { useFiscalMode } from '@/hooks/useFiscalMode';
+import { isOrderInvoiced } from '@/lib/orderToInvoice';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
 import { ReprocessDialog } from '@/components/orders/ReprocessDialog';
 import { CrossdockingUploadDialog } from '@/components/orders/CrossdockingUploadDialog';
@@ -264,6 +267,10 @@ export default function OrderDetailPage({ orderId }: Props) {
 
   const { data: order, isLoading, error } = useOrder(orgId, orderId);
   const updateStatus = useUpdateOrderStatus(orgId, orderId);
+  // Billing a pedido is optional and happens after delivery — see
+  // docs/MANUAL_ORDERS.md §7.
+  const fiscal = useFiscalMode(orgId);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can, isReady: permsReady } = usePermissions();
@@ -421,7 +428,23 @@ export default function OrderDetailPage({ orderId }: Props) {
   const hasCrossdocking = isCrossdockingType && !!order.crossdocking;
   const att = order.attachments ?? {};
 
+  // A delivered order can be billed once, and only by an org that can build an
+  // electronic document at all. `canCreateDoc` mirrors the editor's own gate.
+  const alreadyInvoiced = isOrderInvoiced(order);
+  const canInvoice =
+    fiscal.isElectronic &&
+    order.order_status === 'delivered' &&
+    !alreadyInvoiced &&
+    (!permsReady || can('documents', 'create', 'fe'));
+
   const menuItems: MenuItem[] = [
+    canInvoice
+      ? {
+          label: t('orders.invoice.action'),
+          icon: 'fileText',
+          action: () => setInvoiceOpen(true),
+        }
+      : null,
     nextStatus && canUpdate
       ? {
           label: t('orders.status.markAs', { status: t(`orders.status.${nextStatus}`) }),
@@ -483,6 +506,16 @@ export default function OrderDetailPage({ orderId }: Props) {
                 {t(`orders.status.${order.order_status}`)}
               </Badge>
               {text(order.event) && <Badge variant="outline">{text(order.event)}</Badge>}
+              {alreadyInvoiced && (
+                <Badge variant="success" className="inline-flex items-center gap-1">
+                  <Icon name="fileText" size={11} />
+                  {order.invoice?.consecutive_number
+                    ? t('orders.invoice.invoicedWith', {
+                        num: order.invoice.consecutive_number,
+                      })
+                    : t('orders.invoice.invoiced')}
+                </Badge>
+              )}
             </div>
           </div>
           <div className="flex items-start gap-3 flex-shrink-0">
@@ -502,6 +535,15 @@ export default function OrderDetailPage({ orderId }: Props) {
             )}
           </div>
         </div>
+
+        {/* Billing a delivered pedido — the one action that turns it fiscal. */}
+        {canInvoice && (
+          <div className="mt-5">
+            <Button variant="primary" size="sm" icon="fileText" onClick={() => setInvoiceOpen(true)}>
+              {t('orders.invoice.action')}
+            </Button>
+          </div>
+        )}
 
         {/* Attachment downloads */}
         {canExport && (att.pdf_url || att.excel_url || att.nuevo_reporte_url) && (
@@ -614,6 +656,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         </div>
       </div>
 
+      <InvoiceOrderModal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} order={order} />
       <ReprocessDialog open={reprocessOpen} onClose={() => setReprocessOpen(false)} order={order} orgId={orgId} />
       {isCrossdockingType && (
         <CrossdockingUploadDialog

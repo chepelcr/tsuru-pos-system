@@ -2,17 +2,16 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
-import { usePermissions, useCreatableDocTypes } from "@/hooks/useRbac";
+import { usePermissions, useCanOpenCreateMenu, useCreatableDocTypes } from "@/hooks/useRbac";
 import { useProgramsEnabled } from "@/hooks/useProgramsEnabled";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
-import { DOCUMENT_TYPES } from "@/types/invoice";
-import type { DocTypeCode } from "@/types/invoice";
+import type { EditorDocTypeCode, EditorDocumentTypeInfo } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 import { roleLabel } from "@/lib/rbacI18n";
 
-type NavId = "dashboard" | "config" | "puestos" | "productos" | "categories" | "reporte" | "documents" | "clients" | "orders" | "confirmations" | "members" | "roles" | "organization" | "content" | "gallery" | "templates" | "deployments" | "programs" | "profile";
+import type { NavId } from "./navIds";
 
 interface DashboardSidebarProps {
   active: NavId;
@@ -33,7 +32,8 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   members:       { icon: "users",       labelKey: "shell.members" },
   roles:         { icon: "shield",      labelKey: "shell.roles" },
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
-  reporte:       { icon: "trending",    labelKey: "shell.reports" },
+  reporte:       { icon: "trending",    labelKey: "shell.reportsGeneral" },
+  ivaReport:     { icon: "pie",         labelKey: "shell.reportsIva" },
   programs:      { icon: "graduationCap", labelKey: "shell.programs" },
   content:       { icon: "fileText",    labelKey: "shell.content" },
   gallery:       { icon: "grid",        labelKey: "shell.gallery" },
@@ -41,7 +41,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   deployments:   { icon: "upload",      labelKey: "shell.deployments" },
 };
 
-type SectionId = "commercial" | "admin" | "storefront" | "analytics";
+type SectionId = "commercial" | "admin" | "storefront" | "reports";
 
 /**
  * RBAC map — the catalog mirrors this sidebar 1:1 (modules = sections /
@@ -66,6 +66,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   templates:     ["storefront", "templates"],
   deployments:   ["storefront", "deployments"],
   reporte:       ["reports", "general"],
+  ivaReport:     ["reports", "iva"],
   programs:      ["programs", "programs"],
   documents:     ["documents", "emitted"],
 };
@@ -75,6 +76,7 @@ const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] 
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
   { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "roles", "config"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
+  { id: "reports",    labelKey: "shell.reports",           icon: "trending", items: ["reporte", "ivaReport"] },
 ];
 
 function sectionOf(active: NavId): SectionId | null {
@@ -98,6 +100,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // Per-doc-type create gating (documents/<permSub>): the "+" menu only lists
   // the types this role may create — e.g. cashiers see FE/TE, never NC/ND.
   const creatableDocTypes = useCreatableDocTypes();
+  const canOpenCreateMenu = useCanOpenCreateMenu();
   const { t } = useLanguage();
   const { addDocumentTab } = useDocumentStore();
   const [, setLocation] = useLocation();
@@ -119,15 +122,15 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     onClose?.();
   };
 
-  const handleCreateDoc = (docType: typeof DOCUMENT_TYPES[number]) => {
+  const handleCreateDoc = (docType: EditorDocumentTypeInfo) => {
     setCreateOpen(false);
     const tabId = newDocTabId();
     addDocumentTab({
       id: tabId,
       type: "new",
       title: docType.label,
-      doc_type: docType.code as DocTypeCode,
-      data: { document_type: docType.code as DocTypeCode },
+      doc_type: docType.code as EditorDocTypeCode,
+      data: { document_type: docType.code as EditorDocTypeCode },
       is_dirty: false,
       opened_at: Date.now(),
     });
@@ -225,9 +228,6 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           );
         })}
 
-        {/* Reportes — standalone item (not wrapped in a collapsible section) */}
-        <div className="mt-1.5">{renderItem("reporte")}</div>
-
         {/* Programas — standalone, template-gated item (W12). renderItem returns
             null when the template lacks a programs section or the role can't read it. */}
         {itemVisible("programs") && <div className="mt-1.5">{renderItem("programs")}</div>}
@@ -243,7 +243,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             {t("shell.documents")}
           </button>
 
-          {(!permsReady || can("documents", "create", "emitted")) && creatableDocTypes.length > 0 && (
+          {canOpenCreateMenu && (
           <button
             onClick={(e) => {
               e.stopPropagation();

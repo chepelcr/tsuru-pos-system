@@ -1,7 +1,13 @@
 import { useCart } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
-import { ApiError, salesApi, salesOrgPath } from "@/lib/api";
-import { db } from "@/lib/db";
+import {
+  ApiError,
+  ordersStoreApi,
+  ordersStoreOrgPath,
+  salesApi,
+  salesOrgPath,
+} from "@/lib/api";
+import { db, type OutboxTarget } from "@/lib/db";
 import { notifyPendingSalesChanged } from "@/services/pendingSalesSync";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import type {
@@ -11,12 +17,20 @@ import type {
   ResidenceLocalState,
 } from "@/types/receiver";
 import type { SaleReference } from "@/types/reference";
+import { isManualOrderDocType } from "@/types/invoice";
 import type {
   CurrencyCode,
-  DocTypeCode,
+  EditorDocTypeCode,
   SaleDocument,
   SalePayment,
 } from "@/types/invoice";
+import { MANUAL_ORDER_SOURCE } from "@/types/order";
+import type {
+  ManualOrderFields,
+  ManualOrderLinePayload,
+  ManualOrderPayload,
+  Order,
+} from "@/types/order";
 
 /**
  * Inputs the checkout drawer assembles before calling submit.
@@ -26,7 +40,7 @@ import type {
  * resolves it to `neighborhood_name` if a name isn't already present.
  */
 export interface InvoiceCheckoutData {
-  document_type: DocTypeCode;
+  document_type: EditorDocTypeCode;
   /** Hacienda sale condition code. */
   sale_condition: string;
   activity_code: string;
@@ -42,6 +56,8 @@ export interface InvoiceCheckoutData {
   discount_amount: number;
   tax_amount: number;
   total_amount: number;
+  /** Present only on manual-order (`PM`) checkouts. */
+  manual_order?: ManualOrderFields;
 }
 
 interface ConfirmPaymentArgs {
@@ -56,7 +72,35 @@ interface ConfirmPaymentArgs {
 
 export type SaleSubmissionResult =
   | { status: "confirmed"; sale: SaleDocument }
-  | { status: "queued"; localId: string };
+  | { status: "queued"; localId: string; target: OutboxTarget }
+  /**
+   * A manual order (`PM`) was persisted to the orders API. It has no
+   * consecutive number, no XML and no Hacienda round-trip — the receipt
+   * renders the order's document number instead.
+   */
+  | { status: "order"; order: Order };
+
+/**
+ * Human-readable payment label stored on the outbox record.
+ *
+ * This is offline bookkeeping copy, not UI: the record is written from a
+ * mutation with no `t()` in scope and is only ever read back in the local
+ * sync log, so it stays in Spanish rather than being routed through i18n.
+ */
+function describePayments(payments: SalePayment[]): string {
+  return payments
+    .map((p) => {
+      switch (p.type) {
+        case "01": return "Efectivo";
+        case "02": return "Tarjeta";
+        case "03": return "Cheque";
+        case "04": return "Transferencia";
+        case "06": return "SINPE";
+        default:   return p.type === "99" ? (p.other_type || "Otro") : "Otro";
+      }
+    })
+    .join(", ");
+}
 
 export interface UseCartFlowOptions {
   /**
@@ -183,6 +227,137 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
 
     const receiver = buildReceiver(invoiceData.receiver, selectedClient);
 
+    // ── Manual order (`PM`) ────────────────────────────────────────────────
+    // Same cart, same line details, different destination: the orders API.
+    // Queued through the same outbox as a sale — each record names its
+    // `target`, so `pendingSalesSync` replays this one against the orders
+    // gateway instead of sales-api.
+    if (isManualOrderDocType(invoiceData.document_type)) {
+      const manualFields = invoiceData.manual_order ?? {};
+
+      const lines: ManualOrderLinePayload[] = cartItems.map((item, index) => {
+        const discountFactor = 1 - (item.lineDiscount || 0) / 100;
+        const grossBase = item.netPrice * item.qty;
+        const discount = grossBase * ((item.lineDiscount || 0) / 100);
+        // Tax scales with the discounted base, the way the Hacienda cascade
+        // treats it — the BE recomputes authoritative amounts regardless.
+        const tax = Math.max(0, (item.price - item.netPrice) * item.qty * discountFactor);
+        const taxableBase = grossBase - discount;
+
+        return {
+          line_number: index + 1,
+          product_id: item.id,
+          description: item.lineNote || item.name,
+          quantity: item.qty,
+          unit_price: item.netPrice,
+          discount,
+          tax,
+          line_total: taxableBase + tax,
+          cabys:
+            (typeof (item as any).cabys === "string"
+              ? (item as any).cabys
+              : (item as any).cabys?.code) ?? item.lineDetail?.cabys,
+        };
+      });
+
+      const clientName =
+        receiver?.name ||
+        selectedClient?.business_name ||
+        selectedClient?.client_name ||
+        "";
+
+      const orderPayload: ManualOrderPayload = {
+        source: MANUAL_ORDER_SOURCE,
+        document_type: invoiceData.document_type,
+        client_id: selectedClient?.client_id ?? null,
+        client: {
+          name: clientName,
+          gln: selectedClient?.client_gln ?? "",
+          internal_code: selectedClient?.identification?.number ?? undefined,
+        },
+        delivery_date: manualFields.delivery_date || undefined,
+        delivery_location: manualFields.delivery_location_name
+          ? {
+              name: manualFields.delivery_location_name,
+              code: manualFields.delivery_location_code || undefined,
+            }
+          : undefined,
+        event: manualFields.event || undefined,
+        comment: manualFields.comment || invoiceData.notes || undefined,
+        currency_code: invoiceData.currency?.currency_code ?? "CRC",
+        exchange_rate: invoiceData.currency?.exchange_rate ?? 1,
+        assignment_id: assignmentId,
+        branch_number: branchNumber,
+        terminal_number: terminalNumber,
+        payments: invoiceData.payments.map((p) => ({
+          type: p.type,
+          other_type: p.other_type,
+          amount: p.amount,
+        })),
+        lines,
+        totals: {
+          total_lines: lines.length,
+          total_quantity_ordered: cartItems.reduce((sum, i) => sum + i.qty, 0),
+          subtotal: invoiceData.subtotal,
+          discounts: invoiceData.discount_amount,
+          taxes: invoiceData.tax_amount,
+          grand_total: invoiceData.total_amount,
+        },
+      };
+
+      const orderSyncUrl = ordersStoreOrgPath(orgId, "/orders");
+
+      // Persist first, exactly like a sale: a pedido captured with no signal
+      // must survive a reload and replay when connectivity returns.
+      await db.sales.add({
+        localId,
+        assignmentId,
+        orgId,
+        userId,
+        target: "orders",
+        items: cartItems.map((c) => ({
+          productId: parseInt(c.id, 10),
+          name: c.name,
+          price: c.price,
+          qty: c.qty,
+        })),
+        total: invoiceData.total_amount,
+        paymentMethod: describePayments(invoiceData.payments),
+        timestamp: Date.now(),
+        synced: false,
+        syncState: "pending",
+        attempts: 0,
+        syncUrl: orderSyncUrl,
+        payload: orderPayload,
+      });
+
+      try {
+        const order = await ordersStoreApi.post<Order>(orderSyncUrl, orderPayload, {
+          headers: { "Idempotency-Key": localId },
+        });
+        await db.sales.where({ localId }).modify({
+          synced: true,
+          syncState: "synced",
+          response: order,
+        });
+        cartItems.forEach(({ id, qty }) => decrement(id, qty));
+        clear();
+        notifyPendingSalesChanged(userId);
+        return { status: "order", order };
+      } catch (err) {
+        const retryable = !(err instanceof ApiError) || err.retriable;
+        if (!retryable) {
+          await db.sales.where({ localId }).delete();
+          throw err;
+        }
+
+        cartItems.forEach(({ id, qty }) => decrement(id, qty));
+        clear();
+        notifyPendingSalesChanged(userId);
+        return { status: "queued", localId, target: "orders" };
+      }
+    }
+
     // ── Build the canonical DocumentDTO payload ────────────────────────────
     const payload: SaleDocument = {
       assignment_id: assignmentId,
@@ -262,18 +437,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         qty: c.qty,
       })),
       total: invoiceData.total_amount,
-      paymentMethod: invoiceData.payments
-        .map((p) => {
-          switch (p.type) {
-            case "01": return "Efectivo";
-            case "02": return "Tarjeta";
-            case "03": return "Cheque";
-            case "04": return "Transferencia";
-            case "06": return "SINPE";
-            default:   return p.type === "99" ? (p.other_type || "Otro") : "Otro";
-          }
-        })
-        .join(", "),
+      paymentMethod: describePayments(invoiceData.payments),
       timestamp: Date.now(),
       synced: false,
       syncState: "pending",
@@ -306,7 +470,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       cartItems.forEach(({ id, qty }) => decrement(id, qty));
       clear();
       notifyPendingSalesChanged(userId);
-      return { status: "queued", localId };
+      return { status: "queued", localId, target: "sales" };
     }
   };
 

@@ -19,6 +19,7 @@ import type { SaleReceiver, Identification } from './receiver';
 import type { SaleReference } from './reference';
 import type { LineDetail } from './lineDetail';
 import type { PaginationResponse } from './pagination';
+import type { ManualOrderFields } from './order';
 
 // ── Currency (CurrencyDTO) ─────────────────────────────────────────────────
 export interface CurrencyCode {
@@ -58,9 +59,62 @@ export const DOCUMENT_TYPES = [
 /** Hacienda document type code as a string literal union. */
 export type DocTypeCode = '01' | '02' | '03' | '04' | '08' | '09';
 
+// ── Manual order (pedido manual) — an INTERNAL editor doc type ─────────────
+/**
+ * `PM` is NOT a Hacienda code. It is the POS editor's own type for a *pedido
+ * manual*: an order captured in the same cart/checkout surface as an
+ * electronic document, but persisted to the orders API and never signed or
+ * sent to Hacienda.
+ *
+ * Reusing the document editor is deliberate — the cart, line-detail drawer,
+ * client selector and checkout sections already model exactly the structures
+ * an order needs (lines with CABYS, taxes, discounts; a receiver; payments),
+ * so an org without electronic invoicing gets the full POS instead of a
+ * stripped-down form. See `docs/MANUAL_ORDERS.md`.
+ *
+ * The code is two letters precisely so it can never collide with a numeric
+ * Hacienda code, present or future.
+ */
+export const MANUAL_ORDER_DOC_TYPE = 'PM' as const;
+export type ManualOrderDocTypeCode = typeof MANUAL_ORDER_DOC_TYPE;
+
+/**
+ * Any type the document editor can host: the six Hacienda documents plus the
+ * internal manual order. Use this for editor/cart/tab state; keep
+ * `DocTypeCode` for anything that reaches a Hacienda payload.
+ */
+export type EditorDocTypeCode = DocTypeCode | ManualOrderDocTypeCode;
+
+/** Narrowing guard — `true` when the tab is an order, not a fiscal document. */
+export function isManualOrderDocType(code: string | undefined): code is ManualOrderDocTypeCode {
+  return code === MANUAL_ORDER_DOC_TYPE;
+}
+
+/**
+ * Catalog entry for the manual order. `permSub` is the *orders* submodule:
+ * creation is gated by `commercial/create/orders`, not by the `documents`
+ * module, because a pedido manual is not a document (CLAUDE.md §5.1).
+ */
+export const MANUAL_ORDER_DOCUMENT_TYPE = {
+  code: MANUAL_ORDER_DOC_TYPE,
+  label: 'Pedido Manual',
+  short: 'PM',
+  permSub: 'orders',
+  color: 'text-doc-pm',
+  tabGradient: 'from-teal-500 to-teal-600',
+} as const;
+
+/** Every type the editor can open — Hacienda documents plus the manual order. */
+export const EDITOR_DOCUMENT_TYPES = [
+  ...DOCUMENT_TYPES,
+  MANUAL_ORDER_DOCUMENT_TYPE,
+] as const;
+
+export type EditorDocumentTypeInfo = (typeof EDITOR_DOCUMENT_TYPES)[number];
+
 /** Lookup helper for tab/badge rendering. */
 export function getDocumentTypeInfo(code: string) {
-  return DOCUMENT_TYPES.find((d) => d.code === code);
+  return EDITOR_DOCUMENT_TYPES.find((d) => d.code === code);
 }
 
 // ── Validation (AtvValidationDTO + ReceiverValidationDTO) ──────────────────
@@ -262,7 +316,7 @@ export interface SaleListResponse {
  * Same shape as the canonical request — partial during editing.
  */
 export interface InvoiceFormData {
-  document_type: DocTypeCode;
+  document_type: EditorDocTypeCode;
   version?: string;
   activity_code: string;
   sale_condition: string;
@@ -275,4 +329,9 @@ export interface InvoiceFormData {
   details: LineDetail[];
   payments: SalePayment[];
   references: SaleReference[];
+  /**
+   * Manual-order-only fields (delivery date, event, delivery point, comment).
+   * Present exclusively on `PM` tabs; ignored by every Hacienda code path.
+   */
+  manual_order?: ManualOrderFields;
 }
