@@ -9,7 +9,7 @@ import {
 import type { EditorDocumentTypeInfo } from "@/types/invoice";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
-import { useHaciendaEnabled } from "@/hooks/useHaciendaEnabled";
+import { useFiscalMode } from "@/hooks/useFiscalMode";
 import type {
   AvailableMatrixDto,
   MyPermissionsDto,
@@ -296,39 +296,43 @@ export function usePermissions(): UsePermissionsResult {
 /**
  * Editor types the current role may CREATE.
  *
- * Two different gates, because the menu mixes two kinds of thing:
- *   • Hacienda documents — `documents/<permSub>` (sensitive types like credit/
- *     debit notes are restricted per role; cashiers only get FE/TE).
- *   • The manual order (`PM`) — `commercial/create/orders`, and only for orgs
- *     WITHOUT electronic invoicing. An org that can emit a FE has no reason to
- *     record an off-book pedido from the same menu; one that cannot emit
- *     anything needs this to be its POS. See `docs/MANUAL_ORDERS.md`.
+ * The org's fiscal mode decides WHICH SET is on offer; RBAC then filters it.
+ * The two sets are mutually exclusive, because they describe two different
+ * kinds of organization (see `useFiscalMode` and `docs/MANUAL_ORDERS.md`):
  *
- * Fail-open (all Hacienda types) until my-permissions resolves, like the rest
- * of the nav gating — but the manual order is FAIL-CLOSED while the Hacienda
- * setup is still loading, so it never flashes into a registered org's menu.
+ *   • `orders-only` — no registered organization, so no cédula to sign with
+ *     and no economic activity to put on a line. Electronic documents are not
+ *     merely unsent, they are unbuildable. The manual order (`PM`) is the
+ *     whole menu, gated on `commercial/create/orders`.
+ *   • `electronic` — the org is a registered taxpayer. It gets the Hacienda
+ *     document types, each gated on `documents/<permSub>` (credit/debit notes
+ *     are restricted per role; cashiers only get FE/TE), and NOT the manual
+ *     order — a taxpayer recording an off-book pedido is a compliance problem,
+ *     not a feature.
+ *
+ * RBAC fails open until my-permissions resolves, as everywhere else. The
+ * fiscal mode fails CLOSED: while it is unknown the menu is empty rather than
+ * briefly showing a set that may be the wrong one.
  */
 export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
   const { can, isReady } = usePermissions();
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
-  const hacienda = useHaciendaEnabled(org?.id);
+  const fiscal = useFiscalMode(org?.id);
 
   return useMemo(() => {
-    const documents: EditorDocumentTypeInfo[] = DOCUMENT_TYPES.filter(
+    if (fiscal.ordersOnly) {
+      const canCreateOrders = !isReady || can("commercial", "create", "orders");
+      return canCreateOrders ? [MANUAL_ORDER_DOCUMENT_TYPE] : [];
+    }
+
+    if (!fiscal.isElectronic) return [];
+
+    return DOCUMENT_TYPES.filter(
       (dt) => !isReady || can("documents", "create", dt.permSub)
     );
-
-    const manualOrderAllowed =
-      !hacienda.isLoading &&
-      !hacienda.enabled &&
-      (!isReady || can("commercial", "create", "orders"));
-
-    return manualOrderAllowed
-      ? [...documents, MANUAL_ORDER_DOCUMENT_TYPE]
-      : documents;
-  }, [can, isReady, hacienda.isLoading, hacienda.enabled]);
+  }, [can, isReady, fiscal.ordersOnly, fiscal.isElectronic]);
 }
 
 /**

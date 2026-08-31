@@ -258,7 +258,7 @@ The RBAC catalog in the platform API **mirrors this sidebar 1:1** (legacy factur
 2. Map it in the seeded catalog in `tsuru-platform-api` → `src/seeds/rbac-seed.ts`: the module (`defaultModules` + `DEFAULT_ORG_MODULE_NAMES`), its submodules (`defaultSubmodules`), **all its grantable actions** (`submoduleActionMatrix`), and the system-role grants (`rolePermissionMatrix`).
 3. Run `pnpm run db:reseed-rbac` in tsuru-platform-api (destructive catalog reseed; aborts if custom org roles exist unless `--force`).
 
-Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`).
+Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. An org with no `registered-organization` is in `orders-only` mode: the editor offers ONLY the manual order, gated on `commercial/create/orders` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`).
 
 **Fine-grained twin exception:** a sidebar item whose page hosts multiple config sections can get its own module mirroring those sections. `organization` is the canonical case: the sidebar item stays gated by `admin/organization`, while each org-settings CARD (`OrgSettingsPage.tsx` card ids) is a submodule of the `organization` module (read/update only) — cards are filtered with `can("organization","read",cardId)`. If you add/rename an org-settings card, update the `organization` submodules in `rbac-seed.ts` in the same change (card id = submodule name) and reseed.
 
@@ -562,7 +562,7 @@ If you write a helper component or render function that produces user-visible te
 | Tweak sidebar nav | `components/layout/DashboardSidebar.tsx` (NAV_ITEMS) |
 | Add a new data-api catalog | `hooks/useDataApi.ts` + `services/data-api/` |
 | Touch the IVA declaration report | `pages/dashboard/IvaReportPage.tsx` + `components/reports/` + `hooks/useIvaReport.ts` + `docs/IVA_TAX_REPORT.md` |
-| Touch manual orders (pedidos manuales) | `types/invoice.ts` (`PM` doc type) + `hooks/useCartFlow.ts` + `components/pos/checkout/` + `docs/MANUAL_ORDERS.md` |
+| Touch manual orders (pedidos manuales) | `hooks/useFiscalMode.ts` (the gate) + `types/invoice.ts` (`PM` doc type) + `hooks/useCartFlow.ts` + `components/pos/checkout/` + `docs/MANUAL_ORDERS.md` |
 | Change anything offline / PWA | `services/offlineCatalog.ts` + `services/offlineBootstrap.ts` + `lib/db.ts` + `lib/queryClient.ts` + `scripts/sw-template.js` + `docs/OFFLINE.md` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |

@@ -224,7 +224,7 @@ export interface OrdersListResult {
 /**
  * Orders captured by hand in the POS document editor instead of arriving via
  * the B2B Excel import. They exist for organizations that do not issue
- * Hacienda electronic documents (see `useHaciendaEnabled`): the cart, the
+ * Hacienda electronic documents (see `useFiscalMode`): the cart, the
  * line-detail drawer and the checkout drawer are reused verbatim, and only the
  * persistence target changes — orders API, no XML, no signature, no ATV.
  *

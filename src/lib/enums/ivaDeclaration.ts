@@ -33,7 +33,7 @@ export type IvaDeclarationFormValue =
  * Régimen de Tributación Simplificada — the IVA is settled quarterly inside
  * the unified D-105 (ISR + IVA), not through the D-150 family. Orgs on this
  * regime never emit electronic invoices, so the POS treats them like the
- * unregistered orgs of `useHaciendaEnabled` (see `docs/MANUAL_ORDERS.md`).
+ * unregistered orgs of `useFiscalMode` (see `docs/MANUAL_ORDERS.md`).
  */
 export const SIMPLIFIED_REGIME_FORM = "D-105";
 

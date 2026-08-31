@@ -1,9 +1,10 @@
 import { useLocation } from "wouter";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { ROUTES, documentEditorPath } from "@/routePaths";
-import { DOCUMENT_TYPES } from "@/types/invoice";
-import type { DocTypeCode } from "@/types/invoice";
+import { EDITOR_DOCUMENT_TYPES, MANUAL_ORDER_DOC_TYPE } from "@/types/invoice";
+import type { EditorDocTypeCode } from "@/types/invoice";
 import { useCreatableDocTypes } from "@/hooks/useRbac";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, Icon } from "@/components/ui";
 
 interface ActionButtonProps {
@@ -32,13 +33,16 @@ function ActionButton({ label, icon, accentClass, onClick }: ActionButtonProps) 
 export function QuickDocActionsCard() {
   const { addDocumentTab } = useDocumentStore();
   const [, setLocation] = useLocation();
-  // Per-doc-type create gating (documents/<permSub>)
+  const { t } = useLanguage();
+  // Which editor types this org+role may create. In `orders-only` mode this is
+  // just the manual order, so the card offers a pedido instead of an invoice
+  // (see useCreatableDocTypes / docs/MANUAL_ORDERS.md).
   const creatableDocTypes = useCreatableDocTypes();
-  const canCreate = (code: DocTypeCode) =>
+  const canCreate = (code: EditorDocTypeCode) =>
     creatableDocTypes.some((dt) => dt.code === code);
 
-  const openNewDoc = (code: DocTypeCode) => {
-    const docType = DOCUMENT_TYPES.find((d) => d.code === code)!;
+  const openNewDoc = (code: EditorDocTypeCode) => {
+    const docType = EDITOR_DOCUMENT_TYPES.find((d) => d.code === code)!;
     const tabId = newDocTabId();
     addDocumentTab({
       id: tabId,
@@ -55,15 +59,25 @@ export function QuickDocActionsCard() {
   return (
     <Card className="p-5">
       <div className="mb-3.5">
-        <div className="t-h3 !text-sm mb-1">Crear documento</div>
+        <div className="t-h3 !text-sm mb-1">{t("quickDoc.title")}</div>
         <div className="t-xs text-muted-foreground">
-          Empieza una factura electrónica, un tiquete o consulta tus documentos.
+          {canCreate(MANUAL_ORDER_DOC_TYPE)
+            ? t("quickDoc.subtitleOrders")
+            : t("quickDoc.subtitle")}
         </div>
       </div>
       <div className="flex gap-2.5">
+        {canCreate(MANUAL_ORDER_DOC_TYPE) && (
+        <ActionButton
+          label={t("quickDoc.newOrder")}
+          icon="package"
+          accentClass="hover:border-primary [&_.action-icon]:bg-primary"
+          onClick={() => openNewDoc(MANUAL_ORDER_DOC_TYPE)}
+        />
+        )}
         {canCreate('01') && (
         <ActionButton
-          label="Crear factura"
+          label={t("quickDoc.newInvoice")}
           icon="fileText"
           accentClass="hover:border-success [&_.action-icon]:bg-success"
           onClick={() => openNewDoc('01')}
@@ -71,14 +85,14 @@ export function QuickDocActionsCard() {
         )}
         {canCreate('04') && (
         <ActionButton
-          label="Crear tiquete"
+          label={t("quickDoc.newTicket")}
           icon="cash"
           accentClass="hover:border-info [&_.action-icon]:bg-info"
           onClick={() => openNewDoc('04')}
         />
         )}
         <ActionButton
-          label="Ver documentos"
+          label={t("quickDoc.viewDocuments")}
           icon="layers"
           accentClass="hover:border-primary [&_.action-icon]:bg-primary"
           onClick={() => setLocation(ROUTES.DASHBOARD_DOCUMENTS)}

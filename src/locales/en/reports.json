@@ -11,19 +11,15 @@
   "iva.nextPeriod": "Next period",
   "iva.currentPeriod": "Current period",
   "iva.exportCsv": "Export CSV",
-
   "iva.draftNotice": "This report is a reconciliation aid. The legal return is filed in TRIBU-CR, which prefills it from the documents Hacienda has already accepted.",
   "iva.notFinalNotice": "The period is not closed yet: {pending} documents are still being validated and {rejected} were rejected. Amounts may change.",
-
   "iva.emptyTitle": "No activity in this period",
   "iva.emptyBody": "There are no issued or received documents for {period}.",
   "iva.errorTitle": "The report could not be generated",
   "iva.errorBody": "Something went wrong while loading the period. Try again in a few seconds.",
   "iva.notRegisteredTitle": "Organization without electronic invoicing",
   "iva.notRegisteredFiscalInfo": "Complete the organization's fiscal information to generate the VAT return.",
-  "iva.notRegisteredCredentials": "Set up the Hacienda credentials and certificate to generate the VAT return.",
   "iva.goToFiscalSettings": "Go to fiscal settings",
-
   "iva.section.sales": "Sales for the period",
   "iva.section.salesHelp": "Sales grouped by VAT rate rather than by economic activity — the shape the form has required since TRIBU-CR.",
   "iva.section.purchases": "Purchases and credits",
@@ -32,7 +28,6 @@
   "iva.section.proportionalityHelp": "Prorrata percentage applied to mixed-use VAT. It is settled definitively in December.",
   "iva.section.settlement": "Determination and settlement",
   "iva.section.settlementHelp": "Debit less credit, adjusted for prior balances, withholdings and offsets.",
-
   "iva.col.rate": "Rate",
   "iva.col.merchandise": "Goods",
   "iva.col.services": "Services",
@@ -43,7 +38,6 @@
   "iva.col.fullCredit": "Full credit",
   "iva.col.prorated": "Prorated",
   "iva.col.noCredit": "No credit",
-
   "iva.rate.general13": "Standard rate",
   "iva.rate.reduced4": "Private health and airfare",
   "iva.rate.reduced2": "Medicines and private education",
@@ -52,7 +46,6 @@
   "iva.rate.zeroCredit": "Zero-rated with credit",
   "iva.rate.exempt": "Exempt",
   "iva.rate.notSubject": "Not subject",
-
   "iva.noMovements": "No activity in this period.",
   "iva.taxDebit": "Output VAT",
   "iva.taxCredit": "Input VAT credit",
@@ -68,7 +61,6 @@
   "iva.deferredPending": "Pending collection",
   "iva.deferredCollected": "Collected this period",
   "iva.unacceptedPurchases": "{n} purchase documents are still unaccepted. Their VAT is not creditable until you accept them.",
-
   "iva.proportionalityNotApplicable": "The organization only performs operations with full credit right, so no prorrata applies.",
   "iva.provisionalPercentage": "Provisional prorrata",
   "iva.definitivePercentage": "Definitive prorrata",
@@ -77,7 +69,6 @@
   "iva.totalRevenue": "Total operations",
   "iva.adjustmentAmount": "Adjustment",
   "iva.proportionalityAdjustment": "Proportionality adjustment",
-
   "iva.netTax": "Tax for the period",
   "iva.favorableBalance": "Favorable balance for the period",
   "iva.previousFavorableBalance": "Prior favorable balance",
@@ -96,7 +87,6 @@
   "iva.overdueBy": "Overdue by {n} days",
   "iva.fromSales": "{n} issued documents",
   "iva.fromPurchases": "{n} received documents",
-
   "iva.warningsTitle": "Worth reviewing",
   "iva.warning.pending_hacienda_validation": "{n} documents are still being validated by Hacienda and may be missing from the TRIBU-CR draft.",
   "iva.warning.rejected_documents": "{n} documents were rejected by Hacienda. Fix and reissue them before filing.",

@@ -4,7 +4,7 @@ import { useOrgContext } from "@/contexts/OrgContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { usePermissions } from "@/hooks/useRbac";
-import { useHaciendaEnabled } from "@/hooks/useHaciendaEnabled";
+import { useFiscalMode } from "@/hooks/useFiscalMode";
 import { lastClosedIvaPeriod, useIvaReport } from "@/hooks/useIvaReport";
 import { downloadIvaReportCsv } from "@/lib/ivaReportCsv";
 import { IvaDeclarationForm } from "@/lib/enums/ivaDeclaration";
@@ -43,7 +43,7 @@ export default function IvaReportPage() {
   const { can, isReady: permsReady } = usePermissions();
   const canExport = !permsReady || can("reports", "export", "iva");
 
-  const hacienda = useHaciendaEnabled(orgId);
+  const fiscal = useFiscalMode(orgId);
   const { data: report, isLoading, isError, refetch } = useIvaReport(orgId, period);
 
   const header = (
@@ -76,9 +76,11 @@ export default function IvaReportPage() {
     </div>
   );
 
-  // Orgs without Hacienda credentials never emit electronic documents, so
-  // there is nothing for Hacienda to prefill and nothing here to reconcile.
-  if (!hacienda.isLoading && !hacienda.enabled) {
+  // An org with no registered organization never emits electronic documents,
+  // so there is nothing for Hacienda to prefill and nothing here to reconcile.
+  // A registered org with unfinished credentials still gets the report — it
+  // may already have received documents, and its own will land once sent.
+  if (fiscal.ordersOnly) {
     return (
       <div className="px-6 pt-6 pb-10 max-w-[1400px] mx-auto">
         {header}
@@ -86,22 +88,12 @@ export default function IvaReportPage() {
           <EmptyState
             icon="fileText"
             title={t("iva.notRegisteredTitle")}
-            description={
-              hacienda.missingFiscalInfo
-                ? t("iva.notRegisteredFiscalInfo")
-                : t("iva.notRegisteredCredentials")
-            }
+            description={t("iva.notRegisteredFiscalInfo")}
             action={
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() =>
-                  navigate(
-                    hacienda.missingFiscalInfo
-                      ? ROUTES.DASHBOARD_ORG_FISCAL_INFO
-                      : ROUTES.DASHBOARD_ORG_HACIENDA,
-                  )
-                }
+                onClick={() => navigate(ROUTES.DASHBOARD_ORG_FISCAL_INFO)}
               >
                 {t("iva.goToFiscalSettings")}
               </Button>

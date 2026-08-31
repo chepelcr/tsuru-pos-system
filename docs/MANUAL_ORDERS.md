@@ -61,29 +61,61 @@ viaja por el estado del editor (pestaña, carrito, checkout). `isManualOrderDocT
 | Cola offline (`db.sales`) | Sí | Sí — ver §6 |
 | Cuenta para la declaración de IVA | Sí | **No** (`manual_orders_excluded`) |
 
-## 4. Dónde aparece
+## 4. Dónde aparece — el modo fiscal de la organización
 
-El pedido manual se ofrece **solo** cuando la organización **no** tiene facturación electrónica:
+El discriminador es **la organización registrada** (`registered-organization`): la identidad
+fiscal con cédula, régimen y actividades económicas. Sin ella no hay cédula con la que firmar ni
+código de actividad que poner en una línea, así que un documento electrónico no es que no se
+pueda *enviar* — no se puede *construir*.
 
-```ts
-useHaciendaEnabled(orgId).enabled === false
+```
+  ¿registered-organization? ──no──▶  modo "orders-only"   (solo pedidos)
+           │sí
+           ▼
+  ¿credenciales + certificado? ──no──▶ modo "electronic", canTransmit false
+           │sí
+           ▼
+                                       modo "electronic", canTransmit true
 ```
 
-`useHaciendaEnabled` exige las **dos** piezas: un registro `registered-organization` (identidad
-fiscal) y una `configurations` activa con usuario y certificado. Falla **cerrado** mientras carga,
-para que la opción nunca parpadee en el menú de una organización registrada.
+`useFiscalMode(orgId)` resuelve eso. **Los dos conjuntos son excluyentes:**
+
+| Modo | Tipos creables |
+|---|---|
+| `orders-only` | Solo `PM`, sujeto a `commercial/create/orders` |
+| `electronic` | Los seis tipos de Hacienda, cada uno sujeto a `documents/<permSub>`. **No** `PM` |
+
+Que una organización registrada NO vea el pedido manual es deliberado: un contribuyente
+registrando ventas fuera de la facturación electrónica es un problema de cumplimiento, no una
+funcionalidad.
+
+Las credenciales de ATV son un paso posterior y **no** cambian el modo. Una organización con
+identidad fiscal pero sin certificado no es otro tipo de negocio: es un contribuyente a medio
+configurar. Conserva los tipos electrónicos; lo que todavía no puede es *transmitirlos*
+(`canTransmit`).
+
+El modo falla **cerrado**: mientras es desconocido el menú queda vacío en lugar de mostrar
+brevemente el conjunto equivocado. Sin conexión se resuelve solo, porque
+`registered-organization` está persistido (ver [`OFFLINE.md`](./OFFLINE.md)); si aun así no hay
+nada, se recurre al último modo conocido (`pos-fiscal-mode:{orgId}`, un valor que no filtra nada).
 
 Puntos de entrada:
 
-1. **Menú "+"** de la barra lateral y de la barra superior. `useCreatableDocTypes()` agrega la
-   entrada `PM` a los tipos de Hacienda que el rol puede crear.
+1. **Menú "+"** de la barra lateral y de la barra superior: `useCreatableDocTypes()` devuelve
+   únicamente `PM`.
 2. **Página de Pedidos** — botón "Nuevo pedido", que abre una pestaña `PM` y navega al editor.
+3. **Tarjeta de acciones rápidas** del panel — "Crear pedido" en lugar de "Crear factura".
+
+Y en sentido contrario: si una pestaña de documento electrónico sobrevive a un cambio de modo (las
+pestañas se persisten), `DocumentEditor` la bloquea con un aviso y un enlace a la información
+fiscal, en vez de dejar que el cajero llene un carrito y choque con un críptico "código de
+actividad requerido" en el checkout.
 
 ### RBAC
 
 El pedido manual se controla por **`commercial/create/orders`**, no por el módulo `documents`: es
 un pedido, no un documento (CLAUDE.md §5.1). No hace falta sembrar nada nuevo — ese par ya existe
-en el catálogo.
+en el catálogo. El modo fiscal decide **qué conjunto** se ofrece; RBAC filtra dentro de él.
 
 `useCanOpenCreateMenu()` existe por esto: el gate del botón "+" era solo
 `documents/create/emitted`, lo que habría escondido el menú justo a la organización cuya única
@@ -95,12 +127,14 @@ entrada creable es el pedido manual.
 src/types/invoice.ts               MANUAL_ORDER_DOC_TYPE, EditorDocTypeCode,
                                    EDITOR_DOCUMENT_TYPES, isManualOrderDocType (+ .test.ts)
 src/types/order.ts                 ManualOrderFields, ManualOrderPayload, MANUAL_ORDER_SOURCE
-src/hooks/useHaciendaEnabled.ts    El gate
+src/hooks/useFiscalMode.ts         El modo fiscal (el gate)
 src/hooks/useCartFlow.ts           Rama de envío hacia la API de pedidos
 src/hooks/useRbac.ts               useCreatableDocTypes, useCanOpenCreateMenu
 src/components/pos/checkout/CheckoutDrawer.tsx            Modo pedido manual
 src/components/pos/checkout/sections/ManualOrderSection.tsx  Datos de entrega
 src/components/pos/checkout/Receipt.tsx                   Comprobante del pedido
+src/components/documents/DocumentEditor.tsx                Bloqueo de pestañas electrónicas
+src/components/dashboard/QuickDocActionsCard.tsx           Acción rápida "Crear pedido"
 src/pages/dashboard/OrdersPage.tsx                        Botón "Nuevo pedido"
 src/locales/{es,en}/orders.json                           Claves `manualOrder.*`
 src/locales/{es,en}/documents.json                        `docTypes.PM`

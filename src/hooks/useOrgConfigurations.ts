@@ -25,8 +25,8 @@ export function useOrgConfigurations(orgId: string | undefined) {
         // 404 means no configuration saved yet — treat as empty, not error.
         if (error instanceof ApiError && error.status === 404) return null;
         // Offline / 5xx must rethrow: a successful `null` would tell
-        // `useHaciendaEnabled` the org has no credentials, which flips the
-        // manual-order gate ON for an org that does electronic invoicing.
+        // `useFiscalMode` the org has no credentials, which would wrongly
+        // report a registered taxpayer as unable to transmit.
         throw error;
       }
     },

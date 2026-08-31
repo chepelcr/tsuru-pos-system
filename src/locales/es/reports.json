@@ -11,19 +11,15 @@
   "iva.nextPeriod": "Período siguiente",
   "iva.currentPeriod": "Período actual",
   "iva.exportCsv": "Exportar CSV",
-
   "iva.draftNotice": "Este reporte es un apoyo de conciliación. La declaración legal se presenta en TRIBU-CR, que la precarga con los comprobantes que Hacienda ya aceptó.",
   "iva.notFinalNotice": "El período aún no está cerrado: {pending} comprobantes en validación y {rejected} rechazados. Los montos pueden cambiar.",
-
   "iva.emptyTitle": "Sin movimientos en el período",
   "iva.emptyBody": "No hay comprobantes emitidos ni recibidos para {period}.",
   "iva.errorTitle": "No se pudo generar el reporte",
   "iva.errorBody": "Ocurrió un problema al consultar el período. Intentá de nuevo en unos segundos.",
   "iva.notRegisteredTitle": "Organización sin facturación electrónica",
   "iva.notRegisteredFiscalInfo": "Completá la información fiscal de la organización para generar la declaración de IVA.",
-  "iva.notRegisteredCredentials": "Configurá las credenciales y el certificado de Hacienda para generar la declaración de IVA.",
   "iva.goToFiscalSettings": "Ir a configuración fiscal",
-
   "iva.section.sales": "Ventas del período",
   "iva.section.salesHelp": "Ventas agrupadas por tarifa de IVA, no por actividad económica: así lo pide el formulario desde TRIBU-CR.",
   "iva.section.purchases": "Compras y créditos",
@@ -32,7 +28,6 @@
   "iva.section.proportionalityHelp": "Porcentaje de prorrata aplicado al IVA de uso mixto. Se liquida de forma definitiva en diciembre.",
   "iva.section.settlement": "Determinación y liquidación",
   "iva.section.settlementHelp": "Débito menos crédito, ajustado por saldos anteriores, retenciones y compensaciones.",
-
   "iva.col.rate": "Tarifa",
   "iva.col.merchandise": "Mercancías",
   "iva.col.services": "Servicios",
@@ -43,7 +38,6 @@
   "iva.col.fullCredit": "Crédito pleno",
   "iva.col.prorated": "Prorrateado",
   "iva.col.noCredit": "Sin crédito",
-
   "iva.rate.general13": "Tarifa general",
   "iva.rate.reduced4": "Salud privada y pasajes aéreos",
   "iva.rate.reduced2": "Medicamentos y educación privada",
@@ -52,7 +46,6 @@
   "iva.rate.zeroCredit": "Tarifa cero con crédito",
   "iva.rate.exempt": "Exento",
   "iva.rate.notSubject": "No sujeto",
-
   "iva.noMovements": "Sin movimientos en el período.",
   "iva.taxDebit": "Débito fiscal",
   "iva.taxCredit": "Crédito fiscal",
@@ -68,7 +61,6 @@
   "iva.deferredPending": "Pendiente de cobro",
   "iva.deferredCollected": "Cobrado en el período",
   "iva.unacceptedPurchases": "{n} comprobantes de compra siguen sin aceptar. Su IVA no es acreditable hasta que se acepten.",
-
   "iva.proportionalityNotApplicable": "La organización solo realiza operaciones con derecho a crédito pleno: no aplica prorrata.",
   "iva.provisionalPercentage": "Prorrata provisional",
   "iva.definitivePercentage": "Prorrata definitiva",
@@ -77,7 +69,6 @@
   "iva.totalRevenue": "Operaciones totales",
   "iva.adjustmentAmount": "Ajuste",
   "iva.proportionalityAdjustment": "Ajuste por proporcionalidad",
-
   "iva.netTax": "Impuesto del período",
   "iva.favorableBalance": "Saldo a favor del período",
   "iva.previousFavorableBalance": "Saldo a favor anterior",
@@ -96,7 +87,6 @@
   "iva.overdueBy": "Vencida hace {n} días",
   "iva.fromSales": "{n} comprobantes emitidos",
   "iva.fromPurchases": "{n} comprobantes recibidos",
-
   "iva.warningsTitle": "Puntos a revisar",
   "iva.warning.pending_hacienda_validation": "{n} comprobantes siguen en validación ante Hacienda y podrían no aparecer en el borrador de TRIBU-CR.",
   "iva.warning.rejected_documents": "{n} comprobantes fueron rechazados por Hacienda. Corregilos y reemitilos antes de declarar.",
