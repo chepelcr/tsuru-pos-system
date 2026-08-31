@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { salesApi, authOrgPath } from "@/lib/api";
+import { ApiError, salesApi, authOrgPath } from "@/lib/api";
 import type {
   OrgConfiguration,
   ValidateCredentialsResponse,
@@ -21,9 +21,13 @@ export function useOrgConfigurations(orgId: string | undefined) {
     queryFn: async () => {
       try {
         return await salesApi.get<OrgConfiguration>(authOrgPath(orgId!, "/configurations"));
-      } catch {
-        // 404 means no configuration saved yet — treat as empty, not error
-        return null;
+      } catch (error) {
+        // 404 means no configuration saved yet — treat as empty, not error.
+        if (error instanceof ApiError && error.status === 404) return null;
+        // Offline / 5xx must rethrow: a successful `null` would tell
+        // `useHaciendaEnabled` the org has no credentials, which flips the
+        // manual-order gate ON for an org that does electronic invoicing.
+        throw error;
       }
     },
   });

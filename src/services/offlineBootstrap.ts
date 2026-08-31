@@ -1,10 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { api, userPath } from "@/lib/api";
+import { ApiError, api, authOrgPath, salesApi, userPath } from "@/lib/api";
 import { CATALOG_GC_TIME, CATALOG_STALE_TIME } from "@/hooks/useDataApi";
 import { dataApiClient } from "@/services/data-api";
 import { syncOfflineCatalog } from "@/services/offlineCatalog";
 import { TaxTypeCode } from "@/lib/enums";
 import type { Organization } from "@/types";
+import type { RegisteredOrganization } from "@/types/registeredOrganization";
 import type { TaxListResponse } from "@/services/data-api";
 
 /**
@@ -236,6 +237,32 @@ export function buildBootstrapSteps({
           queryFn: () => api.get<Organization[]>(userPath(userId, "/memberships/organizations")),
           staleTime: Infinity,
           gcTime: Infinity,
+        }),
+    },
+    {
+      // The org's fiscal identity. Warmed explicitly because the POS checkout
+      // reads the org's ECONOMIC ACTIVITIES from it to fill `activity_code`,
+      // and a sale cannot be completed without one. Persisted by the query
+      // client, unlike the ATV credentials next to it.
+      id: "registeredOrganization",
+      run: () =>
+        queryClient.fetchQuery({
+          queryKey: ["registered-organization", orgId],
+          queryFn: async () => {
+            try {
+              return await salesApi.get<RegisteredOrganization>(
+                authOrgPath(orgId, "/registered-organization"),
+              );
+            } catch (error) {
+              // Mirror the hook: no fiscal info yet is an answer, not a
+              // failure. Letting a 404 fail the step would leave the whole
+              // warm-up unstamped and re-running every session.
+              if (error instanceof ApiError && error.status === 404) return null;
+              throw error;
+            }
+          },
+          staleTime: 5 * 60_000,
+          gcTime: 10 * 60_000,
         }),
     },
 

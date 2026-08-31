@@ -210,5 +210,14 @@
   "stores.uploadExcel": "Upload Excel",
   "stores.selectFile": "Select file",
   "stores.uploadSuccess": "Stores imported successfully",
-  "stores.uploadError": "Could not import stores"
+  "stores.uploadError": "Could not import stores",
+  "cabys.manualLabel": "CABYS code",
+  "cabys.manualPlaceholder": "13 digits",
+  "cabys.manualApply": "Use this code",
+  "cabys.manualHelp": "Type the code if you already know it.",
+  "cabys.manualOfflineHelp": "The catalog cannot be searched offline — type the CABYS code.",
+  "cabys.manualLengthHint": "The code must be {n} digits ({current} so far).",
+  "cabys.manualRateWarning": "Typing the code does not fetch the VAT rate — check it on the taxes tab.",
+  "cabys.enterCodeInstead": "Type the code",
+  "cabys.backToSearch": "Back to search"
 }

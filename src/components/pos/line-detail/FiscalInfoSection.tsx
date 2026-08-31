@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FileCheck, Search, X } from 'lucide-react';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
+import { CabysManualEntry } from '@/components/common/CabysManualEntry';
 import { Spinner, FormLabel, Modal } from '@/components/ui';
 import { useCabysSearch, useAllProductTypes, useAllTaxes } from '@/hooks/useDataApi';
+import { useIsOnline } from '@/hooks/useIsOnline';
 import { CountryISO, TaxTypeCode } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineDetail } from '@/types/lineDetail';
@@ -26,6 +28,10 @@ export function FiscalInfoSection({ detail, isExpanded, onToggle, onChange }: Fi
   const [searchResults, setSearchResults] = useState<CabysItem[]>([]);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [showConfirm, setShowConfirm] = useState(false);
+  // Manual code entry. Offline it is the only way in — the CABYS catalog is a
+  // server search with no local mirror (docs/OFFLINE.md).
+  const online = useIsOnline();
+  const [manualEntry, setManualEntry] = useState(false);
   const [pendingProductTypeId, setPendingProductTypeId] = useState<number | undefined>();
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -163,6 +169,18 @@ export function FiscalInfoSection({ detail, isExpanded, onToggle, onChange }: Fi
   };
 
   const loading = isFetchingSearch || isSearching;
+  const showManualEntry = !online || manualEntry;
+
+  /**
+   * Accept a hand-typed code. Only the code is set: the IVA rate normally
+   * arrives with the search result, and guessing one here would quietly put a
+   * wrong rate on the line. `CabysManualEntry` warns about exactly that.
+   */
+  const applyManualCabys = (code: string) => {
+    onChange({ cabys: code });
+    setManualEntry(false);
+    setSearchTerm("");
+  };
 
   return (
     <>
@@ -224,6 +242,24 @@ export function FiscalInfoSection({ detail, isExpanded, onToggle, onChange }: Fi
                 </div>
               </div>
             ) : (
+              showManualEntry ? (
+                <div className="docs-fade-in">
+                  <CabysManualEntry
+                    onSubmit={applyManualCabys}
+                    offline={!online}
+                    disabled={!productTypeId}
+                  />
+                  {online && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs mt-1.5"
+                      onClick={() => setManualEntry(false)}
+                    >
+                      {t('cabys.backToSearch')}
+                    </button>
+                  )}
+                </div>
+              ) : (
               /* Search state */
               <div className="relative docs-fade-in">
                 <FormLabel>{t('lineDetail.searchCabys')}</FormLabel>
@@ -302,7 +338,15 @@ export function FiscalInfoSection({ detail, isExpanded, onToggle, onChange }: Fi
                 <div className="text-[11px] text-muted-foreground mt-1">
                   {t('products.cabysHelp')}
                 </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs mt-1"
+                  onClick={() => setManualEntry(true)}
+                >
+                  {t('cabys.enterCodeInstead')}
+                </button>
               </div>
+              )
             )}
           </div>
         </div>

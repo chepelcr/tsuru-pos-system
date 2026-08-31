@@ -67,9 +67,26 @@ identificaciones, unidades, condiciones de venta, medios de pago…) más
 `PERSISTED_ACCOUNT_QUERY_KEY_PREFIXES` (organizaciones del usuario, información
 fiscal, tema, permisos RBAC).
 
-**Nunca se persiste `org-configurations`**: lleva el certificado `.p12`, su PIN y
-la contraseña de ATV. Escribirlo a localStorage sería una regresión de
-seguridad. Si agregás un prefijo nuevo, preguntate primero qué contiene.
+**Ojo con los dos "org config":**
+
+| Registro | Qué lleva | ¿Se persiste? |
+|---|---|---|
+| `registered-organization` | Identidad fiscal: cédula, régimen y **actividades económicas** | **Sí.** El checkout del POS lee de ahí el `activity_code`, sin el cual no se puede cerrar una venta. Se precarga explícitamente al iniciar sesión. |
+| `org-configurations` | Credenciales de ATV/TRIBU-CR + certificado `.p12`, su PIN y la contraseña | **Nunca.** Escribirlo a localStorage sería una regresión de seguridad. |
+
+De lo segundo se persiste solo la **respuesta derivada**: un booleano por
+organización (`pos-hacienda-enabled:{orgId}`) que no filtra nada y que sin
+conexión mantiene la opción de pedido manual fuera del menú de una
+organización que sí factura electrónicamente. Ver `useHaciendaEnabled`.
+
+Si agregás un prefijo nuevo, preguntate primero qué contiene.
+
+> **Un error que ya se cometió una vez:** `useRegisteredOrganization` y
+> `useOrgConfigurations` convertían *cualquier* fallo en `null` ("no hay
+> información"). Sin conexión eso resuelve la query con éxito y **pisa la copia
+> persistida** — las actividades económicas desaparecían justo cuando no había
+> red para recuperarlas. Ahora solo se traga el 404; lo demás relanza y React
+> Query conserva lo que ya tenía.
 
 `neighborhoods` también queda fuera: es el único nivel del cascade de ubicación
 con miles de filas por país, y el persister escribe todo el cache como **una**
@@ -149,6 +166,8 @@ la descarga es nuestra.
 
 - Abrir la app y navegar a páginas ya visitadas.
 - Grilla de productos, categorías, buscador de clientes, lista de clientes.
+- Actividades económicas de la organización en el checkout (`activity_code`).
+- Código CABYS por entrada manual (ver abajo).
 - Todo el detalle de línea: impuestos, tarifas, descuentos, unidades, CABYS ya
   cargado en el producto.
 - Capturar una venta o un pedido manual completo; queda en cola y se envía solo.
@@ -156,7 +175,13 @@ la descarga es nuestra.
 **No funciona sin conexión:**
 
 - Iniciar sesión (Cognito necesita red).
-- Búsqueda CABYS (`useCabysSearch`) — es una búsqueda del servidor, sin espejo.
+- **Búsqueda** CABYS (`useCabysSearch`) — es una búsqueda del servidor y el
+  catálogo es demasiado grande para llevarlo a la terminal. En su lugar, sin
+  conexión se ofrece **entrada manual del código** (`CabysManualEntry`): 13
+  dígitos con validación. Lo que la entrada manual no puede hacer es traer la
+  tarifa de IVA —eso viene con el resultado de la búsqueda—, así que lo avisa
+  y el usuario la revisa en la pestaña de impuestos. El mismo campo está
+  disponible en línea con "Escribir el código", para quien ya lo sabe.
 - Niveles bajos del cascade de ubicación no visitados (`neighborhoods`).
 - Tipo de cambio del día, reporte de IVA, documentos electrónicos: todos
   dependen del servidor por definición.

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { salesApi, authOrgPath } from "@/lib/api";
+import { ApiError, salesApi, authOrgPath } from "@/lib/api";
 import type {
   RegisteredOrganization,
   RegisteredOrganizationPayload,
@@ -31,9 +31,15 @@ export function useRegisteredOrganization(orgId: string | undefined) {
         return await salesApi.get<RegisteredOrganization>(
           authOrgPath(orgId!, "/registered-organization"),
         );
-      } catch {
+      } catch (error) {
         // 404 means no fiscal info saved yet — treat as empty, not error.
-        return null;
+        if (error instanceof ApiError && error.status === 404) return null;
+        // Anything else (offline, 5xx) MUST rethrow. Returning null here would
+        // resolve the query successfully with "no fiscal info", overwriting the
+        // persisted copy — and the POS checkout reads the org's economic
+        // activities from it, so the activity_code select would empty out
+        // exactly when there is no network to refill it.
+        throw error;
       }
     },
   });

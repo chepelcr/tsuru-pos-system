@@ -289,7 +289,7 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 | Document editor tabs | `zustand` `src/store/documentStore.ts` (`open_documents`, `is_received`, `addDocumentTab`, `removeDocumentTab`, `newDocTabId`) |
 | Confirm modals | `useConfirmModal()` hook → returns `{ confirm, ConfirmModal }`. Always render `<ConfirmModal/>` at the end of the page |
 | Server state | React Query (`@tanstack/react-query`). Query keys convention: `[resource, orgId, ...filters]` |
-| Offline data | 4 layers — SW app shell, React Query→localStorage (reference catalogs + account context), IndexedDB mirrors (org catalog), IndexedDB outbox (unsent sales/orders). Warmed once per org per day by `useOfflineBootstrap()`. **`org-configurations` is never persisted** (certificate + PIN). `docs/OFFLINE.md` |
+| Offline data | 4 layers — SW app shell, React Query→localStorage (reference catalogs + account context), IndexedDB mirrors (org catalog), IndexedDB outbox (unsent sales/orders). Warmed once per org per day by `useOfflineBootstrap()`. **`org-configurations` is never persisted** (certificate + PIN) — only a derived boolean; `registered-organization` IS persisted, the POS checkout reads its economic activities. `docs/OFFLINE.md` |
 
 ---
 
@@ -337,7 +337,7 @@ Business-critical engines live in `src/services/`:
 
 Special-amount codes (`03/04/05/06`) need `tax_amount_id` + `quantity` + sometimes `percentage`/`volume_consumption` in `special_fields`. Tax amounts come from `useAllTaxAmounts({ iso_code, tax_id })`; `LineDetailDrawer` flattens the selected `tax_unit_amount` into a `TaxAmountsById` lookup before calling the tax service.
 
-CABYS-driven IVA: `useCabysSearch` returns items with `tax_rate.percentage` — auto-applied to IVA on selection. See `FiscalInformationSection` (products) and `FiscalInfoSection` (line-detail) for the search UX.
+CABYS-driven IVA: `useCabysSearch` returns items with `tax_rate.percentage` — auto-applied to IVA on selection. See `FiscalInformationSection` (products) and `FiscalInfoSection` (line-detail) for the search UX. Offline (and on demand online) both sections fall back to `<CabysManualEntry/>` — a 13-digit code typed by hand, which does NOT carry a rate; helpers in `src/lib/cabys.ts`.
 
 ISEBEC variants by CABYS prefix: `3401*` (alcoholic) auto-picks rate by alcohol %; `2202*` (non-alcoholic) requires manual amount select.
 
