@@ -67,7 +67,6 @@ export interface CreateBranchRequest {
 }
 
 export interface CreateTerminalRequest {
-  branch_id: number;
   name: string;
   code: number;
   device_id?: string;

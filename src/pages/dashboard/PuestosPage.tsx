@@ -97,14 +97,14 @@ export default function PuestosPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateBranchRequest> }) =>
-      crossAppApi.patch(crossAppOrgPath(org!.id, `/branches/${id}`), data),
+    mutationFn: ({ code, data }: { code: number; data: Partial<CreateBranchRequest> }) =>
+      crossAppApi.patch(crossAppOrgPath(org!.id, `/branches/${code}`), data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["branches", org?.id] }); setBranchDrawer(false); setEditingBranch(null); },
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: BranchStatus }) =>
-      crossAppApi.patch(crossAppOrgPath(org!.id, `/branches/${id}`), { status }),
+    mutationFn: ({ code, status }: { code: number; status: BranchStatus }) =>
+      crossAppApi.patch(crossAppOrgPath(org!.id, `/branches/${code}/status`), { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["branches", org?.id] }),
   });
 
@@ -120,7 +120,7 @@ export default function PuestosPage() {
   });
 
   const handleSaveBranch = (data: CreateBranchRequest) => {
-    editingBranch ? updateMutation.mutate({ id: editingBranch.branch_id, data }) : createMutation.mutate(data);
+    editingBranch ? updateMutation.mutate({ code: editingBranch.code, data }) : createMutation.mutate(data);
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending || statusMutation.isPending;
@@ -188,7 +188,7 @@ export default function PuestosPage() {
               branch={branch}
               orgId={org!.id}
               onEdit={(b) => { setEditingBranch(b); setBranchDrawer(true); }}
-              onStatusChange={(b, s) => statusMutation.mutate({ id: b.branch_id, status: s })}
+              onStatusChange={(b, s) => statusMutation.mutate({ code: b.code, status: s })}
               onAddTerminal={(b) => { setAddTermBranch(b); setTermDrawer(true); }}
               delay={i * 0.03}
             />
@@ -283,7 +283,6 @@ export default function PuestosPage() {
       >
         {addTermBranch && (
           <TerminalForm
-            branchId={addTermBranch.code}
             onSave={(data) => addTerminalMutation.mutate({ branchId: addTermBranch.code, data })}
             isSaving={addTerminalMutation.isPending}
             onClose={() => { setTermDrawer(false); setAddTermBranch(null); }}

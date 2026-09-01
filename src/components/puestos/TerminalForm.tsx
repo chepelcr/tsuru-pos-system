@@ -4,14 +4,13 @@ import { TerminalGeneralSection } from "./sections/TerminalGeneralSection";
 import type { CreateTerminalRequest } from "@/types";
 
 interface TerminalFormProps {
-  branchId: number;
   onSave: (data: CreateTerminalRequest) => void;
   isSaving: boolean;
   onClose: () => void;
   renderButtons?: (props: { onCancel: () => void; onSubmit: () => void; isSaving: boolean }) => React.ReactNode;
 }
 
-export function TerminalForm({ branchId, onSave, isSaving, onClose, renderButtons }: TerminalFormProps) {
+export function TerminalForm({ onSave, isSaving, onClose, renderButtons }: TerminalFormProps) {
   const [name, setName] = useState("");
   const [code, setCode] = useState<number | "">("");
   const [deviceId, setDeviceId] = useState("");
@@ -28,7 +27,6 @@ export function TerminalForm({ branchId, onSave, isSaving, onClose, renderButton
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     onSave({ 
-      branch_id: branchId, 
       name: name.trim(), 
       code: Number(code), 
       device_id: deviceId.trim() || undefined 

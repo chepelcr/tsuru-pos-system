@@ -64,7 +64,7 @@ export default function SessionSetupScreen({ org }: Props) {
     setTermError(null);
     try {
       const newTerm = await crossAppApi.post<Terminal>(
-        crossAppOrgPath(org.id, `/branches/${selectedBranch.branch_id}/terminals`),
+        crossAppOrgPath(org.id, `/branches/${selectedBranch.code}/terminals`),
         data
       );
       // Inject the new terminal into the branch in local state
@@ -252,7 +252,6 @@ export default function SessionSetupScreen({ org }: Props) {
         width={400}
       >
         <TerminalForm
-          branchId={selectedBranch?.code ?? 0}
           isSaving={savingTerm}
           error={termError}
           onSave={handleAddTerminal}
@@ -266,14 +265,13 @@ export default function SessionSetupScreen({ org }: Props) {
 // ─── Inline terminal form ──────────────────────────────────────────────────────
 
 interface TerminalFormProps {
-  branchId: number;
   isSaving: boolean;
   error: string | null;
   onSave: (data: CreateTerminalRequest) => void;
   onClose: () => void;
 }
 
-function TerminalForm({ branchId, isSaving, error, onSave, onClose }: TerminalFormProps) {
+function TerminalForm({ isSaving, error, onSave, onClose }: TerminalFormProps) {
   const { t } = useLanguage();
   const [name, setName] = useState("");
   const [code, setCode] = useState<number | "">("");
@@ -281,7 +279,7 @@ function TerminalForm({ branchId, isSaving, error, onSave, onClose }: TerminalFo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ branch_id: branchId, name: name.trim(), code: Number(code), device_id: deviceId.trim() || undefined });
+    onSave({ name: name.trim(), code: Number(code), device_id: deviceId.trim() || undefined });
   };
 
   return (
