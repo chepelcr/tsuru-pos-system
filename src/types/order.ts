@@ -20,6 +20,7 @@
 // cancelled=5. Shared by orders AND confirmations.
 
 export const ORDER_STATUSES = [
+  'quote',
   'pending',
   'processing',
   'shipped',
@@ -28,14 +29,43 @@ export const ORDER_STATUSES = [
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-/** Numeric status map the BE expects for status PATCH bodies. */
+/**
+ * Numeric status map the BE expects for status PATCH bodies.
+ *
+ * `quote` is 0 because it PRECEDES pending: a proforma has not been placed yet.
+ * It is a status, not a document type — which is why approving one is a status
+ * change and "Facturar pedido" needs no special case for it.
+ */
 export const ORDER_STATUS_CODES: Record<OrderStatus, number> = {
+  quote: 0,
   pending: 1,
   processing: 2,
   shipped: 3,
   delivered: 4,
   cancelled: 5,
 };
+
+/**
+ * Which statuses an order may move to next. Mirrors the BE guard — the server
+ * is the authority, this only keeps the UI from offering an action that would
+ * be rejected.
+ *
+ * A quote may only be approved or cancelled: allowing it to jump to delivered
+ * would let an unapproved cotización be invoiced.
+ */
+export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
+  quote: ['pending', 'cancelled'],
+  pending: ['processing', 'shipped', 'delivered', 'cancelled'],
+  processing: ['shipped', 'delivered', 'cancelled'],
+  shipped: ['delivered', 'cancelled'],
+  delivered: [],
+  cancelled: [],
+};
+
+/** True when the order is a proforma awaiting the customer's approval. */
+export function isQuote(order: { order_status?: OrderStatus | string }): boolean {
+  return order.order_status === 'quote';
+}
 
 // ─── Report colour schemes ─────────────────────────────────────────────────
 // The visual values live in the theme layer; re-export the public contract here
@@ -77,6 +107,35 @@ export interface OrderAttachments {
   pdf_url?: string;
   excel_url?: string;
   nuevo_reporte_url?: string;
+  /**
+   * 80mm thermal ticket (TSR-127), rendered SERVER-SIDE like every other
+   * document format. Not a browser print view — so a reprint is identical to
+   * the original and one can be emailed later. Generated on demand via
+   * `POST /orders/{document_number}/ticket`.
+   */
+  ticket_url?: string;
+}
+
+/** One tax on an order line — mirrors the product's stored tax shape. */
+export interface OrderLineTax {
+  tax_type_id?: string;
+  tax_rate?: { id?: string; percentage?: number; code?: string } | null;
+  tax_factor?: unknown;
+  other_tax_type?: string | null;
+  special_fields?: unknown;
+  is_amount?: boolean | null;
+  amount?: number | null;
+}
+
+/** One discount on an order line, in Hacienda Nota 20 cascade order. */
+export interface OrderLineDiscount {
+  /** Catalog code: 01 regalía · 03 bonificación · 07 comercial · 99 otros. */
+  discount_type_id?: string;
+  percentage?: number | null;
+  /** Required only for 99. */
+  reason?: string | null;
+  is_amount?: boolean | null;
+  amount?: number | null;
 }
 
 export interface OrderLine {
@@ -101,6 +160,18 @@ export interface OrderLine {
   discount: number;
   line_total: number;
   tax: number;
+  /** Unit price before tax. */
+  net_price?: number | null;
+  /**
+   * Structured per-line breakdowns. Present on BOTH sides of the Orders
+   * module: a POS-captured line sends them, and an Excel-imported line gets
+   * them filled in server-side — the discount as `07 Descuento Comercial`
+   * (the spreadsheet carries an amount but no type) and the taxes copied from
+   * the product. That is what makes either kind of order billable later
+   * without inventing a rate.
+   */
+  taxes?: OrderLineTax[] | null;
+  discounts?: OrderLineDiscount[] | null;
   quantity_dispatched: number;
   dispatch_rejection_reason: string | null;
   quantity_received: number;
@@ -266,16 +337,58 @@ export interface OrdersListResult {
 /** Discriminator persisted on the order so the BE and the UI can tell them apart. */
 export const MANUAL_ORDER_SOURCE = 'manual' as const;
 
+/**
+ * Where a manual order gets delivered. Three modes, one shape — so everything
+ * downstream reads a single object instead of branching.
+ *
+ * There is deliberately NO free-text-only mode: a delivery address is either a
+ * point the client has registered, the receiver's own address, or the
+ * structured CR cascade. A typed-in blob is unusable for routing and cannot be
+ * reused on the next order.
+ */
+export type DeliveryLocationMode = 'store' | 'receiver' | 'custom';
+
+export interface ManualOrderDeliveryLocation {
+  mode: DeliveryLocationMode;
+  /** `store` mode: the client's registered store/point-of-sale. */
+  store_id?: string;
+  /** Denormalized from the store, or the label of the chosen address. */
+  code?: string;
+  name?: string;
+  gln?: string;
+  /** `receiver` / `custom` modes: the CR location cascade + exact address. */
+  state_id?: number | null;
+  county_id?: number | null;
+  district_id?: number | null;
+  neighborhood_id?: number | null;
+  address?: string | null;
+}
+
 /** Extra fields the checkout collects for a manual order. */
 export interface ManualOrderFields {
+  /**
+   * Save as a cotización instead of a firm pedido. A proforma is an order in
+   * an early status (`quote`), never a separate document type.
+   */
+  is_quote?: boolean;
+  /** User-writable order number. Empty means the server assigns one. */
+  document_number?: string;
+  /** Hacienda sale condition — moved here from the Documento card. */
+  sale_condition?: string;
+  /** Org's registered economic activity — moved here from the Documento card. */
+  activity_code?: string;
+  credit_term?: string;
+  /** Document currency — moved here from the Documento card. */
+  currency_code?: string;
+  exchange_rate?: number;
   /** ISO date (`YYYY-MM-DD`). */
   delivery_date?: string;
-  /** Free-text campaign/event label, mirrors `Order.event`. */
-  event?: string;
-  /** Delivery point name — the org's own label, not a GLN-registered one. */
-  delivery_location_name?: string;
-  delivery_location_code?: string;
-  /** Free-text note carried into `Order.comment`. */
+  /** B2B: the client's purchasing department (supplier orgs only). */
+  department_id?: string;
+  department_code?: string;
+  /** Where it goes — see {@link ManualOrderDeliveryLocation}. */
+  delivery_location?: ManualOrderDeliveryLocation;
+  /** Free-text note carried into `Order.comment`. Absorbs the old Documento notes. */
   comment?: string;
 }
 
@@ -310,11 +423,27 @@ export interface ManualOrderPayload {
   source: typeof MANUAL_ORDER_SOURCE;
   /** Internal editor doc type (`'PM'`), never a Hacienda code. */
   document_type: string;
+  /** `'work_order'` for a taller OT; omitted for a plain pedido. */
+  order_type?: string;
+  /** User-supplied order number; omit to let the server assign one. */
+  document_number?: string;
+  /** True when saved as a proforma — the BE opens it in `quote` status. */
+  is_quote?: boolean;
+  /** Captured so a later factura reuses what the cashier chose. */
+  sale_condition?: string;
+  activity_code?: string;
+  credit_term?: string;
   /** Catalog client when one was selected in the POS. */
   client_id?: string | null;
   client: OrderParty;
   delivery_date?: string;
-  delivery_location?: Partial<DeliveryLocation>;
+  delivery_location?: ManualOrderDeliveryLocation;
+  /** B2B department of the client (supplier orgs). */
+  department_id?: string;
+  /** Taller: the client asset (vehicle/equipment) the OT is about. */
+  asset_id?: string;
+  odometer?: number;
+  reported_issue?: string;
   event?: string;
   comment?: string;
   currency_code: string;

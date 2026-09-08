@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Icon, Spinner, Badge } from "@/components/ui";
+import { Badge, Icon, Select, Spinner, type SelectChangeEvent } from "@/components/ui";
 import {
   useAllCountries,
   useAllIdentifications,
@@ -89,7 +89,7 @@ export function HaciendaInfoStep({
 
   // ── Field handlers ────────────────────────────────────────────────────────
   const handleCodeChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
+    (e: SelectChangeEvent) => {
       patch({ idCode: e.target.value, idNumber: "" });
       lastLookupKey.current = "";
     },
@@ -150,7 +150,7 @@ export function HaciendaInfoStep({
         <label className="pp-label" htmlFor="reg-org-nationality">
           {t("orgSettings.fiscalInfo.nationality")}
         </label>
-        <select
+        <Select
           id="reg-org-nationality"
           className="pp-input w-full mt-1"
           value={form.nationality}
@@ -163,7 +163,7 @@ export function HaciendaInfoStep({
               {c.spanish_name || c.name}
             </option>
           ))}
-        </select>
+        </Select>
         <p className="t-xs text-muted-foreground mt-1.5">
           {t("orgSettings.fiscalInfo.nationalityLocked")}
         </p>
@@ -175,7 +175,7 @@ export function HaciendaInfoStep({
           <label className="pp-label" htmlFor="reg-org-id-type">
             {t("orgSettings.fiscalInfo.idType")}
           </label>
-          <select
+          <Select
             id="reg-org-id-type"
             className="pp-input w-full mt-1"
             value={form.idCode}
@@ -186,7 +186,7 @@ export function HaciendaInfoStep({
                 {it.code} — {it.description}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>

@@ -19,7 +19,7 @@ interface CountrySelectProps {
 
 /**
  * Searchable country picker rendering bundled SVG flags (CountryFlag) — a native
- * <select> can't show images in its options, so this is a token-styled custom
+ * <Select> can't show images in its options, so this is a token-styled custom
  * combobox. Countries come from the locations data-api (useAllCountries); the
  * value is the ISO numeric `iso_code`, flags key off the alpha-2 `iso` field.
  */

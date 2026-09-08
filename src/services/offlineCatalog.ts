@@ -147,6 +147,30 @@ export async function readCachedProductsByIds(
   return found;
 }
 
+/**
+ * Resolve a scanned code against the offline product mirror (TSR-155).
+ *
+ * Matches the code NUMBER across every entry in `product.codes`, whatever type
+ * it is filed under — the same rule the server applies, so a till behaves
+ * identically online and off.
+ *
+ * Scanned first, before the network: a shop with no signal still has to sell.
+ */
+export async function readCachedProductByCode(
+  orgId: string,
+  code: string,
+): Promise<Product | null> {
+  const wanted = code.trim();
+  if (!wanted) return null;
+
+  const rows = await db.products.where("orgId").equals(orgId).toArray();
+  for (const row of rows) {
+    const codes = (row.product as { codes?: { number?: string }[] }).codes ?? [];
+    if (codes.some((c) => c?.number === wanted)) return row.product;
+  }
+  return null;
+}
+
 export async function readCachedCategories(orgId: string): Promise<{ data: Category[] }> {
   const rows = await db.categories.where("orgId").equals(orgId).toArray();
   return {

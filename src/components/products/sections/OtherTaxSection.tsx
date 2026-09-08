@@ -1,5 +1,5 @@
 import { Receipt } from "lucide-react";
-import { Icon, FormLabel } from "@/components/ui";
+import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useAllTaxes, useAllTaxAmounts } from "@/hooks/useDataApi";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -182,7 +182,7 @@ function SpecialTaxRow({
               {isNonAlcoholic && taxAmounts.length > 0 && (
                 <div>
                   <FormLabel>{t("products.taxAmountLabel")}</FormLabel>
-                  <select
+                  <Select
                     className="pp-input text-xs"
                     value={tax.specialFields?.taxAmountId ?? ""}
                     onChange={(e) => {
@@ -203,7 +203,7 @@ function SpecialTaxRow({
                         {ta.description} — ₡{ta.amount.toLocaleString("es-CR")}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
             </>
@@ -212,7 +212,7 @@ function SpecialTaxRow({
           {(!isIsebec || !isBeverage) && taxAmounts.length > 0 && (
             <div>
               <FormLabel>Monto de impuesto</FormLabel>
-              <select
+              <Select
                 className="pp-input text-xs"
                 value={tax.specialFields?.taxAmountId ?? ""}
                 onChange={(e) => {
@@ -233,7 +233,7 @@ function SpecialTaxRow({
                     {ta.description} — ₡{ta.amount.toLocaleString("es-CR")}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
 
@@ -338,7 +338,7 @@ export function OtherTaxSection({
           />
         ))}
 
-        <select
+        <Select
           className="pp-input"
           value=""
           onChange={(e) => {
@@ -367,7 +367,7 @@ export function OtherTaxSection({
                 {tt.description}
               </option>
             ))}
-        </select>
+        </Select>
       </div>
     </SectionWrapper>
   );

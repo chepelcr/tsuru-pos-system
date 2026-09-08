@@ -1,6 +1,6 @@
 import { Tag } from 'lucide-react';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
-import { FormLabel } from '@/components/ui';
+import { FormLabel, Select } from "@/components/ui";
 import { useAllDiscountTypes } from '@/hooks/useDataApi';
 import { CountryISO, DiscountTypeCode } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -87,7 +87,7 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <div>
                   <FormLabel required>{t('lineDetail.discountType')}</FormLabel>
-                  <select
+                  <Select
                     className="pp-input"
                     value={disc.discount_type ?? ''}
                     onChange={(e) => onTypeChange(i, e.target.value)}
@@ -95,7 +95,7 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
                     {discountTypes.map((d) => (
                       <option key={d.code ?? d.id} value={d.code}>{d.description}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <FormLabel required>{t('lineDetail.percentage')} %</FormLabel>

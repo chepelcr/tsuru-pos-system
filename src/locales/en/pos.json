@@ -258,5 +258,20 @@
   "lineDetail.specialFields.quantity.required": "Quantity is required for this tax",
   "lineDetail.specialFields.percentage.required": "Percentage is required for this tax",
   "lineDetail.specialFields.volume_consumption.required": "Volume per unit is required",
-  "lineDetail.iva.rateCodeInvalid": "Invalid IVA rate code: {code}"
+  "lineDetail.iva.rateCodeInvalid": "Invalid IVA rate code: {code}",
+  "tables.tab": "Tables",
+  "tables.title": "Tables and tabs",
+  "tables.floor": "Floor",
+  "tables.tabs": "Open tabs",
+  "tables.free": "Free",
+  "tables.occupied": "Occupied",
+  "tables.seats": "{n} seats",
+  "tables.openTab": "Open a tab",
+  "tables.openTab.name": "Customer name",
+  "tables.empty": "No tables configured for this branch",
+  "tables.emptyTabs": "No open tabs",
+  "tables.needsBranch": "Pick a branch",
+  "tables.close": "Close tab",
+  "tables.closeBlocked": "The table still has an open order",
+  "tables.held": "Order in progress"
 }

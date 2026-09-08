@@ -1,4 +1,5 @@
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Select } from "@/components/ui";
 
 interface PaginationProps {
   page: number;
@@ -39,7 +40,7 @@ export function Pagination({
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Mostrar:</span>
-            <select
+            <Select
               value={pageSize}
               onChange={(e) => {
                 const newSize = Number(e.target.value);
@@ -53,7 +54,7 @@ export function Pagination({
                   {size}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
       </div>

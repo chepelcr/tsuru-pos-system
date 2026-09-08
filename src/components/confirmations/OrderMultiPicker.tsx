@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Icon, Button } from '@/components/ui';
+import { Button, Icon, Select } from "@/components/ui";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useOrders } from '@/hooks/useOrders';
@@ -9,7 +9,7 @@ import { buildFutureOrdersSearch } from '@/lib/orderSearchBuilder';
  * Shared multi-order picker used by Create + Add confirmation dialogs. A search
  * box (debounced 500 ms) filters pickable orders, restricted to future delivery
  * (`deliveryDate>today`) and fetched with pageSize 100. Dynamic list of native
- * `<select className="pp-input">` rows; an order chosen in one row is removed
+ * `<Select className="pp-input">` rows; an order chosen in one row is removed
  * from the other rows' options; "add row" disabled until the last row has a
  * value.
  */
@@ -90,7 +90,7 @@ export function OrderMultiPicker({ orgId, value, onChange }: OrderMultiPickerPro
           return (
             <div key={index} className="flex items-center gap-2">
               <Icon name="package" size={15} className="text-muted-foreground flex-shrink-0" />
-              <select
+              <Select
                 className="pp-input h-10 flex-1 min-w-0"
                 value={rowValue}
                 onChange={(e) => updateRow(index, e.target.value)}
@@ -112,7 +112,7 @@ export function OrderMultiPicker({ orgId, value, onChange }: OrderMultiPickerPro
                     {order.document_number} - {formatDate(order.delivery_date)}
                   </option>
                 ))}
-              </select>
+              </Select>
               <button
                 type="button"
                 onClick={() => removeRow(index)}

@@ -82,6 +82,14 @@ export const DiscountTypeCode = {
   ROYALTY:                    "01", // Regalía — base NOT eroded; issuer assumes tax
   ROYALTY_BONUS_VAT_CUSTOMER: "02", // Regalía/bonificación, IVA cobrado al cliente
   BONUS:                      "03", // Bonificación — base NOT eroded; issuer assumes tax
+  VOLUME:                     "04", // Descuento por volumen
+  SEASONAL:                   "05", // Descuento por temporada (estacional)
+  PROMOTIONAL:                "06", // Descuento promocional
+  COMMERCIAL:                 "07", // Descuento comercial — the default for an
+                                    // imported line that carries an amount but
+                                    // no type (Excel orders); needs no reason.
+  FREQUENCY:                  "08", // Descuento por frecuencia
+  SUSTAINED:                  "09", // Descuento sostenido
   OTHER:                      "99", // Otros — requires `reason` text (Nota 20)
 } as const;
 export type DiscountTypeCodeValue = (typeof DiscountTypeCode)[keyof typeof DiscountTypeCode];

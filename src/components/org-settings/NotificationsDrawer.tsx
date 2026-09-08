@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Drawer, Icon, Spinner } from "@/components/ui";
+import { Drawer, Icon, Select, Spinner } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSaveNotifications } from "@/hooks/useOrgConfigurations";
 import type { OrgConfiguration, NotificationsFormState } from "@/types/orgConfigurations";
@@ -95,7 +95,7 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
         {/* Sent documents */}
         <div>
           <label className="pp-label">{t("orgSettings.notifications.sentDocuments")}</label>
-          <select
+          <Select
             className="pp-input w-full mt-1"
             value={form.notifySentDocuments}
             onChange={(e) => setForm((f) => ({ ...f, notifySentDocuments: Number(e.target.value) }))}
@@ -105,7 +105,7 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
                 {t(`orgSettings.notifications.sentOpts.${opt}`)}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {/* Toggle: processing documents */}

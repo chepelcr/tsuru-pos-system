@@ -1,4 +1,4 @@
-import { Icon } from "@/components/ui";
+import { Icon, Select } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
  *
  *   1. Search input always renders FIRST, status filter second.
  *   2. Status renders as a pill group on the wide layout (≥620px) and
- *      collapses to a native <select> dropdown on narrow viewports so
+ *      collapses to a native <Select> dropdown on narrow viewports so
  *      mobile users don't lose horizontal space to inactive buttons.
  *   3. When no `secondary` slot is provided the advanced-filters button
  *      stretches across the second row instead of leaving a half-empty
@@ -141,7 +141,7 @@ export function ListToolbar<V extends string = string>({
                 })}
               </div>
 
-              <select
+              <Select
                 className="status-select pp-input h-10 w-auto"
                 value={statusValue}
                 onChange={(e) => onStatusChange!(e.target.value as V)}
@@ -152,7 +152,7 @@ export function ListToolbar<V extends string = string>({
                     {t(opt.labelKey)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </>
           )}
         </div>

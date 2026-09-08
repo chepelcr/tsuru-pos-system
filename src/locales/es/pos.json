@@ -258,5 +258,20 @@
   "lineDetail.specialFields.quantity.required": "Falta la cantidad del impuesto específico",
   "lineDetail.specialFields.percentage.required": "Falta el porcentaje del impuesto específico",
   "lineDetail.specialFields.volume_consumption.required": "Falta el volumen por unidad",
-  "lineDetail.iva.rateCodeInvalid": "Código de tarifa IVA inválido: {code}"
+  "lineDetail.iva.rateCodeInvalid": "Código de tarifa IVA inválido: {code}",
+  "tables.tab": "Mesas",
+  "tables.title": "Mesas y cuentas",
+  "tables.floor": "Salón",
+  "tables.tabs": "Cuentas abiertas",
+  "tables.free": "Libre",
+  "tables.occupied": "Ocupada",
+  "tables.seats": "{n} puestos",
+  "tables.openTab": "Abrir cuenta",
+  "tables.openTab.name": "Nombre del cliente",
+  "tables.empty": "No hay mesas configuradas para esta sucursal",
+  "tables.emptyTabs": "No hay cuentas abiertas",
+  "tables.needsBranch": "Seleccioná una sucursal",
+  "tables.close": "Cerrar cuenta",
+  "tables.closeBlocked": "La mesa todavía tiene un pedido abierto",
+  "tables.held": "Pedido en curso"
 }

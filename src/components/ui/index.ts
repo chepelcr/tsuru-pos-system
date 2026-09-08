@@ -4,6 +4,9 @@ export { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription } fr
 export { Badge } from "./Badge";
 export { Button } from "./Button";
 export { Input, Select } from "./Input";
+export type { SelectChangeEvent } from "./Input";
+export { SelectField } from "./SelectField";
+export type { SelectFieldOption } from "./SelectField";
 export { Drawer } from "./Drawer";
 export { Menu } from "./Menu";
 export type { MenuItem } from "./Menu";

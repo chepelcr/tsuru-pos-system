@@ -12,6 +12,9 @@ import type { OrderStatus } from '@/types/order';
 type BadgeVariant = 'secondary' | 'info' | 'warning' | 'success' | 'destructive';
 
 export const ORDER_STATUS_BADGE: Record<OrderStatus, { variant: BadgeVariant; icon: string }> = {
+  // A proforma is visually distinct from a placed order: it is not a
+  // commitment yet, and treating it like `pending` on the list hides that.
+  quote: { variant: 'info', icon: 'fileText' },
   pending: { variant: 'secondary', icon: 'clock' },
   processing: { variant: 'info', icon: 'package' },
   shipped: { variant: 'warning', icon: 'cart' },

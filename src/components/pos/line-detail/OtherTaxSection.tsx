@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Receipt } from 'lucide-react';
-import { Icon, FormLabel } from '@/components/ui';
+import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { useAllTaxes, useAllTaxAmounts } from '@/hooks/useDataApi';
 import {
@@ -220,7 +220,7 @@ export function OtherTaxSection({
         })}
 
         {/* Add other tax */}
-        <select
+        <Select
           className="pp-input"
           value=""
           onChange={(e) => {
@@ -238,7 +238,7 @@ export function OtherTaxSection({
                 {tt.description}
               </option>
             ))}
-        </select>
+        </Select>
       </div>
     </SectionWrapper>
   );
@@ -328,7 +328,7 @@ function TaxCard({
             {taxAmounts.length > 0 && (
               <div>
                 <FormLabel>{t('lineDetail.taxAmount')}</FormLabel>
-                <select
+                <Select
                   className="pp-input text-xs"
                   value={tax.special_fields?.tax_amount_id ?? ''}
                   onChange={(e) => {
@@ -351,7 +351,7 @@ function TaxCard({
                       {ta.description} — ₡{ta.amount.toLocaleString('es-CR')}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
 

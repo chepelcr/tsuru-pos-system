@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Package } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { FormLabel } from "@/components/ui";
+import { FormLabel, Select } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAllMeasurementUnits } from "@/hooks/useDataApi";
 import type { Category } from "@/types";
@@ -58,7 +58,7 @@ export function GeneralInfoSection({
 
       <div>
         <FormLabel required>{t("products.categoryLabel")}</FormLabel>
-        <select
+        <Select
           className="pp-input"
           value={form.category_id}
           onChange={(e) => onChange({ category_id: e.target.value })}
@@ -69,14 +69,14 @@ export function GeneralInfoSection({
               {c.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {units.length > 0 && (
         <div>
           <FormLabel>{t("products.unitOfMeasure")}</FormLabel>
           {!customUnit ? (
-            <select
+            <Select
               className="pp-input"
               onChange={(e) => {
                 if (e.target.value === "__other__") {
@@ -91,7 +91,7 @@ export function GeneralInfoSection({
                 </option>
               ))}
               <option value="__other__">{t("products.otherUnit")}</option>
-            </select>
+            </Select>
           ) : (
             <div className="flex gap-1.5">
               <input

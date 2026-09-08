@@ -1,7 +1,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Spinner, MediaPicker } from "@/components/ui";
+import { MediaPicker, Select, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { OrgThemeBranding } from "@/types";
@@ -161,13 +161,13 @@ export function BrandingSettingsForm({
       </div>
 
       <FormField label={t("orgSettings.branding.fontFamily")} error={errors.fontFamily?.message}>
-        <select className="pp-input w-full" {...register("fontFamily")}>
+        <Select className="pp-input w-full" {...register("fontFamily")}>
           {FONT_FAMILIES.map((f) => (
             <option key={f} value={f}>
               {f}
             </option>
           ))}
-        </select>
+        </Select>
         <span className="block t-xs text-muted-foreground mt-1">
           {t("orgSettings.branding.fontFamilyDesc")}
         </span>
@@ -203,13 +203,13 @@ export function BrandingSettingsForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label={t("orgSettings.branding.loadingIcon")} error={errors.loadingIcon?.message}>
-          <select className="pp-input w-full" {...register("loadingIcon")}>
+          <Select className="pp-input w-full" {...register("loadingIcon")}>
             {ICON_OPTIONS.map((i) => (
               <option key={i} value={i}>
                 {i}
               </option>
             ))}
-          </select>
+          </Select>
           <span className="block t-xs text-muted-foreground mt-1">
             {t("orgSettings.branding.loadingIconDesc")}
           </span>
@@ -219,13 +219,13 @@ export function BrandingSettingsForm({
           label={t("orgSettings.branding.productFallbackIcon")}
           error={errors.productFallbackIcon?.message}
         >
-          <select className="pp-input w-full" {...register("productFallbackIcon")}>
+          <Select className="pp-input w-full" {...register("productFallbackIcon")}>
             {ICON_OPTIONS.map((i) => (
               <option key={i} value={i}>
                 {i}
               </option>
             ))}
-          </select>
+          </Select>
           <span className="block t-xs text-muted-foreground mt-1">
             {t("orgSettings.branding.productFallbackIconDesc")}
           </span>

@@ -9,6 +9,7 @@ import type {
   NumericOperator,
 } from '@/types/document';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Select } from "@/components/ui";
 
 // Sales-api doesn't expose a totals bounds endpoint yet (WIP) — use a sensible
 // fallback range so the slider is usable today. Swap to a fetched min/max when
@@ -134,16 +135,16 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
       {/* Status */}
       <div className="space-y-1">
         <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Estado</label>
-        <select
+        <Select
           value={local.status ?? ''}
           onChange={(e) => patch({ status: (e.target.value as any) || undefined })}
-          className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+          className="pp-input w-full"
         >
           <option value="">Todos</option>
           <option value="validated">Aceptados</option>
           <option value="pending">Pendientes</option>
           <option value="rejected">Rechazados</option>
-        </select>
+        </Select>
       </div>
 
       {/* Date filter — label left, mode toggle right-aligned. */}
@@ -172,21 +173,21 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
 
         {dateMode === 'single' && (
           <div className="grid grid-cols-[90px_1fr] gap-2">
-            <select
+            <Select
               value={local.dateOp ?? '='}
               onChange={(e) => setSingleOp(e.target.value as DateOperator)}
-              className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+              className="pp-input w-full"
               aria-label="Operador"
             >
               <option value="=">=</option>
               <option value=">=">≥</option>
               <option value="<=">≤</option>
-            </select>
+            </Select>
             <input
               type="date"
               value={local.dateValue ?? ''}
               onChange={(e) => setSingleValue(e.target.value)}
-              className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+              className="pp-input w-full"
             />
           </div>
         )}
@@ -199,7 +200,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
                 type="date"
                 value={local.start_date ?? ''}
                 onChange={(e) => patch({ start_date: e.target.value || undefined })}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+                className="pp-input w-full"
               />
             </div>
             <div className="space-y-1">
@@ -208,7 +209,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
                 type="date"
                 value={local.end_date ?? ''}
                 onChange={(e) => patch({ end_date: e.target.value || undefined })}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+                className="pp-input w-full"
               />
             </div>
           </div>
@@ -241,16 +242,16 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
 
         {totalMode === 'single' && (
           <div className="grid grid-cols-[80px_1fr] gap-2">
-            <select
+            <Select
               value={local.totalOp ?? '='}
               onChange={(e) => patch({ totalOp: e.target.value as NumericOperator })}
-              className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+              className="pp-input w-full"
               aria-label="Operador"
             >
               <option value="=">=</option>
               <option value=">">&gt;</option>
               <option value="<">&lt;</option>
-            </select>
+            </Select>
             <input
               type="number"
               min={0}
@@ -259,7 +260,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
               onChange={(e) =>
                 patch({ totalValue: e.target.value ? Number(e.target.value) : undefined })
               }
-              className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+              className="pp-input w-full"
               placeholder="0"
             />
           </div>
@@ -277,7 +278,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
                   inputMode="numeric"
                   value={local.totalMin ?? ''}
                   onChange={(e) => patch({ totalMin: e.target.value ? Number(e.target.value) : undefined })}
-                  className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+                  className="pp-input w-full"
                   placeholder={fmtTotal(TOTAL_SLIDER_MIN)}
                 />
               </div>
@@ -290,7 +291,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
                   inputMode="numeric"
                   value={local.totalMax ?? ''}
                   onChange={(e) => patch({ totalMax: e.target.value ? Number(e.target.value) : undefined })}
-                  className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+                  className="pp-input w-full"
                   placeholder={fmtTotal(TOTAL_SLIDER_MAX)}
                 />
               </div>
@@ -309,17 +310,17 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
       {/* Sort */}
       <div className="space-y-1">
         <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t('common.sortBy')}</label>
-        <select
+        <Select
           value={local.sort ?? ''}
           onChange={(e) => patch({ sort: e.target.value || undefined })}
-          className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:border-primary"
+          className="pp-input w-full"
         >
           <option value="">{t('documents.sort.dateDesc')}</option>
           <option value="sale_date,asc">{t('documents.sort.dateAsc')}</option>
           <option value="total_amount,desc">{t('documents.sort.amountDesc')}</option>
           <option value="total_amount,asc">{t('documents.sort.amountAsc')}</option>
           <option value="consecutive_number,desc">{t('documents.sort.consecutiveDesc')}</option>
-        </select>
+        </Select>
       </div>
     </FiltersModal>
   );

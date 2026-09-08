@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CustomerType, type CustomerTypeValue } from "@/lib/enums";
 import { FiltersModal } from "@/components/common/FiltersModal";
+import { Select } from "@/components/ui";
 
 /**
  * Advanced filters for clients — customer type + sort. The most-used filters
@@ -45,7 +46,7 @@ export function ClientAdvancedFiltersModal({ open, filters, onApply, onClose }: 
     >
       <div className="space-y-1">
         <label className="t-label">{t("clients.customerType")}</label>
-        <select
+        <Select
           value={local.customerType ?? ""}
           onChange={(e) =>
             patch({
@@ -62,12 +63,12 @@ export function ClientAdvancedFiltersModal({ open, filters, onApply, onClose }: 
               {t(opt.labelKey)}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="space-y-1">
         <label className="t-label">{t("common.sortBy")}</label>
-        <select
+        <Select
           value={local.sort ?? ""}
           onChange={(e) => patch({ sort: e.target.value || undefined })}
           className="pp-input"
@@ -77,7 +78,7 @@ export function ClientAdvancedFiltersModal({ open, filters, onApply, onClose }: 
           <option value="<client_name">{t("clients.sortNameDesc")}</option>
           <option value="<created_on">{t("clients.sortNewest")}</option>
           <option value=">created_on">{t("clients.sortOldest")}</option>
-        </select>
+        </Select>
       </div>
     </FiltersModal>
   );

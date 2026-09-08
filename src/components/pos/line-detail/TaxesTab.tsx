@@ -1,6 +1,6 @@
 import { Percent } from 'lucide-react';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
-import { FormLabel } from '@/components/ui';
+import { FormLabel, Select } from "@/components/ui";
 import {
   useAllTaxes,
   useAllTaxRates,
@@ -106,7 +106,7 @@ export function TaxesTab({
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div>
               <FormLabel required>{t('lineDetail.ivaType')}</FormLabel>
-              <select
+              <Select
                 className="pp-input"
                 value={ivaTax?.code ?? ''}
                 onChange={(e) => setIva({ code: e.target.value || undefined })}
@@ -119,11 +119,11 @@ export function TaxesTab({
                       {tt.code} — {tt.description}
                     </option>
                   ))}
-              </select>
+              </Select>
             </div>
             <div>
               <FormLabel required>{t('lineDetail.ivaRate')}</FormLabel>
-              <select
+              <Select
                 className="pp-input"
                 value={ivaTax?.rate_code ?? ''}
                 onChange={(e) => {
@@ -137,14 +137,14 @@ export function TaxesTab({
                     {r.percentage}%
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
           {ivaTax?.code && IVA_NEEDS_FACTOR.includes(ivaTax.code) && (
             <div className="mb-2">
               <FormLabel required>{t('lineDetail.ivarbu')}</FormLabel>
-              <select
+              <Select
                 className="pp-input"
                 value={ivaTax.factor ?? ''}
                 onChange={(e) =>
@@ -157,14 +157,14 @@ export function TaxesTab({
                     {f.description}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
 
           {/* Factory tax charge */}
           <div>
             <FormLabel>{t('lineDetail.factoryCharge')}</FormLabel>
-            <select
+            <Select
               className="pp-input"
               value={factoryTaxChargeCode ?? ''}
               onChange={(e) => onFactoryTaxChargeChange(e.target.value || undefined)}
@@ -175,7 +175,7 @@ export function TaxesTab({
                   {f.description}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -200,7 +200,7 @@ export function TaxesTab({
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <FormLabel>{t('lineDetail.discountType')}</FormLabel>
-                    <select
+                    <Select
                       className="pp-input"
                       value={tax.code ?? ''}
                       onChange={(e) => updateOther(idx, { code: e.target.value })}
@@ -212,7 +212,7 @@ export function TaxesTab({
                             {x.code} — {x.description}
                           </option>
                         ))}
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <FormLabel>{t('lineDetail.ivaRate')} %</FormLabel>

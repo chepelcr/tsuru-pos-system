@@ -1,6 +1,6 @@
 import { Package } from 'lucide-react';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
-import { FormLabel } from '@/components/ui';
+import { FormLabel, Select } from "@/components/ui";
 import { useAllMeasurementUnits } from '@/hooks/useDataApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineDetail } from '@/types/lineDetail';
@@ -87,7 +87,7 @@ export function GeneralTab({ detail, onChange, isExpanded, onToggle, isExportInv
             <FormLabel required>
               {t('products.unitOfMeasure')}
             </FormLabel>
-            <select
+            <Select
               className="pp-input"
               value={detail.unit_measure ?? ''}
               onChange={(e) => handleUnitChange(e.target.value || undefined)}
@@ -96,7 +96,7 @@ export function GeneralTab({ detail, onChange, isExpanded, onToggle, isExportInv
               {(measurementUnits ?? []).map((u: any) => (
                 <option key={u.code ?? u.id} value={u.code}>{u.code} — {u.description}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 

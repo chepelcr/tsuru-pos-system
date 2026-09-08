@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Spinner } from "@/components/ui";
+import { Select, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { OrgPaymentSettings } from "@/types";
@@ -68,13 +68,13 @@ export function PaymentSettingsForm({
         required
         error={errors.currency?.message}
       >
-        <select className="pp-input w-full" {...register("currency")}>
+        <Select className="pp-input w-full" {...register("currency")}>
           {CURRENCIES.map((c) => (
             <option key={c} value={c}>
               {`${c} — ${t(`orgSettings.payment.currencyName.${c}`)}`}
             </option>
           ))}
-        </select>
+        </Select>
         <span className="block t-xs text-muted-foreground mt-1">
           {t("orgSettings.payment.currencyDesc")}
         </span>

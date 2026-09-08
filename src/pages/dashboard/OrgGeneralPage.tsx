@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,8 +10,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
 import { Icon, Spinner } from "@/components/ui";
+import type { BusinessType } from "@/types/organization";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { FormField } from "@/components/forms/FormField";
+import {
+  BusinessIdentityFields,
+  type BusinessIdentityValue,
+} from "@/components/org-settings/BusinessIdentityFields";
 import { ROUTES } from "@/routePaths";
 
 const buildSchema = (t: (k: string) => string) =>
@@ -41,6 +46,24 @@ export default function OrgGeneralPage() {
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
 
+  // Business identity is three controlled widgets, not text inputs, so it sits
+  // in plain state rather than react-hook-form.
+  const [identity, setIdentity] = useState<BusinessIdentityValue>({
+    businessType: "general",
+    isRetailSupplier: false,
+    isPyme: false,
+  });
+
+  // Hydrate once the org arrives (same pattern as the RHF `values` prop above).
+  useEffect(() => {
+    if (!org) return;
+    setIdentity({
+      businessType: (org.businessType ?? "general") as BusinessType,
+      isRetailSupplier: org.isRetailSupplier ?? false,
+      isPyme: org.isPyme ?? false,
+    });
+  }, [org?.businessType, org?.isRetailSupplier, org?.isPyme, org]);
+
   // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
   const { can, isReady: permsReady } = usePermissions();
   const canUpdate = !permsReady || can("organization", "update", "general");
@@ -65,6 +88,7 @@ export default function OrgGeneralPage() {
       await updateMutation.mutateAsync({
         name: data.name,
         description: data.description,
+        ...identity,
       });
       setSavedNoticeVisible(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -150,6 +174,14 @@ export default function OrgGeneralPage() {
               {...register("description")}
             />
           </FormField>
+
+          <div className="pt-1 border-t border-border" />
+
+          <BusinessIdentityFields
+            value={identity}
+            onChange={(patch) => setIdentity((prev) => ({ ...prev, ...patch }))}
+            disabled={!canUpdate}
+          />
 
           {canUpdate && (
             <div className="flex justify-end pt-1">

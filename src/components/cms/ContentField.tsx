@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { MediaPicker } from "@/components/ui/MediaPicker";
@@ -214,7 +215,7 @@ export function ContentField({
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
             <span className="label-section">{t("content.background.type")}</span>
-            <select
+            <Select
               className="input"
               value={bgData.type}
               disabled={disabled}
@@ -237,11 +238,11 @@ export function ContentField({
               <option value="color">{t("content.background.solid")}</option>
               <option value="gradient">{t("content.background.gradient")}</option>
               <option value="image">{t("content.background.image")}</option>
-            </select>
+            </Select>
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="label-section">{t("content.background.colorMode")}</span>
-            <select
+            <Select
               className="input"
               value={sectionMode}
               disabled={disabled}
@@ -249,7 +250,7 @@ export function ContentField({
             >
               <option value="both">{t("content.color.mode.both")}</option>
               <option value="single">{t("content.color.mode.single")}</option>
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -452,7 +453,7 @@ export function ContentField({
               <div key={f.key} className="flex flex-col gap-1">
                 <span className="label-section">{f.label}</span>
                 {f.options ? (
-                  <select
+                  <Select
                     className="input w-full"
                     value={String(row[f.key] ?? "")}
                     disabled={disabled}
@@ -463,7 +464,7 @@ export function ContentField({
                         {opt}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 ) : (
                   <Input
                     type={f.type === "number" ? "number" : "text"}

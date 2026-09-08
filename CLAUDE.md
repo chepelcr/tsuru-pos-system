@@ -564,6 +564,12 @@ If you write a helper component or render function that produces user-visible te
 | Touch the IVA declaration report | `pages/dashboard/IvaReportPage.tsx` + `components/reports/` + `hooks/useIvaReport.ts` + `docs/IVA_TAX_REPORT.md` |
 | Touch manual orders (pedidos manuales) | `hooks/useFiscalMode.ts` (the gate) + `types/invoice.ts` (`PM` doc type) + `hooks/useCartFlow.ts` + `components/pos/checkout/` + `docs/MANUAL_ORDERS.md` |
 | Invoice a delivered order | `lib/orderToInvoice.ts` + `components/orders/InvoiceOrderModal.tsx` + `pages/dashboard/OrderDetailPage.tsx` + `docs/MANUAL_ORDERS.md` §7 |
+| Gate a feature by business type | `hooks/useBusinessType.ts` (fails **closed**; do NOT use `hasModule()` — it fails open and auto-grants to owners) + `components/org-settings/BusinessIdentityFields.tsx` + `management-be` `seeds/rbac-seed.ts` `BUSINESS_TYPE_MODULES` |
+| Touch mesas / cuentas abiertas | `hooks/useTables.ts` + `components/pos/TablesPanel.tsx` + store-be `tables_controller.py` (branch **code**, not UUID) |
+| Touch combos / servicio 10% / cuenta dividida | `lib/comboExplosion.ts`, `lib/serviceCharge.ts`, `lib/splitBill.ts` (all have tests — the tax reasoning lives in their doc comments) |
+| Add a scanner / scale-barcode behaviour | `hooks/useProductByCode.ts` + `lib/scaleBarcode.ts` + `services/offlineCatalog.ts` `readCachedProductByCode` — **ungated**, every org has it |
+| Touch a vertical's data (lots, units, agenda, assets) | `hooks/useVerticals.ts` + store-be `verticals_controller.py` / `services/{lot,commission,product_unit,price_schedule,recurring_invoice}_service.py` |
+| Print a ticket | **Backend**, not the browser: store-be `services/ticket_service.py` + `templates/ticket.html`; FE only calls `hooks/useOrderTicket.ts`. See `docs/PRINT_RECEIPT.md` for why |
 | Change anything offline / PWA | `services/offlineCatalog.ts` + `services/offlineBootstrap.ts` + `lib/db.ts` + `lib/queryClient.ts` + `scripts/sw-template.js` + `docs/OFFLINE.md` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |

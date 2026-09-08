@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { LocationSelect } from "@/components/ui/LocationSelect";
-import { Icon } from "@/components/ui";
+import { Icon, Select } from "@/components/ui";
 import type { CreateClientDto } from "@/hooks/useClients";
 import { useAllCustomerTypes, useAllIdentifications, useAllCountries } from "@/hooks/useDataApi";
 import { CountryISO, CustomerType, IdTypeCode, DEFAULT_ID_TYPE, allowedIdCodes } from "@/lib/enums";
@@ -121,7 +121,7 @@ export default function ClientFormBody({ form, setForm, error, isEditing }: Prop
       <SectionLabel>Identidad</SectionLabel>
       <div className="flex flex-wrap gap-2.5 mb-6">
         <Field label="Nacionalidad">
-          <select
+          <Select
             className={`client-input appearance-none ${canEditCriticalFields ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
             value={nationality}
             onChange={canEditCriticalFields ? (e) => setForm((f) => ({ ...f, nationality: e.target.value })) : undefined}
@@ -133,11 +133,11 @@ export default function ClientFormBody({ form, setForm, error, isEditing }: Prop
                 {c.spanish_name || c.name}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <Field label="Tipo de identificación" half>
-          <select
+          <Select
             className={`client-input appearance-none ${canEditCriticalFields ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
             value={form.identification?.code ?? DEFAULT_ID_TYPE}
             onChange={canEditCriticalFields ? (e) => setForm((f) => ({ ...f, identification: { ...f.identification, code: e.target.value, number: "" } })) : undefined}
@@ -147,7 +147,7 @@ export default function ClientFormBody({ form, setForm, error, isEditing }: Prop
             {filteredIdTypes.map((t) => (
               <option key={t.code} value={t.code}>{t.description}</option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <Field label="Número de identificación" half>
@@ -186,7 +186,7 @@ export default function ClientFormBody({ form, setForm, error, isEditing }: Prop
         </Field>
 
         <Field label="País (teléfono)" half>
-          <select
+          <Select
             className="client-input appearance-none cursor-pointer"
             value={form.phone?.country_code ?? CountryISO.COSTA_RICA}
             onChange={(e) => setForm((f) => ({ ...f, phone: { ...f.phone, country_code: e.target.value } }))}
@@ -197,7 +197,7 @@ export default function ClientFormBody({ form, setForm, error, isEditing }: Prop
                 +{c.phone_code} {c.spanish_name || c.name}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <Field label="Número de teléfono" half>

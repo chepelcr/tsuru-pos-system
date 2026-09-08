@@ -1,11 +1,13 @@
 import { cn } from '@/lib/utils';
 import { ProductsPanel } from './ProductsPanel';
 import { CustomerPanel } from './CustomerPanel';
+import { TablesPanel } from './TablesPanel';
+import { useBusinessType } from '@/hooks/useBusinessType';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Product } from '@/types';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
 
-export type LeftTab = 'products' | 'clients' | 'cart';
+export type LeftTab = 'products' | 'clients' | 'tables' | 'cart';
 
 interface CartItem { id: string; qty: number; }
 
@@ -21,6 +23,10 @@ interface PosLeftPaneProps {
   selectedClient: ClientSearchResult | null;
   onClientQueryChange: (v: string) => void;
   onSelectClient: (c: ClientSearchResult) => void;
+  /** Session branch code — tables are per branch (TSR-149). */
+  branchCode?: number | null;
+  activeDocumentId?: string;
+  onSelectTable?: (table: import('@/types/table').PosTable) => void;
 }
 
 export function PosLeftPane({
@@ -35,11 +41,18 @@ export function PosLeftPane({
   selectedClient,
   onClientQueryChange,
   onSelectClient,
+  branchCode,
+  activeDocumentId,
+  onSelectTable,
 }: PosLeftPaneProps) {
   const { t } = useLanguage();
+  // Fail-closed: the Mesas tab only exists for an org whose business type
+  // granted the restaurant module.
+  const { isRestaurant } = useBusinessType();
   const TABS: { id: LeftTab; label: string }[] = [
     { id: 'products', label: t('tabs.products') },
     { id: 'clients', label: t('tabs.clients') },
+    ...(isRestaurant ? [{ id: 'tables' as LeftTab, label: t('tables.tab') }] : []),
   ];
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -63,7 +76,14 @@ export function PosLeftPane({
 
       {/* Tab content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'clients' ? (
+        {activeTab === 'tables' ? (
+          <TablesPanel
+            orgId={orgId}
+            branchCode={branchCode}
+            activeDocumentId={activeDocumentId}
+            onSelectTable={(tb) => onSelectTable?.(tb)}
+          />
+        ) : activeTab === 'clients' ? (
           <CustomerPanel
             clients={clients}
             isLoading={clientsLoading}

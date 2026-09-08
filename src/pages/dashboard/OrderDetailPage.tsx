@@ -14,6 +14,7 @@ import { downloadFromUrl } from '@/lib/downloadUtils';
 import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE } from '@/components/orders/OrderStatusBadge';
 import { InvoiceOrderModal } from '@/components/orders/InvoiceOrderModal';
+import { useOrderTicket } from '@/hooks/useOrderTicket';
 import { useFiscalMode } from '@/hooks/useFiscalMode';
 import { isOrderInvoiced } from '@/lib/orderToInvoice';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
@@ -267,6 +268,7 @@ export default function OrderDetailPage({ orderId }: Props) {
 
   const { data: order, isLoading, error } = useOrder(orgId, orderId);
   const updateStatus = useUpdateOrderStatus(orgId, orderId);
+  const ticket = useOrderTicket(orgId);
   // Billing a pedido is optional and happens after delivery — see
   // docs/MANUAL_ORDERS.md §7.
   const fiscal = useFiscalMode(orgId);
@@ -546,7 +548,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         )}
 
         {/* Attachment downloads */}
-        {canExport && (att.pdf_url || att.excel_url || att.nuevo_reporte_url) && (
+        {canExport && (att.pdf_url || att.excel_url || att.nuevo_reporte_url || att.ticket_url) && (
           <div className="flex flex-wrap gap-2 mt-5">
             {att.pdf_url && (
               <Button variant="outline" size="sm" icon="fileText" onClick={() => downloadAttachment(att.pdf_url)}>
@@ -568,6 +570,18 @@ export default function OrderDetailPage({ orderId }: Props) {
                 {t('orders.attachments.nuevoReporte')}
               </Button>
             )}
+            {/* Rendered by the backend on demand, like every other format —
+                so a reprint matches the original exactly. Regenerating picks
+                up the consecutive and QR once the order has been invoiced. */}
+            <Button
+              variant="outline"
+              size="sm"
+              icon="print"
+              disabled={ticket.isPending}
+              onClick={() => ticket.mutate(order.document_number)}
+            >
+              {t('orders.attachments.ticket')}
+            </Button>
           </div>
         )}
 

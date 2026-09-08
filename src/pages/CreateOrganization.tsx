@@ -11,6 +11,10 @@ import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { Card, CardBody, Icon, Input, LocationSelect, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { FormField } from "@/components/forms/FormField";
+import {
+  BusinessIdentityFields,
+  type BusinessIdentityValue,
+} from "@/components/org-settings/BusinessIdentityFields";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { THEME_LIST, DEFAULT_THEME_ID, type ThemeDef } from "@/theme/themes";
 
@@ -67,6 +71,18 @@ export default function CreateOrganization() {
   const [subdomainTouched, setSubdomainTouched] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  // Business identity (TSR-150). Defaults keep step 1 valid for anyone who
+  // ignores it — `general` grants no vertical module, so nothing changes.
+  const [identity, setIdentity] = useState<BusinessIdentityValue>({
+    businessType: "general",
+    isRetailSupplier: false,
+    isPyme: false,
+  });
+  // Step 1 unfolds in beats instead of showing every field at once: the type
+  // question appears once the business has a name. Derived from state, never
+  // stored — so resuming a draft opens fully revealed and correcting the name
+  // never collapses what is already answered.
+  const identityRevealed = name.trim().length > 0;
 
   // Step 2
   const [email, setEmail] = useState("");
@@ -174,6 +190,10 @@ export default function CreateOrganization() {
             slug,
             subdomain: subdomain || undefined,
             ownerId: userId,
+            // Sent at creation so the platform assigns the right vertical
+            // modules up front — a new org should be correct on first login,
+            // not after a trip to settings.
+            ...identity,
           });
           setCreatedOrgId(org.id);
         }
@@ -356,6 +376,19 @@ export default function CreateOrganization() {
                       })}
                     </p>
                   </FormField>
+
+                  {identityRevealed && (
+                    <div className="fade-up">
+                      <BusinessIdentityFields
+                        value={identity}
+                        onChange={(patch) =>
+                          setIdentity((prev) => ({ ...prev, ...patch }))
+                        }
+                        progressive
+                        showSummary
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 

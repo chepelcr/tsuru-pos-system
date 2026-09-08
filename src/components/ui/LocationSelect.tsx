@@ -1,7 +1,7 @@
 import { useStates, useCounties, useDistricts, useNeighborhoods } from "@/hooks/useDataApi";
 import { CountryISO } from "@/lib/enums";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Select } from "./Input";
+import { Select, type SelectChangeEvent } from "./Input";
 import { FormLabel } from "./FormLabel";
 import type { LocationData } from "@/types/location";
 
@@ -49,22 +49,22 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
     { enabled: isCR && stateId != null && stateId > 0 && countyId != null && countyId > 0 && districtId != null && districtId > 0 },
   );
 
-  const handleState = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleState = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
     onChange({ state_id: id, county_id: null, district_id: null, neighborhood_id: null, address: value.address });
   };
 
-  const handleCounty = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCounty = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
     onChange({ ...value, county_id: id, district_id: null, neighborhood_id: null });
   };
 
-  const handleDistrict = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleDistrict = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
     onChange({ ...value, district_id: id, neighborhood_id: null });
   };
 
-  const handleNeighborhood = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleNeighborhood = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
     onChange({ ...value, neighborhood_id: id });
   };

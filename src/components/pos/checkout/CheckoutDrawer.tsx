@@ -6,6 +6,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
 import { isManualOrderDocType } from '@/types/invoice';
+import { useBusinessType } from '@/hooks/useBusinessType';
 import type {
   SalePayment,
   CurrencyCode,
@@ -119,6 +120,9 @@ export function CheckoutDrawer({
   // activity code, no Hacienda references, and no requirement that the order
   // be paid in full at capture time (a pedido is normally settled later).
   const isManualOrder = isManualOrderDocType(doc_type);
+  // Departments and registered delivery points only exist for a chain
+  // supplier; fail-closed while the module list resolves.
+  const { isSupplier } = useBusinessType();
   const needsReceiver = isManualOrder || doc_type !== '04'; // All except Tiquete
   const needsReferences = doc_type === '03' || doc_type === '02'; // NC / ND
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
@@ -131,6 +135,7 @@ export function CheckoutDrawer({
   const { expanded, toggle } = useAccordionSections<SectionId>({
     // A manual order opens on its delivery data, not on payment: capturing
     // when it ships is the point, and payment may not exist yet.
+    // A PM renders neither Pago nor Documento at all — see below.
     payment: !isManualOrder,
     receiver: needsReceiver && !hasReceiver,
     document: false,
@@ -143,6 +148,12 @@ export function CheckoutDrawer({
     if (isManualOrder) {
       if (!hasLines) return t('manualOrder.error.noLines');
       if (!hasReceiver) return t('manualOrder.error.clientRequired');
+      // Either a registered point or a real address — the free-text blob that
+      // used to satisfy this is gone.
+      const loc = manualOrder.delivery_location;
+      if (!loc?.store_id && !loc?.address?.trim()) {
+        return t('manualOrder.error.deliveryRequired');
+      }
       return null;
     }
     if (!isPaid) return t('checkout.error.notPaid');
@@ -170,7 +181,8 @@ export function CheckoutDrawer({
       receiver: needsReceiver ? receiver : null,
       references: needsReferences ? references : [],
       copy_emails: copyEmails.filter(Boolean),
-      payments,
+      // A pedido carries no payments: it is settled after delivery.
+      payments: isManualOrder ? [] : payments,
       subtotal,
       tax_amount: taxAmount,
       discount_amount: 0,
@@ -205,7 +217,9 @@ export function CheckoutDrawer({
           className="w-full h-12 rounded-md bg-primary text-primary-foreground font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm shadow-primary/30 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isManualOrder
-            ? t('manualOrder.confirmWith', { amount: fmt(cartTotal) })
+            ? manualOrder.is_quote
+              ? t('manualOrder.confirmQuote')
+              : t('manualOrder.confirmWith', { amount: fmt(cartTotal) })
             : t('checkout.confirmWith', { amount: fmt(cartTotal) })}
           <span>›</span>
         </button>
@@ -226,13 +240,16 @@ export function CheckoutDrawer({
       {step === 'payment' && (
         <div className="flex flex-col gap-3 px-4 py-4">
           {/* Sections */}
-          <PaymentSection
-            isExpanded={expanded.payment}
-            onToggle={() => toggle('payment')}
-            cartTotal={cartTotal}
-            payments={payments}
-            onChange={(next) => updateData({ payments: next })}
-          />
+          {/* A pedido is settled later, so payment does not belong on it. */}
+          {!isManualOrder && (
+            <PaymentSection
+              isExpanded={expanded.payment}
+              onToggle={() => toggle('payment')}
+              cartTotal={cartTotal}
+              payments={payments}
+              onChange={(next) => updateData({ payments: next })}
+            />
+          )}
 
           <ReceiverSection
             isExpanded={expanded.receiver}
@@ -245,18 +262,27 @@ export function CheckoutDrawer({
             needsReceiver={needsReceiver}
           />
 
-          <DocumentSection
-            isExpanded={expanded.document}
-            onToggle={() => toggle('document')}
-            data={docData}
-            onChange={(p) => updateData(p)}
-          />
+          {/* For a PM the Documento fields live on the Pedido card and its
+              Notas duplicated that card's Comentario, so it is absent — not
+              collapsed, not empty. */}
+          {!isManualOrder && (
+            <DocumentSection
+              isExpanded={expanded.document}
+              onToggle={() => toggle('document')}
+              data={docData}
+              onChange={(p) => updateData(p)}
+            />
+          )}
 
           {isManualOrder && (
             <ManualOrderSection
               isExpanded={expanded.manualOrder}
               onToggle={() => toggle('manualOrder')}
               data={manualOrder}
+              orgId={orgId}
+              clientId={selectedClient?.client_id}
+              isSupplier={isSupplier}
+              receiver={receiver}
               onChange={(patch) =>
                 updateData({ manual_order: { ...manualOrder, ...patch } })
               }

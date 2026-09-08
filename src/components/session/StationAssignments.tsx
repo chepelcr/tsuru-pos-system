@@ -1,4 +1,4 @@
-import { Icon, Card, CardTitle, CardDescription, Button } from "@/components/ui";
+import { Button, Card, CardDescription, CardTitle, Icon, Select } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Branch {
@@ -185,7 +185,7 @@ export default function StationAssignments({
                           <div key={memberIndex} className="grid-station-assignment gap-2.5 items-end">
                             <div>
                               <label className="label !text-[10px]">{t("session.member")}</label>
-                              <select
+                              <Select
                                 className="input input-sm"
                                 value={member.userId}
                                 onChange={(e) =>
@@ -198,12 +198,12 @@ export default function StationAssignments({
                                     {[m.user.firstName, m.user.lastName].filter(Boolean).join(" ") || m.user.email}
                                   </option>
                                 ))}
-                              </select>
+                              </Select>
                             </div>
 
                             <div>
                               <label className="label !text-[10px]">{t("session.terminal")}</label>
-                              <select
+                              <Select
                                 className="input input-sm"
                                 value={member.terminalId || ""}
                                 onChange={(e) =>
@@ -216,12 +216,12 @@ export default function StationAssignments({
                                     {terminal.name} ({terminal.code})
                                   </option>
                                 ))}
-                              </select>
+                              </Select>
                             </div>
 
                             <div>
                               <label className="label !text-[10px]">{t("common.role")}</label>
-                              <select
+                              <Select
                                 className="input input-sm"
                                 value={branchHasSupervisor ? "cashier" : member.role}
                                 disabled={branchHasSupervisor}
@@ -233,7 +233,7 @@ export default function StationAssignments({
                                 {!branchHasSupervisor && (
                                   <option value="supervisor">{t("assignments.supervisor")}</option>
                                 )}
-                              </select>
+                              </Select>
                             </div>
 
                             <Button

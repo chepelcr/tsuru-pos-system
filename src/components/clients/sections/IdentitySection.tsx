@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { User, X, Loader2 } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { FormLabel } from "@/components/ui";
+import { FormLabel, Select } from "@/components/ui";
 import { useAllCustomerTypes, useAllIdentifications, useAllCountries } from "@/hooks/useDataApi";
 import { dataApiClient } from "@/services/data-api";
 import { CountryISO, CustomerType, IdTypeCode, allowedIdCodes } from "@/lib/enums";
@@ -161,7 +161,7 @@ export function IdentitySection({
       {/* Nationality */}
       <div>
         <FormLabel required>Nacionalidad</FormLabel>
-        <select
+        <Select
           className={`pp-input ${canEditCriticalFields ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
           value={nationality}
           onChange={canEditCriticalFields ? (e) => setForm((f) => ({ ...f, nationality: e.target.value })) : undefined}
@@ -173,14 +173,14 @@ export function IdentitySection({
               {c.spanish_name || c.name}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* ID Type & Number */}
       <div className="flex gap-2.5">
         <div className="flex-1">
           <FormLabel required>Tipo de identificación</FormLabel>
-          <select
+          <Select
             className={`pp-input ${canEditCriticalFields ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
             value={idCode}
             onChange={canEditCriticalFields ? (e) => setForm((f) => ({ ...f, identification: { ...f.identification, code: e.target.value, number: "" } })) : undefined}
@@ -192,7 +192,7 @@ export function IdentitySection({
                 {t.description}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="flex-1">

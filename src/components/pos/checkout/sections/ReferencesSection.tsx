@@ -5,6 +5,7 @@ import { CountryISO } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import type { SaleReference } from '@/types/reference';
+import { Select } from "@/components/ui";
 
 interface ReferencesSectionProps {
   isExpanded: boolean;
@@ -67,7 +68,7 @@ export function ReferencesSection({
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {t('checkout.references.type')}
               </label>
-              <select
+              <Select
                 value={ref.type}
                 onChange={(e) => update(i, { type: e.target.value })}
                 className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
@@ -77,13 +78,13 @@ export function ReferencesSection({
                     {rt.description}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {t('checkout.references.code')}
               </label>
-              <select
+              <Select
                 value={ref.code}
                 onChange={(e) => update(i, { code: e.target.value })}
                 className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
@@ -93,7 +94,7 @@ export function ReferencesSection({
                     {rc.description}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 

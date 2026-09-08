@@ -95,9 +95,35 @@ export interface OrgShippingSettings {
  * Edits ONLY top-level name + description. email/phone/address moved to the
  * contact section (contact_settings via PUT /settings/contact).
  */
+/**
+ * What kind of business this is (TSR-150). Exactly one value; the writer of
+ * the org's vertical modules via BUSINESS_TYPE_MODULES in the platform API.
+ *
+ * `feria` is deliberately absent: a feria del agricultor is a collective of
+ * independent vendors, which is an org-grouping problem, not a per-org mode.
+ */
+export const BUSINESS_TYPES = [
+  'general',
+  'minisuper',
+  'restaurant',
+  'bar',
+  'servicios',
+  'ferreteria',
+  'farmacia',
+  'salon',
+  'taller',
+] as const;
+export type BusinessType = (typeof BUSINESS_TYPES)[number];
+
 export interface OrgGeneralSettings {
   name: string;
   description?: string;
+  /** One exclusive choice — see BUSINESS_TYPES. */
+  businessType?: BusinessType;
+  /** "Proveedor de cadena" — a sales channel, not a type. Grants b2b-supply. */
+  isRetailSupplier?: boolean;
+  /** Descriptive label only: grants nothing, and is NOT a fiscal classification. */
+  isPyme?: boolean;
 }
 
 export interface Organization {
@@ -122,6 +148,12 @@ export interface Organization {
   domainVerified?: boolean;
   verificationToken?: string;
   plan?: string;
+  // ── Business identity (TSR-150) ───────────────────────────────────────────
+  // One select + two independent switches. Never fold the flags into the type:
+  // a minisuper can be a PYME *and* supply a chain.
+  businessType?: BusinessType;
+  isRetailSupplier?: boolean;
+  isPyme?: boolean;
   billingEmail?: string;
   stripeCustomerId?: string;
   isActive?: boolean;

@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { FiltersModal } from "@/components/common/FiltersModal";
 import { RangeSlider } from "@/components/common/RangeSlider";
 import { useProductPriceBounds } from "@/hooks/useProducts";
+import { Select } from "@/components/ui";
 
 /**
  * Advanced filters for products — price (single comparison OR range) + sort.
@@ -131,7 +132,7 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
         <div className="grid grid-cols-[80px_1fr] gap-2 items-end">
           <div className="space-y-1">
             <label className="t-label">{t("products.priceOperator")}</label>
-            <select
+            <Select
               value={local.priceOp ?? "="}
               onChange={(e) => patch({ priceOp: e.target.value as PriceOperator })}
               className="pp-input"
@@ -139,7 +140,7 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
               <option value="=">=</option>
               <option value=">">&gt;</option>
               <option value="<">&lt;</option>
-            </select>
+            </Select>
           </div>
           <div className="space-y-1">
             <label className="t-label">{t("products.priceValue")}</label>
@@ -205,7 +206,7 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
 
       <div className="space-y-1">
         <label className="t-label">{t("common.sortBy")}</label>
-        <select
+        <Select
           value={local.sort ?? ""}
           onChange={(e) => patch({ sort: e.target.value || undefined })}
           className="pp-input"
@@ -216,7 +217,7 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
           <option value=">price">{t("products.sortPriceAsc")}</option>
           <option value="<price">{t("products.sortPriceDesc")}</option>
           <option value="<updated_on">{t("products.sortUpdatedDesc")}</option>
-        </select>
+        </Select>
       </div>
     </FiltersModal>
   );

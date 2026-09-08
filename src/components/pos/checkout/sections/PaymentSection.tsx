@@ -46,7 +46,10 @@ const LABEL_KEY_BY_CODE: Record<string, string> = {
 
 // Primary visible methods (in slot order). Others live behind the overflow dropdown.
 const PRIMARY_CODES = ['01', '06', '02'] as const;
-const FALLBACK_CODES = ['01', '02', '06', '99'] as const;
+// Full Hacienda payment set, used when the data-api catalog is unavailable
+// (offline, or a failed fetch). Anything narrower leaves the overflow menu
+// with one entry, which is what made "Más" look broken offline.
+const FALLBACK_CODES = ['01', '02', '03', '04', '05', '06', '07', '99'] as const;
 
 const QUICK_AMOUNTS = [5_000, 10_000, 20_000, 50_000];
 
@@ -333,7 +336,7 @@ export function PaymentSection({
           <div
             ref={menuRef}
             role="menu"
-            className="dropdown-menu fixed z-modal p-2 grid grid-cols-2 gap-2 fade-up"
+            className="dropdown-menu fixed z-drawer-modal p-2 grid grid-cols-2 gap-2 fade-up"
             style={{
               top: menuPos.top,
               left: menuPos.left,

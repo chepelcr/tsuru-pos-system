@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Percent, AlertTriangle } from 'lucide-react';
-import { Icon, FormLabel } from '@/components/ui';
+import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import {
   useAllTaxes,
@@ -161,7 +161,7 @@ export function IvaTaxSection({
                 </div>
 
                 {!isIvarbu && (
-                  <select
+                  <Select
                     className="pp-input w-20 !h-auto !px-2 !py-1 text-[13px]"
                     value={tax.rate_code ?? ''}
                     onChange={(e) => {
@@ -175,7 +175,7 @@ export function IvaTaxSection({
                         {r.percentage}%
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 )}
 
                 {!isIvarbu && ivaAmount > 0 && (
@@ -196,7 +196,7 @@ export function IvaTaxSection({
               {isIvarbu && (
                 <div>
                   <FormLabel>{t('lineDetail.ivarbu')}</FormLabel>
-                  <select
+                  <Select
                     className="pp-input text-[13px]"
                     value={tax.factor ?? ''}
                     onChange={(e) =>
@@ -211,7 +211,7 @@ export function IvaTaxSection({
                         {f.description}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
             </div>
@@ -219,7 +219,7 @@ export function IvaTaxSection({
         })}
 
         {addedIvaTaxes.length === 0 && (
-          <select
+          <Select
             className="pp-input"
             value=""
             onChange={(e) => {
@@ -232,7 +232,7 @@ export function IvaTaxSection({
                 {tt.description}
               </option>
             ))}
-          </select>
+          </Select>
         )}
 
         {showBaseAmount && (
@@ -266,7 +266,7 @@ export function IvaTaxSection({
         {factoryCharges.length > 0 && (
           <div className="mt-1 px-3 py-2.5 bg-muted/25 rounded-lg border border-dashed border-border">
             <FormLabel>{t('lineDetail.factoryCharge')}</FormLabel>
-            <select
+            <Select
               className="pp-input"
               value={factoryTaxChargeCode ?? ''}
               onChange={(e) => onFactoryTaxChargeChange(e.target.value || undefined)}
@@ -277,7 +277,7 @@ export function IvaTaxSection({
                   {c.description}
                 </option>
               ))}
-            </select>
+            </Select>
             {selectedCharge && (
               <div className="t-xs text-muted-foreground mt-1">
                 {selectedCharge.code === IvaCollectedFactory.PRE_DETERMINED

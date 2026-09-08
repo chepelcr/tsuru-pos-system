@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { api, salesApi, userPath, orgPath, authOrgPath } from '@/lib/api';
 import type { Organization } from '../types';
+import type { BusinessType } from '@/types/organization';
 
 export type { Organization } from '../types';
 
@@ -34,6 +35,10 @@ interface CreateOrganizationData {
   slug: string;
   subdomain?: string;
   ownerId: string;
+  /** Business identity captured in wizard step 1 (TSR-150). */
+  businessType?: BusinessType;
+  isRetailSupplier?: boolean;
+  isPyme?: boolean;
 }
 
 interface CompleteStep2Data {

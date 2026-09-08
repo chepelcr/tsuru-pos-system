@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
 import { FiltersModal } from "@/components/common/FiltersModal";
+import { Select } from "@/components/ui";
 
 /**
  * Advanced filters for the puestos (branches) list — type + sort.
@@ -41,7 +42,7 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
     >
       <div className="space-y-1">
         <label className="t-label">{t("puestos.type")}</label>
-        <select
+        <Select
           value={local.type ?? ""}
           onChange={(e) => patch({ type: e.target.value || undefined })}
           className="pp-input"
@@ -50,12 +51,12 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
           {typeOptions.map((opt) => (
             <option key={opt.code} value={opt.code}>{opt.name}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="space-y-1">
         <label className="t-label">{t("common.sortBy")}</label>
-        <select
+        <Select
           value={local.sort ?? ""}
           onChange={(e) => patch({ sort: e.target.value || undefined })}
           className="pp-input"
@@ -64,7 +65,7 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
           <option value=">name">{t("puestos.sortNameAsc")}</option>
           <option value="<name">{t("puestos.sortNameDesc")}</option>
           <option value="<created_on">{t("puestos.sortNewest")}</option>
-        </select>
+        </Select>
       </div>
     </FiltersModal>
   );

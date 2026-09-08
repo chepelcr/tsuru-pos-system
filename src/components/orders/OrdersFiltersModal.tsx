@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FiltersModal } from '@/components/common/FiltersModal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ORDER_STATUSES, type OrderStatus } from '@/types/order';
+import { Select } from "@/components/ui";
 
 export interface OrdersAdvancedFilters {
   statuses: OrderStatus[];
@@ -145,7 +146,7 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
       {/* Sort */}
       <div className="space-y-1">
         <label className="label-section">{t('orders.sort.label')}</label>
-        <select
+        <Select
           className="pp-input h-10 w-full"
           value={`${local.sortBy},${local.sortOrder}`}
           onChange={(e) => {
@@ -160,7 +161,7 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
           <option value="customerName,desc">{t('orders.sort.customerNameDesc')}</option>
           <option value="deliveryDate,asc">{t('orders.sort.deliveryDateAsc')}</option>
           <option value="deliveryDate,desc">{t('orders.sort.deliveryDateDesc')}</option>
-        </select>
+        </Select>
       </div>
     </FiltersModal>
   );

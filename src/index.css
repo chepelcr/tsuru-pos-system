@@ -218,7 +218,7 @@
   textarea.input { height: auto; padding: 10px 12px; resize: vertical; min-height: 80px; }
   .input-sm { height: 32px; font-size: 13px; }
   .input-lg { height: 48px; font-size: 15px; padding: 0 16px; }
-  select.input, select.pp-input { appearance: none; -webkit-appearance: none; background-color: hsl(var(--card)); color: hsl(var(--foreground)); color-scheme: light dark; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 36px; cursor: pointer; }
+  select.input, select.pp-input { appearance: none; -webkit-appearance: none; background-color: hsl(var(--card)); color: hsl(var(--foreground)); color-scheme: light dark; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px; cursor: pointer; }
   /* The option list is drawn by the OS, so it needs its colors stated explicitly —
    * without these, macOS Edge/Safari fall back to the system palette and the menu
    * reads as unstyled (light rows under the dark app, or invisible text). */
@@ -395,13 +395,22 @@
 .btn-destructive-soft { background: hsl(var(--destructive) / 0.15); color: hsl(var(--destructive)); border: 1px solid hsl(var(--destructive) / 0.3); }
 .btn-destructive-soft:hover:not(:disabled) { background: hsl(var(--destructive) / 0.22); }
 
-/* Dropdown / popover panel */
-.dropdown-menu { position: absolute; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 10px; box-shadow: var(--shadow-dropdown); padding: 4px; display: flex; flex-direction: column; gap: 1px; z-index: var(--z-dropdown); }
-.dropdown-menu-up { box-shadow: var(--shadow-dropdown-up); }
+/* Dropdown / popover panel.
+ *
+ * MUST stay inside @layer components. Declared bare, these rules sit AFTER
+ * `@tailwind utilities` in source order and — at equal specificity — silently
+ * beat every utility on the same element: `position`, `z-index` and `display`
+ * are all set here, so `fixed z-modal grid` on a portaled menu did nothing and
+ * the menu rendered `absolute`, at z-index 30, as a flex column. Inside the
+ * layer, utilities win again, which is the whole point of using them. */
+@layer components {
+  .dropdown-menu { position: absolute; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 10px; box-shadow: var(--shadow-dropdown); padding: 4px; display: flex; flex-direction: column; gap: 1px; z-index: var(--z-dropdown); }
+  .dropdown-menu-up { box-shadow: var(--shadow-dropdown-up); }
 
-/* Full-viewport backdrop for click-outside dismiss */
-.overlay-backdrop { position: fixed; inset: 0; z-index: var(--z-overlay); }
-.overlay-backdrop-dim { background: hsl(var(--foreground) / 0.2); }
+  /* Full-viewport backdrop for click-outside dismiss */
+  .overlay-backdrop { position: fixed; inset: 0; z-index: var(--z-overlay); }
+  .overlay-backdrop-dim { background: hsl(var(--foreground) / 0.2); }
+}
 
 /* Empty-state container */
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; }
@@ -584,7 +593,7 @@
   .select-native {
     width: 100%;
     height: 40px;
-    padding: 0 36px 0 12px;
+    padding: 0 40px 0 12px;
     background-color: hsl(var(--card));
     color: hsl(var(--foreground));
     border: 1px solid hsl(var(--input));
@@ -596,7 +605,7 @@
     -webkit-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 10px center;
+    background-position: right 12px center;
     background-size: 16px;
     cursor: pointer;
     transition: border-color .15s, box-shadow .15s;
@@ -754,4 +763,26 @@
 .nav-collapse > div {
   overflow: hidden;
   min-height: 0;
+}
+
+/* Respect the OS "reduce motion" setting. The progressive reveal in the
+ * org-creation wizard and every drawer/dropdown still happens — the content
+ * appears, it just does not travel. Motion is the decoration here, never the
+ * information. */
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .fade-in,
+  .slide-up,
+  .docs-fade-in,
+  .drawer-overlay-enter,
+  .drawer-overlay-exit,
+  .drawer-panel-enter,
+  .drawer-panel-exit,
+  .drawer-panel-left-enter,
+  .drawer-panel-left-exit,
+  .drawer-panel-right-enter,
+  .drawer-panel-right-exit {
+    animation: none !important;
+    transition: none !important;
+  }
 }

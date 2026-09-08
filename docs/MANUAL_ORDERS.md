@@ -56,8 +56,8 @@ viaja por el estado del editor (pestaña, carrito, checkout). `isManualOrderDocT
 | Receptor | Requerido salvo TE | Cliente requerido (no fiscal) |
 | Referencias (NC/ND) | Según tipo | No aplica |
 | Correos de copia | Sí | No (no hay servicio de notificación) |
-| Pago completo para confirmar | Requerido | **No** — un pedido se paga después |
-| Sección extra | — | Entrega: fecha, punto, evento, comentario |
+| Pago completo para confirmar | Requerido | **No** — un pedido se paga después; la sección de Pago ni siquiera se muestra |
+| Sección extra | — | Pedido: proforma, número, condición de venta, actividad, moneda, entrega, departamento, punto, comentario |
 | Cola offline (`db.sales`) | Sí | Sí — ver §6 |
 | Se puede facturar después | n/a | Sí, una vez entregado — ver §7 |
 | Cuenta para la declaración de IVA | Sí | **No** (`manual_orders_excluded`) |
@@ -298,12 +298,40 @@ Para que la reconstrucción funcione, el BE **debe devolver `product_id` en cada
 lo mandamos al crear el pedido (§9.1), y es la única forma de recuperar el producto completo con su
 CABYS, impuestos y descuentos.
 
-## 10. Pendientes
+## 10. Estado
 
-- [ ] `cross-app-be`: `POST /orders` con `source: "manual"` (§9.1) y migración (§9.2).
-- [ ] Exponer `source` en el `Order` y filtrar por él en el listado de Pedidos.
-- [ ] Deduplicación por `Idempotency-Key` en el BE (§9.1, punto 6) — sin eso, un pedido
-      capturado sin conexión puede duplicarse al reintentar.
-- [ ] `POST /orders/{document_number}/invoice` + campo `orders.invoice` (§7, §9.3) — **sin esto un
-      pedido se puede facturar dos veces.**
-- [ ] Devolver `product_id` (y `cabys`) en cada `OrderLine` (§9.3).
+Implementado (TSR-152, migración `aa7b8c9d0e1f`):
+
+- [x] `POST /orders` con `source: "manual"`. **Comparte ruta con el pedido de storefront**
+      y se discrimina por `source` — el cuerpo del storefront es anterior al campo y nunca
+      lo manda, así que sigue validando igual. Cambiar la ruta habría dejado huérfanos los
+      pedidos ya encolados en la bandeja de salida, que persisten su `syncUrl`.
+- [x] `source` expuesto en el `Order` (`import` | `manual` | `storefront`).
+- [x] Deduplicación por `Idempotency-Key`, con índice único parcial por organización.
+- [x] `POST /orders/{document_number}/invoice` y campos `orders.invoice_*` — cierra el
+      hueco por el que un pedido se podía facturar dos veces.
+- [x] `product_id`, `cabys`, `net_price`, `taxes` y `discounts` en cada `OrderLine`.
+- [x] **Los totales del cuerpo son una pista**: el servidor recalcula todo desde las líneas
+      y sólo registra una advertencia si el cliente mandó otra cosa.
+- [x] `POST /orders/{document_number}/ticket` — ticket de 80 mm (ver `PRINT_RECEIPT.md`).
+
+### Lo que también cambió del lado del Excel
+
+El importador ahora deja la línea importada con **la misma estructura** que una capturada
+en el POS, para que cualquiera de las dos se pueda facturar después sin inventar una tarifa:
+
+- el descuento se registra como **`07 — Descuento Comercial`**. La hoja de cálculo trae un
+  monto pero no un tipo, y no se le va a agregar una columna. Se eligió `07` y no `99`
+  porque `99` exige una razón libre (Nota 20) y porque **sólo `01` y `03` desvían el IVA a
+  `ImpuestoAsumidoEmisorFabrica`**: un descuento comercial tiene que seguir siendo una
+  rebaja de precio, no un impuesto asumido por fábrica;
+- los **impuestos se copian del producto**, que ya los tiene configurados con la misma forma
+  (`ProductTaxDTO`) que usa una venta.
+
+Los **montos** importados no se recalculan: en una orden de cross-docking las cifras de la
+hoja son las del cliente y son contra las que se concilia.
+
+### Pendiente
+
+- [ ] Filtrar por `source` en el listado de Pedidos (el campo ya viaja en la respuesta).
+- [ ] Comandas por estación de cocina (§ `PRINT_RECEIPT.md`).

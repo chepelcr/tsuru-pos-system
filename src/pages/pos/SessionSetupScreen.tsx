@@ -4,7 +4,7 @@ import { useSessionContext } from "@/store/sessionContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Organization } from "@/types/organization";
 import type { Branch, Terminal, CreateTerminalRequest } from "@/types/branch";
-import { Icon, Drawer, Button, Input, FormLabel } from "@/components/ui";
+import { Button, Drawer, FormLabel, Icon, Input, Select } from "@/components/ui";
 
 interface Props {
   org: Organization;
@@ -143,7 +143,7 @@ export default function SessionSetupScreen({ org }: Props) {
               {t("setup.station")}
             </label>
             <div className="relative">
-              <select
+              <Select
                 onFocus={loadBranches}
                 onChange={(e) => handleBranchChange(Number(e.target.value))}
                 value={selectedBranch?.code ?? ""}
@@ -156,7 +156,7 @@ export default function SessionSetupScreen({ org }: Props) {
                     #{b.code} — {b.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               {loadingBranches && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                   <Icon name="refresh" size={14} className="animate-spin" />
@@ -183,7 +183,7 @@ export default function SessionSetupScreen({ org }: Props) {
               </button>
             ) : (
               <div className="relative">
-                <select
+                <Select
                   onChange={(e) => handleTerminalChange(Number(e.target.value))}
                   value={selectedTerminal?.code ?? ""}
                   disabled={!selectedBranch}
@@ -195,7 +195,7 @@ export default function SessionSetupScreen({ org }: Props) {
                       #{t.code} — {t.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             )}
           </div>

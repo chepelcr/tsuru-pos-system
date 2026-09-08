@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAssignment } from "@/hooks/useAssignment";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useSessionContext } from "@/store/sessionContext";
+import { useTableMutations } from "@/hooks/useTables";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useCartFlow } from "@/hooks/useCartFlow";
@@ -39,6 +40,7 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
   const { data: assignment, isLoading: assignmentLoading } = useAssignment();
   const sessionCtx = useSessionContext();
+  const { holdDocument } = useTableMutations(org?.id, sessionCtx.branch_code);
   const { t } = useLanguage();
   // When rendered as the editor body for a document tab, let DocumentsPage own
   // the title (`Documents - New - {docType}`). Only set the POS shell title for
@@ -225,6 +227,15 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
       onClientQueryChange={setClientQuery}
       onSelectClient={(c) => {
         setSelectedClient(c);
+        setLeftTab("products");
+      }}
+      branchCode={sessionCtx.branch_code}
+      activeDocumentId={tabId}
+      onSelectTable={(table) => {
+        // Binding is one-way on purpose: the table records WHICH document tab
+        // it holds, while the cart itself stays in documentStore. Two stores
+        // owning the same cart is how carts get lost on a device swap.
+        if (tabId) holdDocument(table.table_id, table.held_document_id === tabId ? null : tabId);
         setLeftTab("products");
       }}
     />

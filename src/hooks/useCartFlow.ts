@@ -275,17 +275,24 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           gln: selectedClient?.client_gln ?? "",
           internal_code: selectedClient?.identification?.number ?? undefined,
         },
+        // User-writable; empty means the server assigns from the PM sequence.
+        document_number: manualFields.document_number?.trim() || undefined,
+        is_quote: manualFields.is_quote || undefined,
+        // Captured on the Pedido card now that the Documento card is not
+        // rendered for a PM. Persisted so a later factura reuses them.
+        sale_condition: manualFields.sale_condition || undefined,
+        activity_code: manualFields.activity_code || undefined,
+        credit_term: manualFields.credit_term || undefined,
         delivery_date: manualFields.delivery_date || undefined,
-        delivery_location: manualFields.delivery_location_name
-          ? {
-              name: manualFields.delivery_location_name,
-              code: manualFields.delivery_location_code || undefined,
-            }
-          : undefined,
-        event: manualFields.event || undefined,
+        delivery_location: manualFields.delivery_location,
+        department_id: manualFields.department_id || undefined,
         comment: manualFields.comment || invoiceData.notes || undefined,
-        currency_code: invoiceData.currency?.currency_code ?? "CRC",
-        exchange_rate: invoiceData.currency?.exchange_rate ?? 1,
+        // Currency comes from the Pedido card for a PM; invoiceData is the
+        // fallback for anything that still sets it document-level.
+        currency_code:
+          manualFields.currency_code ?? invoiceData.currency?.currency_code ?? "CRC",
+        exchange_rate:
+          manualFields.exchange_rate ?? invoiceData.currency?.exchange_rate ?? 1,
         assignment_id: assignmentId,
         branch_number: branchNumber,
         terminal_number: terminalNumber,

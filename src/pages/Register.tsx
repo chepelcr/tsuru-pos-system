@@ -276,7 +276,7 @@ export default function Register() {
                             />
                           )}
                         />
-                        {/* Revert to the <select>. onMouseDown (not onClick): the text input
+                        {/* Revert to the <Select>. onMouseDown (not onClick): the text input
                           * is normally focused when the user reaches for this control, and
                           * letting the blur land first re-rendered the field out from under the
                           * pointer, so the mouseup never completed a click and the button needed

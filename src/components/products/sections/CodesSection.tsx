@@ -1,5 +1,5 @@
 import { Barcode } from "lucide-react";
-import { Icon } from "@/components/ui";
+import { Icon, Select } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useAllCodes } from "@/hooks/useDataApi";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -78,7 +78,7 @@ export function CodesSection({
         })}
 
         {availableTypes.length > 0 && (
-          <select
+          <Select
             className="pp-input"
             value=""
             onChange={(e) => {
@@ -99,7 +99,7 @@ export function CodesSection({
                 {ct.description}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </div>
     </SectionWrapper>

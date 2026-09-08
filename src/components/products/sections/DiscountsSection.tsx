@@ -1,5 +1,5 @@
 import { Tag } from "lucide-react";
-import { Icon, FormLabel } from "@/components/ui";
+import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useAllDiscountTypes } from "@/hooks/useDataApi";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -162,7 +162,7 @@ export function DiscountsSection({
           </div>
         )}
 
-        <select
+        <Select
           className="pp-input"
           value=""
           onChange={(e) => {
@@ -192,7 +192,7 @@ export function DiscountsSection({
               {dt.description}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </SectionWrapper>
   );

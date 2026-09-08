@@ -8,7 +8,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { usePermissions } from "@/hooks/useRbac";
 import type { Product, Category } from "@/types";
-import { Button, EmptyState, Pagination, Drawer } from "@/components/ui";
+import { Button, Drawer, EmptyState, Pagination, Select } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { ProductGridView } from "@/components/products/ProductGridView";
@@ -401,7 +401,7 @@ export default function ProductsPage() {
         statusOptions={PRODUCT_STATUS_OPTIONS}
         statusAriaLabelKey="common.status"
         secondary={
-          <select
+          <Select
             className="pp-input h-10 w-full"
             value={categoryId}
             onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}
@@ -410,7 +410,7 @@ export default function ProductsPage() {
             {allCategories.map((c) => (
               <option key={c.category_id} value={c.category_id}>{c.name}</option>
             ))}
-          </select>
+          </Select>
         }
         onAdvancedClick={() => setShowAdvanced(true)}
         hasAdvancedFilters={hasAdvancedFilters}
