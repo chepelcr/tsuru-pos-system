@@ -15,6 +15,7 @@ import type {
 import type { ManualOrderFields } from '@/types/order';
 import type { InvoiceCheckoutData, SaleSubmissionResult } from '@/hooks/useCartFlow';
 import type { SaleReceiver } from '@/types/receiver';
+import { hasReceiver as resolveHasReceiver } from '@/lib/receiverResolution';
 import type { SaleReference } from '@/types/reference';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
 import { PaymentSection } from './sections/PaymentSection';
@@ -127,7 +128,9 @@ export function CheckoutDrawer({
   const needsReferences = doc_type === '03' || doc_type === '02'; // NC / ND
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
   const isPaid = paidTotal >= cartTotal;
-  const hasReceiver = !!(receiver.name || selectedClient?.business_name || selectedClient?.client_name);
+  // One resolver for every surface — the three call sites used to disagree
+  // on precedence, so the same client showed a different name in each.
+  const hasReceiver = resolveHasReceiver(receiver, selectedClient);
   const manualOrder: ManualOrderFields = data.manual_order ?? {};
   const hasLines = cartItems.length > 0;
 
@@ -283,6 +286,7 @@ export function CheckoutDrawer({
               clientId={selectedClient?.client_id}
               isSupplier={isSupplier}
               receiver={receiver}
+              selectedClient={selectedClient}
               onChange={(patch) =>
                 updateData({ manual_order: { ...manualOrder, ...patch } })
               }

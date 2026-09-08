@@ -25,6 +25,7 @@ import type {
   SalePayment,
 } from "@/types/invoice";
 import { MANUAL_ORDER_SOURCE } from "@/types/order";
+import { resolveReceiverName } from "@/lib/receiverResolution";
 import type {
   ManualOrderFields,
   ManualOrderLinePayload,
@@ -260,11 +261,11 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         };
       });
 
-      const clientName =
-        receiver?.name ||
-        selectedClient?.business_name ||
-        selectedClient?.client_name ||
-        "";
+      // Same resolver as the drawer, so what the order stores matches what the
+      // cashier saw. This used to prefer business_name while the receiver card
+      // preferred client_name, so a saved pedido could carry the legal name
+      // while the screen showed the trade name.
+      const clientName = resolveReceiverName(receiver, selectedClient);
 
       const orderPayload: ManualOrderPayload = {
         source: MANUAL_ORDER_SOURCE,

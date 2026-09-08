@@ -13,6 +13,7 @@ import { IdentitySection } from "./sections/IdentitySection";
 import { ContactSection } from "./sections/ContactSection";
 import { AddressSection } from "./sections/AddressSection";
 import { CustomerType, CountryISO } from "@/lib/enums";
+import { hasReceiver } from '@/lib/receiverResolution';
 
 function buildForm(client?: Client | null): CreateClientDto {
   return {
@@ -235,9 +236,11 @@ export function ClientDrawerForm({
       setError(null);
       setExpanded({ identity: true, contact: false, address: false });
       setHaciendaSuccess(
+        // Same resolver as the checkout, so "is this receiver identified?"
+        // answers identically wherever it is asked.
         isReceiver
-          ? !!receiver?.name || !!selectedClient?.business_name || !!selectedClient?.client_name
-          : !!client?.business_name || !!client?.client_name,
+          ? hasReceiver(receiver, selectedClient)
+          : !!client?.client_name || !!client?.business_name,
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

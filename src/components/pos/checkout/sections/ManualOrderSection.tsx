@@ -14,7 +14,9 @@ import type {
   ManualOrderFields,
 } from '@/types/order';
 import type { CurrencyCode } from '@/types/invoice';
-import type { SaleReceiverDraft } from '@/types/receiver';
+import type { SaleReceiver } from '@/types/receiver';
+import type { ClientSearchResult } from '@/hooks/useClientSearch';
+import { resolveReceiverAddress } from '@/lib/receiverResolution';
 
 interface ManualOrderSectionProps {
   isExpanded: boolean;
@@ -26,7 +28,14 @@ interface ManualOrderSectionProps {
   /** Org supplies a retail chain — departments and registered points apply. */
   isSupplier?: boolean;
   /** Used by the "same as receiver" delivery mode. */
-  receiver?: SaleReceiverDraft;
+  receiver?: SaleReceiver;
+  /**
+   * The selected catalog client. Required, not optional context: selecting a
+   * client CLEARS `data.receiver`, so the address lives here, not on the
+   * receiver — which is why this section used to claim the receiver had no
+   * address while a client with one was selected.
+   */
+  selectedClient?: ClientSearchResult | null;
 }
 
 const MODES: DeliveryLocationMode[] = ['store', 'receiver', 'custom'];
@@ -48,37 +57,37 @@ export function ManualOrderSection({
   clientId,
   isSupplier = false,
   receiver,
+  selectedClient,
 }: ManualOrderSectionProps) {
   const { t } = useLanguage();
 
-  const { data: departmentsResp } = useDepartments(
-    isSupplier ? orgId : undefined,
-    isSupplier ? clientId : undefined,
-    { page_size: 100 },
-  );
-  const { data: storesResp } = useStores(
-    isSupplier ? orgId : undefined,
-    isSupplier ? clientId : undefined,
-    { page_size: 100 },
-  );
+  // Fetch whenever a client is selected, not only when the org is flagged as a
+  // chain supplier. The B2B block is then shown if the org IS a supplier OR the
+  // client actually has departments/stores on file — data existing is proof the
+  // capability is in use, and a supplier who has not ticked the toggle yet
+  // should not be told their Walmart client has no delivery points when it has
+  // seventy-six of them.
+  const { data: departmentsResp } = useDepartments(orgId, clientId, { page_size: 100 });
+  const { data: storesResp } = useStores(orgId, clientId, { page_size: 100 });
 
   const departments = departmentsResp?.data ?? [];
   const stores = storesResp?.data ?? [];
 
+  const clientHasB2bData = departments.length > 0 || stores.length > 0;
+  const showB2b = isSupplier || clientHasB2bData;
+
   const location: ManualOrderDeliveryLocation = data.delivery_location ?? { mode: 'store' };
 
-  const receiverAddress = receiver?.residence;
-  const hasReceiverAddress = !!(
-    receiverAddress?.address ||
-    receiverAddress?.state_id ||
-    receiverAddress?.county_id
-  );
+  // Falls back to the selected client, because picking a client wipes
+  // `data.receiver` by design.
+  const receiverAddress = resolveReceiverAddress(receiver, selectedClient);
+  const hasReceiverAddress = receiverAddress !== null;
 
   // "Registered point" only makes sense for a supplier with stores on file, so
   // fall back rather than showing an empty mode as the default.
   const availableModes = useMemo(
-    () => MODES.filter((m) => (m === 'store' ? isSupplier : true)),
-    [isSupplier],
+    () => MODES.filter((m) => (m === 'store' ? showB2b : true)),
+    [showB2b],
   );
 
   useEffect(() => {
@@ -182,7 +191,7 @@ export function ManualOrderSection({
       </div>
 
       {/* Departments belong to the CLIENT, so the field waits for one. */}
-      {isSupplier && (
+      {showB2b && (
         <div>
           <FormLabel htmlFor="manual-order-department">
             {t('manualOrder.department')}

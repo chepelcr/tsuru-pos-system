@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui';
 import { ReceiverPicker } from '../ReceiverPicker';
 import type { SaleReceiver } from '@/types/receiver';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
+import { resolveReceiverId, resolveReceiverName } from '@/lib/receiverResolution';
 
 interface ReceiverSectionProps {
   isExpanded: boolean;
@@ -29,8 +30,8 @@ export function ReceiverSection({
 }: ReceiverSectionProps) {
   const { t } = useLanguage();
 
-  const receiverName = receiver?.name || selectedClient?.client_name || selectedClient?.business_name;
-  const receiverId = receiver?.identification?.number || selectedClient?.identification?.number;
+  const receiverName = resolveReceiverName(receiver, selectedClient);
+  const receiverId = resolveReceiverId(receiver, selectedClient);
   const hasReceiver = !!receiverName;
 
   const badge = hasReceiver ? '✓' : needsReceiver ? '*' : undefined;
