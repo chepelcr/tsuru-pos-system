@@ -157,3 +157,50 @@ export function isebecAmountFor<T extends TaxAmountOption>(
   }
   return null;
 }
+
+
+/**
+ * Proporcion de alcohol absoluto = volumen (litros) x grado.
+ *
+ * Rounded to the 5 decimal places the v4.4 XSD allows (FractionDigits=5).
+ * A 355 ml can at 4.5% is 0.015975 unrounded — six decimals — and Hacienda
+ * rejects the document on the schema. Below a certain volume x degree the
+ * result rounds to zero, which Hacienda rejects separately with -470, so
+ * callers must check for it rather than send it.
+ */
+export function isebaVolume(volumeLitres: number): number {
+  // CantidadUnidadMedida is capped at 2 fraction digits — tighter than every
+  // other numeric field on the line. This is the millilitre trap: 700 ml, 750
+  // ml and 1 L divide cleanly into litres and pass, while the common can and
+  // bottle sizes do not. 355 ml as 0.355 L is rejected on the schema before
+  // any arithmetic is looked at:
+  //
+  //   cvc-fractionDigits-valid: Value '0.35500' has 3 fraction digits, but the
+  //   number of fraction digits has been limited to 2.
+  return Math.round(volumeLitres * 100) / 100;
+}
+
+export function isebaProportion(volumeLitres: number, alcoholPercentage: number): number {
+  // Derived from the ROUNDED volume, because that is the volume the document
+  // declares — deriving it from the raw 0.355 would make the declared quantity
+  // and the declared proportion disagree.
+  const raw = isebaVolume(volumeLitres) * (alcoholPercentage / 100);
+  return Math.round(raw * 1e5) / 1e5;
+}
+
+/**
+ * Monto = cantidad de linea x proporcion x impuesto unitario.
+ *
+ * Computed from the ROUNDED proportion: Hacienda recomputes the amount from
+ * the Proporcion the document declares, so using the unrounded figure here
+ * makes the two disagree.
+ */
+export function isebaAmount(
+  detailQuantity: number,
+  volumeLitres: number,
+  alcoholPercentage: number,
+  taxUnitAmount: number
+): number {
+  const proportion = isebaProportion(volumeLitres, alcoholPercentage);
+  return Math.round(detailQuantity * proportion * taxUnitAmount * 1e5) / 1e5;
+}

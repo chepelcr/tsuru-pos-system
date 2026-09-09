@@ -103,3 +103,65 @@ describe("CABYS decides which ISEBEC amount applies", () => {
     expect(CabysPrefix.PACKAGED_BEVERAGE).toBe("2449");
   });
 });
+
+/**
+ * The alcohol proportion, and the two ways it goes wrong.
+ *
+ * Proporcion = volume(L) x degree, and the v4.4 XSD caps it at 5 decimal
+ * places (TotalDigits=10, FractionDigits=5). Both failure modes only appear
+ * on realistic inputs:
+ *
+ *   * a 355 ml can at 4.5% gives 0.015975 — SIX decimals. A round figure like
+ *     1 L at 40% gives 0.40000, which is canonically 0.4 and passes, so the
+ *     bug hides until someone bills an actual beer.
+ *   * a small enough volume x degree rounds to zero, and Hacienda rejects a
+ *     zero proportion with -470.
+ */
+import { isebaProportion, isebaAmount, isebaVolume } from "./specialTaxes";
+
+describe("ISEBA proportion respects the XSD's 5 decimal places", () => {
+  it.each([
+    [355, 4.5, 0.0162],   // 0.355 L is not expressible -> 0.36
+    [473, 5, 0.0235],     // 0.473 L -> 0.47
+    [750, 12.5, 0.09375],
+    [700, 30.1, 0.2107],
+    [1000, 40, 0.4],
+  ])("%s ml at %s%% -> %s", (ml, pct, expected) => {
+    expect(isebaProportion(ml / 1000, pct as number)).toBeCloseTo(expected as number, 5);
+  });
+
+  it("never emits more than 5 decimal places", () => {
+    for (const ml of [355, 473, 592, 750, 946]) {
+      for (const pct of [4.5, 5, 12.5, 15.1, 30.1, 40]) {
+        const p = isebaProportion(ml / 1000, pct);
+        const decimals = (String(p).split(".")[1] ?? "").length;
+        expect(decimals).toBeLessThanOrEqual(5);
+      }
+    }
+  });
+
+  it("rounds to zero below the precision floor — the -470 case", () => {
+    expect(isebaProportion(0.0005, 0.1)).toBe(0);
+    expect(isebaProportion(0.005, 0.5)).toBeGreaterThan(0);
+  });
+
+  it("computes the amount from the ROUNDED figures, not the raw ones", () => {
+    // Hacienda recomputes from the quantity and proportion the document
+    // declares, so both have to be the rounded ones or they disagree.
+    expect(isebaAmount(1, 0.355, 4.5, 3.66)).toBeCloseTo(0.05929, 5);
+    expect(isebaAmount(12, 0.355, 4.5, 3.66)).toBeCloseTo(0.7115, 5);
+  });
+
+  it("caps the volume at 2 decimals — the millilitre trap", () => {
+    // Sizes that divide cleanly into litres pass untouched; the common can and
+    // bottle sizes do not and must be rounded to the centilitre.
+    expect(isebaVolume(0.355)).toBe(0.36);
+    expect(isebaVolume(0.473)).toBe(0.47);
+    expect(isebaVolume(0.75)).toBe(0.75);
+    expect(isebaVolume(1)).toBe(1);
+    for (const ml of [355, 473, 592, 750, 946, 1000]) {
+      const decimals = (String(isebaVolume(ml / 1000)).split(".")[1] ?? "").length;
+      expect(decimals).toBeLessThanOrEqual(2);
+    }
+  });
+});
