@@ -173,12 +173,17 @@ describe("Note 20 holds at every rate, not just 13%", () => {
     expect(r.total_amount_line).toBeCloseTo(900, 4);
   });
 
-  it.each(RATES)("%s: code 02 charges that tax to the customer", (_l, code, rate, expectedTax) => {
+  it.each(RATES)("%s: code 02 charges the customer, on the DISCOUNTED base", (_l, code, rate) => {
+    // Nature 02 leaves the tax with the customer but does NOT preserve the
+    // base: Hacienda ties ImpuestoNeto to BaseImponible x tarifa (-45) and
+    // BaseImponible to Subtotal (-454), so the tax follows the 900 subtotal,
+    // not the 1000 gross. Verified live at 3% and 100%.
     const r = amountsFor(code, rate, [
       { discount_type: DiscountTypeCode.ROYALTY_BONUS_VAT_CUSTOMER, percentage: 10 },
     ]);
+    const onDiscounted = 900 * (rate / 100);
     expect(r.factory_assumed_tax).toBe(0);
-    expect(r.net_tax).toBeCloseTo(expectedTax, 4);
-    expect(r.total_amount_line).toBeCloseTo(900 + expectedTax, 4);
+    expect(r.net_tax).toBeCloseTo(onDiscounted, 4);
+    expect(r.total_amount_line).toBeCloseTo(900 + onDiscounted, 4);
   });
 });

@@ -53,12 +53,16 @@ function line(nature: string) {
  * gross) depart from that.
  */
 const ISSUER_ASSUMES = { net_tax: 0, factory_assumed_tax: 130, total: 900 };
-const CUSTOMER_PAYS = { net_tax: 130, factory_assumed_tax: 0, total: 1030 };
+// Nature 02 keeps the tax with the customer but on the DISCOUNTED base, so its
+// numbers are an ordinary discount's. Hacienda rejects the alternative: -45
+// requires ImpuestoNeto == BaseImponible x tarifa and -454 requires
+// BaseImponible == Subtotal, which together make a customer-paid tax on the
+// un-eroded base unrepresentable. Verified live at 3% and at 100%.
 const ORDINARY = { net_tax: 117, factory_assumed_tax: 0, total: 1017 };
 
 const CASES: ReadonlyArray<[string, string, typeof ORDINARY]> = [
   ["01 Regalía", DiscountTypeCode.ROYALTY, ISSUER_ASSUMES],
-  ["02 Regalía/bonif. IVA al cliente", DiscountTypeCode.ROYALTY_BONUS_VAT_CUSTOMER, CUSTOMER_PAYS],
+  ["02 Regalía/bonif. IVA al cliente", DiscountTypeCode.ROYALTY_BONUS_VAT_CUSTOMER, ORDINARY],
   ["03 Bonificación", DiscountTypeCode.BONUS, ISSUER_ASSUMES],
   ["04 Volumen", DiscountTypeCode.VOLUME, ORDINARY],
   ["05 Temporada", DiscountTypeCode.SEASONAL, ORDINARY],
@@ -170,12 +174,13 @@ describe("Factory-assumed IVA at 13% — matches the live document", () => {
     expect(r.total_amount_line).toBeCloseTo(4203.01, 4);
   });
 
-  it("02: customer pays 563.29 on the un-eroded base, voucher 4766.30", () => {
+  it("02: customer pays 546.39130 on the discounted base, voucher 4749.40130", () => {
+    // The exact figure Hacienda named in -45 when the un-eroded base was used.
     const r = fixture(DiscountTypeCode.ROYALTY_BONUS_VAT_CUSTOMER);
     expect(r.subtotal).toBeCloseTo(4203.01, 4);
     expect(r.factory_assumed_tax).toBe(0);
-    expect(r.net_tax).toBeCloseTo(563.29, 4);
-    expect(r.total_amount_line).toBeCloseTo(4766.30, 4);
+    expect(r.net_tax).toBeCloseTo(546.3913, 4);
+    expect(r.total_amount_line).toBeCloseTo(4749.4013, 4);
   });
 
   it("the discount does not reduce the tax — both natures tax the full 4333", () => {
@@ -183,7 +188,6 @@ describe("Factory-assumed IVA at 13% — matches the live document", () => {
     // 546.39). This is the whole point of Note 20 and the easiest thing to
     // regress by "simplifying" the base back to the subtotal.
     expect(fixture(DiscountTypeCode.ROYALTY).factory_assumed_tax).toBeCloseTo(4333 * 0.13, 4);
-    expect(fixture(DiscountTypeCode.ROYALTY_BONUS_VAT_CUSTOMER).net_tax).toBeCloseTo(4333 * 0.13, 4);
     expect(fixture(DiscountTypeCode.ROYALTY).factory_assumed_tax).not.toBeCloseTo(4203.01 * 0.13, 2);
   });
 });

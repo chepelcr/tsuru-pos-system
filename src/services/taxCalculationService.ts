@@ -113,6 +113,12 @@ export interface LineAmountsParams {
   /**
    * True when any discount has code `02` (Royalty/Bonus, VAT-to-customer).
    * Resolved by the discount service.
+   *
+   * @deprecated No longer affects the calculation. Nature 02 keeps the tax
+   * with the customer but on the DISCOUNTED base: Hacienda ties ImpuestoNeto
+   * to `BaseImponible x tarifa` (-45) and BaseImponible to Subtotal (-454), so
+   * a customer-paid tax on the un-eroded base is unrepresentable. Kept on the
+   * interface because callers still pass it and it still describes the line.
    */
   customer_pays_tax_on_original_base?: boolean;
   discountedNatures?: DiscountTypeCodeValue[];
@@ -325,7 +331,6 @@ export class TaxCalculationService {
       monto_total_original,
       document_type,
       hasRoyaltyOrBonus = false,
-      customer_pays_tax_on_original_base = false,
     } = params;
 
     if (!taxType) return 0;
@@ -337,9 +342,18 @@ export class TaxCalculationService {
       // Hacienda Nota 20: royalty/bonus (01/03) and royalty-bonus-VAT-to-customer
       // (02) compute IVA on the pre-discount line subtotal. Export invoices
       // use the same pre-discount base.
+      // Only the issuer-assumed natures (01/03) tax the un-eroded base.
+      //
+      // Nature 02 was here too, on the spec's reading that the customer pays
+      // the tax "calculated on the original total amount". Hacienda's validator
+      // rejects a document built that way: -45 ties the line's ImpuestoNeto to
+      // BaseImponible x tarifa, and -454 ties BaseImponible to the discounted
+      // Subtotal, so a customer-paid tax on the original amount cannot be
+      // expressed. 01/03 escape only because they assume the tax — their
+      // ImpuestoNeto is 0 against a 0 base. Confirmed against the live ATV at
+      // both 3% and 100%; sales-be dropped 02 from NATURES_BASE_NOT_ERODED.
       const use_original_base =
         hasRoyaltyOrBonus ||
-        customer_pays_tax_on_original_base ||
         EXPORT_INVOICE_TYPES.has(document_type ?? '');
 
       amount = use_original_base
