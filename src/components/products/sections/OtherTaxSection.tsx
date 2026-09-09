@@ -4,10 +4,8 @@ import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useAllTaxes, useAllTaxAmounts } from "@/hooks/useDataApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
-  CabysSpecialPrefix,
   CountryISO,
   TaxTypeCode,
-  cabysStartsWith,
 } from "@/lib/enums";
 import { labelByCode } from "@/lib/catalogLabels";
 import { getTaxConfig } from "@/types/taxTypeConfig";
@@ -42,7 +40,9 @@ interface OtherTaxSectionProps {
 
 function SpecialTaxRow({
   tax,
-  cabys,
+  // `cabys` is still accepted and still meaningful — which ISEBEC formula
+  // applies is derived from it — but that decision now lives in
+  // lib/specialTaxes rather than in this form, so the row no longer reads it.
   basePrice = 0,
   onUpdate,
   onRemove,
@@ -72,30 +72,16 @@ function SpecialTaxRow({
   );
   const taxAmounts: TaxAmountResponse[] = taxAmountsData ?? [];
 
-  const isIsebec = tax.taxCode === TaxTypeCode.ISEBEC;
-  const isAlcoholic = cabysStartsWith(cabys, CabysSpecialPrefix.ISEBEC_ALCOHOLIC);
-  const isNonAlcoholic = cabysStartsWith(cabys, CabysSpecialPrefix.ISEBEC_NON_ALCOHOLIC);
-  const isBeverage = isAlcoholic || isNonAlcoholic;
+  // ISEBEC (05) had two special branches here, both keyed on CABYS prefixes
+  // "3401" and "2202" — Harmonized System headings that match no CABYS, so
+  // neither ever rendered. One of them asked for an alcohol PERCENTAGE under
+  // code 05, which is wrong regardless: the alcohol degree belongs to ISEBA
+  // (04). The other was a duplicate of the generic amount picker below. Both
+  // removed; code 05 uses the generic picker, and which formula applies (soap
+  // per gram vs. beverage by volume) is decided in lib/specialTaxes from the
+  // CABYS, not in the form.
 
-  const handlePercentageChange = (pct: number) => {
-    const match = taxAmounts.find(
-      (ta) =>
-        ta.min_percentage !== null &&
-        ta.max_percentage !== null &&
-        pct >= ta.min_percentage &&
-        pct <= ta.max_percentage
-    );
-    onUpdate(tax.taxCode, {
-      specialFields: {
-        ...tax.specialFields,
-        percentage: pct,
-        taxAmountId: match?.id ?? tax.specialFields?.taxAmountId,
-        taxAmount: match?.amount ?? tax.specialFields?.taxAmount,
-      },
-    });
-  };
 
-  const selectedAmount = taxAmounts.find((ta) => ta.id === tax.specialFields?.taxAmountId);
 
   return (
     <div className="px-3 py-2.5 bg-muted/30 rounded-lg border border-border">
@@ -148,68 +134,7 @@ function SpecialTaxRow({
 
       {needsAmounts && (
         <div className="flex flex-col gap-2">
-          {isIsebec && isBeverage && (
-            <>
-              {isAlcoholic && (
-                <div>
-                  <FormLabel>{t("products.alcoholPercentage")}</FormLabel>
-                  <div className="flex gap-1.5 items-center">
-                    <input
-                      type="number"
-                      className="pp-input flex-1 text-xs"
-                      placeholder={t("products.alcoholPercentageExample")}
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={tax.specialFields?.percentage ?? ""}
-                      onChange={(e) => handlePercentageChange(Number(e.target.value))}
-                    />
-                    <span className="t-xs text-muted-foreground">%</span>
-                  </div>
-                  {selectedAmount && (
-                    <div className="t-xs text-primary mt-1">
-                      {t("products.amountPerUnit", { amount: selectedAmount.amount.toLocaleString("es-CR"), desc: selectedAmount.description })}
-                    </div>
-                  )}
-                  {tax.specialFields?.percentage && !selectedAmount && taxAmounts.length > 0 && (
-                    <div className="t-xs text-destructive mt-1">
-                      {t("products.noAmountForPercentage")}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {isNonAlcoholic && taxAmounts.length > 0 && (
-                <div>
-                  <FormLabel>{t("products.taxAmountLabel")}</FormLabel>
-                  <Select
-                    className="pp-input text-xs"
-                    value={tax.specialFields?.taxAmountId ?? ""}
-                    onChange={(e) => {
-                      const id = Number(e.target.value);
-                      const ta = taxAmounts.find((a) => a.id === id);
-                      onUpdate(tax.taxCode, {
-                        specialFields: {
-                          ...tax.specialFields,
-                          taxAmountId: id,
-                          taxAmount: ta?.amount,
-                        },
-                      });
-                    }}
-                  >
-                    <option value="">{t("products.selectAmount")}</option>
-                    {taxAmounts.map((ta) => (
-                      <option key={ta.id} value={String(ta.id)}>
-                        {ta.description} — ₡{ta.amount.toLocaleString("es-CR")}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              )}
-            </>
-          )}
-
-          {(!isIsebec || !isBeverage) && taxAmounts.length > 0 && (
+          {taxAmounts.length > 0 && (
             <div>
               <FormLabel>Monto de impuesto</FormLabel>
               <Select

@@ -4,12 +4,10 @@ import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { useAllTaxes, useAllTaxAmounts } from '@/hooks/useDataApi';
 import {
-  CabysSpecialPrefix,
   CountryISO,
   TaxTypeCode,
-  cabysStartsWith,
 } from '@/lib/enums';
-import { alcoholAmountFor } from '@/lib/specialTaxes';
+import { alcoholAmountFor, isebecAmount } from '@/lib/specialTaxes';
 import { getTaxConfig } from '@/types/taxTypeConfig';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineTax } from '@/types/lineDetail';
@@ -38,16 +36,13 @@ const BASE_SPECIAL_FIELDS_BY_CODE: Record<string, SpecialField[]> = {
   [TaxTypeCode.ISEBA]:  ['tax_amount_id', 'quantity', 'percentage', 'proportion'],
 };
 
-function requiredSpecialFields(tax: LineTax, cabys?: string): SpecialField[] {
+function requiredSpecialFields(tax: LineTax, _cabys?: string): SpecialField[] {
   const code = tax.code;
   if (!code) return [];
   if (code === TaxTypeCode.ISEBEC) {
-    if (cabysStartsWith(cabys, CabysSpecialPrefix.ISEBEC_ALCOHOLIC)) {
-      return ['tax_amount_id', 'quantity', 'volume_consumption', 'percentage'];
-    }
-    if (cabysStartsWith(cabys, CabysSpecialPrefix.ISEBEC_NON_ALCOHOLIC)) {
-      return ['tax_amount_id', 'quantity', 'volume_consumption'];
-    }
+    // VolumenUnidadConsumo is mandatory on EVERY code-05 line, soap included
+    // (-470). Soap consumes one unit, so the field is still required — it just
+    // always holds 1.
     return ['tax_amount_id', 'quantity', 'volume_consumption'];
   }
   return BASE_SPECIAL_FIELDS_BY_CODE[code] ?? [];
@@ -146,13 +141,15 @@ export function OtherTaxSection({
       return detailQuantity * proportion * taxAmountValue;
     }
     if (code === TaxTypeCode.ISEBEC) {
-      const quantity = tax.special_fields?.quantity || 0;
-      const volumeConsumption = tax.special_fields?.volume_consumption || 0;
-      if (cabysStartsWith(cabys, CabysSpecialPrefix.ISEBEC_NON_ALCOHOLIC)) {
-        const altAmount = taxAmountValue / (volumeConsumption || 1);
-        return detailQuantity * quantity * altAmount;
-      }
-      return quantity * volumeConsumption * taxAmountValue;
+      // Soap is priced per gram, beverages by volume — same tax code, and the
+      // CABYS is what tells them apart. See lib/specialTaxes.
+      return isebecAmount({
+        cabys,
+        detailQuantity,
+        quantity: tax.special_fields?.quantity || 0,
+        volumeConsumption: tax.special_fields?.volume_consumption,
+        taxUnitAmount: taxAmountValue,
+      });
     }
     if (code === TaxTypeCode.IPT) {
       return detailQuantity * (tax.special_fields?.quantity || 0) * taxAmountValue;

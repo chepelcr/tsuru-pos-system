@@ -204,3 +204,67 @@ export function isebaAmount(
   const proportion = isebaProportion(volumeLitres, alcoholPercentage);
   return Math.round(detailQuantity * proportion * taxUnitAmount * 1e5) / 1e5;
 }
+
+
+/**
+ * ISEBEC (código 05) — one tax code, two units.
+ *
+ * The code covers packaged non-alcoholic beverages AND toilet soap, and they
+ * are not priced the same way. Which formula applies follows from the CABYS:
+ *
+ *   * **Jabón de tocador** (`35321010101…`) is priced PER GRAM, so the
+ *     per-unit amount multiplies the weight directly. No volume is involved.
+ *   * **Everything else** uses the spec's volume formula:
+ *     `Monto = Cantidad × CantidadUnidadMedida × (ImpuestoUnidad / VolumenUnidadConsumo)`
+ *
+ * The old code branched on CABYS "2202"/"3401", which are Harmonized System
+ * headings and match no CABYS at all — so the volume divisor was never applied
+ * and every line fell through to `quantity × volume × unit`, which is not a
+ * formula the spec defines.
+ */
+export function isebecAmount(params: {
+  cabys?: string | null;
+  detailQuantity: number;
+  /** CantidadUnidadMedida. Unused for soap, which prices off the volume field. */
+  quantity: number;
+  /** VolumenUnidadConsumo — litres for a drink, GRAMS for toilet soap. */
+  volumeConsumption?: number | null;
+  taxUnitAmount: number;
+}): number {
+  const { cabys, detailQuantity, quantity, volumeConsumption, taxUnitAmount } = params;
+
+  // Two formulas. Verbatim from the Hacienda calculation rules for código 05:
+  //
+  //   Bebidas: "la multiplicación del campo Cantidad por el campo Cantidad de
+  //     la unidad de medida a utilizar, multiplicado por el resultado de
+  //     DIVIDIR el campo Impuesto por Unidad entre el campo Volumen por Unidad
+  //     de Consumo."
+  //       Monto = Cantidad x CantidadUnidadMedida x (ImpuestoUnidad / VolumenUnidadConsumo)
+  //
+  //   Jabón de tocador: "la multiplicación del campo Cantidad por el campo
+  //     Volumen por Unidad de Consumo por Impuesto por Unidad."
+  //       Monto = Cantidad x VolumenUnidadConsumo x ImpuestoUnidad
+  //
+  // Note what changes between them, because it is easy to get backwards: soap
+  // MULTIPLIES by VolumenUnidadConsumo where beverages DIVIDE by it, and soap
+  // does not use CantidadUnidadMedida at all. The field simply carries a
+  // different unit — grams for soap, litres of consumption volume for a drink.
+  //
+  // Not implemented: the "Detalle de productos del surtido, paquetes o combos"
+  // variant, where this amount is the sum of the individual código-05 amounts
+  // of the surtido detail lines, multiplied by the main line's quantity when it
+  // carries more than one surtido unit. The surtido node is not modelled yet.
+  if (isToiletSoap(cabys)) {
+    return round5(detailQuantity * (volumeConsumption ?? 0) * taxUnitAmount);
+  }
+
+  // The consumption volume carries the same 2-decimal cap as the quantity: a
+  // 355 ml unit sent as 0.355 is rejected on the schema, not on the arithmetic.
+  const volume = isebaVolume(volumeConsumption ?? 0);
+  if (!volume) return 0;
+  return round5(detailQuantity * quantity * (taxUnitAmount / volume));
+}
+
+function round5(value: number): number {
+  return Math.round(value * 1e5) / 1e5;
+}

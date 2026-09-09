@@ -165,3 +165,74 @@ describe("ISEBA proportion respects the XSD's 5 decimal places", () => {
     }
   });
 });
+
+/**
+ * ISEBEC (05) — soap and beverages share the code, not the formula.
+ *
+ * Per the v4.4 spec the beverage case is
+ *   Monto = Cantidad × CantidadUnidadMedida × (ImpuestoUnidad / VolumenUnidadConsumo)
+ * while toilet soap is charged per GRAM, with no volume in it at all.
+ */
+import { isebecAmount } from "./specialTaxes";
+
+const SOAP = "35321010101" + "99";      // Jabón de tocador n.c.p.
+const LAUNDRY = "3532101010200";        // Jabón para lavar — NOT de tocador
+const SODA = "2449001000000";           // Bebidas gaseosas azucaradas
+
+describe("ISEBEC picks its formula from the CABYS", () => {
+  it("toilet soap: Cantidad x VolumenUnidadConsumo x ImpuestoUnidad", () => {
+    // The volume field carries the GRAMS — 100 g at 0.276 per gram.
+    expect(
+      isebecAmount({ cabys: SOAP, detailQuantity: 1, quantity: 0, volumeConsumption: 100, taxUnitAmount: 0.276 })
+    ).toBeCloseTo(27.6, 5);
+  });
+
+  it("soap MULTIPLIES by the volume where a beverage DIVIDES by it", () => {
+    // The easiest thing to get backwards. Doubling the grams doubles the tax;
+    // doubling a beverage's consumption volume halves it.
+    expect(
+      isebecAmount({ cabys: SOAP, detailQuantity: 1, quantity: 0, volumeConsumption: 200, taxUnitAmount: 0.276 })
+    ).toBeCloseTo(55.2, 5);
+    expect(
+      isebecAmount({ cabys: SODA, detailQuantity: 1, quantity: 2, volumeConsumption: 2, taxUnitAmount: 21.79 })
+    ).toBeCloseTo(21.79, 5);
+  });
+
+  it("soap ignores CantidadUnidadMedida entirely", () => {
+    const a = isebecAmount({ cabys: SOAP, detailQuantity: 1, quantity: 0, volumeConsumption: 100, taxUnitAmount: 0.276 });
+    const b = isebecAmount({ cabys: SOAP, detailQuantity: 1, quantity: 999, volumeConsumption: 100, taxUnitAmount: 0.276 });
+    expect(a).toBe(b);
+  });
+
+  it("beverages: quantity x (unit / consumption volume)", () => {
+    // 2 L declared, consumption unit 0.355 L, 21.79 per unit.
+    // 0.355 is not expressible — the volume carries the same 2-decimal cap as
+    // the quantity — so it rounds to 0.36 and the tax follows.
+    expect(
+      isebecAmount({ cabys: SODA, detailQuantity: 1, quantity: 2, volumeConsumption: 0.355, taxUnitAmount: 21.79 })
+    ).toBeCloseTo(121.05556, 4);
+  });
+
+  it("the line quantity multiplies through", () => {
+    expect(
+      isebecAmount({ cabys: SODA, detailQuantity: 6, quantity: 1, volumeConsumption: 1, taxUnitAmount: 21.79 })
+    ).toBeCloseTo(130.74, 5);
+  });
+
+  it("LAUNDRY soap takes the normal formula, not the per-gram one", () => {
+    // Same family, outside "de tocador" — it must not get the soap branch.
+    expect(
+      isebecAmount({ cabys: LAUNDRY, detailQuantity: 1, quantity: 100, volumeConsumption: 1, taxUnitAmount: 0.276 })
+    ).toBeCloseTo(27.6, 5);
+    expect(
+      isebecAmount({ cabys: LAUNDRY, detailQuantity: 1, quantity: 100, volumeConsumption: 2, taxUnitAmount: 0.276 })
+    ).toBeCloseTo(13.8, 5); // divided by 2 — proof it took the volume branch
+  });
+
+  it("contributes nothing until a consumption volume is supplied", () => {
+    // Incomplete, not free — dividing by zero would send the tax to infinity.
+    expect(
+      isebecAmount({ cabys: SODA, detailQuantity: 1, quantity: 2, volumeConsumption: 0, taxUnitAmount: 21.79 })
+    ).toBe(0);
+  });
+});
