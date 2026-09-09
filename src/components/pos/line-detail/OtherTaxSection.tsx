@@ -9,6 +9,7 @@ import {
   TaxTypeCode,
   cabysStartsWith,
 } from '@/lib/enums';
+import { alcoholAmountFor } from '@/lib/specialTaxes';
 import { getTaxConfig } from '@/types/taxTypeConfig';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineTax } from '@/types/lineDetail';
@@ -23,13 +24,18 @@ type SpecialField =
   | 'tax_amount_id'
   | 'quantity'
   | 'percentage'
+  | 'proportion'
   | 'volume_consumption';
 
 const BASE_SPECIAL_FIELDS_BY_CODE: Record<string, SpecialField[]> = {
   [TaxTypeCode.IUC]:    ['tax_amount_id', 'quantity'],
   [TaxTypeCode.IPT]:    ['tax_amount_id', 'quantity'],
   [TaxTypeCode.ISEC]:   ['tax_amount_id', 'quantity'],
-  [TaxTypeCode.ISEBA]:  ['tax_amount_id', 'quantity', 'percentage'],
+  // Hacienda -470: "el campo Proporcion es de condición obligatoria y debe
+  // ser mayor a cero, cuando se utilice el codigo de impuesto 04". The
+  // proportion of absolute alcohol is DERIVED (quantity x degree / 100) but it
+  // still has to travel — it was computed for the amount and then dropped.
+  [TaxTypeCode.ISEBA]:  ['tax_amount_id', 'quantity', 'percentage', 'proportion'],
 };
 
 function requiredSpecialFields(tax: LineTax, cabys?: string): SpecialField[] {
@@ -384,11 +390,27 @@ function TaxCard({
                   max={100}
                   step={0.01}
                   value={tax.special_fields?.percentage ?? ''}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    // The alcohol degree DETERMINES the code-04 bracket
+                    // ("Hasta 15%", "Más de 15% y hasta 30%", "Más de 30%"),
+                    // so it is filled in rather than asked for. A degree that
+                    // matches no bracket leaves the existing choice alone —
+                    // guessing would put a wrong excise on a legal document.
+                    const percentage = Number(e.target.value);
+                    const bracket = alcoholAmountFor(percentage, taxAmounts);
+                    // Proporcion = cantidad x grado alcohólico (Nota 8).
+                    const quantity = tax.special_fields?.quantity ?? 0;
                     onUpdate({
-                      special_fields: { ...tax.special_fields, percentage: Number(e.target.value) },
-                    })
-                  }
+                      special_fields: {
+                        ...tax.special_fields,
+                        percentage,
+                        proportion: (quantity * percentage) / 100,
+                        ...(bracket
+                          ? { tax_amount_id: Number(bracket.id), tax_unit_amount: bracket.amount ?? undefined }
+                          : {}),
+                      },
+                    });
+                  }}
                 />
               </div>
             )}
