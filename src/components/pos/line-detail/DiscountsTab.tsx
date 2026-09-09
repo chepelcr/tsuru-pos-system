@@ -68,8 +68,13 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
         {discounts.map((disc, i) => {
           const dt = discountTypes.find((d) => d.code === disc.discount_type);
           const isOther = disc.discount_type === DiscountTypeCode.OTHER;
-          const reason_empty =
-            isOther && !(disc.reason && disc.reason.trim());
+          // Note 20: nature 99 must carry NaturalezaDescuento. That is one
+          // piece of information — *why* the discount exists — so the POS
+          // collects it once, as `reason` ("Razón"). The XML spelling
+          // (`other_discount_type` → <CodigoDescuentoOtros>) is derived
+          // backend-side in DiscountDTO; the cashier never sees it. Only
+          // nature 99 asks for it — on any other nature it means nothing.
+          const nature_empty = isOther && !(disc.reason && disc.reason.trim());
           const disc_amount = (netPrice * quantity * (disc.percentage || 0)) / 100;
 
           return (
@@ -111,21 +116,23 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
                 </div>
               </div>
 
-              <div>
-                <FormLabel required={isOther}>{t('discount.reason.label')}</FormLabel>
-                <input
-                  className="pp-input"
-                  value={disc.reason ?? ''}
-                  onChange={(e) => update(i, { reason: e.target.value })}
-                  placeholder={t('discount.reason.placeholder')}
-                  required={isOther}
-                />
-                {reason_empty && (
-                  <div className="text-[11px] text-destructive mt-1">
-                    {t('discount.reason.required')}
-                  </div>
-                )}
-              </div>
+              {isOther && (
+                <div>
+                  <FormLabel required>{t('discount.reason.label')}</FormLabel>
+                  <input
+                    className="pp-input"
+                    value={disc.reason ?? ''}
+                    onChange={(e) => update(i, { reason: e.target.value })}
+                    placeholder={t('discount.reason.placeholder')}
+                    required
+                  />
+                  {nature_empty && (
+                    <div className="text-[11px] text-destructive mt-1">
+                      {t('discount.reason.required')}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="text-[11px] text-muted-foreground text-right mt-1">
                 ₡{disc_amount.toLocaleString('es-CR', { minimumFractionDigits: 2 })}

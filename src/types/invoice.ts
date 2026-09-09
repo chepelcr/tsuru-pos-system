@@ -35,7 +35,18 @@ export interface SalePayment {
   type: string;
   /** Required when type = "99" (Otros). */
   other_type?: string;
+  /**
+   * FISCAL amount — what goes on the document.
+   *
+   * Hacienda's restriction on the MedioPago node is an equality
+   * (`TotalComprobante == Sumatoria(MontoTotalMedioPago)`), so these must sum
+   * to the document total exactly. Cash tendered is NOT this number.
+   */
   amount: number;
+  /** What the customer handed over. Usually > `amount` for cash. */
+  tendered_amount?: number;
+  /** Change returned at the till (`tendered_amount - amount`). */
+  change_amount?: number;
   amount_dollar?: number;
   amount_colones?: number;
   document_currency_code?: CurrencyCode;

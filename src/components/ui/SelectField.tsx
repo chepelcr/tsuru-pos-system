@@ -40,6 +40,13 @@ export interface SelectFieldProps {
   baseClass?: string;
   /** Show a filter box once the list is at least this long. 0 disables it. */
   searchThreshold?: number;
+  /**
+   * Focus handlers for the trigger. Callers use these to populate options
+   * lazily — the POS shift-setup screen fetches its branches on first focus —
+   * so they have to reach the button rather than be dropped on the way here.
+   */
+  onFocus?: React.FocusEventHandler<HTMLButtonElement>;
+  onBlur?: React.FocusEventHandler<HTMLButtonElement>;
   "aria-label"?: string;
   "aria-labelledby"?: string;
 }
@@ -74,6 +81,8 @@ export function SelectField({
   inputSize = "md",
   baseClass,
   searchThreshold = DEFAULT_SEARCH_THRESHOLD,
+  onFocus,
+  onBlur,
   ...aria
 }: SelectFieldProps) {
   const { t } = useLanguage();
@@ -287,6 +296,8 @@ export function SelectField({
         aria-labelledby={aria["aria-labelledby"]}
         disabled={disabled}
         onClick={() => (open ? close() : openMenu())}
+        onFocus={onFocus}
+        onBlur={onBlur}
         onKeyDown={handleKeyDown}
         className={cn(
           sizeClass,

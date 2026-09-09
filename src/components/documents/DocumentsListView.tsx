@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDocumentStore } from '@/store/documentStore';
 import { useSales } from '@/hooks/useSales';
 import { FadeIn, EmptyState, Pagination } from '@/components/ui';
@@ -8,6 +8,9 @@ import { ComplexSearchModal } from './ComplexSearchModal';
 import { DocumentCard } from './DocumentCard';
 import { DocumentCardSkeleton } from './DocumentCardSkeleton';
 import { DocumentActionModal } from './DocumentActionModal';
+import { DocumentPdfDialog } from './DocumentPdfDialog';
+import { useRefreshValidation } from '@/hooks/useRefreshValidation';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import type { DocumentListItem, ComplexSearchFilters } from '@/types/document';
 
@@ -16,6 +19,53 @@ const PAGE_SIZE = 20;
 
 interface DocumentsListViewProps {
   orgId: string;
+}
+
+/**
+ * Runs the "check validation now" call for one document, then opens the modal.
+ *
+ * Mounted only while a refresh is in flight, because the mutation hook has to
+ * be keyed to a specific sale id and the list has many.
+ */
+function ValidationRefresher({
+  orgId,
+  saleId,
+  onDone,
+}: {
+  orgId: string;
+  saleId: string;
+  onDone: () => void;
+}) {
+  const { add } = useNotifications();
+  const refresh = useRefreshValidation(orgId, saleId);
+  const fired = useRef(false);
+
+  useEffect(() => {
+    if (fired.current) return;
+    fired.current = true;
+    refresh
+      .mutateAsync()
+      .then(() =>
+        add({
+          source: 'fe',
+          level: 'info',
+          titleKey: 'documents.validation.refreshQueued',
+        }),
+      )
+      .catch((e: unknown) =>
+        add({
+          source: 'fe',
+          level: 'destructive',
+          titleKey: 'common.error',
+          bodyKey: e instanceof Error ? e.message : 'common.error',
+        }),
+      )
+      .finally(onDone);
+    // Deliberately once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
 }
 
 export function DocumentsListView({ orgId }: DocumentsListViewProps) {
@@ -30,6 +80,8 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
     doc: DocumentListItem;
     action: string;
   } | null>(null);
+  // Set while a "check validation now" request is in flight for one document.
+  const [refreshingDoc, setRefreshingDoc] = useState<DocumentListItem | null>(null);
 
   const { data, isLoading, error, refetch } = useSales({
     orgId,
@@ -90,7 +142,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
       {/* Content area — the ONLY scrollable region */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {isLoading ? (
-          <div className="grid-auto-fill-280 gap-3 p-4">
+          <div className="grid-docs gap-3 p-4">
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
               <DocumentCardSkeleton key={i} />
             ))}
@@ -129,13 +181,24 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
           </div>
         ) : (
           <div className="p-4">
-            <div className="grid-auto-fill-280 gap-3">
+            <div className="grid-docs gap-3">
               {docs.map((doc, i) => (
                 <FadeIn key={doc.sale_id} delay={i * 0.04} duration={0.3}>
                   <DocumentCard
                     doc={doc as any}
                     isReceived={is_received}
-                    onAction={(d, action) => setActionModal({ doc: d, action })}
+                    onAction={(d, action) => {
+                      // An unanswered document has nothing to show yet, so the
+                      // Validación action asks Hacienda instead of opening a
+                      // modal on an empty result. Once there IS a result the
+                      // modal opens and carries the re-check button itself.
+                      const status = d.atv_validation?.validation_status;
+                      if (action === 'validation' && (status === undefined || status === 0)) {
+                        setRefreshingDoc(d);
+                        return;
+                      }
+                      setActionModal({ doc: d, action });
+                    }}
                     delay={i * 0.04}
                   />
                 </FadeIn>
@@ -157,14 +220,35 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
         )}
       </div>
 
-      {/* Action modal */}
-      {actionModal && (
+      {/* "Ver PDF" gets its own full-height viewer — the tabbed action modal is
+          for the small side-actions. Shown for accepted AND rejected documents:
+          a rejection is exactly when someone needs to read what was sent. */}
+      {actionModal?.action === 'pdf' ? (
+        <DocumentPdfDialog
+          open
+          orgId={orgId}
+          saleId={actionModal.doc.sale_id}
+          documentType={actionModal.doc.document_type}
+          consecutiveNumber={actionModal.doc.consecutive_number}
+          atvStatus={actionModal.doc.atv_validation?.validation_status}
+          isReceived={is_received}
+          onClose={() => setActionModal(null)}
+        />
+      ) : actionModal ? (
         <DocumentActionModal
           orgId={orgId}
           doc={actionModal.doc}
           initialAction={actionModal.action}
           isReceived={is_received}
           onClose={() => setActionModal(null)}
+        />
+      ) : null}
+
+      {refreshingDoc && (
+        <ValidationRefresher
+          orgId={orgId}
+          saleId={refreshingDoc.sale_id}
+          onDone={() => setRefreshingDoc(null)}
         />
       )}
 

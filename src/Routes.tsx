@@ -30,6 +30,7 @@ const ProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
 const ReportePage = lazy(() => import("@/pages/dashboard/ReportePage"));
 const IvaReportPage = lazy(() => import("@/pages/dashboard/IvaReportPage"));
 const DocumentsPage = lazy(() => import("@/pages/dashboard/DocumentsPage"));
+const DocumentDetailPage = lazy(() => import("@/pages/dashboard/DocumentDetailPage"));
 const ClientsPage = lazy(() => import("@/pages/dashboard/ClientsPage"));
 const ClientDetailPage = lazy(() => import("@/pages/dashboard/ClientDetailPage"));
 const ProductDetailPage = lazy(() => import("@/pages/dashboard/ProductDetailPage"));
@@ -81,6 +82,12 @@ const ROUTE_PERMISSIONS = {
     // Without this, a role whose only creatable editor type is the manual
     // order would be locked out of the surface that creates it.
     ["commercial", "create", "orders"],
+  ],
+  // Reading ONE document needs only read access to the ledger it belongs to;
+  // the create/* submodules that gate the editor are irrelevant here.
+  documentDetail: [
+    ["documents", "read", "emitted"],
+    ["documents", "read", "received"],
   ],
   clients: [["commercial", "read", "clients"]],
   orders: [["commercial", "read", "orders"]],
@@ -217,6 +224,16 @@ function ConfirmationDetailRoute() {
   );
 }
 
+// Document detail route — reads :saleId from Wouter params
+function DocumentDetailRoute() {
+  const { saleId } = useParams<{ saleId: string }>();
+  return (
+    <DashboardPage permissions={ROUTE_PERMISSIONS.documentDetail}>
+      <DocumentDetailPage saleId={saleId ?? ""} />
+    </DashboardPage>
+  );
+}
+
 // Single documents route — handles both list (/dashboard/documents)
 // and editor (/dashboard/documents/new/:tabId) under one mounted component
 // so the nav stays persistent and content can animate internally.
@@ -335,6 +352,10 @@ export default function Routes() {
           The DocumentsContainer reads useLocation directly and animates content swaps. */}
       <Route path={ROUTES.DASHBOARD_DOCUMENTS} component={DocumentsRoute} />
       <Route path="/dashboard/documents/new/:tabId" component={DocumentsRoute} />
+      {/* Detail LAST: `/documents/new/:tabId` is more specific and must match
+          first, and a bare `/documents/new` would otherwise be read as a sale
+          id. Switch takes the first match, so order is the guard here. */}
+      <Route path="/dashboard/documents/:saleId" component={DocumentDetailRoute} />
 
       {/* Clients — detail before list so :clientId is matched first */}
       <Route

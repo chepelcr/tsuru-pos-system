@@ -21,6 +21,7 @@ import {
 } from "aws-amplify/auth";
 import "../lib/amplify";
 import { api, userPath } from "../lib/api";
+import { clearSelectedOrgId } from "@/lib/selectedOrg";
 
 // "customer" is the default role the markets-api assigns on first Cognito sync;
 // org/POS roles (cajero/gerente/supervisor) are assigned later via RBAC.
@@ -165,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await signOut();
     setUser(null);
-    sessionStorage.removeItem("selectedOrgId");
+    clearSelectedOrgId();
   }, []);
 
   // Best-effort global sign-out to clear a stale session before login/register.

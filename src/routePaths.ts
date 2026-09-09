@@ -44,6 +44,11 @@ export function documentEditorPath(tabId: string) {
   return `/dashboard/documents/new/${tabId}`;
 }
 
+/** Build the document-detail URL for a specific sale id */
+export function documentDetailPath(saleId: string) {
+  return `/dashboard/documents/${saleId}`;
+}
+
 /** Build the confirmation-detail URL for a specific confirmation number */
 export function confirmationDetailPath(confirmationNumber: string) {
   return `/dashboard/confirmations/${confirmationNumber}`;

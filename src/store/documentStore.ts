@@ -39,8 +39,24 @@ export interface DocumentTab {
 }
 
 interface DocumentStore {
-  /** Open document tabs (drafts being edited) */
+  /**
+   * Open document tabs for the ACTIVE organization only. Everything in the UI
+   * reads this, so it must never contain another tenant's drafts — see
+   * `setActiveOrganization`.
+   */
   open_documents: DocumentTab[];
+  /** Organization whose drafts are currently in `open_documents`. */
+  active_organization_id: string | null;
+  /**
+   * Parked drafts for every OTHER organization, keyed by organization id.
+   *
+   * Tabs carry a cart, a selected client and a receiver, so leaking one across
+   * a tenant boundary would let a cashier bill organization A's customer for
+   * organization B's products. They used to live in a single flat list with no
+   * org on them, and switching organizations carried the open tabs straight
+   * over.
+   */
+  documents_by_org: Record<string, DocumentTab[]>;
   /** Active tab id — mirrors the URL when on /dashboard/documents/new/:tabId */
   active_document_tab: string | null;
   /** List filter: Emitidos (false) vs Recibidos (true) */
@@ -52,6 +68,12 @@ interface DocumentStore {
   setActiveDocumentTab: (id: string | null) => void;
   updateDocumentTab: (id: string, patch: Partial<DocumentTab>) => void;
   closeAllTabs: () => void;
+  /**
+   * Point the store at an organization. Parks the current org's drafts and
+   * swaps in that organization's own, so no tab ever crosses tenants.
+   * Idempotent — calling it with the active org is a no-op.
+   */
+  setActiveOrganization: (orgId: string | null) => void;
   /**
    * Move an "overflow" tab (index ≥ maxVisible) into the visible window by
    * swapping it with the tab currently at the last visible slot. No-op if
@@ -67,6 +89,8 @@ export const useDocumentStore = create<DocumentStore>()(
   persist(
     (set) => ({
       open_documents: [],
+      active_organization_id: null,
+      documents_by_org: {},
       active_document_tab: null,
       is_received: false,
 
@@ -122,6 +146,30 @@ export const useDocumentStore = create<DocumentStore>()(
       closeAllTabs: () =>
         set({ open_documents: [], active_document_tab: null }),
 
+      setActiveOrganization: (orgId) => {
+        set((state) => {
+          if (state.active_organization_id === orgId) return state;
+
+          // Park what is on screen under the org it belongs to, then bring
+          // that organization's own drafts forward. Nothing is discarded, so
+          // switching back and forth keeps each tenant's work intact.
+          const parked = { ...state.documents_by_org };
+          if (state.active_organization_id) {
+            parked[state.active_organization_id] = state.open_documents;
+          }
+
+          const incoming = (orgId ? parked[orgId] : undefined) ?? [];
+          if (orgId) delete parked[orgId];
+
+          return {
+            active_organization_id: orgId,
+            documents_by_org: parked,
+            open_documents: incoming,
+            active_document_tab: null,
+          };
+        });
+      },
+
       promoteTabToVisible: (id, maxVisible) => {
         set((state) => {
           // No visible window (mobile, toolbar hidden) — nothing to promote
@@ -144,6 +192,8 @@ export const useDocumentStore = create<DocumentStore>()(
       name: 'pos-document-store',
       partialize: (state) => ({
         open_documents: state.open_documents,
+        active_organization_id: state.active_organization_id,
+        documents_by_org: state.documents_by_org,
         active_document_tab: state.active_document_tab,
         is_received: state.is_received,
       }),
@@ -153,6 +203,11 @@ export const useDocumentStore = create<DocumentStore>()(
       // state doesn't crash the renderer.
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+        // Older persisted state predates per-org scoping and has neither field.
+        if (!state.documents_by_org) state.documents_by_org = {};
+        if (state.active_organization_id === undefined) {
+          state.active_organization_id = null;
+        }
         const clean = (state.open_documents ?? []).filter(
           (d): d is DocumentTab => !!d && typeof d.id === 'string'
         );

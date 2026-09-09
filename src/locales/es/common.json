@@ -57,6 +57,7 @@
   "shell.reportsGeneral": "Reporte de sesión",
   "shell.reportsIva": "Declaración de IVA",
   "shell.logout": "Salir",
+  "shell.switchOrg": "Cambiar organización",
   "shell.liveLabel": "En vivo",
   "shell.activeSession": "Sesión activa",
   "shell.sync": "Sincronizar",

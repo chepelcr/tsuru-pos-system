@@ -127,7 +127,13 @@ export function CheckoutDrawer({
   const needsReceiver = isManualOrder || doc_type !== '04'; // All except Tiquete
   const needsReferences = doc_type === '03' || doc_type === '02'; // NC / ND
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
-  const isPaid = paidTotal >= cartTotal;
+  // Money is compared at céntimo precision rather than as raw floats: cart
+  // totals carry fractional céntimos (a ₡4 749 cart is really 4749.4013…) while
+  // a payment is whole colones, so a bare `>=` can read a fully-paid sale as
+  // short by a rounding error.
+  const toCentimos = (n: number) => Math.round(n * 100);
+  const isPaid = toCentimos(paidTotal) >= toCentimos(cartTotal);
+  // TEMP-DEBUG
   // One resolver for every surface — the three call sites used to disagree
   // on precedence, so the same client showed a different name in each.
   const hasReceiver = resolveHasReceiver(receiver, selectedClient);

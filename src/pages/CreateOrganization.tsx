@@ -17,6 +17,7 @@ import {
 } from "@/components/org-settings/BusinessIdentityFields";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { THEME_LIST, DEFAULT_THEME_ID, type ThemeDef } from "@/theme/themes";
+import { setSelectedOrgId } from "@/lib/selectedOrg";
 
 const BASE_DOMAIN =
   (import.meta.env.VITE_BASE_DOMAIN as string | undefined) || "tsuru.jcampos.dev";
@@ -252,7 +253,7 @@ export default function CreateOrganization() {
       setThemeId(selectedThemeId);
 
       sessionStorage.removeItem("resumeOrgId");
-      sessionStorage.setItem("selectedOrgId", org?.id ?? createdOrgId);
+      setSelectedOrgId(org?.id ?? createdOrgId);
 
       const role = user?.role;
       navigate(role === "cajero" ? "/pos" : ROUTES.DASHBOARD);

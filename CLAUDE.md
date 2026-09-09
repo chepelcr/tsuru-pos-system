@@ -345,6 +345,49 @@ Cross-app-be mirrors this split — `app/services/tax_calculation_service.py`, `
 
 See `CALCULATION_AUDIT.md`, `TAX_CALCULATION_FLOW.md`, and `TAX_TYPES_REFERENCE.md` for deeper detail.
 
+### 8.1 Calculation tests — the FE/BE contract
+
+The tax and discount engines are pinned by vitest suites under `src/services/`.
+They exist because the POS displays a total and sales-be files a different
+number for the same line unless both derive it the same way — and a divergence
+shows up as a rejected document or, worse, an accepted one that misdeclares.
+
+| Suite | Pins |
+|---|---|
+| `note20.test.ts` | all ten discount natures; nature 99's `reason`; factory-assumed IVA at 13% |
+| `ivaRates.test.ts` | all eleven `TarifaIVA` codes; `ivaRateCodeFor`; Note 20 re-run at every rate |
+| `specialBase.test.ts` | the editable base (tax code 07 / `IVACobradoFabrica` 01) and the code-08 factor |
+
+Three rules for these:
+
+1. **Expectations are the BACKEND's**, written longhand from the Hacienda spec —
+   never copied from what this implementation currently returns. A test that
+   asserts the code's own output cannot catch the code being wrong.
+2. **Cover the whole enum, with a guard.** Each suite asserts its case table
+   still equals `Object.values(...)`, so a code added to an enum fails the suite
+   until someone classifies it rather than silently going untested.
+3. **Mirror the live backend fixtures.** The 13% factory-assumed cases use the
+   same net 4333 / 3% discount as sales-be's
+   `tests/local/suites/assumed_tax_matrix.json`, so both sides can be compared
+   against one signed XML.
+
+When you change anything in `discountCalculationService` or
+`taxCalculationService`, run `pnpm vitest run src/services` and check whether
+sales-be needs the same change. The backend map lives in that repo's
+`CLAUDE.md` §3–4.
+
+**The cart is part of this.** `useCartFlow` computes its totals THROUGH these
+services (not `price × qty` with tax backed out as the difference), over the
+same inputs the document payload is built from — `lineDetail` when the drawer
+has been opened, otherwise the product's own catalog config. Keep it that way:
+the naive arithmetic agrees with the backend only while every line uses an
+ordinary discount nature at the general rate.
+
+Careful with `base_amount`: it is the IVACE **manual base override**, not "the
+gross". Passing the gross there taxes ordinary-discount lines on their
+pre-discount amount. The un-eroded base Note 20 needs travels as
+`monto_total_original`.
+
 ---
 
 ## 9. Common patterns — copy these

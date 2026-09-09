@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useCart } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
 import {
@@ -25,6 +26,12 @@ import type {
   SalePayment,
 } from "@/types/invoice";
 import { MANUAL_ORDER_SOURCE } from "@/types/order";
+import { DiscountTypeCode, TaxRateCode, TaxTypeCode } from "@/lib/enums";
+import { DiscountCalculationService } from "@/services/discountCalculationService";
+import { TaxCalculationService } from "@/services/taxCalculationService";
+import type { LineDiscount, LineTax } from "@/types/lineDetail";
+import { CountryISO } from "@/lib/enums";
+import { useAllDiscountTypes, useAllTaxes } from "@/hooks/useDataApi";
 import { resolveReceiverName } from "@/lib/receiverResolution";
 import type {
   ManualOrderFields,
@@ -40,6 +47,188 @@ import type {
  * `neighborhood_id` (LocationSelect cascade state) — the payload builder
  * resolves it to `neighborhood_name` if a name isn't already present.
  */
+/**
+ * Split what the till took from what the document says.
+ *
+ * The cashier may take more cash than the sale is worth and hand the
+ * difference back. That difference is not part of the fiscal document — the
+ * MedioPago node must sum to exactly `TotalComprobante` — but it is not
+ * discarded either: each payment carries `amount` (fiscal),
+ * `tendered_amount` (what was handed over) and `change_amount` (what went
+ * back), so a cash drawer can be reconciled against the documents without
+ * inferring the difference.
+ *
+ * An underpayment is left alone: that is a genuine error, and the backend
+ * should reject it rather than have the client quietly inflate a payment.
+ */
+function paymentsForDocument(
+  payments: SalePayment[] | undefined,
+  documentTotal: number,
+): SalePayment[] {
+  const list = (payments ?? []).filter((p) => (p.amount ?? 0) > 0);
+  if (list.length === 0) return [];
+
+  const tendered = list.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const excess = tendered - documentTotal;
+  // Sub-céntimo noise is the backend's tolerance to absorb, not ours.
+  if (excess <= 0.005) {
+    return list.map((p) => ({ ...p, tendered_amount: p.amount, change_amount: 0 }));
+  }
+
+  // Change comes out of CASH first — that is what physically goes back. With
+  // no cash line, the last method listed absorbs it.
+  const cashIndex = list.findIndex((p) => p.type === "01");
+  const target = cashIndex >= 0 ? cashIndex : list.length - 1;
+
+  return list
+    .map((p, i) => {
+      const handedOver = p.amount || 0;
+      if (i !== target) {
+        return { ...p, tendered_amount: handedOver, change_amount: 0 };
+      }
+      const fiscal = Number((handedOver - excess).toFixed(5));
+      return {
+        ...p,
+        amount: fiscal,
+        tendered_amount: handedOver,
+        change_amount: Number(excess.toFixed(5)),
+      };
+    })
+    .filter((p) => (p.amount ?? 0) > 0);
+}
+
+/**
+ * Hacienda unit-of-measure code for a discrete unit. Used when a cart line has
+ * no explicit unit, which is the norm for scan-and-charge lines.
+ */
+const DEFAULT_UNIT_MEASURE = "Unid";
+
+/**
+ * Line taxes from the product's own catalog configuration.
+ *
+ * Cart lines only carry `lineDetail.taxes` once the cashier has opened the
+ * line-detail drawer. A plain scan-and-charge never does, so the document went
+ * out with `taxes: []` and sales-api computed a `TotalComprobante` with **no
+ * IVA at all** — it answered "Payment total 4749.40130 does not cover document
+ * total 4333.00000", the difference being exactly the tax. Had the payment
+ * happened to match, the invoice would have been filed under-declaring IVA.
+ *
+ * The catalog shape has drifted from the declared `ProductTax` type (the API
+ * sends `tax_rate: { percentage }` where the type says `rate`), so both
+ * spellings are read. `amount` is deliberately NOT forwarded: the backend
+ * recomputes it, and the stored value does not tie out against price × rate.
+ */
+const IVA_RATE_CODE_BY_PERCENTAGE: Record<string, string> = {
+  "0.5": TaxRateCode.REDUCED_HALF,
+  "1": TaxRateCode.REDUCED_1,
+  "2": TaxRateCode.REDUCED_2,
+  "4": TaxRateCode.REDUCED_4,
+  "13": TaxRateCode.GENERAL_13,
+};
+
+/**
+ * Hacienda's `TarifaIVA` code for a percentage, when it is unambiguous.
+ *
+ * sales-api requires `rate_code` on every `01` (IVA) line, and the product
+ * catalog stores `tax_rate.percentage` with a null `code`, so it has to be
+ * derived. 0% is deliberately NOT mapped: it splits across exento (10),
+ * no-sujeto (11), crédito-pleno (01) and the transitional rates, and picking
+ * one of those on the operator's behalf would put a wrong tax treatment on a
+ * legal document.
+ */
+export function ivaRateCodeFor(percentage: number | undefined): string | undefined {
+  if (percentage === undefined || percentage === null) return undefined;
+  return IVA_RATE_CODE_BY_PERCENTAGE[String(percentage)];
+}
+
+/**
+ * Line discounts from the product's own catalog configuration.
+ *
+ * Same gap as {@link taxesFromProduct}: a cart line only carries
+ * `lineDetail.discounts` once the line-detail drawer has been opened, so a
+ * scan-and-charge sent none and sales-api computed a total with the discount
+ * missing — ₡4 896.29 against the ₡4 749.40 the POS actually charges, the
+ * difference being exactly the product's 3%.
+ *
+ * Unlike taxes, the stored `discount_type_id` is a data-api catalog **row id**
+ * (e.g. "17"), not a Hacienda code, so it has to be resolved through the
+ * discount-types catalog — the same lookup `DiscountsTab` does. A discount
+ * whose code cannot be resolved is DROPPED rather than guessed: natures 01 and
+ * 03 divert IVA to `ImpuestoAsumidoEmisorFabrica`, so an invented code changes
+ * the tax treatment of the line. Dropping it surfaces as a totals mismatch,
+ * which is the safe way to fail.
+ */
+/**
+ * A product's `cabys` arrives either as the bare 13-digit code or as the joined
+ * catalog row (`{ id, code, ... }`), depending on which endpoint loaded it. The
+ * tax service wants the code, and CABYS-prefix routing (ISEBEC 2202/3401) is
+ * silently skipped when it gets an object instead.
+ */
+function cabysCodeOf(product: any): string | undefined {
+  const c = product?.cabys;
+  if (typeof c === "string") return c;
+  if (c && typeof c.code === "string") return c.code;
+  return undefined;
+}
+
+function discountsFromProduct(product: any, discountTypes: any[]): any[] {
+  const configured = product?.discounts;
+  if (!Array.isArray(configured) || configured.length === 0) return [];
+
+  return configured
+    .map((discount: any) => {
+      const rawId = discount?.discount_type_id ?? discount?.discount_type;
+      if (rawId === undefined || rawId === null) return null;
+
+      const match = discountTypes.find(
+        (t: any) => String(t?.id) === String(rawId) || String(t?.code) === String(rawId),
+      );
+      const code = match?.code;
+      if (!code) return null;
+
+      return {
+        discount_type: String(code),
+        percentage:
+          discount?.percentage === undefined || discount?.percentage === null
+            ? undefined
+            : Number(discount.percentage),
+        // Nota 20 requires free text for "Otros"; the catalog description is
+        // what the drawer fills in for every other nature.
+        reason:
+          code === DiscountTypeCode.OTHER
+            ? (discount?.reason ?? "")
+            : (discount?.reason ?? match?.description ?? undefined),
+      };
+    })
+    .filter(Boolean);
+}
+
+function taxesFromProduct(product: any): any[] {
+  const configured = product?.taxes;
+  if (!Array.isArray(configured) || configured.length === 0) return [];
+
+  return configured
+    .map((tax: any) => {
+      const code = tax?.tax_type_id ?? tax?.tax_code;
+      if (code === undefined || code === null) return null;
+      const rate = tax?.tax_rate?.percentage ?? tax?.rate;
+      const normalizedCode = String(code).padStart(2, "0");
+      return {
+        code: normalizedCode,
+        rate_code:
+          tax?.tax_rate?.code ??
+          tax?.rate_code ??
+          (normalizedCode === TaxTypeCode.IVA
+            ? ivaRateCodeFor(rate === undefined || rate === null ? undefined : Number(rate))
+            : undefined),
+        rate: rate === undefined || rate === null ? undefined : Number(rate),
+        other_tax_type: tax?.other_tax_type ?? undefined,
+        special_fields: tax?.special_fields ?? undefined,
+      };
+    })
+    .filter(Boolean);
+}
+
 export interface InvoiceCheckoutData {
   document_type: EditorDocTypeCode;
   /** Hacienda sale condition code. */
@@ -66,6 +255,9 @@ interface ConfirmPaymentArgs {
   orgId: string;
   userId: string;
   branchNumber: number;
+  /** Branch/terminal UUIDs — validated by sales-api, unlike the codes. */
+  branchId: string;
+  terminalId: string;
   terminalNumber: number;
   selectedClient: ClientSearchResult | null;
   invoiceData: InvoiceCheckoutData;
@@ -114,6 +306,25 @@ export interface UseCartFlowOptions {
 }
 
 export function useCartFlow(options: UseCartFlowOptions = {}) {
+  // Needed to translate a product's stored discount_type_id (a catalog row id)
+  // into the Hacienda nature code the document carries.
+  const { data: discountTypesData } = useAllDiscountTypes({
+    iso_code: CountryISO.COSTA_RICA,
+  });
+  const discountTypes = discountTypesData ?? [];
+  const { data: taxTypesData } = useAllTaxes({
+    iso_code: CountryISO.COSTA_RICA,
+  });
+  const taxTypes = useMemo(
+    () =>
+      (taxTypesData ?? []).map((tt: any) => ({
+        code: tt.code,
+        tax_id: Number(tt.id),
+        description: tt.description,
+      })),
+    [taxTypesData]
+  );
+
   const { items, add, remove, updateLine, clear, count } = useCart();
   const { decrement } = useInventory();
 
@@ -146,13 +357,76 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     })
   );
 
-  const cartTotal = cartItems.reduce((s, i) => s + i.price * i.qty, 0);
+  // ── Cart totals ───────────────────────────────────────────────────────
+  //
+  // Computed through the SAME discount + tax engines the document is built
+  // from, and over the same inputs (`lineDetail` when the drawer was opened,
+  // otherwise the product's own catalog config). They used to be
+  //     cartTotal = Σ price * qty
+  //     subtotal  = Σ netPrice * qty * (1 - lineDiscount/100)
+  //     taxAmount = cartTotal - subtotal
+  // — the product's stored gross price, with no tax engine involved. That is
+  // fine right up until the numbers have to agree with the backend's, and
+  // Note 20 is exactly where they stop: on a royalty or bonus line the VAT
+  // base does not erode, so the stored gross price is simply the wrong total.
+  // Deriving both from one place is what keeps the figure on the screen and
+  // the figure on the document the same number.
+  const lineTotals = cartItems.map((item) => {
+    const ld = item.lineDetail;
+    const discounts = (ld?.discounts as LineDiscount[] | undefined)
+      ?? (discountsFromProduct(item.product, discountTypes) as LineDiscount[]);
+    const taxes = (ld?.taxes as LineTax[] | undefined)
+      ?? (taxesFromProduct(item.product) as LineTax[]);
+
+    const gross = item.netPrice * item.qty;
+    const withCartDiscount = [
+      ...discounts,
+      ...(item.lineDiscount > 0
+        ? [{ discount_type: "01", percentage: item.lineDiscount } as LineDiscount]
+        : []),
+    ];
+
+    // Special-amount taxes (codes 03/04/05/06) price off a per-unit amount that
+    // rides along in the line's own `special_fields`; flatten it the same way
+    // LineDetailDrawer does so a cart line and its drawer agree.
+    const taxAmounts: Record<string, number> = {};
+    for (const tax of taxes) {
+      const id = (tax as any).special_fields?.tax_amount_id;
+      const unit = (tax as any).special_fields?.tax_unit_amount;
+      if (id !== undefined && unit !== undefined) taxAmounts[id] = unit;
+    }
+
+    const disc = DiscountCalculationService.calculate(gross, withCartDiscount);
+    const amounts = TaxCalculationService.getLineAmounts({
+      subtotal: disc.subtotalAfterDiscount,
+      // `base_amount` is the IVACE (code 07) MANUAL base override, not "the
+      // gross" — the service falls back to the discounted subtotal when it is
+      // absent. Defaulting it to gross here taxed every ordinary-discount line
+      // on its pre-discount amount. The gross base that Note 20 needs for
+      // natures 01/02/03 rides in on `monto_total_original` instead.
+      base_amount: ld?.base_amount,
+      monto_total_original: gross,
+      taxes,
+      tax_types: taxTypes,
+      detail_quantity: item.qty,
+      cabys: ld?.cabys ?? cabysCodeOf(item.product),
+      tax_amounts: taxAmounts,
+      hasRoyaltyOrBonus: disc.hasRoyaltyOrBonus,
+      customer_pays_tax_on_original_base: disc.customer_pays_tax_on_original_base,
+      discountedNatures: disc.discountedNatures,
+    });
+
+    return {
+      subtotal: disc.subtotalAfterDiscount,
+      tax: amounts.net_tax,
+      total: amounts.total_amount_line,
+    };
+  });
+
+  const cartTotal = lineTotals.reduce((s, l) => s + l.total, 0);
   const cartCount = count();
-  const subtotal = cartItems.reduce(
-    (s, i) => s + i.netPrice * i.qty * (1 - i.lineDiscount / 100),
-    0
-  );
-  const taxAmount = Math.max(0, cartTotal - subtotal);
+  const subtotal = lineTotals.reduce((s, l) => s + l.subtotal, 0);
+  const taxAmount = lineTotals.reduce((s, l) => s + l.tax, 0);
 
   /**
    * Build a canonical SaleReceiver from either a draft (with `neighborhood_id`)
@@ -164,7 +438,32 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     inbound: SaleReceiverDraft | SaleReceiver | null | undefined,
     fallback: ClientSearchResult | null
   ): SaleReceiver | null => {
-    if (inbound) {
+    // Hacienda wants the cédula as digits only. Clients are stored (and shown)
+    // in the readable form — "1-1664-0506" — and that string used to go
+    // straight onto the document, which sales-api rejects with
+    // "Identification.number must be all digits". Normalising here keeps the
+    // display format intact everywhere else in the app.
+    const digitsOnly = (value: string | undefined | null) => {
+      if (!value) return undefined;
+      const digits = value.replace(/\D/g, "");
+      return digits || undefined;
+    };
+
+    // An untouched checkout carries `receiver: {}`, which is truthy — so this
+    // used to "use" an object with no fields in it and never consult the
+    // client the cashier actually picked. sales-api then rejected the document
+    // with "Receiver is required for document type '01'" while the UI showed a
+    // selected receptor. Only treat the form's receiver as authoritative once
+    // it identifies somebody.
+    const inboundIdentifies = !!(
+      inbound &&
+      (inbound.name ||
+        inbound.email ||
+        inbound.foreign_id_number ||
+        inbound.identification?.number)
+    );
+
+    if (inbound && inboundIdentifies) {
       const residence = (inbound.residence ?? undefined) as
         | ResidenceLocalState
         | Residence
@@ -187,6 +486,12 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         : undefined;
       return {
         ...inbound,
+        identification: inbound.identification
+          ? {
+              ...inbound.identification,
+              number: digitsOnly(inbound.identification.number),
+            }
+          : undefined,
         residence: canonicalResidence,
       };
     }
@@ -198,7 +503,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       identification: fallback.identification
         ? {
             code: fallback.identification.code ?? undefined,
-            number: fallback.identification.number ?? undefined,
+            number: digitsOnly(fallback.identification.number),
           }
         : undefined,
       residence: fallback.residence
@@ -220,6 +525,8 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     orgId,
     userId,
     branchNumber,
+    branchId,
+    terminalId,
     terminalNumber,
     selectedClient,
     invoiceData,
@@ -371,6 +678,12 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       assignment_id: assignmentId,
       branch_number: branchNumber,
       terminal_number: terminalNumber,
+      // The codes go on the document; the ids are what sales-api validates.
+      // Omitting them left the Sale row with a generated default that matched
+      // no branch, and every sale was rejected with
+      // "Branch <uuid> not found for organization".
+      branch_id: branchId,
+      terminal_id: terminalId,
       client_id: selectedClient?.client_id ?? null,
 
       document_type: invoiceData.document_type,
@@ -392,7 +705,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       details: cartItems.map((item, index) => {
         const ld = item.lineDetail;
         const lineDiscounts = [
-          ...((ld?.discounts as any[]) ?? []),
+          ...((ld?.discounts as any[]) ?? discountsFromProduct(item.product, discountTypes)),
           ...(item.lineDiscount > 0
             ? [{ discount_type: "01", percentage: item.lineDiscount }]
             : []),
@@ -403,7 +716,11 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           product_id: item.id,
           description: item.lineNote || item.name,
           quantity: item.qty,
-          unit_measure: ld?.unit_measure,
+          // Hacienda requires UnidadMedida on every line. It is only populated
+          // when the cashier opens the line-detail drawer, which a plain
+          // scan-and-charge never does — so the most ordinary sale there is
+          // came back rejected with "unit_measure is required".
+          unit_measure: ld?.unit_measure || DEFAULT_UNIT_MEASURE,
           net_price: item.netPrice,
           // BE Product.cabys is now an object {id, code, ...} but the sales-line
           // payload expects the bare code string. Tolerate both shapes here.
@@ -411,12 +728,19 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
             (typeof (item as any).cabys === 'string'
               ? (item as any).cabys
               : (item as any).cabys?.code) ?? ld?.cabys,
-          taxes: (ld?.taxes as any[]) ?? [],
+          taxes: (ld?.taxes as any[]) ?? taxesFromProduct(item.product),
           discounts: lineDiscounts,
         };
       }),
 
-      payments: invoiceData.payments,
+      // The DOCUMENT carries the invoice total, not the cash tendered.
+      // Hacienda's restriction on the MedioPago node is an equality —
+      // `TotalComprobante == Sumatoria(MontoTotalMedioPago)` — so an
+      // overpayment is as invalid as an underpayment. Pressing the ₡5 000 or
+      // ₡10 000 quick-amount button therefore produced a document sales-api
+      // rejects outright; only "Exacto" ever worked. Vuelto is a till concept
+      // and never reaches the document.
+      payments: paymentsForDocument(invoiceData.payments, invoiceData.total_amount),
 
       // Hint summary — BE recomputes authoritative values.
       summary: {

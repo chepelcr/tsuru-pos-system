@@ -92,13 +92,74 @@ async function request<T>(
   return JSON.parse(text) as T;
 }
 
-export function createClient(baseUrl: string) {
+/**
+ * camelCase -> snake_case for a single object key.
+ *
+ * The two passes handle acronym runs the way the BE's alias generator built
+ * them: `pdfUrl` -> `pdf_url`, `atvValidation` -> `atv_validation`, and
+ * `totalIVA` -> `total_iva` (rather than `total_i_v_a`). Keys that are already
+ * snake_case pass through untouched, so running this over a response that is
+ * partly or wholly snake_case is a no-op.
+ */
+function snakeKey(key: string): string {
+  return key
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .toLowerCase();
+}
+
+/**
+ * Recursively rewrite every object key of a parsed JSON payload to snake_case.
+ *
+ * sales-api serializes Pydantic models with `by_alias=True` (see
+ * `jbiller_common/utils/response_utils.py`), so every response field arrives
+ * camelCased — `saleId`, `documentType`, `consecutiveNumber`, `atvValidation`.
+ * The POS's entire type surface for that API is snake_case (`SaleDocument`,
+ * `DocumentListItem`, `IvaReport`, `OrgConfiguration`, ...), so without this
+ * every field reads back `undefined`: the documents list rendered blank cards
+ * ("?" doc type, "Invalid Date", ₡0) and React warned about duplicate keys
+ * because `sale_id` was undefined on every row.
+ *
+ * Normalizing here — at the one client that talks to that gateway — keeps the
+ * fix in a single place instead of restating it in every hook. Requests are
+ * NOT converted: the BE's models set `populate_by_name=True`, so they accept
+ * the snake_case field names the POS already sends.
+ */
+function toSnakeCaseDeep<T>(value: unknown): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => toSnakeCaseDeep(item)) as T;
+  }
+  // Only plain JSON objects — `JSON.parse` never yields Date/Map/class
+  // instances, so a null-safe typeof check is enough.
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      out[snakeKey(key)] = toSnakeCaseDeep(val);
+    }
+    return out as T;
+  }
+  return value as T;
+}
+
+interface ClientOptions {
+  /**
+   * Rewrite response keys to snake_case. Set for APIs that serialize
+   * camelCase (sales-api) while the POS types stay snake_case.
+   */
+  snakeCaseResponses?: boolean;
+}
+
+export function createClient(baseUrl: string, clientOptions: ClientOptions = {}) {
+  const adapt = clientOptions.snakeCaseResponses
+    ? <T>(value: T): T => toSnakeCaseDeep<T>(value)
+    : <T>(value: T): T => value;
+
   return {
-    get: <T>(path: string, options?: RequestOptions) => request<T>("GET", path, undefined, baseUrl, options),
-    post: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("POST", path, body, baseUrl, options),
-    put: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("PUT", path, body, baseUrl, options),
-    patch: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("PATCH", path, body, baseUrl, options),
-    delete: <T>(path: string, options?: RequestOptions) => request<T>("DELETE", path, undefined, baseUrl, options),
+    get: <T>(path: string, options?: RequestOptions) => request<T>("GET", path, undefined, baseUrl, options).then(adapt),
+    post: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("POST", path, body, baseUrl, options).then(adapt),
+    put: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("PUT", path, body, baseUrl, options).then(adapt),
+    patch: <T>(path: string, body: unknown, options?: RequestOptions) => request<T>("PATCH", path, body, baseUrl, options).then(adapt),
+    delete: <T>(path: string, options?: RequestOptions) => request<T>("DELETE", path, undefined, baseUrl, options).then(adapt),
   };
 }
 
@@ -264,7 +325,7 @@ export function ordersOrgPath(orgId: string, endpoint: string) {
 
 // ─── Sales API (single client — all invoice Lambdas share one API Gateway) ─
 
-export const salesApi = createClient(SALES_API_BASE);
+export const salesApi = createClient(SALES_API_BASE, { snakeCaseResponses: true });
 
 /** /api/organizations/{org}/sales[suffix] */
 export function salesOrgPath(orgId: string, suffix: string = '') {
@@ -299,6 +360,18 @@ export function authOrgPath(orgId: string, endpoint: string) {
 /** /api/organizations/{org}/sales/{id}/invoice-validation[suffix] */
 export function validationPath(orgId: string, saleId: string, suffix: string = '') {
   return `/api/organizations/${orgId}/sales/${saleId}/invoice-validation${suffix}`;
+}
+
+/**
+ * `POST` here to ask Hacienda for a document's validation result now.
+ *
+ * Distinct from {@link validationPath}, which is the RECEIVER's accept/reject
+ * action on a document. This one re-drives the issuer-side poll: the validator
+ * gives up after `hacienda.validator.max_attempts`, and a document Hacienda has
+ * not answered then sits at PROCESSING with nothing to move it along.
+ */
+export function validationRefreshPath(orgId: string, saleId: string) {
+  return `/api/organizations/${orgId}/sales/${saleId}/validation/refresh`;
 }
 
 /** /api/organizations/{org}/sales/{id}/xml[suffix] */

@@ -16,35 +16,19 @@ export function useAssignment() {
     queryKey: ["assignment", user?.userId, org?.id],
     enabled: !!user && !!org,
     queryFn: async () => {
+      let data: Assignment | undefined;
+
       try {
         // Get active assignments for the current user
         const response = await crossAppApi.get<{ data: Assignment[] }>(
           crossAppUserOrgPath(user!.userId, org!.id, `/assignments?search=status:1`)
         );
-        
+
         // Get the first active assignment for this user
-        const data = response.data?.[0] || (Array.isArray(response) ? response[0] : response);
-        
-        if (!data) {
-          throw new Error("No hay asignación activa");
-        }
-        
-        // Cache in IndexedDB for offline access
-        await db.assignments.where({ userId: user!.userId, orgId: org!.id }).delete();
-        await db.assignments.add({
-          assignmentId: data.assignment_id,
-          orgId: org!.id,
-          userId: user!.userId,
-          standId: data.branch_id,
-          standName: "", // Will be populated from branch data
-          context: "caja",
-          sessionId: data.session_id,
-          sessionName: "", // Will be populated from session data
-          fetchedAt: Date.now(),
-        });
-        return data;
+        data = response.data?.[0] || (Array.isArray(response) ? response[0] : response);
       } catch {
-        // Fallback to IndexedDB
+        // TRANSPORT failure — this, and only this, is what the offline cache is
+        // for. A successful "you have no active assignment" is handled below.
         const cached = await db.assignments
           .where({ userId: user!.userId, orgId: org!.id })
           .first();
@@ -63,6 +47,39 @@ export function useAssignment() {
         }
         throw new Error("No hay asignación activa");
       }
+
+      if (!data) {
+        // The server answered, and the answer is "none". Do NOT resurrect the
+        // cached assignment: it can be arbitrarily old and name a branch this
+        // organization no longer has. That is exactly what happened — a sale
+        // went out carrying a branch id from a previous shift and sales-api
+        // rejected it with "Branch <uuid> not found for organization". The
+        // stale row is dropped so it cannot be picked up again.
+        await db.assignments
+          .where({ userId: user!.userId, orgId: org!.id })
+          .delete();
+        throw new Error("No hay asignación activa");
+      }
+
+      try {
+        // Cache in IndexedDB for offline access
+        await db.assignments.where({ userId: user!.userId, orgId: org!.id }).delete();
+        await db.assignments.add({
+          assignmentId: data.assignment_id,
+          orgId: org!.id,
+          userId: user!.userId,
+          standId: data.branch_id,
+          standName: "", // Will be populated from branch data
+          context: "caja",
+          sessionId: data.session_id,
+          sessionName: "", // Will be populated from session data
+          fetchedAt: Date.now(),
+        });
+      } catch {
+        // Caching is best-effort; a full IndexedDB is no reason to fail a shift.
+      }
+
+      return data;
     },
   });
 }

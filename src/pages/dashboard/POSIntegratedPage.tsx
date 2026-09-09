@@ -156,7 +156,11 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     if (!assignment || !org || !user) throw new Error(t("checkout.error.sessionIncomplete"));
     const branchNumber = sessionCtx.branch_code;
     const terminalNumber = sessionCtx.terminal_code;
-    if (!branchNumber || !terminalNumber) throw new Error(t("checkout.error.missingBranchTerminal"));
+    const branchId = sessionCtx.branch_id;
+    const terminalId = sessionCtx.terminal_id;
+    if (!branchNumber || !terminalNumber || !branchId || !terminalId) {
+      throw new Error(t("checkout.error.missingBranchTerminal"));
+    }
 
     const result = await flow.handleConfirmPayment({
       assignmentId: assignment.assignment_id,
@@ -164,6 +168,8 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
       userId: user.userId,
       branchNumber,
       terminalNumber,
+      branchId,
+      terminalId,
       selectedClient,
       invoiceData,
     });

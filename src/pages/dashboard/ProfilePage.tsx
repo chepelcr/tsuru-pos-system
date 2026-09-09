@@ -8,6 +8,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateProfile } from "@/hooks/useProfile";
+import { usePermissions } from "@/hooks/useRbac";
+import { roleLabel as orgRoleLabel } from "@/lib/rbacI18n";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
 import {
   Card,
@@ -62,6 +64,7 @@ type SecurityView = "menu" | "changePassword";
 
 export default function ProfilePage() {
   const { t } = useLanguage();
+  const { role: orgRole } = usePermissions();
   const { user, updatePassword, applyProfileUpdate, resetPassword } = useAuthContext();
   const { add } = useNotifications();
   const [, navigate] = useLocation();
@@ -201,7 +204,16 @@ export default function ProfilePage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  const roleLabel = user?.role ? t(`profile.roles.${user.role}`) : placeholder;
+  // Show the role the user actually holds in the organization they are working
+  // in — the same source the sidebar uses. `user.role` is the PLATFORM-level
+  // Cognito role, which is "customer" for everyone after the first sync, so the
+  // profile read "Cliente" for an owner whose sidebar said "Administrador".
+  // Fall back to the platform role only while my-permissions is still loading.
+  const roleLabel = orgRole
+    ? orgRoleLabel(t, orgRole.name, orgRole.displayName)
+    : user?.role
+      ? t(`profile.roles.${user.role}`)
+      : placeholder;
 
   return (
     <div className="px-6 pt-6 pb-10 max-w-[1100px] mx-auto">
@@ -216,6 +228,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Even split. The personal card no longer needs extra track: its fields
+          sit two-up with role on its own row, so the email keeps half the card
+          and stays on one line. */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ── Personal info ─────────────────────────────────────────────── */}
         <Card>
@@ -238,29 +253,36 @@ export default function ProfilePage() {
           <CardBody>
             {!isEditing ? (
               <div className="flex flex-col gap-4">
-                <div>
-                  <div className="t-label">{t("profile.firstName")}</div>
-                  <p className="t-body font-medium text-foreground">
-                    {user?.firstName || placeholder}
-                  </p>
-                </div>
-                <div>
-                  <div className="t-label">{t("profile.lastName")}</div>
-                  <p className="t-body font-medium text-foreground">
-                    {user?.lastName || placeholder}
-                  </p>
-                </div>
-                <div>
-                  <div className="t-label">{t("common.email")}</div>
-                  <p className="t-body font-medium text-foreground">
-                    {user?.email || placeholder}
-                  </p>
-                </div>
-                <div>
-                  <div className="t-label">{t("profile.username")}</div>
-                  <p className="t-body font-medium text-foreground">
-                    {user?.username || placeholder}
-                  </p>
+                {/* Name/surname and email/username read as pairs, so they sit
+                    as pairs — two tracks, which also gives the email half the
+                    card and keeps its label on one line. Role stands on its own
+                    row: it is a badge, not a field, and squeezing it into the
+                    second row cost the email the width it needs. */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="min-w-0">
+                    <div className="t-label">{t("profile.firstName")}</div>
+                    <p className="t-body font-medium text-foreground break-words">
+                      {user?.firstName || placeholder}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="t-label">{t("profile.lastName")}</div>
+                    <p className="t-body font-medium text-foreground break-words">
+                      {user?.lastName || placeholder}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="t-label">{t("common.email")}</div>
+                    <p className="t-body font-medium text-foreground break-words">
+                      {user?.email || placeholder}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="t-label">{t("profile.username")}</div>
+                    <p className="t-body font-medium text-foreground break-words">
+                      {user?.username || placeholder}
+                    </p>
+                  </div>
                 </div>
                 <div>
                   <div className="t-label">{t("common.role")}</div>
@@ -349,48 +371,45 @@ export default function ProfilePage() {
           </CardHeader>
           <CardBody>
             {securityView === "menu" ? (
-              <div className="flex flex-col gap-3">
+              // Two peer actions side by side. Each stacks its own icon /
+              // title / description vertically — the card is 2/5 of the row, so
+              // a horizontal icon-then-text row would squeeze both to slivers.
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setSecurityView("changePassword")}
-                  className="card-hover flex items-center gap-3 w-full text-left p-4 rounded-lg border border-border bg-card"
+                  className="card-hover flex flex-col gap-2 w-full text-left p-4 rounded-lg border border-border bg-card"
                 >
-                  <span className="icon-pill icon-pill-primary-soft">
-                    <Icon name="lock" size={18} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="t-body font-medium text-foreground">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="icon-pill icon-pill-primary-soft flex-shrink-0">
+                      <Icon name="lock" size={18} />
+                    </span>
+                    <span className="t-body font-medium text-foreground">
                       {t("profile.changePassword")}
-                    </div>
-                    <div className="t-sm text-muted-foreground">
-                      {t("profile.changePasswordDescription")}
-                    </div>
+                    </span>
                   </div>
-                  <Icon name="chevronRight" size={16} className="text-muted-foreground" />
+                  <p className="t-sm text-muted-foreground m-0 text-justify hyphens-auto">
+                    {t("profile.changePasswordDescription")}
+                  </p>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSendResetLink}
                   disabled={sendingReset || !user?.email}
-                  className="card-hover flex items-center gap-3 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
+                  className="card-hover flex flex-col gap-2 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
                 >
-                  <span className="icon-pill icon-pill-muted">
-                    <Icon name="refresh" size={18} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="t-body font-medium text-foreground">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="icon-pill icon-pill-muted flex-shrink-0">
+                      <Icon name="refresh" size={18} />
+                    </span>
+                    <span className="t-body font-medium text-foreground">
                       {t("profile.resetPassword")}
-                    </div>
-                    <div className="t-sm text-muted-foreground">
-                      {t("profile.resetPasswordDescription")}
-                    </div>
+                    </span>
                   </div>
-                  {sendingReset ? (
-                    <Spinner size={16} />
-                  ) : (
-                    <Icon name="chevronRight" size={16} className="text-muted-foreground" />
-                  )}
+                  <p className="t-sm text-muted-foreground m-0 text-justify hyphens-auto">
+                    {t("profile.resetPasswordDescription")}
+                  </p>
                 </button>
               </div>
             ) : (

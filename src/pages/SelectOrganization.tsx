@@ -7,6 +7,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { ROUTES } from "@/routePaths";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { Button, Icon } from "@/components/ui";
+import { getSelectedOrgId, setSelectedOrgId } from "@/lib/selectedOrg";
 
 export default function SelectOrganization() {
   const { user } = useAuthContext();
@@ -25,9 +26,9 @@ export default function SelectOrganization() {
       !isLoading &&
       orgs.length === 1 &&
       !isIncomplete(orgs[0]) &&
-      !sessionStorage.getItem("selectedOrgId")
+      !getSelectedOrgId()
     ) {
-      sessionStorage.setItem("selectedOrgId", orgs[0].id);
+      setSelectedOrgId(orgs[0].id);
       const role = user?.role;
       navigate(role === "cajero" ? "/pos" : ROUTES.DASHBOARD);
     }
@@ -45,7 +46,7 @@ export default function SelectOrganization() {
       navigate(ROUTES.CREATE_ORG);
       return;
     }
-    sessionStorage.setItem("selectedOrgId", org.id);
+    setSelectedOrgId(org.id);
     const role = user?.role;
     navigate(role === "cajero" ? "/pos" : ROUTES.DASHBOARD);
   };

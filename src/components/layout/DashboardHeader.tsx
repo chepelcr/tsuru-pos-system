@@ -1,4 +1,7 @@
-import { Icon, Badge, Button } from "@/components/ui";
+import { useLocation } from "wouter";
+import { Icon, Badge, Button, Menu, type MenuItem } from "@/components/ui";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { ROUTES } from "@/routePaths";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useLanguageSwitch } from "@/hooks/useLanguageSwitch";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -37,6 +40,25 @@ export function DashboardHeader({
   // drawer toggle button is only surfaced when there's at least one.
   const overflowCount = Math.max(0, openCount - maxVisible);
   const hasOverflow = overflowCount > 0;
+
+  const { user, logout } = useAuthContext();
+  const [, setLocation] = useLocation();
+
+  // Initials for the avatar trigger; the menu itself carries the labels.
+  const accountName =
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "";
+  const accountInitials = accountName
+    ? accountName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+    : "U";
+
+  // Account actions used to sit at the bottom of the sidebar, where they were
+  // out of reach whenever it was collapsed. They belong to the person, not to
+  // the navigation, so they live in the navbar now.
+  const accountItems: MenuItem[] = [
+    { label: t("shell.profile"), icon: "user", action: () => setLocation(ROUTES.PROFILE) },
+    { label: t("shell.switchOrg"), icon: "store", action: () => setLocation(ROUTES.SELECT_ORG) },
+    { label: t("shell.logout"), icon: "logOut", action: logout },
+  ];
 
   return (
     <header className="nav-bar flex items-center justify-between gap-2.5 px-4 py-2.5">
@@ -131,6 +153,22 @@ export function DashboardHeader({
             )}
           </button>
         )}
+
+        {/* Account menu — profile / organization / sign out */}
+        <Menu
+          items={accountItems}
+          trigger={
+            <button
+              className="btn btn-ghost btn-sm btn-icon"
+              type="button"
+              aria-label={t("profile.openAria")}
+            >
+              <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-[11px]">
+                {accountInitials}
+              </span>
+            </button>
+          }
+        />
       </div>
 
     </header>

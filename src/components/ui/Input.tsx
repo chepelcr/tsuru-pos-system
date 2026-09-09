@@ -88,6 +88,8 @@ export function Select({
   name,
   id,
   disabled,
+  onFocus,
+  onBlur,
   ...rest
 }: SelectProps) {
   const options = React.useMemo(() => optionsFromChildren(children), [children]);
@@ -115,6 +117,15 @@ export function Select({
       className={rest_class}
       aria-label={rest["aria-label"]}
       aria-labelledby={rest["aria-labelledby"]}
+      // Forwarded explicitly. `SelectProps` extends the native select
+      // attributes, so an `onFocus` on a call site type-checks — but this
+      // component only ever read `aria-*` out of `...rest`, so the handler was
+      // silently discarded at runtime. That is what left the POS shift-setup
+      // screen's station dropdown permanently empty: it loads its branches in
+      // `onFocus`, which never fired, so no shift could be started and no
+      // document could be created.
+      onFocus={onFocus as React.FocusEventHandler<HTMLButtonElement> | undefined}
+      onBlur={onBlur as React.FocusEventHandler<HTMLButtonElement> | undefined}
       onChange={(next) => onChange?.({ target: { value: next, name } })}
     />
   );

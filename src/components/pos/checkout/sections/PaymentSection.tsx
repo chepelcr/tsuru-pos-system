@@ -233,12 +233,18 @@ export function PaymentSection({
     activatePayment(code);
   };
 
+  // "Exacto" sets cash to the current total, whatever was there before. It
+  // used to bail out whenever a cash payment already existed, so once an
+  // amount was entered the button silently did nothing — change the cart and
+  // it kept showing the previous sale's figure (a ₡4 749 cart still offering
+  // ₡9 261.4013 from the cart before it) with no way to correct it except
+  // retyping by hand.
   const exact = () => {
-    const cashEntry = payments.find((p) => p.type === '01');
-    if (!cashEntry) {
-      onChange([{ type: '01', amount: cartTotal }]);
-      setCashInput({ '01': String(cartTotal) });
-    }
+    const others = payments.filter((p) => p.type !== '01');
+    const othersTotal = others.reduce((sum, p) => sum + p.amount, 0);
+    const cash = Math.max(0, cartTotal - othersTotal);
+    onChange([...others, { type: '01', amount: cash }]);
+    setCashInput({ '01': String(cash) });
   };
 
   const badge = paid > 0 ? fmt(paid) : undefined;

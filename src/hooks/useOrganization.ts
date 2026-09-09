@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getSelectedOrgId } from '@/lib/selectedOrg';
 import { useCallback } from 'react';
 import { api, salesApi, userPath, orgPath, authOrgPath } from '@/lib/api';
 import type { Organization } from '../types';
@@ -106,7 +107,7 @@ export function useOrganization() {
 
   // Get the currently selected organization.
   // Shares the same cache as useUserOrganizations (same query key).
-  // Returns the org stored in sessionStorage['selectedOrgId'], or the first org when there's just one.
+  // Returns the org the user selected (see lib/selectedOrg), or the first org when there's just one.
   const useDefaultOrganization = (userId: string | undefined) => {
     return useQuery({
       queryKey: ['user-organizations', userId],
@@ -117,7 +118,7 @@ export function useOrganization() {
         );
       },
       select: (orgs) => {
-        const selectedId = sessionStorage.getItem('selectedOrgId');
+        const selectedId = getSelectedOrgId();
         if (selectedId) {
           return orgs.find((o) => o.id === selectedId) ?? orgs[0] ?? null;
         }

@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useRegisteredOrganization } from "@/hooks/useRegisteredOrganization";
 import { useNotifications } from "@/contexts/NotificationsContext";
+import { useDocumentStore } from "@/store/documentStore";
 import { ROUTES } from "@/routePaths";
 import type { RegisteredOrganization } from "@/types/registeredOrganization";
 
@@ -24,6 +25,20 @@ interface OrgProviderProps {
 export function OrgProvider({ orgId, orgName, children }: OrgProviderProps) {
   const { data: registeredOrg, isLoading: isRegisteredOrgLoading } = useRegisteredOrganization(orgId);
   const { add: addNotification, remove: removeNotification } = useNotifications();
+  const setActiveOrganization = useDocumentStore((s) => s.setActiveOrganization);
+
+  // Point the draft store at this organization before anything renders a tab.
+  // Document drafts carry a cart, a client and a receiver, so a tab left over
+  // from another organization is not a cosmetic glitch — it is one tenant's
+  // customer attached to another tenant's products. The store parks each
+  // organization's drafts separately and swaps them here.
+  //
+  // Layout effect, not `useEffect`: the toolbar and the documents page read
+  // `open_documents` during the same commit, and a passive effect would let
+  // the previous organization's tabs paint for a frame first.
+  useLayoutEffect(() => {
+    setActiveOrganization(orgId);
+  }, [orgId, setActiveOrganization]);
 
   // Push a "fiscal info missing" notification while the registered-org record
   // is absent for the active org. The pushed id is tracked in a ref so the

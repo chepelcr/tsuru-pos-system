@@ -85,7 +85,7 @@ function sectionOf(active: NavId): SectionId | null {
 }
 
 export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarProps) {
-  const { user, logout } = useAuthContext();
+  const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   // RBAC nav gating (my-permissions, O1). Fail-open while unresolved — the
@@ -138,11 +138,16 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     onClose?.();
   };
 
+  // Initials still come from the full name — "JP" reads better than "JO".
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "";
   const initials = fullName
     ? fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
     : "U";
-  const displayName = fullName || user?.email || "Usuario";
+  // The footer slot is one line beside a 28px avatar, and a full four-part
+  // Costa Rican name ("Jose Pablo Campos Solano") only ever rendered ellipsed.
+  // Prefer the username the user chose, then the given name alone.
+  const displayName =
+    user?.username || user?.firstName || fullName || user?.email || "Usuario";
 
   // Legacy-style nav gating: an item shows only when the role can read its
   // module/submodule (fail-open until my-permissions resolves).
@@ -285,8 +290,11 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
       {/* ── FOOTER (always visible) ── */}
       <div className="shrink-0 px-4 pb-4 pt-2 border-t border-sidebar-border flex flex-col gap-0.5">
+        {/* Sign out and switch-organization moved to the navbar account menu,
+            but the identity row itself stays a shortcut to the profile — it
+            looks clickable and people reach for it. */}
         <button
-          className="sidebar-item flex items-center gap-2 text-left"
+          className={`sidebar-item flex items-center gap-2 text-left ${active === "profile" ? "active" : ""}`}
           onClick={() => {
             setLocation(ROUTES.PROFILE);
             onClose?.();
@@ -306,9 +314,6 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
               {orgRole ? roleLabel(t, orgRole.name, orgRole.displayName) : ""}
             </div>
           </div>
-        </button>
-        <button className="sidebar-item" onClick={logout}>
-          <Icon name="logOut" size={16} /> {t("shell.logout")}
         </button>
       </div>
     </aside>

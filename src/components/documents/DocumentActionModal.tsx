@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useXmlFiles } from '@/hooks/useXmlFiles';
 import { useInvoiceValidation } from '@/hooks/useInvoiceValidation';
 import { useValidationAction } from '@/hooks/useValidationAction';
+import { useRefreshValidation } from '@/hooks/useRefreshValidation';
 import { useResendNotification } from '@/hooks/useResendNotification';
 import { usePermissions } from '@/hooks/useRbac';
 import type { DocumentListItem } from '@/types/document';
@@ -10,7 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { OverlayPortal } from '@/components/ui/OverlayPortal';
 import { useOverlayLayer } from '@/hooks/useOverlayLayer';
 
-type ActionView = 'pdf' | 'download' | 'validation' | 'resend' | 'accept';
+type ActionView = 'download' | 'validation' | 'resend' | 'accept';
 
 interface DocumentActionModalProps {
   orgId: string;
@@ -28,6 +29,8 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
   const [view, setView] = useState<ActionView>(initialAction as ActionView);
   const [rejectMessage, setRejectMessage] = useState('');
   const [resendEmails, setResendEmails] = useState<string[]>(['']);
+  const [refreshed, setRefreshed] = useState(false);
+  const refreshValidation = useRefreshValidation(orgId, doc.sale_id);
 
   const { data: xmlFiles } = useXmlFiles(orgId, doc.sale_id);
   const { data: validation } = useInvoiceValidation(orgId, doc.sale_id);
@@ -40,8 +43,10 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
   const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
   const canConfirm = !permsReady || can('commercial', 'update', 'confirmations');
 
+  // No 'pdf' tab: `DocumentPdfDialog` is the PDF surface. Having both meant
+  // opening Validación and then clicking the PDF tab produced a second,
+  // different viewer for the same document.
   const VIEWS = [
-    'pdf',
     ...(canExport ? ['download'] : []),
     'validation',
     ...(canExport ? ['resend'] : []),
@@ -78,15 +83,6 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-5">
-          {/* PDF viewer */}
-          {view === 'pdf' && (
-            xmlFiles?.pdf_url ? (
-              <iframe src={xmlFiles.pdf_url} className="w-full h-[60vh] rounded-md border border-border" title={t('documents.action.pdfTitle')} />
-            ) : (
-              <Pending />
-            )
-          )}
-
           {/* Download links */}
           {view === 'download' && canExport && (
             <div className="space-y-3">
@@ -121,6 +117,38 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
             <div className="space-y-4">
               <ValidationBlock label={t('documents.action.taxValidation')} data={validation?.atv_validation} />
               {isReceived && <ValidationBlock label={t('documents.action.receiverValidation')} data={validation?.receiver_validation} />}
+
+              {/* Re-check. A document can be answered and still change — and a
+                  PROCESSING one reaching this modal (from the detail page, say)
+                  needs a way forward, since the validator stops polling after
+                  `hacienda.validator.max_attempts`. */}
+              <div className="pt-2 border-t border-border">
+                {!validation?.atv_validation?.validation_date && (
+                  <p className="t-xs text-muted-foreground mb-2">
+                    {t('documents.validation.pendingHint')}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    refreshValidation
+                      .mutateAsync()
+                      .then(() => setRefreshed(true))
+                      .catch(() => setRefreshed(false));
+                  }}
+                  disabled={refreshValidation.isPending}
+                  className="btn btn-outline btn-sm"
+                >
+                  {refreshValidation.isPending
+                    ? t('documents.validation.refreshing')
+                    : t('documents.validation.refresh')}
+                </button>
+                {refreshed && (
+                  <span className="t-xs text-success ml-2">
+                    {t('documents.validation.refreshQueued')}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 

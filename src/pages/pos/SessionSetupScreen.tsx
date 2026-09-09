@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { useSessionContext } from "@/store/sessionContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -27,6 +27,16 @@ export default function SessionSetupScreen({ org }: Props) {
   const [addTermOpen, setAddTermOpen] = useState(false);
   const [savingTerm, setSavingTerm] = useState(false);
   const [termError, setTermError] = useState<string | null>(null);
+
+  // Load on mount, like every other select in the app. This used to be wired
+  // to the field's `onFocus`, which meant the list was empty until the user
+  // clicked it — and, while `Select` was dropping `onFocus` on the floor, empty
+  // forever. A shift cannot start without a puesto, so this list is never the
+  // place to save a request.
+  useEffect(() => {
+    void loadBranches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [org.id]);
 
   async function loadBranches() {
     if (branchesLoaded) return;
@@ -97,6 +107,9 @@ export default function SessionSetupScreen({ org }: Props) {
         terminal_code: selectedTerminal.code,
         branch_name: selectedBranch.name,
         terminal_name: selectedTerminal.name,
+        // sales-api validates the identifiers, not the Hacienda codes.
+        branch_id: selectedBranch.branch_id,
+        terminal_id: selectedTerminal.terminal_id,
       });
     } catch {
       setError(t("setup.startSessionError"));
@@ -144,7 +157,6 @@ export default function SessionSetupScreen({ org }: Props) {
             </label>
             <div className="relative">
               <Select
-                onFocus={loadBranches}
                 onChange={(e) => handleBranchChange(Number(e.target.value))}
                 value={selectedBranch?.code ?? ""}
                 disabled={loadingBranches}

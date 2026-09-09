@@ -685,6 +685,14 @@
   .grid-auto-fill-240 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
   .grid-auto-fill-265 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 265px), 1fr)); }
   .grid-auto-fill-280 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+  /* Document cards carry a consecutivo of 20 digits plus a row of
+     actions, so three to a row on a desktop crams both. Cap the track
+     count at two once there is room for two, and let the auto-fill
+     rule above keep handling narrower viewports. */
+  .grid-docs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+  @media (min-width: 768px) {
+    .grid-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
   .grid-auto-fill-300 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
   .grid-auto-fill-320 { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
 
