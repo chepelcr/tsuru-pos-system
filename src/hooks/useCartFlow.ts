@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useCart } from "@/store/cart";
+import { useCart, type CartItem as CartLineItem } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
 import {
   ApiError,
@@ -35,7 +35,9 @@ import { useAllDiscountTypes, useAllTaxes } from "@/hooks/useDataApi";
 import { resolveReceiverName } from "@/lib/receiverResolution";
 import type {
   ManualOrderFields, ChainClientInfo,
+  ManualOrderLineDiscountPayload,
   ManualOrderLinePayload,
+  ManualOrderLineTaxPayload,
   ManualOrderPayload,
   Order,
 } from "@/types/order";
@@ -192,6 +194,47 @@ function chainOtherFields(info: ChainClientInfo | undefined) {
     .map(([code, value]) => ({ code, other_text: String(value).trim() }));
 }
 
+/**
+ * A line's taxes in the manual-order payload's spelling.
+ *
+ * The document and the order describe the same thing with the same field names
+ * — `code`, `rate`, `rate_code`, `special_fields` — so this is a filter, not a
+ * translation: it drops the computed `amount`, which is the BE's to derive from
+ * the ORDER quantity, and keeps everything the arithmetic actually needs.
+ * Sending a stale amount is how a pedido came to disagree with its own lines.
+ */
+function manualOrderTaxes(
+  taxes: LineTax[] | undefined
+): ManualOrderLineTaxPayload[] | undefined {
+  if (!taxes?.length) return undefined;
+  return taxes.map((tax) => ({
+    code: tax.code,
+    rate: tax.rate,
+    rate_code: tax.rate_code,
+    other_tax_type: tax.other_tax_type,
+    special_fields: tax.special_fields as ManualOrderLineTaxPayload["special_fields"],
+  }));
+}
+
+/**
+ * A line's discounts in the manual-order payload's spelling.
+ *
+ * Here the two do differ: the document says `discount_type` / `reason`, the
+ * order says `code` / `nature`. The nature matters beyond bookkeeping — 01 and
+ * 03 make the ISSUER absorb the line's IVA — so it has to survive the trip.
+ */
+function manualOrderDiscounts(
+  discounts: LineDiscount[] | undefined
+): ManualOrderLineDiscountPayload[] | undefined {
+  if (!discounts?.length) return undefined;
+  return discounts.map((discount) => ({
+    code: discount.discount_type,
+    percentage: discount.percentage,
+    amount: discount.amount,
+    nature: discount.reason,
+  }));
+}
+
 function discountsFromProduct(product: any, discountTypes: any[]): any[] {
   const configured = product?.discounts;
   if (!Array.isArray(configured) || configured.length === 0) return [];
@@ -326,6 +369,22 @@ export interface UseCartFlowOptions {
    * the chosen currency. CRC is treated as rate=1.
    */
   currency?: CurrencyCode;
+  /**
+   * Lines to bill INSTEAD of the POS cart.
+   *
+   * Billing an existing pedido is the same checkout over a different set of
+   * lines: the same discount and tax engines, the same payload builder, the
+   * same receiver and payment handling. What it is NOT is a POS session — there
+   * is no terminal cart to load the order into, and doing so was the source of
+   * two bugs at once (the order's lines had to survive a round-trip through the
+   * cart store, and the POS workspace rendered behind a checkout the user never
+   * asked to see).
+   *
+   * So the caller passes the lines directly and the cart store is left alone.
+   * `clear()` becomes a no-op in that mode for the same reason — there is no
+   * cart to empty, and emptying the cashier's would lose their open sale.
+   */
+  items?: Record<string, CartLineItem>;
 }
 
 export function useCartFlow(options: UseCartFlowOptions = {}) {
@@ -348,7 +407,16 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     [taxTypesData]
   );
 
-  const { items, add, remove, updateLine, clear, count } = useCart();
+  const cart = useCart();
+  const externalItems = options.items;
+  const items = externalItems ?? cart.items;
+  const { add, remove, updateLine } = cart;
+  // With external lines there is no cart to clear or count — see
+  // `UseCartFlowOptions.items`.
+  const clear = externalItems ? () => {} : cart.clear;
+  const count = externalItems
+    ? () => Object.values(externalItems).reduce((sum, i) => sum + i.qty, 0)
+    : cart.count;
   const { decrement } = useInventory();
 
   // Conversion factor: divide CRC base prices by this rate. CRC or missing
@@ -402,10 +470,22 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       ?? (taxesFromProduct(item.product) as LineTax[]);
 
     const gross = item.netPrice * item.qty;
+    // An ad-hoc discount the cashier typed on the line is a COMMERCIAL discount
+    // (07), not a regalía (01). The distinction is not cosmetic: 01 and 03 leave
+    // the VAT base un-eroded and move the whole line's IVA into
+    // `ImpuestoAsumidoEmisorFabrica`, so filing a 10%-off sale as a regalía
+    // declares that the issuer is absorbing tax the customer in fact paid. 07 is
+    // the honest reading of "the cashier gave a discount", and needs no Nota 20
+    // free text the way 99 would.
     const withCartDiscount = [
       ...discounts,
       ...(item.lineDiscount > 0
-        ? [{ discount_type: "01", percentage: item.lineDiscount } as LineDiscount]
+        ? [
+            {
+              discount_type: DiscountTypeCode.COMMERCIAL,
+              percentage: item.lineDiscount,
+            } as LineDiscount,
+          ]
         : []),
     ];
 
@@ -443,6 +523,12 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       subtotal: disc.subtotalAfterDiscount,
       tax: amounts.net_tax,
       total: amounts.total_amount_line,
+      // The resolved fiscal treatment for this line, so the payload builders
+      // below use the SAME inputs the totals were computed from. They used to
+      // re-derive it, which meant the figure on the screen and the figure on
+      // the document came from two separate resolutions of the same question.
+      taxes,
+      discounts: withCartDiscount,
     };
   });
 
@@ -567,13 +653,15 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       const manualFields = invoiceData.manual_order ?? {};
 
       const lines: ManualOrderLinePayload[] = cartItems.map((item, index) => {
-        const discountFactor = 1 - (item.lineDiscount || 0) / 100;
-        const grossBase = item.netPrice * item.qty;
-        const discount = grossBase * ((item.lineDiscount || 0) / 100);
-        // Tax scales with the discounted base, the way the Hacienda cascade
-        // treats it — the BE recomputes authoritative amounts regardless.
-        const tax = Math.max(0, (item.price - item.netPrice) * item.qty * discountFactor);
-        const taxableBase = grossBase - discount;
+        // The per-line money comes from `lineTotals`, which ran the same
+        // discount and tax engines the document uses. It used to be estimated
+        // here instead — gross minus a percentage, plus the difference between
+        // the stored gross and net price — which is not what the engines
+        // compute the moment a royalty nature or a per-unit excise is on the
+        // line. The BE recomputes authoritatively either way, but sending it a
+        // figure the cashier never saw is how the two end up disagreeing.
+        const totals = lineTotals[index];
+        const discount = Math.max(0, item.netPrice * item.qty - totals.subtotal);
 
         return {
           line_number: index + 1,
@@ -582,12 +670,16 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           quantity: item.qty,
           unit_price: item.netPrice,
           discount,
-          tax,
-          line_total: taxableBase + tax,
+          tax: totals.tax,
+          line_total: totals.total,
           cabys:
             (typeof (item as any).cabys === "string"
               ? (item as any).cabys
               : (item as any).cabys?.code) ?? item.lineDetail?.cabys,
+          // The structured treatment, so the pedido can be billed later without
+          // re-deriving it from the catalog — see `ManualOrderLinePayload`.
+          taxes: manualOrderTaxes(lineTotals[index].taxes),
+          discounts: manualOrderDiscounts(lineTotals[index].discounts),
         };
       });
 
@@ -734,12 +826,6 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       // Hacienda code string via their own loaded catalogs — no lookups here.
       details: cartItems.map((item, index) => {
         const ld = item.lineDetail;
-        const lineDiscounts = [
-          ...((ld?.discounts as any[]) ?? discountsFromProduct(item.product, discountTypes)),
-          ...(item.lineDiscount > 0
-            ? [{ discount_type: "01", percentage: item.lineDiscount }]
-            : []),
-        ];
 
         return {
           line_number: index + 1,
@@ -758,8 +844,9 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
             (typeof (item as any).cabys === 'string'
               ? (item as any).cabys
               : (item as any).cabys?.code) ?? ld?.cabys,
-          taxes: (ld?.taxes as any[]) ?? taxesFromProduct(item.product),
-          discounts: lineDiscounts,
+          // Same resolution the cart totals used — see `lineTotals`.
+          taxes: lineTotals[index].taxes as any[],
+          discounts: lineTotals[index].discounts as any[],
         };
       }),
 

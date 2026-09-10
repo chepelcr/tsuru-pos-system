@@ -1,45 +1,33 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { useDocumentStore } from '@/store/documentStore';
-import { useOrgContext } from '@/contexts/OrgContext';
-import { readCachedProductsByIds } from '@/services/offlineCatalog';
-import { buildInvoiceTabFromOrder, orderProductIds } from '@/lib/orderToInvoice';
-import { documentEditorPath } from '@/routePaths';
-import type { DocTypeCode } from '@/types/invoice';
 import type { Order } from '@/types/order';
 
 /**
- * "Facturar pedido" — go straight to the checkout drawer.
+ * "Facturar pedido" — open the checkout over an order.
  *
- * This replaced a modal that asked for the document type and previewed how many
- * lines matched. Neither question earned the step it cost: a delivered order is
- * billed with a factura, and the line count is visible in the cart the user
- * lands on anyway — where it can still be fixed, which it could not be in a
- * modal. So the button now does the work and drops the user in checkout with
- * the order's own client, lines, codes, taxes, discounts and chain data already
- * filled in.
+ * This is now bookkeeping only: which order is being billed, if any. The work
+ * happens in `OrderCheckoutDrawer`, which the caller renders when this returns
+ * one.
  *
- * The document type stays a parameter rather than a constant so a caller that
- * genuinely needs a tiquete can pass one.
+ * It replaced two layers that both turned out to be wrong. First a modal asked
+ * for the document type and previewed how many lines matched — neither question
+ * earned the step it cost, since a delivered order is billed with a factura and
+ * the line count is visible in the checkout the user lands on anyway. Then it
+ * opened a document TAB and navigated into the POS workspace, which put a
+ * full point-of-sale screen behind a drawer the user had not asked for, and
+ * forced the order's lines through the cart store — where any product missing
+ * from the offline catalog was dropped, so the checkout could open showing a
+ * total of zero.
+ *
+ * Billing an existing pedido is not the authoring of a new document, so it gets
+ * no tab and no editor; it gets the checkout drawer and nothing else.
  */
 export function useInvoiceOrder() {
-  const { orgId } = useOrgContext();
-  const [, navigate] = useLocation();
-  const addDocumentTab = useDocumentStore((s) => s.addDocumentTab);
-  const [preparing, setPreparing] = useState(false);
+  const [billingOrder, setBillingOrder] = useState<Order | null>(null);
 
-  const invoiceOrder = async (order: Order, docType: DocTypeCode = '01') => {
-    if (!orgId || preparing) return;
-    setPreparing(true);
-    try {
-      const products = await readCachedProductsByIds(orgId, orderProductIds(order));
-      const { tab } = buildInvoiceTabFromOrder(order, docType, products);
-      addDocumentTab(tab);
-      navigate(documentEditorPath(tab.id));
-    } finally {
-      setPreparing(false);
-    }
+  return {
+    /** The order currently being billed, or null. Render the drawer on it. */
+    billingOrder,
+    invoiceOrder: setBillingOrder,
+    closeInvoice: () => setBillingOrder(null),
   };
-
-  return { invoiceOrder, preparing };
 }

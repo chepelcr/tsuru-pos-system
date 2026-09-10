@@ -13,7 +13,9 @@ import { fmt } from '@/lib/utils';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE } from '@/components/orders/OrderStatusBadge';
+import { useQueryClient } from '@tanstack/react-query';
 import { useInvoiceOrder } from '@/hooks/useInvoiceOrder';
+import { OrderCheckoutDrawer } from '@/components/pos/checkout/OrderCheckoutDrawer';
 import { useOrderTicket } from '@/hooks/useOrderTicket';
 import { useFiscalMode } from '@/hooks/useFiscalMode';
 import { isOrderInvoiced } from '@/lib/orderToInvoice';
@@ -272,7 +274,8 @@ export default function OrderDetailPage({ orderId }: Props) {
   // Billing a pedido is optional and happens after delivery — see
   // docs/MANUAL_ORDERS.md §7.
   const fiscal = useFiscalMode(orgId);
-  const { invoiceOrder, preparing: invoicing } = useInvoiceOrder();
+  const { billingOrder, invoiceOrder, closeInvoice } = useInvoiceOrder();
+  const queryClient = useQueryClient();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can, isReady: permsReady } = usePermissions();
@@ -444,7 +447,7 @@ export default function OrderDetailPage({ orderId }: Props) {
       ? {
           label: t('orders.invoice.action'),
           icon: 'fileText',
-          action: () => void invoiceOrder(order),
+          action: () => invoiceOrder(order),
         }
       : null,
     nextStatus && canUpdate
@@ -541,7 +544,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         {/* Billing a delivered pedido — the one action that turns it fiscal. */}
         {canInvoice && (
           <div className="mt-5">
-            <Button variant="primary" size="sm" icon="fileText" disabled={invoicing} onClick={() => void invoiceOrder(order)}>
+            <Button variant="primary" size="sm" icon="fileText" onClick={() => invoiceOrder(order)}>
               {t('orders.invoice.action')}
             </Button>
           </div>
@@ -671,6 +674,23 @@ export default function OrderDetailPage({ orderId }: Props) {
       </div>
 
       <ReprocessDialog open={reprocessOpen} onClose={() => setReprocessOpen(false)} order={order} orgId={orgId} />
+
+      {/* Billing the pedido: the POS checkout drawer over this order's own
+          lines. No document tab and no editor — see `useInvoiceOrder`. */}
+      {billingOrder && orgId && (
+        <OrderCheckoutDrawer
+          open
+          order={billingOrder}
+          orgId={orgId}
+          onClose={closeInvoice}
+          onCompleted={() => {
+            closeInvoice();
+            // The order is now billed; re-read it so the page shows the link
+            // to the document and stops offering to bill it again.
+            void queryClient.invalidateQueries({ queryKey: ['order', orgId, orderId] });
+          }}
+        />
+      )}
       {isCrossdockingType && (
         <CrossdockingUploadDialog
           open={crossdockUploadOpen}

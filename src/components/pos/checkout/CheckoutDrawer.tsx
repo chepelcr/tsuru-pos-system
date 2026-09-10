@@ -9,12 +9,16 @@ import { isManualOrderDocType } from '@/types/invoice';
 import type {
   SalePayment,
   CurrencyCode,
+  EditorDocTypeCode,
   InvoiceFormData,
 } from '@/types/invoice';
 import type { ManualOrderFields } from '@/types/order';
 import type { InvoiceCheckoutData, SaleSubmissionResult } from '@/hooks/useCartFlow';
 import type { SaleReceiver } from '@/types/receiver';
-import { hasReceiver as resolveHasReceiver } from '@/lib/receiverResolution';
+import {
+  hasReceiver as resolveHasReceiver,
+  resolveReceiverId,
+} from '@/lib/receiverResolution';
 import type { SaleReference } from '@/types/reference';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
 import { PaymentSection } from './sections/PaymentSection';
@@ -44,6 +48,29 @@ interface CheckoutDrawerProps {
   orgId: string;
   /** Active document tab id — when present, all form state is persisted per-tab */
   tabId?: string;
+  /**
+   * Document type, when the caller owns it rather than the POS cart.
+   *
+   * The drawer used to read `doc_type` straight out of the cart store, which
+   * tied it to a live POS session: billing a pedido had to push a document type
+   * into that store first, and whatever the cashier had open changed underneath
+   * them. A caller that knows its own document type passes it here.
+   */
+  docType?: EditorDocTypeCode;
+  /**
+   * Form state owned by the CALLER, making the drawer fully controlled.
+   *
+   * Three modes, in precedence order:
+   *   1. `data` + `onDataChange` — the caller owns it. Billing a pedido works
+   *      this way: it seeds the form from the order and needs to write the
+   *      edited receiver back into it, which it cannot do through state the
+   *      drawer keeps to itself.
+   *   2. `tabId` — persisted per document tab in `documentStore`, so an
+   *      authored document survives a tab switch.
+   *   3. neither — local state, for a one-off checkout.
+   */
+  data?: Partial<InvoiceFormData>;
+  onDataChange?: (patch: Partial<InvoiceFormData>) => void;
   onClose: () => void;
   onCompleted: () => void;
   onConfirm: (invoiceData: InvoiceCheckoutData) => Promise<SaleSubmissionResult>;
@@ -68,19 +95,42 @@ export function CheckoutDrawer({
   selectedClient,
   orgId,
   tabId,
+  docType,
+  data: controlledData,
+  onDataChange,
   onClose,
   onCompleted,
   onConfirm,
   onEditReceiver,
   onSelectClient,
 }: CheckoutDrawerProps) {
-  const { doc_type } = useCart();
+  const cartDocType = useCart((s) => s.doc_type);
+  const doc_type = docType ?? cartDocType;
   const { t } = useLanguage();
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
   const [step, setStep] = useState<Step>('payment');
   const [result, setResult] = useState<SaleSubmissionResult>();
   const [receiptSummary, setReceiptSummary] = useState({ total: 0, itemCount: 0 });
   const [error, setError] = useState<string | null>(null);
+
+  // ─── Per-tab form state ────────────────────────────────────────────────
+  const tabData = useDocumentStore((s) =>
+    tabId ? s.open_documents.find((d) => d.id === tabId)?.data ?? null : null
+  );
+  const updateDocumentTab = useDocumentStore((s) => s.updateDocumentTab);
+  const [localData, setLocalData] = useState<Partial<InvoiceFormData>>({});
+  const data: Partial<InvoiceFormData> =
+    controlledData ?? (tabId ? tabData ?? {} : localData);
+
+  const updateData = (patch: Partial<InvoiceFormData>) => {
+    if (onDataChange) {
+      onDataChange(patch);
+    } else if (tabId) {
+      updateDocumentTab(tabId, { data: { ...data, ...patch }, is_dirty: true });
+    } else {
+      setLocalData((prev) => ({ ...prev, ...patch }));
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -89,22 +139,6 @@ export function CheckoutDrawer({
     setReceiptSummary({ total: 0, itemCount: 0 });
     setError(null);
   }, [open]);
-
-  // ─── Per-tab form state ────────────────────────────────────────────────
-  const tabData = useDocumentStore((s) =>
-    tabId ? s.open_documents.find((d) => d.id === tabId)?.data ?? null : null
-  );
-  const updateDocumentTab = useDocumentStore((s) => s.updateDocumentTab);
-  const [localData, setLocalData] = useState<Partial<InvoiceFormData>>({});
-  const data: Partial<InvoiceFormData> = tabId ? tabData ?? {} : localData;
-
-  const updateData = (patch: Partial<InvoiceFormData>) => {
-    if (tabId) {
-      updateDocumentTab(tabId, { data: { ...data, ...patch }, is_dirty: true });
-    } else {
-      setLocalData((prev) => ({ ...prev, ...patch }));
-    }
-  };
 
   const payments: SalePayment[]     = data.payments ?? [];
   const receiver: SaleReceiver      = data.receiver ?? {};
@@ -132,7 +166,6 @@ export function CheckoutDrawer({
   // short by a rounding error.
   const toCentimos = (n: number) => Math.round(n * 100);
   const isPaid = toCentimos(paidTotal) >= toCentimos(cartTotal);
-  // TEMP-DEBUG
   // One resolver for every surface — the three call sites used to disagree
   // on precedence, so the same client showed a different name in each.
   const hasReceiver = resolveHasReceiver(receiver, selectedClient);
@@ -142,9 +175,12 @@ export function CheckoutDrawer({
   // CLIENT's identification number, not on our org's business type: it is the
   // customer who imposes the requirement, and the same org invoices ordinary
   // customers too. Null for everyone else, so the card simply does not exist.
-  const chain = chainClientFor(
-    receiver?.identification?.number ?? selectedClient?.identification?.number
-  );
+  // `??` was the bug here: an untouched receiver carries
+  // `identification: { code: '01', number: '' }`, and an empty string is not
+  // nullish, so the fallback to the selected client never ran and the card
+  // never appeared for a client picked in the POS. `resolveReceiverId` is the
+  // one resolver every other surface already uses — trim, then fall through.
+  const chain = chainClientFor(resolveReceiverId(receiver, selectedClient));
   const chainInfo: ChainClientInfo = data.chain_info ?? {};
   const hasLines = cartItems.length > 0;
 

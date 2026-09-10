@@ -83,6 +83,15 @@ export interface OrderParty {
   internal_code?: string;
   /** Some org responses include the party logo. */
   logo_url?: string;
+  /**
+   * Tax identification (cédula física / jurídica / DIMEX / NITE).
+   *
+   * Needed twice when the order is billed: it identifies the receiver on the
+   * document, and it is what decides whether the customer is a retail chain
+   * with extra requirements — see `lib/chainClients`, which matches on the
+   * NUMBER because a name is not a stable identifier for a taxpayer.
+   */
+  identification?: { code?: string | null; number?: string | null } | null;
 }
 
 /**
@@ -291,6 +300,13 @@ export interface Order {
   /** Catalog client, when the order was captured with one selected. */
   client_id?: string | null;
   /**
+   * Currency the order was priced in. Billing it has to reuse the SAME
+   * currency and rate — re-quoting a delivered order at today's rate changes
+   * what the customer owes.
+   */
+  currency_code?: string | null;
+  exchange_rate?: number | null;
+  /**
    * Set once the order has been billed. Present on ANY order, not just manual
    * ones — a pedido is not always invoiced, and this is what records that it
    * finally was. Written by the BE when the sale is linked back
@@ -407,6 +423,48 @@ export interface ManualOrderLinePayload {
   line_total: number;
   /** Kept even though the order is not fiscal: it makes a later FE trivial. */
   cabys?: string;
+  /**
+   * The line's structured fiscal treatment, in the SAME shape a sale's
+   * `details[]` carries.
+   *
+   * A pedido is not a fiscal document, but the invoice built from it later is,
+   * and it has to charge what the customer agreed to. Without these the order
+   * kept only flat amounts and billing it had to re-derive the tax from the
+   * catalog at invoice time — re-pricing a delivered sale at today's terms, and
+   * silently dropping any excise the line carried, since a per-unit amount
+   * cannot be recovered from a total.
+   */
+  taxes?: ManualOrderLineTaxPayload[];
+  discounts?: ManualOrderLineDiscountPayload[];
+}
+
+/** One tax on a manual-order line. Mirrors the document's `LineTax`. */
+export interface ManualOrderLineTaxPayload {
+  /** Hacienda tax type code. */
+  code: string;
+  rate?: number;
+  rate_code?: string;
+  /** Required when code = "99" (Otros). */
+  other_tax_type?: string;
+  /** Per-unit parameters for the specific excises (03/04/05/06/12). */
+  special_fields?: {
+    quantity?: number;
+    percentage?: number;
+    proportion?: number;
+    volume_consumption?: number;
+    tax_amount_id?: number | string;
+    tax_unit_amount?: number;
+  };
+}
+
+/** One discount on a manual-order line, in Nota 20 cascade order. */
+export interface ManualOrderLineDiscountPayload {
+  /** Hacienda discount nature code. */
+  code: string;
+  percentage?: number;
+  amount?: number;
+  /** Nota 20 free text — required for code 99. */
+  nature?: string;
 }
 
 export interface ManualOrderTotalsPayload {

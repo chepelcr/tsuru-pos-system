@@ -1,148 +1,197 @@
-import type { DocumentTab } from "@/store/documentStore";
-import { newDocTabId } from "@/store/documentStore";
-import type { DocTypeCode } from "@/types/invoice";
+import type { CartItem } from "@/store/cart";
+import type { InvoiceFormData } from "@/types/invoice";
 import type { ChainClientInfo, Order, OrderLine } from "@/types/order";
 import type { Product } from "@/types";
+import type { LineDetail } from "@/types/lineDetail";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 
 /**
- * Turn a delivered order into a document-editor tab.
+ * Turn a delivered order into the inputs the checkout drawer needs.
  *
  * A pedido is not a fiscal document and is not always billed — what ships, and
- * whether it is invoiced afterwards, is the user's call. When they do decide
- * to bill one, this rebuilds the same cart the POS would have had, so the
- * invoice goes through the normal checkout (taxes, discounts, receiver,
- * payments) instead of a second, divergent code path.
+ * whether it is invoiced afterwards, is the user's call. When they do decide to
+ * bill one, this rebuilds the lines so the invoice goes through the normal
+ * checkout (taxes, discounts, receiver, payments) instead of a second,
+ * divergent code path.
  *
- * **Lines are matched to catalog products by `product_id`.** The order line's
- * own copy of the description and price is flat — it has no tax structure and
- * no discounts — and an electronic invoice needs those. A line that cannot be
- * matched is reported rather than faked: inventing a product id would send the
- * BE something that does not exist, and inventing a CABYS would put a wrong
- * tax rate on a fiscal document. The caller tells the user how many lines need
- * adding by hand.
+ * **The lines come from the ORDER, not from the catalog.** They already hold
+ * everything an electronic invoice needs — CABYS, net price, the structured
+ * taxes and the discount cascade — filled in when the order was captured: a POS
+ * line sends them, and an imported line gets them server-side from the product.
+ * Rebuilding from the catalog product instead would do two harmful things:
+ *
+ *   * it would quietly re-price the sale. The customer agreed to the terms ON
+ *     THE ORDER, and a product whose price or discount has changed since would
+ *     produce an invoice that does not match what was delivered.
+ *   * it would need every product to be in the offline catalog cache, and a
+ *     line whose product was missing got DROPPED. That is how billing an order
+ *     opened a checkout showing a total of zero.
+ *
+ * So the order is authoritative and the catalog is not consulted at all.
  */
-export interface OrderInvoiceDraft {
-  tab: DocumentTab;
-  /** Lines rebuilt from a catalog product. */
-  matchedLines: number;
-  /** Lines the user has to add by hand — no `product_id`, or product gone. */
-  unmatchedLines: OrderLine[];
-}
-
-/**
- * The order line's OWN fiscal detail, carried onto the invoice.
- *
- * The line already holds everything an electronic invoice needs — CABYS, net
- * price, the structured taxes and the discount cascade — filled in when the
- * order was captured (a POS line sends them; an Excel-imported line gets them
- * server-side). Rebuilding from the catalog product instead would quietly
- * re-price the sale: the customer agreed to the terms ON THE ORDER, and a
- * product whose price or discount changed since would produce an invoice that
- * does not match what was delivered.
- *
- * So the order wins wherever it has an answer, and the product fills the gaps.
- */
-function lineDetailFromOrder(line: OrderLine): Record<string, unknown> | undefined {
-  const detail: Record<string, unknown> = {};
-
-  if (line.cabys) detail.cabys = line.cabys;
-  if (line.net_price !== null && line.net_price !== undefined) {
-    detail.net_price = Number(line.net_price);
-  }
-  // The three codes the chain reconciles against. Their own line, not the
-  // product's: a client article code belongs to the customer, and the catalog
-  // entry may carry a different one.
-  if (line.internal_code) detail.internal_code = line.internal_code;
-  if (line.code) detail.code = line.code;
-  if (line.client_article_code) detail.client_article_code = line.client_article_code;
-
-  const taxes = (line.taxes ?? []).filter(Boolean);
-  if (taxes.length) detail.taxes = taxes;
-  const discounts = (line.discounts ?? []).filter(Boolean);
-  if (discounts.length) detail.discounts = discounts;
-
-  return Object.keys(detail).length ? detail : undefined;
-}
 
 /** Quantity on an order line, however the BE spelled it. */
 function lineQuantity(line: OrderLine): number {
   return Number(line.quantity_ordered ?? line.units_ordered ?? 0) || 0;
 }
 
+/** Unit price before tax, falling back to the gross price the import carried. */
+function lineNetPrice(line: OrderLine): number {
+  if (line.net_price !== null && line.net_price !== undefined) {
+    return Number(line.net_price) || 0;
+  }
+  return Number(line.unit_price) || 0;
+}
+
 /**
- * The order's client as the POS client picker would have it. Only usable when
- * the order carries `client_id` — without it there is no catalog client to
- * select, and the user picks or types the receiver in the checkout as usual.
+ * The line's fiscal detail, in the shape the cart's engines read.
+ *
+ * `lineDetail` is what `useCartFlow` prefers over a product's own catalog
+ * configuration, which is exactly right here: the order's copy IS the agreed
+ * treatment, and it is already normalized to Hacienda code strings by the time
+ * the BE stores it.
  */
-function clientFromOrder(order: Order): ClientSearchResult | null {
-  if (!order.client_id) return null;
+function lineDetailFromOrder(line: OrderLine): Partial<LineDetail> {
+  const detail: Partial<LineDetail> = {};
+
+  if (line.cabys) detail.cabys = line.cabys;
+  detail.net_price = lineNetPrice(line);
+
+  const taxes = (line.taxes ?? []).filter(Boolean);
+  if (taxes.length) {
+    detail.taxes = taxes.map((tax) => ({
+      // The BE stores the canonical product shape (`tax_type_id`,
+      // `tax_rate: { percentage, code }`); the cart reads the document shape
+      // (`code`, `rate`, `rate_code`). One translation, here.
+      code: String(tax.tax_type_id ?? "01").padStart(2, "0"),
+      rate: tax.tax_rate?.percentage ?? undefined,
+      rate_code: tax.tax_rate?.code ?? undefined,
+      other_tax_type: tax.other_tax_type ?? undefined,
+      special_fields: (tax.special_fields ?? undefined) as never,
+    }));
+  }
+
+  const discounts = (line.discounts ?? []).filter(Boolean);
+  if (discounts.length) {
+    detail.discounts = discounts.map((discount) => ({
+      discount_type: String(discount.discount_type_id ?? "07").padStart(2, "0"),
+      percentage: discount.percentage ?? undefined,
+      amount: discount.amount ?? undefined,
+      reason: discount.reason ?? undefined,
+    }));
+  }
+
+  return detail;
+}
+
+/**
+ * A product-shaped stand-in for an order line.
+ *
+ * The cart is keyed by product and its items carry a `Product`, but an order
+ * line is not required to BE a catalog product — a hand-captured line need not
+ * be one at all, and even when `product_id` is set the catalog row may not be
+ * cached locally. Everything the checkout actually reads off the product is on
+ * the line already, so it is filled in from there and the real product is never
+ * needed.
+ */
+function productFromLine(line: OrderLine, key: string): Product {
+  const netPrice = lineNetPrice(line);
   return {
-    client_id: order.client_id,
+    product_id: line.product_id || key,
+    name: line.description || line.internal_code || key,
+    description: line.description,
+    // `price` is the NET price in the cart's vocabulary (`netPrice`), which is
+    // what the tax engine prices off. `sale_price` is display-only.
+    price: netPrice,
+    sale_price: netPrice,
+    image_url: null,
+    status: 1,
+    cabys: line.cabys ? { id: line.cabys, code: line.cabys } : null,
+    codes: [
+      line.internal_code ? { code_type_id: "04", number: line.internal_code } : null,
+      line.code ? { code_type_id: "03", number: line.code } : null,
+      line.client_article_code
+        ? { code_type_id: "02", number: line.client_article_code }
+        : null,
+    ].filter(Boolean) as Product["codes"],
+  } as Product;
+}
+
+/**
+ * The order's lines as cart items, ready for `useCartFlow({ items })`.
+ *
+ * Keyed the way the cart is (by product), so an order that repeats a product
+ * across lines folds the quantities the way adding it twice would. The FIRST
+ * line's fiscal detail is kept when that happens: folding two quantities is
+ * safe, but merging two different tax or discount structures is not, and
+ * silently averaging them would misdeclare.
+ */
+export function cartItemsFromOrder(order: Order): Record<string, CartItem> {
+  const items: Record<string, CartItem> = {};
+
+  (order.lines ?? []).forEach((line, index) => {
+    const qty = lineQuantity(line);
+    if (qty <= 0) return;
+
+    // A line with no product id still has to be billable, so it falls back to
+    // a key of its own rather than being dropped.
+    const key = line.product_id || `line-${line.line_number ?? index}`;
+    const existing = items[key];
+
+    items[key] = {
+      product: existing?.product ?? productFromLine(line, key),
+      qty: (existing?.qty ?? 0) + qty,
+      lineNote: existing?.lineNote ?? (line.description || undefined),
+      lineDetail: existing?.lineDetail ?? lineDetailFromOrder(line),
+    };
+  });
+
+  return items;
+}
+
+/**
+ * The order's client, in the shape the checkout's receiver logic expects.
+ *
+ * Used until (and if) the catalog row loads — it is enough to identify the
+ * receiver and to key the retail-chain card, which is what the drawer needs
+ * before anything else resolves.
+ */
+export function checkoutClientFromOrder(order: Order): ClientSearchResult | null {
+  if (!order.client_id && !order.client?.name) return null;
+  return {
+    client_id: order.client_id ?? "",
     business_name: order.client?.name ?? null,
     client_gln: order.client?.gln ?? null,
+    identification: order.client?.identification ?? null,
   };
 }
 
-export function buildInvoiceTabFromOrder(
-  order: Order,
-  docType: DocTypeCode,
-  products: Map<string, Product>,
-): OrderInvoiceDraft {
-  const cartItems: NonNullable<DocumentTab["cart_items"]> = {};
-  const unmatchedLines: OrderLine[] = [];
-  let matchedLines = 0;
-
-  for (const line of order.lines ?? []) {
-    const product = line.product_id ? products.get(line.product_id) : undefined;
-    if (!product) {
-      unmatchedLines.push(line);
-      continue;
-    }
-
-    const qty = lineQuantity(line);
-    if (qty <= 0) continue;
-
-    const existing = cartItems[product.product_id];
-    cartItems[product.product_id] = {
-      product,
-      // An order can repeat a product across lines; the cart is keyed by
-      // product, so fold the quantities the way adding it twice would.
-      qty: (existing?.qty ?? 0) + qty,
-      lineNote: line.description || undefined,
-      // Keep the FIRST line's detail when a product repeats: folding two
-      // quantities is safe, but merging two different tax or discount
-      // structures is not, and silently averaging them would misdeclare.
-      lineDetail: existing?.lineDetail ?? (lineDetailFromOrder(line) as never),
-    };
-    matchedLines += 1;
-  }
-
-  const tab: DocumentTab = {
-    id: newDocTabId(),
-    type: "new",
-    title: `#${order.document_number}`,
-    doc_type: docType,
-    data: {
-      document_type: docType,
-      // The order number is the audit trail until the BE links the two records
-      // (docs/MANUAL_ORDERS.md §7).
-      notes: `Pedido #${order.document_number}`,
-      // Retail-chain data travels from the order onto the document, so the
-      // chain's own order number and delivery point reach the XML rather than
-      // having to be retyped at checkout. Editable there — a partial delivery
-      // can go to one store when the order named several.
-      chain_info: chainInfoFromOrder(order),
-    },
-    cart_items: cartItems,
-    selected_client: clientFromOrder(order),
-    // Billing an order goes straight to checkout — see DocumentTab.auto_checkout.
-    auto_checkout: true,
-    is_dirty: false,
-    opened_at: Date.now(),
+/**
+ * Form values the checkout should open with when billing this order.
+ *
+ * Everything here is a starting point, not a constraint: the user can still
+ * change the delivery point, the note or the chain's order number before the
+ * document goes out — a partial delivery can legitimately differ from what the
+ * order said.
+ */
+export function checkoutDataFromOrder(order: Order): Partial<InvoiceFormData> {
+  const data: Partial<InvoiceFormData> = {
+    // The order number is the audit trail until the BE links the two records
+    // (docs/MANUAL_ORDERS.md §7).
+    notes: `Pedido #${order.document_number}`,
   };
 
-  return { tab, matchedLines, unmatchedLines };
+  const chain = chainInfoFromOrder(order);
+  if (chain) data.chain_info = chain;
+
+  if (order.currency_code) {
+    data.currency = {
+      currency_code: order.currency_code,
+      exchange_rate: order.exchange_rate ?? 1,
+    };
+  }
+
+  return data;
 }
 
 /**
@@ -171,13 +220,6 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
     purchase_order_number: order.document_number || undefined,
   };
   return Object.values(info).some(Boolean) ? info : undefined;
-}
-
-/** Product ids an order references, for the catalog lookup. */
-export function orderProductIds(order: Order): string[] {
-  return (order.lines ?? [])
-    .map((line) => line.product_id)
-    .filter((id): id is string => !!id);
 }
 
 /** An order already billed must not be billed twice. */

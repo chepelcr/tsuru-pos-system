@@ -5,6 +5,7 @@ import {
   resolveReceiverId,
   resolveReceiverName,
 } from './receiverResolution';
+import { chainClientFor, ChainClientId } from './chainClients';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
 import type { SaleReceiver } from '@/types/receiver';
 
@@ -96,5 +97,39 @@ describe('hasReceiver / resolveReceiverId', () => {
 
   it('reads the id from the client when the receiver has none', () => {
     expect(resolveReceiverId({}, walmart)).toBe('3-101-007223');
+  });
+});
+
+describe("resolveReceiverId as the chain-card key", () => {
+  it("falls through an EMPTY receiver identification to the client's", () => {
+    // The bug this pins: the checkout used
+    //   receiver?.identification?.number ?? selectedClient?.identification?.number
+    // and an untouched receiver carries `{ code: '01', number: '' }`. An empty
+    // string is not nullish, so `??` returned it, `chainClientFor('')` was null,
+    // and the Walmart card never appeared for a client picked in the POS.
+    const client = {
+      client_id: "c-1",
+      identification: { code: "02", number: "3-102-007223" },
+    } as ClientSearchResult;
+
+    expect(resolveReceiverId({ identification: { code: "01", number: "" } }, client))
+      .toBe("3-102-007223");
+    expect(chainClientFor(resolveReceiverId({}, client))?.identification)
+      .toBe(ChainClientId.WALMART);
+    expect(
+      chainClientFor(
+        resolveReceiverId({ identification: { code: "01", number: "   " } }, client)
+      )?.identification
+    ).toBe(ChainClientId.WALMART);
+  });
+
+  it("still prefers an identification the cashier actually typed", () => {
+    const client = {
+      client_id: "c-1",
+      identification: { code: "02", number: "3102007223" },
+    } as ClientSearchResult;
+    expect(
+      resolveReceiverId({ identification: { code: "01", number: "116640506" } }, client)
+    ).toBe("116640506");
   });
 });

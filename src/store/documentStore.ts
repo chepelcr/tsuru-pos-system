@@ -36,15 +36,6 @@ export interface DocumentTab {
   cart_items?: Record<string, CartItem>;
   /** Selected client for this tab — drives CartSidebar pill and receiver drawer pre-fill */
   selected_client?: ClientSearchResult | null;
-  /**
-   * Open the checkout drawer as soon as this tab is shown, then clear itself.
-   *
-   * Set when billing an existing pedido: everything the checkout asks for —
-   * lines, client, taxes, discounts, chain data — already came from the order,
-   * so the cart screen has nothing left to ask and stopping there is just a
-   * step the user has to click past.
-   */
-  auto_checkout?: boolean;
 }
 
 interface DocumentStore {
