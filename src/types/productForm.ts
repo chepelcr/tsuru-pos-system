@@ -36,6 +36,13 @@ export interface TaxFormEntry {
   specialFields?: {
     quantity?: number;
     percentage?: number;
+    /**
+     * Proporción de alcohol absoluto = cantidad × grado (Nota 8).
+     *
+     * Derived from the other two rather than typed, and stored so the value the
+     * document declares is the one the amount was computed from.
+     */
+    proportion?: number;
     /** data-services tax-amount catalog id (opaque). */
     taxAmountId?: number;
     /** Unit amount from the tax-amounts catalog. Captured at select time so the BE receives the real number. */

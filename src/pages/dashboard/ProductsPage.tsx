@@ -220,6 +220,7 @@ export default function ProductsPage() {
         specialFields: t.special_fields ? {
           quantity: t.special_fields.quantity,
           percentage: t.special_fields.percentage,
+          proportion: t.special_fields.proportion,
           volumeConsumption: t.special_fields.volume_consumption,
           taxAmountId: t.special_fields.tax_amount?.id,
           taxAmount: t.special_fields.tax_amount?.amount,
@@ -298,6 +299,7 @@ export default function ProductsPage() {
           special_fields: t.specialFields ? {
             quantity: t.specialFields.quantity,
             percentage: t.specialFields.percentage,
+            proportion: t.specialFields.proportion,
             tax_amount: t.specialFields.taxAmountId ? {
               id: String(t.specialFields.taxAmountId),
               amount: t.specialFields.taxAmount ?? 0,

@@ -95,6 +95,7 @@
   "products.quantityUdm": "Unit quantity",
   "products.percentage": "Percentage",
   "products.volumePerUnit": "Volume per unit",
+  "products.soapVolumeHint": "For toilet soap this field is in GRAMS, not litres.",
   "products.addTax": "Add tax…",
   "products.iva": "VAT",
   "products.taxRate": "Rate…",

@@ -95,6 +95,7 @@
   "products.quantityUdm": "Cantidad UdM",
   "products.percentage": "Porcentaje",
   "products.volumePerUnit": "Volumen por unidad",
+  "products.soapVolumeHint": "Para jabón de tocador este campo son GRAMOS, no litros.",
   "products.addTax": "Agregar impuesto…",
   "products.iva": "IVA",
   "products.taxRate": "Tasa…",

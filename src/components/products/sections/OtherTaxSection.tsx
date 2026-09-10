@@ -8,6 +8,7 @@ import {
   TaxTypeCode,
 } from "@/lib/enums";
 import { labelByCode } from "@/lib/catalogLabels";
+import { alcoholAmountFor, isebecAmountFor, isToiletSoap } from "@/lib/specialTaxes";
 import { getTaxConfig } from "@/types/taxTypeConfig";
 import type { TaxFormEntry } from "@/types/productForm";
 import type { TaxAmountResponse, TaxResponse } from "@/services/data-api/dtos";
@@ -40,9 +41,11 @@ interface OtherTaxSectionProps {
 
 function SpecialTaxRow({
   tax,
-  // `cabys` is still accepted and still meaningful — which ISEBEC formula
-  // applies is derived from it — but that decision now lives in
-  // lib/specialTaxes rather than in this form, so the row no longer reads it.
+  // The CABYS decides which code-05 formula applies (soap per gram, beverages
+  // per volume) and therefore which per-unit amount to select — see
+  // lib/specialTaxes, which owns the rule for both this form and the
+  // line-detail drawer.
+  cabys,
   basePrice = 0,
   onUpdate,
   onRemove,
@@ -190,11 +193,31 @@ function SpecialTaxRow({
                 min={0}
                 max={100}
                 value={tax.specialFields?.percentage ?? ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  // The alcohol degree DETERMINES the code-04 bracket ("Hasta
+                  // 15%", "Más de 15% y hasta 30%", "Más de 30%"), so it is
+                  // filled in rather than asked for — the same behaviour the
+                  // line-detail drawer has. A degree matching no bracket leaves
+                  // the existing choice alone: guessing would put a wrong
+                  // excise on a legal document.
+                  const percentage = Number(e.target.value);
+                  const bracket = alcoholAmountFor(percentage, taxAmounts);
+                  // Proporcion = cantidad x grado alcohólico (Nota 8).
+                  const quantity = tax.specialFields?.quantity ?? 0;
                   onUpdate(tax.taxCode, {
-                    specialFields: { ...tax.specialFields, percentage: Number(e.target.value) },
-                  })
-                }
+                    specialFields: {
+                      ...tax.specialFields,
+                      percentage,
+                      proportion: (quantity * percentage) / 100,
+                      ...(bracket
+                        ? {
+                            taxAmountId: Number(bracket.id),
+                            taxAmount: bracket.amount ?? undefined,
+                          }
+                        : {}),
+                    },
+                  });
+                }}
               />
             </div>
           )}
@@ -208,12 +231,32 @@ function SpecialTaxRow({
                 placeholder="0"
                 min={0}
                 value={tax.specialFields?.volumeConsumption ?? ""}
-                onChange={(e) =>
+                onChange={(e) => {
+                  // Code 05 covers packaged beverages AND toilet soap, priced
+                  // on different units, and the CABYS is what tells them apart
+                  // — so the per-unit amount follows from it rather than being
+                  // picked. Same rule as the line detail (`lib/specialTaxes`).
+                  const volumeConsumption = Number(e.target.value);
+                  const match = isebecAmountFor(cabys, taxAmounts);
                   onUpdate(tax.taxCode, {
-                    specialFields: { ...tax.specialFields, volumeConsumption: Number(e.target.value) },
-                  })
-                }
+                    specialFields: {
+                      ...tax.specialFields,
+                      volumeConsumption,
+                      ...(match
+                        ? {
+                            taxAmountId: Number(match.id),
+                            taxAmount: match.amount ?? undefined,
+                          }
+                        : {}),
+                    },
+                  });
+                }}
               />
+              {isToiletSoap(cabys) && (
+                <div className="t-xs text-muted-foreground mt-1 italic">
+                  {t("products.soapVolumeHint")}
+                </div>
+              )}
             </div>
           )}
         </div>
