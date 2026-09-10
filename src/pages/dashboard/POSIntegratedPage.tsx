@@ -73,6 +73,15 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     }
   };
 
+  // A tab opened from "Facturar pedido" carries everything checkout would ask
+  // for, so it opens there directly. The flag clears itself: coming back to the
+  // same tab later must not re-open the drawer over the user.
+  useEffect(() => {
+    if (!tabId || !activeTab?.auto_checkout) return;
+    setShowCheckout(true);
+    updateDocumentTab(tabId, { auto_checkout: false });
+  }, [tabId, activeTab?.auto_checkout, updateDocumentTab]);
+
   const setSelectedClient = (c: ClientSearchResult | null) => {
     // Clear the per-sale receiver whenever the client changes so the drawer
     // re-derives from the new client instead of keeping the prior client's edits.

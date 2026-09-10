@@ -25,8 +25,11 @@ interface ManualOrderSectionProps {
   onChange: (patch: Partial<ManualOrderFields>) => void;
   orgId?: string;
   clientId?: string;
-  /** Org supplies a retail chain — departments and registered points apply. */
-  isSupplier?: boolean;
+  /**
+   * The client is a registered retail chain (see `lib/chainClients`), so it has
+   * departments and registered delivery points.
+   */
+  isChainClient?: boolean;
   /** Used by the "same as receiver" delivery mode. */
   receiver?: SaleReceiver;
   /**
@@ -55,18 +58,20 @@ export function ManualOrderSection({
   onChange,
   orgId,
   clientId,
-  isSupplier = false,
+  isChainClient = false,
   receiver,
   selectedClient,
 }: ManualOrderSectionProps) {
   const { t } = useLanguage();
 
-  // Fetch whenever a client is selected, not only when the org is flagged as a
-  // chain supplier. The B2B block is then shown if the org IS a supplier OR the
-  // client actually has departments/stores on file — data existing is proof the
-  // capability is in use, and a supplier who has not ticked the toggle yet
-  // should not be told their Walmart client has no delivery points when it has
-  // seventy-six of them.
+  // Fetch whenever a client is selected. Whether registered delivery points
+  // apply is a property of the CLIENT, so it is decided by the chain registry
+  // rather than by our own org's business type — `isSupplier` said only that we
+  // sell to chains at all, which is true for every one of this org's customers
+  // including the corner shop that has no delivery points.
+  //
+  // The data check stays as a fallback: a client with stores on file is using
+  // the capability whether or not its chain has been registered yet.
   const { data: departmentsResp } = useDepartments(orgId, clientId, { page_size: 100 });
   const { data: storesResp } = useStores(orgId, clientId, { page_size: 100 });
 
@@ -74,7 +79,7 @@ export function ManualOrderSection({
   const stores = storesResp?.data ?? [];
 
   const clientHasB2bData = departments.length > 0 || stores.length > 0;
-  const showB2b = isSupplier || clientHasB2bData;
+  const showB2b = isChainClient || clientHasB2bData;
 
   const location: ManualOrderDeliveryLocation = data.delivery_location ?? { mode: 'store' };
 

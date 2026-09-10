@@ -37,6 +37,13 @@ export interface UseBusinessTypeResult {
   hasAppointments: boolean;
   isWorkshop: boolean;
   /** True when the org supplies a retail chain (departments, delivery points). */
+  /**
+   * @deprecated Nothing should gate chain behaviour on this. Whether a document
+   * needs a purchasing department and a registered delivery point depends on
+   * the CUSTOMER being a retail chain — see `lib/chainClients` — not on our own
+   * org carrying a flag. Kept only because the `b2b-supply` vertical still
+   * governs which modules the org can see.
+   */
   isSupplier: boolean;
   /** True once the module list resolved — gating is meaningful only then. */
   isReady: boolean;

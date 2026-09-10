@@ -13,7 +13,7 @@ import { fmt } from '@/lib/utils';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { ORDER_STATUS_BADGE } from '@/components/orders/OrderStatusBadge';
-import { InvoiceOrderModal } from '@/components/orders/InvoiceOrderModal';
+import { useInvoiceOrder } from '@/hooks/useInvoiceOrder';
 import { useOrderTicket } from '@/hooks/useOrderTicket';
 import { useFiscalMode } from '@/hooks/useFiscalMode';
 import { isOrderInvoiced } from '@/lib/orderToInvoice';
@@ -272,7 +272,7 @@ export default function OrderDetailPage({ orderId }: Props) {
   // Billing a pedido is optional and happens after delivery — see
   // docs/MANUAL_ORDERS.md §7.
   const fiscal = useFiscalMode(orgId);
-  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const { invoiceOrder, preparing: invoicing } = useInvoiceOrder();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can, isReady: permsReady } = usePermissions();
@@ -444,7 +444,7 @@ export default function OrderDetailPage({ orderId }: Props) {
       ? {
           label: t('orders.invoice.action'),
           icon: 'fileText',
-          action: () => setInvoiceOpen(true),
+          action: () => void invoiceOrder(order),
         }
       : null,
     nextStatus && canUpdate
@@ -541,7 +541,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         {/* Billing a delivered pedido — the one action that turns it fiscal. */}
         {canInvoice && (
           <div className="mt-5">
-            <Button variant="primary" size="sm" icon="fileText" onClick={() => setInvoiceOpen(true)}>
+            <Button variant="primary" size="sm" icon="fileText" disabled={invoicing} onClick={() => void invoiceOrder(order)}>
               {t('orders.invoice.action')}
             </Button>
           </div>
@@ -670,7 +670,6 @@ export default function OrderDetailPage({ orderId }: Props) {
         </div>
       </div>
 
-      <InvoiceOrderModal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} order={order} />
       <ReprocessDialog open={reprocessOpen} onClose={() => setReprocessOpen(false)} order={order} orgId={orgId} />
       {isCrossdockingType && (
         <CrossdockingUploadDialog

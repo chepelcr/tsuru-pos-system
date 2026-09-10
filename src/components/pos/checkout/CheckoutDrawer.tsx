@@ -6,7 +6,6 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
 import { isManualOrderDocType } from '@/types/invoice';
-import { useBusinessType } from '@/hooks/useBusinessType';
 import type {
   SalePayment,
   CurrencyCode,
@@ -124,9 +123,6 @@ export function CheckoutDrawer({
   // activity code, no Hacienda references, and no requirement that the order
   // be paid in full at capture time (a pedido is normally settled later).
   const isManualOrder = isManualOrderDocType(doc_type);
-  // Departments and registered delivery points only exist for a chain
-  // supplier; fail-closed while the module list resolves.
-  const { isSupplier } = useBusinessType();
   const needsReceiver = isManualOrder || doc_type !== '04'; // All except Tiquete
   const needsReferences = doc_type === '03' || doc_type === '02'; // NC / ND
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
@@ -304,7 +300,7 @@ export function CheckoutDrawer({
               data={manualOrder}
               orgId={orgId}
               clientId={selectedClient?.client_id}
-              isSupplier={isSupplier}
+              isChainClient={!!chain}
               receiver={receiver}
               selectedClient={selectedClient}
               onChange={(patch) =>

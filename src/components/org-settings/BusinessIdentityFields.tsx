@@ -57,11 +57,11 @@ export function BusinessIdentityFields({
     if (value.businessType !== "general") {
       parts.push(t(`businessType.${value.businessType}.hint`).toLowerCase());
     }
-    if (value.isRetailSupplier) {
-      parts.push(t("businessType.supplier.hint").toLowerCase());
-    }
     return parts.join(" · ");
-  }, [t, value.businessType, value.isRetailSupplier]);
+    // No longer mentions the retail-supplier flag: the toggle that set it is
+    // gone, so the summary would describe a capability the user can no longer
+    // see or change.
+  }, [t, value.businessType]);
 
   // In the wizard the toggles wait for a type; in settings everything shows.
   const showToggles = !progressive || !!value.businessType;
@@ -87,31 +87,16 @@ export function BusinessIdentityFields({
         <div className={progressive ? "space-y-2 fade-up" : "space-y-2"}>
           <div className="label-section">{t("businessType.classifications")}</div>
 
-          <label className="flex items-start gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              checked={value.isRetailSupplier}
-              disabled={disabled}
-              onChange={(e) => onChange({ isRetailSupplier: e.target.checked })}
-            />
-            <span className="min-w-0">
-              <span className="block t-sm font-semibold">{t("businessType.supplier")}</span>
-              <span className="block t-xs text-muted-foreground">
-                {t("businessType.supplier.hint")}
-              </span>
-            </span>
-          </label>
-
-          {/* The supplier toggle is the one switch that visibly changes the
-              Pedidos module, so it states what it grants — in place, only once
-              it is on. */}
-          {value.isRetailSupplier && (
-            <div className="ml-6 flex items-start gap-2 p-2.5 rounded-md bg-primary/[0.06] border border-primary/20 fade-up">
-              <Icon name="info" size={13} className="text-primary mt-0.5 flex-shrink-0" />
-              <span className="t-xs">{t("businessType.supplier.unlocks")}</span>
-            </div>
-          )}
+          {/* The "Proveedor de cadena" toggle used to live here, and the
+              Pedidos module keyed its chain behaviour on it. It was the wrong
+              question to ask: whether a DOCUMENT needs a purchasing department
+              and a registered delivery point depends on the CUSTOMER being a
+              chain, not on us having ticked a box about ourselves — and the
+              answer was the same for every one of an org's customers, corner
+              shop included. Chains are recognised by the client's
+              identification instead (`lib/chainClients`), so the capability
+              turns itself on for the clients that need it and stays out of the
+              way for the rest. Nothing to keep in sync, nothing to forget. */}
 
           <label className="flex items-start gap-2.5 cursor-pointer">
             <input
