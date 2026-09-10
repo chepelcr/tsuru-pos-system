@@ -327,6 +327,13 @@ export interface SaleListResponse {
  * Same shape as the canonical request — partial during editing.
  */
 export interface InvoiceFormData {
+  /**
+   * Extra data required by a retail chain the CLIENT belongs to (see
+   * `lib/chainClients`). Absent for ordinary customers. Carried onto the
+   * document as `other_fields`, so it survives onto the XML rather than
+   * living only in the order.
+   */
+  chain_info?: import('./order').ChainClientInfo;
   document_type: EditorDocTypeCode;
   version?: string;
   activity_code: string;

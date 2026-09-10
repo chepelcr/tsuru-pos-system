@@ -34,7 +34,7 @@ import { CountryISO } from "@/lib/enums";
 import { useAllDiscountTypes, useAllTaxes } from "@/hooks/useDataApi";
 import { resolveReceiverName } from "@/lib/receiverResolution";
 import type {
-  ManualOrderFields,
+  ManualOrderFields, ChainClientInfo,
   ManualOrderLinePayload,
   ManualOrderPayload,
   Order,
@@ -171,6 +171,27 @@ function cabysCodeOf(product: any): string | undefined {
   return undefined;
 }
 
+/**
+ * Retail-chain fields as coded `OtroTexto` entries.
+ *
+ * Each value gets its own code rather than being concatenated into one blob,
+ * so the chain (and we) can read a single field back without parsing prose.
+ * Empty values are omitted entirely — an `OtroTexto` with no text is noise on
+ * a fiscal document.
+ */
+function chainOtherFields(info: ChainClientInfo | undefined) {
+  if (!info) return [];
+  const entries: Array<[string, string | undefined]> = [
+    ["ordenCompra", info.purchase_order_number],
+    ["departamento", info.department_code],
+    ["puntoEntrega", info.store_code],
+    ["gln", info.gln],
+  ];
+  return entries
+    .filter(([, value]) => !!value && String(value).trim())
+    .map(([code, value]) => ({ code, other_text: String(value).trim() }));
+}
+
 function discountsFromProduct(product: any, discountTypes: any[]): any[] {
   const configured = product?.discounts;
   if (!Array.isArray(configured) || configured.length === 0) return [];
@@ -248,6 +269,8 @@ export interface InvoiceCheckoutData {
   total_amount: number;
   /** Present only on manual-order (`PM`) checkouts. */
   manual_order?: ManualOrderFields;
+  /** Retail-chain data when the client is one — see lib/chainClients. */
+  chain_info?: ChainClientInfo;
 }
 
 interface ConfirmPaymentArgs {
@@ -697,6 +720,13 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
 
       receiver,
       references: invoiceData.references ?? [],
+
+      // Retail-chain data (Walmart and the like) rides on OtroTexto, the
+      // document's coded free-text block. It has to reach the XML, not just
+      // the order: the chain reconciles against the comprobante, so a
+      // purchase-order number that lives only in our own order record is
+      // invisible to them.
+      other_fields: chainOtherFields(invoiceData.chain_info),
 
       // Cart lines → canonical DetailDTO[]. By the time a line lands here,
       // LineDetailDrawer + its sections have already resolved every catalog

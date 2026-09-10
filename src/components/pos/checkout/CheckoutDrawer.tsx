@@ -23,12 +23,15 @@ import { ReceiverSection } from './sections/ReceiverSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { ReferencesSection } from './sections/ReferencesSection';
 import { ManualOrderSection } from './sections/ManualOrderSection';
+import { ChainClientSection } from './sections/ChainClientSection';
+import { chainClientFor } from '@/lib/chainClients';
+import type { ChainClientInfo } from '@/types/order';
 import { CopiesSection } from './sections/CopiesSection';
 import { Receipt } from './Receipt';
 
 
 type Step = 'payment' | 'processing' | 'done';
-type SectionId = 'payment' | 'receiver' | 'document' | 'references' | 'copies' | 'manualOrder';
+type SectionId = 'payment' | 'receiver' | 'document' | 'references' | 'copies' | 'manualOrder' | 'chainClient';
 
 interface CartItem { id: string; name: string; price: number; qty: number; }
 
@@ -138,6 +141,15 @@ export function CheckoutDrawer({
   // on precedence, so the same client showed a different name in each.
   const hasReceiver = resolveHasReceiver(receiver, selectedClient);
   const manualOrder: ManualOrderFields = data.manual_order ?? {};
+
+  // Retail chains that require extra data on their documents. Keyed on the
+  // CLIENT's identification number, not on our org's business type: it is the
+  // customer who imposes the requirement, and the same org invoices ordinary
+  // customers too. Null for everyone else, so the card simply does not exist.
+  const chain = chainClientFor(
+    receiver?.identification?.number ?? selectedClient?.identification?.number
+  );
+  const chainInfo: ChainClientInfo = data.chain_info ?? {};
   const hasLines = cartItems.length > 0;
 
   // ─── Section expansion (drawer is orchestrator only) ───────────────────
@@ -151,6 +163,8 @@ export function CheckoutDrawer({
     references: needsReferences && references.length === 0,
     copies: false,
     manualOrder: isManualOrder,
+    // Opens by default: if a chain needs these, they are not optional.
+    chainClient: !!chain,
   });
 
   const validate = (): string | null => {
@@ -295,6 +309,20 @@ export function CheckoutDrawer({
               selectedClient={selectedClient}
               onChange={(patch) =>
                 updateData({ manual_order: { ...manualOrder, ...patch } })
+              }
+            />
+          )}
+
+          {chain && (
+            <ChainClientSection
+              isExpanded={expanded.chainClient}
+              onToggle={() => toggle('chainClient')}
+              chain={chain}
+              data={chainInfo}
+              orgId={orgId}
+              clientId={selectedClient?.client_id}
+              onChange={(patch) =>
+                updateData({ chain_info: { ...chainInfo, ...patch } })
               }
             />
           )}

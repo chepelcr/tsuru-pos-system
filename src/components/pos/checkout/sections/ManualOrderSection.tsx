@@ -190,41 +190,12 @@ export function ManualOrderSection({
         />
       </div>
 
-      {/* Departments belong to the CLIENT, so the field waits for one. */}
-      {showB2b && (
-        <div>
-          <FormLabel htmlFor="manual-order-department">
-            {t('manualOrder.department')}
-          </FormLabel>
-          <Select
-            id="manual-order-department"
-            className="input input-sm w-full"
-            value={data.department_id ?? ''}
-            disabled={!clientId}
-            onChange={(e) => {
-              const dept = departments.find((d) => d.department_id === e.target.value);
-              onChange({
-                department_id: e.target.value || undefined,
-                department_code: dept?.department_code,
-              });
-            }}
-          >
-            <option value="">
-              {!clientId
-                ? t('manualOrder.department.needsClient')
-                : departments.length === 0
-                  ? t('manualOrder.department.empty')
-                  : t('placeholder.selectOption')}
-            </option>
-            {departments.map((d) => (
-              <option key={d.department_id} value={d.department_id}>
-                {d.department_code}
-                {d.name ? ` — ${d.name}` : ''}
-              </option>
-            ))}
-          </Select>
-        </div>
-      )}
+      {/* The chain-specific fields — purchasing department, registered
+          delivery point, and the chain's own order number — used to live here.
+          They moved to the Datos <chain> card, which appears whenever the
+          CLIENT is a retail chain, because an electronic invoice to that chain
+          needs them just as much as a manual order does and could not reach
+          them from this card. See lib/chainClients. */}
 
       {/* Delivery point: a registered point, the receiver's address, or the
           structured cascade. Never a free-text blob. */}

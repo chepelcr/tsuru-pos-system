@@ -222,5 +222,11 @@
   "salePoint.error.noItems": "Agregá al menos una línea",
   "salePoint.delete": "Eliminar punto",
   "salePoint.edit": "Editar punto",
-  "orders.attachments.ticket": "Ticket 80mm"
+  "orders.attachments.ticket": "Ticket 80mm",
+  "chainClient.title": "Datos {chain}",
+  "chainClient.deliveryPoint": "Punto de entrega",
+  "chainClient.gln": "GLN",
+  "chainClient.purchaseOrder": "Número de orden de {chain}",
+  "chainClient.purchaseOrder.placeholder": "Ej. 4500123456",
+  "chainClient.purchaseOrder.hint": "Número que asigna {chain}, no el nuestro. Viaja en el comprobante."
 }

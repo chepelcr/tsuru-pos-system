@@ -222,5 +222,11 @@
   "salePoint.error.noItems": "Add at least one line",
   "salePoint.delete": "Delete point",
   "salePoint.edit": "Edit point",
-  "orders.attachments.ticket": "80mm ticket"
+  "orders.attachments.ticket": "80mm ticket",
+  "chainClient.title": "{chain} details",
+  "chainClient.deliveryPoint": "Delivery point",
+  "chainClient.gln": "GLN",
+  "chainClient.purchaseOrder": "{chain} order number",
+  "chainClient.purchaseOrder.placeholder": "e.g. 4500123456",
+  "chainClient.purchaseOrder.hint": "The number {chain} assigns, not ours. It travels on the document."
 }

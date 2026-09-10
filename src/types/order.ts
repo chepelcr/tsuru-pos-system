@@ -457,3 +457,30 @@ export interface ManualOrderPayload {
   lines: ManualOrderLinePayload[];
   totals: ManualOrderTotalsPayload;
 }
+
+
+/**
+ * Extra data a retail chain requires on the documents issued to it.
+ *
+ * Which chain (if any) is decided from the CLIENT's identification number —
+ * see `lib/chainClients`. The fields below are what Walmart asks for; a chain
+ * added later can reuse the ones it shares and ignore the rest, since each
+ * chain gets its own card.
+ *
+ * This lives at the checkout level rather than inside {@link ManualOrderFields}
+ * because it is needed on an ELECTRONIC INVOICE too, not only on a manual
+ * order — which is why the fields were moved out of the pedido card.
+ */
+export interface ChainClientInfo {
+  /** The chain's purchasing department. */
+  department_id?: string;
+  department_code?: string;
+  /** Registered delivery point (tienda / bodega). */
+  store_id?: string;
+  store_code?: string;
+  store_name?: string;
+  /** GS1 Global Location Number of the delivery point. */
+  gln?: string;
+  /** The chain's own purchase-order number — theirs, not ours. */
+  purchase_order_number?: string;
+}
