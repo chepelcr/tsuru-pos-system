@@ -223,6 +223,7 @@
   "salePoint.delete": "Delete point",
   "salePoint.edit": "Edit point",
   "orders.attachments.ticket": "80mm ticket",
+  "chainClient.genericName": "Chain",
   "chainClient.title": "{chain} details",
   "chainClient.deliveryPoint": "Delivery point",
   "chainClient.gln": "GLN",

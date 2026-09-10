@@ -10,8 +10,14 @@ import type { ChainClientInfo } from '@/types/order';
 interface ChainClientSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
-  /** The chain this client belongs to — decides the card's identity. */
-  chain: ChainClient;
+  /**
+   * The registered chain, when the client matched one — it names the card and
+   * the purchase-order field. Null when the card is showing because the client
+   * simply HAS delivery points on file (see `useChainClient`): the requirement
+   * is real either way, we just cannot name the chain, so the copy stays
+   * generic rather than claiming a chain we did not identify.
+   */
+  chain: ChainClient | null;
   data: ChainClientInfo;
   onChange: (patch: Partial<ChainClientInfo>) => void;
   orgId?: string;
@@ -41,6 +47,9 @@ export function ChainClientSection({
   clientId,
 }: ChainClientSectionProps) {
   const { t } = useLanguage();
+  // Falls back to the customer's own name where a chain was not identified, so
+  // the card never reads "Datos de " with a blank after it.
+  const chainName = chain?.name ?? t('chainClient.genericName');
 
   const { data: departmentsResp } = useDepartments(orgId, clientId, { page_size: 100 });
   const { data: storesResp } = useStores(orgId, clientId, { page_size: 100 });
@@ -56,7 +65,7 @@ export function ChainClientSection({
 
   return (
     <SectionWrapper
-      title={t('chainClient.title', { chain: chain.name })}
+      title={t('chainClient.title', { chain: chainName })}
       icon={Building2}
       isExpanded={isExpanded}
       onToggle={onToggle}
@@ -125,7 +134,7 @@ export function ChainClientSection({
 
         <div>
           <FormLabel htmlFor="chain-po">
-            {t('chainClient.purchaseOrder', { chain: chain.name })}
+            {t('chainClient.purchaseOrder', { chain: chainName })}
           </FormLabel>
           <input
             id="chain-po"
@@ -137,7 +146,7 @@ export function ChainClientSection({
             }
           />
           <div className="t-xs text-muted-foreground mt-1">
-            {t('chainClient.purchaseOrder.hint', { chain: chain.name })}
+            {t('chainClient.purchaseOrder.hint', { chain: chainName })}
           </div>
         </div>
       </div>

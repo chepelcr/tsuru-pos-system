@@ -29,7 +29,8 @@ import { MANUAL_ORDER_SOURCE } from "@/types/order";
 import { DiscountTypeCode, TaxRateCode, TaxTypeCode } from "@/lib/enums";
 import { DiscountCalculationService } from "@/services/discountCalculationService";
 import { TaxCalculationService } from "@/services/taxCalculationService";
-import type { LineDiscount, LineTax } from "@/types/lineDetail";
+import type { LineCode, LineDiscount, LineTax } from "@/types/lineDetail";
+import { roundMoney, sumMoney } from "@/lib/money";
 import { CountryISO } from "@/lib/enums";
 import { useAllDiscountTypes, useAllTaxes } from "@/hooks/useDataApi";
 import { resolveReceiverName } from "@/lib/receiverResolution";
@@ -37,6 +38,7 @@ import type {
   ManualOrderFields, ChainClientInfo,
   ManualOrderLineDiscountPayload,
   ManualOrderLinePayload,
+  OrderLineCode,
   ManualOrderLineTaxPayload,
   ManualOrderPayload,
   Order,
@@ -192,6 +194,36 @@ function chainOtherFields(info: ChainClientInfo | undefined) {
   return entries
     .filter(([, value]) => !!value && String(value).trim())
     .map(([code, value]) => ({ code, other_text: String(value).trim() }));
+}
+
+/**
+ * A line's product codes for the manual-order payload.
+ *
+ * The line's own codes win; the product's catalog array is the fallback for a
+ * scan-and-charge line whose detail drawer was never opened. Codes travel
+ * because they are what a chain reconciles against — its buyer article code is
+ * how it recognises the product on the invoice, and it is not derivable from
+ * anything else on the line.
+ */
+function manualOrderCodes(
+  lineCodes: LineCode[] | undefined,
+  product: { codes?: Array<{ code_type_id: string; number: string }> } | undefined
+): OrderLineCode[] | undefined {
+  const source =
+    lineCodes?.length
+      ? lineCodes.map((c) => ({ code_type_id: c.code_type, number: c.number }))
+      : product?.codes?.map((c) => ({
+          code_type_id: c.code_type_id,
+          number: c.number,
+        }));
+
+  const rows = (source ?? []).filter((c) => c.number && String(c.number).trim());
+  return rows.length
+    ? rows.map((c) => ({
+        code_type_id: String(c.code_type_id ?? "04"),
+        number: String(c.number).trim(),
+      }))
+    : undefined;
 }
 
 /**
@@ -517,6 +549,11 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       hasRoyaltyOrBonus: disc.hasRoyaltyOrBonus,
       customer_pays_tax_on_original_base: disc.customer_pays_tax_on_original_base,
       discountedNatures: disc.discountedNatures,
+      // `IVACobradoFabrica` "01" makes the issuer absorb this line's IVA, so
+      // the cashier's total must not include it either — otherwise the till
+      // shows a figure the document contradicts by exactly the tax.
+      iva_collected_factory:
+        ld?.iva_collected_factory ?? item.product?.iva_collected_factory ?? undefined,
     });
 
     return {
@@ -661,7 +698,16 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         // line. The BE recomputes authoritatively either way, but sending it a
         // figure the cashier never saw is how the two end up disagreeing.
         const totals = lineTotals[index];
-        const discount = Math.max(0, item.netPrice * item.qty - totals.subtotal);
+        const ld = item.lineDetail;
+        // Order money is two decimals, and the parts are rounded before the
+        // whole — see `lib/money`. The backend rounds identically and re-adds
+        // the order from these, so sending raw floats would have it store a
+        // total the cashier never saw.
+        const subtotal = roundMoney(totals.subtotal);
+        const tax = roundMoney(totals.tax);
+        const discount = roundMoney(
+          Math.max(0, item.netPrice * item.qty - totals.subtotal)
+        );
 
         return {
           line_number: index + 1,
@@ -670,16 +716,28 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           quantity: item.qty,
           unit_price: item.netPrice,
           discount,
-          tax: totals.tax,
-          line_total: totals.total,
+          tax,
+          line_total: roundMoney(subtotal + tax),
           cabys:
             (typeof (item as any).cabys === "string"
               ? (item as any).cabys
-              : (item as any).cabys?.code) ?? item.lineDetail?.cabys,
+              : (item as any).cabys?.code) ?? ld?.cabys,
           // The structured treatment, so the pedido can be billed later without
           // re-deriving it from the catalog — see `ManualOrderLinePayload`.
-          taxes: manualOrderTaxes(lineTotals[index].taxes),
-          discounts: manualOrderDiscounts(lineTotals[index].discounts),
+          taxes: manualOrderTaxes(totals.taxes),
+          discounts: manualOrderDiscounts(totals.discounts),
+          // The rest of the document line. `unit_measure` above all: Hacienda
+          // requires it on every line, so a pedido that drops it forces the
+          // invoice to guess "Unid" — wrong for anything sold by weight.
+          codes: manualOrderCodes(ld?.codes, item.product),
+          unit_measure: ld?.unit_measure || item.product?.unit_measure || undefined,
+          commercial_unit_measure: ld?.commercial_unit_measure || undefined,
+          customs_part: ld?.customs_part || undefined,
+          base_amount: ld?.base_amount,
+          iva_collected_factory:
+            ld?.iva_collected_factory ??
+            item.product?.iva_collected_factory ??
+            undefined,
         };
       });
 
@@ -725,13 +783,17 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           amount: p.amount,
         })),
         lines,
+        // Summed from the ROUNDED lines above, not from the cart's running
+        // figures — the backend re-adds the order the same way, and a header
+        // that disagrees with its own lines is a discrepancy the user only
+        // finds when the pedido is billed.
         totals: {
           total_lines: lines.length,
           total_quantity_ordered: cartItems.reduce((sum, i) => sum + i.qty, 0),
-          subtotal: invoiceData.subtotal,
-          discounts: invoiceData.discount_amount,
-          taxes: invoiceData.tax_amount,
-          grand_total: invoiceData.total_amount,
+          subtotal: sumMoney(lines.map((l) => l.line_total - l.tax)),
+          discounts: sumMoney(lines.map((l) => l.discount)),
+          taxes: sumMoney(lines.map((l) => l.tax)),
+          grand_total: sumMoney(lines.map((l) => l.line_total)),
         },
       };
 

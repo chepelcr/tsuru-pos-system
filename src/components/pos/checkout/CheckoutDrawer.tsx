@@ -27,7 +27,7 @@ import { DocumentSection } from './sections/DocumentSection';
 import { ReferencesSection } from './sections/ReferencesSection';
 import { ManualOrderSection } from './sections/ManualOrderSection';
 import { ChainClientSection } from './sections/ChainClientSection';
-import { chainClientFor } from '@/lib/chainClients';
+import { useChainClient } from '@/hooks/useChainClient';
 import type { ChainClientInfo } from '@/types/order';
 import { CopiesSection } from './sections/CopiesSection';
 import { Receipt } from './Receipt';
@@ -175,12 +175,23 @@ export function CheckoutDrawer({
   // CLIENT's identification number, not on our org's business type: it is the
   // customer who imposes the requirement, and the same org invoices ordinary
   // customers too. Null for everyone else, so the card simply does not exist.
-  // `??` was the bug here: an untouched receiver carries
-  // `identification: { code: '01', number: '' }`, and an empty string is not
-  // nullish, so the fallback to the selected client never ran and the card
-  // never appeared for a client picked in the POS. `resolveReceiverId` is the
-  // one resolver every other surface already uses — trim, then fall through.
-  const chain = chainClientFor(resolveReceiverId(receiver, selectedClient));
+  // Every identity we hold for this customer is offered, because the two routes
+  // into this drawer know different things. `??` on a single field was the
+  // original bug — an untouched receiver carries `number: ''`, which is not
+  // nullish, so the fallback never ran — but fixing it was not enough: a
+  // customer whose client row came from an imported order has NO cédula at all
+  // (the spreadsheet has no such column), so there is nothing for the registry
+  // to match. `useChainClient` falls back to the client's own departments and
+  // delivery points, which that import does create.
+  const chainState = useChainClient({
+    orgId,
+    clientId: selectedClient?.client_id,
+    identifiers: [
+      resolveReceiverId(receiver, selectedClient),
+      selectedClient?.client_gln,
+    ],
+  });
+  const chain = chainState.chain;
   const chainInfo: ChainClientInfo = data.chain_info ?? {};
   const hasLines = cartItems.length > 0;
 
@@ -196,7 +207,7 @@ export function CheckoutDrawer({
     copies: false,
     manualOrder: isManualOrder,
     // Opens by default: if a chain needs these, they are not optional.
-    chainClient: !!chain,
+    chainClient: chainState.show,
   });
 
   const validate = (): string | null => {
@@ -336,7 +347,7 @@ export function CheckoutDrawer({
               data={manualOrder}
               orgId={orgId}
               clientId={selectedClient?.client_id}
-              isChainClient={!!chain}
+              isChainClient={chainState.show}
               receiver={receiver}
               selectedClient={selectedClient}
               onChange={(patch) =>
@@ -345,7 +356,7 @@ export function CheckoutDrawer({
             />
           )}
 
-          {chain && (
+          {chainState.show && (
             <ChainClientSection
               isExpanded={expanded.chainClient}
               onToggle={() => toggle('chainClient')}

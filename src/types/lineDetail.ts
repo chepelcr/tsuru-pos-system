@@ -99,7 +99,22 @@ export interface LineDetail {
   customs_part?: string;
   factory_tax?: string;
   net_price: number;
+  /**
+   * Editable taxable base. Legal in exactly two situations — tax code 07 (IVA
+   * cálculo especial) and `iva_collected_factory === "01"` — and rejected by
+   * the backend anywhere else, because a base the issuer picks freely is how
+   * VAT gets under-declared.
+   */
   base_amount?: number;
+  /**
+   * `IVACobradoFabrica`: "01" VAT settled at factory level, "02" exempt by
+   * special regime.
+   *
+   * "01" makes the ISSUER absorb the line's IVA, exactly as a royalty does —
+   * Hacienda answers -451 when it is not honoured. It also makes `base_amount`
+   * editable.
+   */
+  iva_collected_factory?: string;
   codes?: LineCode[];
   taxes: LineTax[];
   discounts: LineDiscount[];

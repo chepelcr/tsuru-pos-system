@@ -225,3 +225,84 @@ describe("isOrderInvoiced", () => {
     expect(isOrderInvoiced(order({ invoice: null }))).toBe(false);
   });
 });
+
+describe("the order line carries the whole document line", () => {
+  it("passes the fields an invoice cannot derive from anything else", () => {
+    // Each of these was previously lost between the pedido and the factura, and
+    // had to be guessed back from the catalog — which may have moved since the
+    // customer agreed to the order.
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            unit_measure: "kg",
+            commercial_unit_measure: "Saco de 25",
+            customs_part: "1006.30.00",
+            base_amount: 5000,
+            iva_collected_factory: "01",
+          }),
+        ],
+      })
+    );
+
+    const detail = items.p1.lineDetail;
+    // Hacienda requires UnidadMedida on every line; without this the invoice
+    // falls back to "Unid", which misdeclares anything sold by weight.
+    expect(detail?.unit_measure).toBe("kg");
+    expect(detail?.commercial_unit_measure).toBe("Saco de 25");
+    expect(detail?.customs_part).toBe("1006.30.00");
+    // The two editable-base fields travel together: the base is only legal
+    // BECAUSE the line is factory-collected.
+    expect(detail?.base_amount).toBe(5000);
+    expect(detail?.iva_collected_factory).toBe("01");
+  });
+
+  it("prefers the LINE's own codes over the product's", () => {
+    // A chain assigns its own buyer article code, and the catalog product's
+    // array holds only whatever the most recent import wrote — so two customers
+    // ordering the same product overwrite each other there.
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            internal_code: "STALE-INT",
+            client_article_code: "STALE-WM",
+            codes: [
+              { code_type_id: "04", number: "INT-1" },
+              { code_type_id: "02", number: "WM-777" },
+            ],
+          }),
+        ],
+      })
+    );
+
+    expect(items.p1.lineDetail?.codes).toEqual([
+      { code_type: "04", number: "INT-1" },
+      { code_type: "02", number: "WM-777" },
+    ]);
+  });
+
+  it("falls back to the flattened codes for a row written before the column existed", () => {
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            internal_code: "INT-1",
+            code: "MFR-9",
+            client_article_code: "WM-777",
+            codes: null,
+          }),
+        ],
+      })
+    );
+
+    expect(items.p1.product.codes).toEqual([
+      { code_type_id: "04", number: "INT-1" },
+      { code_type_id: "03", number: "MFR-9" },
+      { code_type_id: "02", number: "WM-777" },
+    ]);
+  });
+});

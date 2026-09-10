@@ -104,6 +104,18 @@ export interface LineAmountsParams {
   tax_amounts?: TaxAmountsById;
   has_factory_tax?: boolean;
   /**
+   * `IVACobradoFabrica`. Code "01" means the VAT was settled at the factory, so
+   * the ISSUER absorbs this line's IVA — exactly as a royalty discount does,
+   * but with no discount involved at all.
+   *
+   * Hacienda answers -451 when it is missed: "al usar el código 01 del IVA
+   * cobrado a nivel de fábrica en la línea (N) se deben asumir los impuestos
+   * IVA en el campo ImpuestoAsumidoEmisorFabrica". The backend routes on it;
+   * without it here the cashier is shown a total that includes tax the document
+   * declares the issuer is absorbing.
+   */
+  iva_collected_factory?: string;
+  /**
    * Discount-driven factory-assumed-tax routing. Resolved by the caller via
    * `DiscountCalculationService.calculate(...)` so this service stays pure.
    * `discountedNatures` is accepted for API-symmetry with the BE service but
@@ -141,6 +153,14 @@ const PURCHASE_OR_EXPORT_TYPES = new Set([
   'EXPORT_INVOICE',
 ]);
 
+/**
+ * `IVACobradoFabrica` code "01" — VAT determined at the factory level.
+ *
+ * The only value of that field that changes the arithmetic; "02" (exempt by
+ * special regime) is declarative.
+ */
+const IVA_COLLECTED_AT_FACTORY = "01";
+
 export class TaxCalculationService {
   static getLineAmounts(params: LineAmountsParams): LineAmountsResult {
     const {
@@ -154,6 +174,7 @@ export class TaxCalculationService {
       cabys,
       tax_amounts = {} as TaxAmountsById,
       has_factory_tax = false,
+      iva_collected_factory,
       hasRoyaltyOrBonus,
       customer_pays_tax_on_original_base = false,
       discountedNatures,
@@ -301,9 +322,20 @@ export class TaxCalculationService {
         customer_pays_tax_on_original_base,
       });
 
-      // Code 01/03 royalty/bonus → factory absorbs IVA. Code 02 still computes
-      // IVA on the pre-discount base, but the customer pays it (net_tax).
-      if (has_discounts_bonus_or_gifts && !is_purchase_or_export_bill) {
+      // Who pays this IVA. Two independent rules put it on the issuer:
+      //
+      //   * a royalty (01) or bonus (03) discount — Nota 20; and
+      //   * `IVACobradoFabrica === "01"`, VAT settled at the factory, with no
+      //     discount involved. Hacienda answers -451 when that one is missed.
+      //
+      // The second was not checked here, so a factory-collected line showed the
+      // customer paying tax the document declares the issuer absorbs — the POS
+      // total and the comprobante differed by exactly the IVA.
+      const line_assumes_iva =
+        (has_discounts_bonus_or_gifts && !is_purchase_or_export_bill) ||
+        iva_collected_factory === IVA_COLLECTED_AT_FACTORY;
+
+      if (line_assumes_iva) {
         factory_assumed_tax += amount;
       } else {
         net_tax += amount;

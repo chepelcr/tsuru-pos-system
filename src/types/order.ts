@@ -147,6 +147,13 @@ export interface OrderLineDiscount {
   amount?: number | null;
 }
 
+/** One product code on a line, per Hacienda Nota 6. */
+export interface OrderLineCode {
+  /** 01 vendedor · 02 comprador · 03 fabricante · 04 uso interno · 99 otros. */
+  code_type_id?: string;
+  number?: string;
+}
+
 export interface OrderLine {
   line_number: number;
   /**
@@ -181,6 +188,28 @@ export interface OrderLine {
    */
   taxes?: OrderLineTax[] | null;
   discounts?: OrderLineDiscount[] | null;
+  /**
+   * The LINE's own product codes, canonical `[{code_type_id, number}]`.
+   *
+   * Not the product's. A chain assigns its own buyer article code, and the
+   * catalog product's `codes` array holds only whatever the most recent import
+   * wrote — so two customers ordering the same product overwrite each other
+   * there. `internal_code` / `code` / `client_article_code` above are the same
+   * data flattened for display, with the product as a fallback for rows written
+   * before the line had its own column.
+   */
+  codes?: OrderLineCode[] | null;
+  /** Hacienda `UnidadMedida` — required on every document line. */
+  unit_measure?: string | null;
+  commercial_unit_measure?: string | null;
+  customs_part?: string | null;
+  /**
+   * Editable taxable base. Legal only alongside tax code 07 (IVA cálculo
+   * especial) or `iva_collected_factory === "01"`; rejected anywhere else.
+   */
+  base_amount?: number | null;
+  /** `IVACobradoFabrica`: "01" settled at factory, "02" exempt by regime. */
+  iva_collected_factory?: string | null;
   quantity_dispatched: number;
   dispatch_rejection_reason: string | null;
   quantity_received: number;
@@ -436,6 +465,20 @@ export interface ManualOrderLinePayload {
    */
   taxes?: ManualOrderLineTaxPayload[];
   discounts?: ManualOrderLineDiscountPayload[];
+  /** The line's own product codes — see {@link OrderLineCode}. */
+  codes?: OrderLineCode[];
+  /**
+   * Hacienda `UnidadMedida`. Required on every document line, so a pedido that
+   * omits it forces a fallback to "Unid" when it is billed — wrong for anything
+   * sold by weight or volume.
+   */
+  unit_measure?: string;
+  commercial_unit_measure?: string;
+  customs_part?: string;
+  /** Editable taxable base — tax code 07 or `iva_collected_factory` "01" only. */
+  base_amount?: number;
+  /** `IVACobradoFabrica`: "01" settled at factory, "02" exempt by regime. */
+  iva_collected_factory?: string;
 }
 
 /** One tax on a manual-order line. Mirrors the document's `LineTax`. */

@@ -57,6 +57,31 @@ function lineDetailFromOrder(line: OrderLine): Partial<LineDetail> {
   if (line.cabys) detail.cabys = line.cabys;
   detail.net_price = lineNetPrice(line);
 
+  // The rest of the document line, carried straight through. `unit_measure`
+  // matters most: Hacienda requires `UnidadMedida` on every line, and without
+  // it the invoice falls back to "Unid" — wrong for anything sold by weight.
+  if (line.unit_measure) detail.unit_measure = line.unit_measure;
+  if (line.commercial_unit_measure) {
+    detail.commercial_unit_measure = line.commercial_unit_measure;
+  }
+  if (line.customs_part) detail.customs_part = line.customs_part;
+  if (line.base_amount !== null && line.base_amount !== undefined) {
+    detail.base_amount = Number(line.base_amount);
+  }
+  if (line.iva_collected_factory) {
+    detail.iva_collected_factory = line.iva_collected_factory;
+  }
+
+  // The LINE's own codes, which is what the chain reconciles against — the
+  // catalog product's array holds only the most recent import's.
+  const codes = (line.codes ?? []).filter((c) => c?.number);
+  if (codes.length) {
+    detail.codes = codes.map((c) => ({
+      code_type: c.code_type_id ?? undefined,
+      number: c.number ?? undefined,
+    }));
+  }
+
   const taxes = (line.taxes ?? []).filter(Boolean);
   if (taxes.length) {
     detail.taxes = taxes.map((tax) => ({
@@ -107,13 +132,21 @@ function productFromLine(line: OrderLine, key: string): Product {
     image_url: null,
     status: 1,
     cabys: line.cabys ? { id: line.cabys, code: line.cabys } : null,
-    codes: [
-      line.internal_code ? { code_type_id: "04", number: line.internal_code } : null,
-      line.code ? { code_type_id: "03", number: line.code } : null,
-      line.client_article_code
-        ? { code_type_id: "02", number: line.client_article_code }
-        : null,
-    ].filter(Boolean) as Product["codes"],
+    unit_measure: line.unit_measure ?? undefined,
+    // The line's own codes when it has them; the flattened trio otherwise,
+    // which is what a row written before the line had a codes column carries.
+    codes: (line.codes?.length
+      ? line.codes.map((c) => ({
+          code_type_id: c.code_type_id ?? "04",
+          number: c.number ?? "",
+        }))
+      : [
+          line.internal_code ? { code_type_id: "04", number: line.internal_code } : null,
+          line.code ? { code_type_id: "03", number: line.code } : null,
+          line.client_article_code
+            ? { code_type_id: "02", number: line.client_article_code }
+            : null,
+        ].filter(Boolean)) as Product["codes"],
   } as Product;
 }
 
