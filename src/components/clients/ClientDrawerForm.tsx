@@ -17,7 +17,16 @@ import { hasReceiver } from '@/lib/receiverResolution';
 
 function buildForm(client?: Client | null): CreateClientDto {
   return {
-    customer_type: client?.customer_type ?? CustomerType.PERSONA_FISICA,
+    // Falls back to the identification CODE, not to "persona física".
+    //
+    // `allowedIdCodes` filters the id-type select by customer type, and
+    // `IdentitySection` resets the code — clearing the number and the razón
+    // social with it — whenever the current code is not in that filtered list.
+    // A client with a cédula jurídica but no `customer_type` on record (every
+    // client auto-created from an order import) therefore had its id silently
+    // wiped the moment the catalog finished loading.
+    customer_type:
+      client?.customer_type ?? inferCustomerTypeFromIdCode(client?.identification?.code),
     client_name: client?.client_name ?? "",
     business_name: client?.business_name ?? "",
     client_gln: client?.client_gln ?? "",
@@ -39,13 +48,41 @@ function inferCustomerTypeFromIdCode(code: string | null | undefined): number {
   return code === "02" ? CustomerType.EMPRESA : CustomerType.PERSONA_FISICA;
 }
 
-/** True if the receiver has been touched (any meaningful field set). */
+/**
+ * Has the user actually entered a receiver, as opposed to the form having
+ * defaults in it?
+ *
+ * This decides whether the selected CLIENT is used to fill the form, so a false
+ * positive silently blanks the identification, the address and the GLN — which
+ * is exactly what happened. A receiver that carries nothing but
+ * `identification: { code: "01", number: "" }` — the shape the form itself
+ * writes the moment the id-type select renders — counted as touched, because
+ * the object had one non-empty value in it. The default id TYPE is not data the
+ * user entered.
+ *
+ * So identity fields count only when they identify somebody: an identification
+ * needs a NUMBER, a residence needs an actual location, a phone needs a number.
+ */
 function isReceiverTouched(r: SaleReceiver | undefined): boolean {
   if (!r) return false;
-  return Object.values(r).some(
-    (v) => v !== undefined && v !== null && v !== "" &&
-      !(typeof v === "object" && Object.values(v as object).every((vv) => vv == null || vv === "")),
-  );
+
+  if (r.name?.trim() || r.trade_name?.trim() || r.email?.trim()) return true;
+  if (r.identification?.number?.trim()) return true;
+  if (r.foreign_id_number?.trim() || r.foreign_address?.trim()) return true;
+  if (r.phone?.number?.trim()) return true;
+
+  const residence = r.residence;
+  if (
+    residence &&
+    (residence.address?.trim() ||
+      residence.state_id != null ||
+      residence.county_id != null ||
+      residence.district_id != null)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -62,7 +99,15 @@ function receiverToForm(
   const useReceiverOnly = isReceiverTouched(r);
   const src = useReceiverOnly ? null : c;
 
-  const idCode = r?.identification?.code ?? src?.identification?.code ?? base.identification?.code;
+  // `r` is only consulted when it actually holds a receiver — `src` is null in
+  // that case and non-null otherwise, so reading both here would let an
+  // untouched receiver's DEFAULT id type override the client's real one. And
+  // the number needs `||`, not `??`: the form writes `""`, which is not
+  // nullish, so `??` returned the empty string and the client's cédula never
+  // reached the field. That single operator is why the id looked blank.
+  const rid = useReceiverOnly ? r?.identification : undefined;
+  const idCode =
+    rid?.code || src?.identification?.code || base.identification?.code;
   // customer_type_code is a Hacienda string ("01"-"05"). Client form uses
   // the numeric CustomerType enum — convert via the code's leading int.
   const customerType = r?.customer_type_code
@@ -71,15 +116,19 @@ function receiverToForm(
 
   return {
     ...base,
-    business_name: r?.name ?? src?.business_name ?? "",
-    client_name: r?.name ?? src?.client_name ?? src?.business_name ?? "",
+    business_name: r?.name || src?.business_name || "",
+    // The form's "Nombre comercial / Fantasía" IS the receiver's `trade_name`.
+    // It used to be seeded from `r.name` — the legal name — so opening the
+    // drawer showed the razón social duplicated into the trade-name box, and
+    // whatever the user typed there was dropped on save (see `formToReceiver`).
+    client_name: r?.trade_name || src?.client_name || "",
     client_gln: src?.client_gln ?? "",
-    email: r?.email ?? src?.email ?? "",
-    nationality: r?.nationality ?? base.nationality,
+    email: r?.email || src?.email || "",
+    nationality: r?.nationality || base.nationality,
     customer_type: customerType,
     identification: {
       code: idCode,
-      number: r?.identification?.number ?? src?.identification?.number ?? "",
+      number: rid?.number || src?.identification?.number || "",
     },
     phone: r?.phone
       ? {
@@ -129,7 +178,9 @@ function formToReceiver(
   const customerTypeNum = f.customer_type ?? inferCustomerTypeFromIdCode(f.identification?.code);
   return {
     name: f.business_name?.trim() || f.client_name?.trim() || "",
-    trade_name: carryOver?.trade_name,
+    // Persist what the user typed rather than echoing back whatever the
+    // receiver already carried, which made the field read-only in practice.
+    trade_name: f.client_name?.trim() || carryOver?.trade_name,
     email: f.email?.trim() || undefined,
     nationality: f.nationality,
     customer_type_code: String(customerTypeNum).padStart(2, "0"),
@@ -409,3 +460,19 @@ export function ClientDrawerForm({
     </Drawer>
   );
 }
+
+/**
+ * Pure mappers, exported for tests.
+ *
+ * The receiver↔form translation is where four separate bugs lived — a default
+ * id type counting as user input, the trade name colliding with the legal name,
+ * the trade name never persisting, and the customer type defaulting in a way
+ * that made the id-type filter erase the id. None of them are visible without
+ * exercising the mapping directly, which is why it is reachable from a test.
+ */
+export const __testing = {
+  isReceiverTouched,
+  receiverToForm,
+  formToReceiver,
+  buildForm,
+};

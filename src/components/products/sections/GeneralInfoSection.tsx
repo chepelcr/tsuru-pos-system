@@ -5,7 +5,11 @@ import { FormLabel, Select } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAllMeasurementUnits } from "@/hooks/useDataApi";
 import type { Category } from "@/types";
+import { DEFAULT_UNIT_MEASURE } from "@/types/productForm";
 import type { ProductFormState } from "@/types/productForm";
+
+/** Sentinel for the free-text unit, matching the line detail's "Otros". */
+const OTHER_UNIT = "Otros";
 
 interface GeneralInfoSectionProps {
   form: ProductFormState;
@@ -24,7 +28,7 @@ export function GeneralInfoSection({
 }: GeneralInfoSectionProps) {
   const { t } = useLanguage();
   const { data: unitsData } = useAllMeasurementUnits();
-  const [customUnit, setCustomUnit] = useState(false);
+  const [customUnit, setCustomUnit] = useState(form.unitMeasure === OTHER_UNIT);
 
   const units = unitsData ?? [];
 
@@ -72,36 +76,62 @@ export function GeneralInfoSection({
         </Select>
       </div>
 
+      {/* Unit of measure.
+          This control was rendered but never connected: the <Select> had no
+          `value` and its onChange only flipped local state, and the free-text
+          input had neither. So the field could not be set at all, every product
+          saved without a `unit_measure`, and the invoice built from it fell
+          back to "Unid" — wrong for anything sold by weight or volume, and
+          Hacienda requires `UnidadMedida` on every line.
+          It stores the Hacienda CODE (not the catalog id) and mirrors the
+          commercial unit, exactly as the line-detail drawer does. */}
       {units.length > 0 && (
         <div>
-          <FormLabel>{t("products.unitOfMeasure")}</FormLabel>
+          <FormLabel required>{t("products.unitOfMeasure")}</FormLabel>
           {!customUnit ? (
             <Select
               className="pp-input"
+              value={form.unitMeasure}
               onChange={(e) => {
-                if (e.target.value === "__other__") {
+                const value = e.target.value;
+                if (value === OTHER_UNIT) {
                   setCustomUnit(true);
+                  onChange({ unitMeasure: OTHER_UNIT, commercialUnitMeasure: "" });
+                  return;
                 }
+                // Outside "Otros" the commercial unit simply mirrors the code,
+                // so the two never disagree on an ordinary article.
+                onChange({ unitMeasure: value, commercialUnitMeasure: value });
               }}
             >
-              <option value="">{t("products.selectUnit")}</option>
               {units.map((u: { id: number; description: string; code?: string }) => (
-                <option key={u.id} value={String(u.id)}>
+                <option key={u.id} value={u.code ?? String(u.id)}>
                   {u.description}{u.code ? ` (${u.code})` : ""}
                 </option>
               ))}
-              <option value="__other__">{t("products.otherUnit")}</option>
+              <option value={OTHER_UNIT}>{t("products.otherUnit")}</option>
             </Select>
           ) : (
             <div className="flex gap-1.5">
               <input
                 className="pp-input flex-1"
                 placeholder={t("products.specifyUnit")}
+                value={form.commercialUnitMeasure}
+                onChange={(e) => onChange({ commercialUnitMeasure: e.target.value })}
+                maxLength={20}
               />
               <button
                 type="button"
                 className="btn btn-ghost btn-sm text-xs"
-                onClick={() => setCustomUnit(false)}
+                onClick={() => {
+                  setCustomUnit(false);
+                  // Back to the default rather than to nothing — an empty unit
+                  // is not a legal document line.
+                  onChange({
+                    unitMeasure: DEFAULT_UNIT_MEASURE,
+                    commercialUnitMeasure: DEFAULT_UNIT_MEASURE,
+                  });
+                }}
               >
                 {t("common.cancel")}
               </button>

@@ -2,11 +2,7 @@ import { useEffect } from "react";
 import { DollarSign } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { FormLabel } from "@/components/ui";
-import { TaxCalculationService, type LineTax, type LineDiscount } from "@/services/taxCalculationService";
-import {
-  DiscountCalculationService,
-  DiscountValidationError,
-} from "@/services/discountCalculationService";
+import { useProductLineAmounts } from "@/hooks/useProductLineAmounts";
 import { useAllTaxes, useAllDiscountTypes } from "@/hooks/useDataApi";
 import { CountryISO, TaxTypeCode } from "@/lib/enums";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -57,77 +53,38 @@ export function CommercialValueSection({
 
   // Project the product-form internal shape into the canonical LineTax /
   // LineDiscount shapes the calc service expects.
-  const taxEntries = taxes.map((tx) => ({
-    code: tx.taxCode,
-    rate: tx.rate,
-    factor: tx.taxFactor,
-    special_fields: tx.specialFields
-      ? {
-          quantity: tx.specialFields.quantity,
-          percentage: tx.specialFields.percentage,
-          volume_consumption: tx.specialFields.volumeConsumption,
-          tax_amount_id: tx.specialFields.taxAmountId,
-          tax_unit_amount: tx.specialFields.taxAmount,
-        }
-      : undefined,
-  })) as LineTax[];
-  const discountEntries: LineDiscount[] = discounts.map((d) => ({
-    discount_type: d.discountCode,
-    percentage: d.rate ?? 0,
-    reason: d.reason,
-  }));
-
-  // The product form previews the line total at qty=1, so we feed the
-  // discount cascade with `price` directly. Surface validation errors back
-  // to the parent drawer so save is blocked when a discount is invalid.
-  let discountInfo: ReturnType<typeof DiscountCalculationService.calculate> | null = null;
-  let discountError: DiscountValidationError | null = null;
-  try {
-    discountInfo = price > 0
-      ? DiscountCalculationService.calculate(price, discountEntries)
-      : null;
-  } catch (err) {
-    if (err instanceof DiscountValidationError) {
-      discountError = err;
-      discountInfo = null;
-    } else {
-      throw err;
-    }
-  }
+  // One calculation for the whole product form — the same engines, in the same
+  // order, that the line-detail drawer and the backend use. See
+  // `useProductLineAmounts`; the per-discount amounts below come from the
+  // CASCADE it ran, not from a second pass over the raw percentages.
+  const { amounts: calc, discount: discountInfo, error: discountError } =
+    useProductLineAmounts({
+      price,
+      taxes,
+      discounts,
+      cabys: form.cabys || undefined,
+      hasFactoryTax,
+      baseAmountOverride: form.baseAmount ? Number(form.baseAmount) : undefined,
+      taxTypes: taxTypeRows,
+    });
 
   useEffect(() => {
     if (!onValidationChange) return;
     onValidationChange(discountError ? [t(discountError.message)] : []);
   }, [discountError, onValidationChange, t]);
 
-  const calc = price > 0
-    ? TaxCalculationService.getLineAmounts({
-        subtotal: discountInfo?.subtotalAfterDiscount ?? price,
-        monto_total_original: price,
-        taxes: taxEntries,
-        tax_types: taxTypeRows.map((tt) => ({
-          code: tt.code,
-          tax_id: Number(tt.id),
-          description: tt.description,
-        })),
-        detail_quantity: 1,
-        cabys: form.cabys || undefined,
-        has_factory_tax: hasFactoryTax,
-        hasRoyaltyOrBonus: discountInfo?.hasRoyaltyOrBonus,
-        customer_pays_tax_on_original_base:
-          discountInfo?.customer_pays_tax_on_original_base,
-        discountedNatures: discountInfo?.discountedNatures,
-      })
-    : null;
-
-  const discountLines = discounts.map((d) => ({
+  // Cascaded, not `price × rate` each. Discounts apply to the RUNNING balance
+  // — 10% then 5% on 1000 is 855, not 850 — so the per-line figures shown here
+  // used to add up to a different number than the total the engine computed
+  // right beside them.
+  const discountLines = discounts.map((d, index) => ({
     label: labelByCode(discountTypeRows, d.discountCode),
     rate: d.rate ?? 0,
-    amount: price * (d.rate ?? 0) / 100,
+    amount: discountInfo?.perDiscount[index]?.amount ?? 0,
   }));
-  const totalDiscountAmount = discountLines.reduce((s, d) => s + d.amount, 0);
+  const totalDiscountAmount = discountInfo?.totalDiscountAmount ?? 0;
 
-  const netPrice = price - totalDiscountAmount;
+  const netPrice = discountInfo?.subtotalAfterDiscount ?? price;
 
   const ivaTaxes = taxes.filter((t) => IVA_CODES.includes(t.taxCode));
   const otherTaxes = taxes.filter((t) => !IVA_CODES.includes(t.taxCode));

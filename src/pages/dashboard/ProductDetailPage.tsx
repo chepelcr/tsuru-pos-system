@@ -12,6 +12,7 @@ import { usePermissions } from "@/hooks/useRbac";
 import type { Product, Category } from "@/types";
 import { Card, Icon, Button, Badge, Menu } from "@/components/ui";
 import { ProductDrawerForm, EMPTY_FORM, type ProductFormState } from "@/components/products/ProductDrawerForm";
+import { DEFAULT_UNIT_MEASURE } from "@/types/productForm";
 
 function InfoRow({ icon, label, value }: { icon: string; label: string; value: string | number }) {
   return (
@@ -139,6 +140,15 @@ export default function ProductDetailPage({ productId }: Props) {
       cabysId: product.cabys?.id ?? "",
       cabys: product.cabys?.code ?? "",
       cabysDescription: product.cabys?.description ?? "",
+      // Never blank: an empty unit is not a legal document line, and an
+      // existing product that predates the field still has to open with one.
+      unitMeasure: (product as any).unit_measure || DEFAULT_UNIT_MEASURE,
+      commercialUnitMeasure: (product as any).commercial_unit_measure ?? "",
+      customsPart: (product as any).customs_part ?? "",
+      baseAmount:
+        (product as any).base_amount !== null && (product as any).base_amount !== undefined
+          ? String((product as any).base_amount)
+          : "",
       productTypeId: product.cabys?.product_type_id ?? undefined,
       factoryTaxChargeId: (product as any).factory_tax_charge_id ?? undefined,
       hasFactoryTax: !!(product as any).factory_tax || !!(product as any).factory_tax_charge_id,
@@ -149,6 +159,7 @@ export default function ProductDetailPage({ productId }: Props) {
       taxes: (product.taxes ?? []).map((t: any) => ({
         taxCode: String(t.tax_type_id ?? ""),
         rate: t.tax_rate?.percentage ?? t.rate ?? 0,
+        taxRateCode: (t as any).tax_rate?.code ?? (t as any).rate_code ?? undefined,
         taxRateId: t.tax_rate?.id,
         taxFactorId: t.tax_factor?.id,
         taxFactor: t.tax_factor?.factor,

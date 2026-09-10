@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { User, X, Loader2 } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { FormLabel, Select } from "@/components/ui";
@@ -42,8 +42,43 @@ export function IdentitySection({
 
   const allowed = allowedIdCodes(nationality, customerType);
   const filteredIdTypes = allIdTypes.filter((t) => allowed.includes(t.code));
+  // A saved code outside the filtered set still has to be selectable, or the
+  // <select> renders with no matching <option> and silently displays the first
+  // one — showing an id type the record does not have.
+  const savedCode = form.identification?.code;
+  const idTypeOptions =
+    savedCode && !filteredIdTypes.some((t) => t.code === savedCode)
+      ? [...filteredIdTypes, ...allIdTypes.filter((t) => t.code === savedCode)]
+      : filteredIdTypes;
 
+  // Keep the id type consistent when the USER switches nationality or customer
+  // type — and only then.
+  //
+  // This used to run on any change to `filteredIdTypes.length`, which includes
+  // the moment the identifications catalog finishes loading. At that point it
+  // compared the client's saved id code against a list filtered by a customer
+  // type that had not been resolved yet, decided it was invalid, and cleared
+  // the code, the NUMBER and the razón social. Every client whose customer type
+  // was not on record — which is every client auto-created from an order
+  // import — opened with a wrong id type and an empty id.
+  //
+  // The reset is a response to a user action, so it fires only when one of the
+  // two inputs actually changes after mount. Loaded data is left alone.
+  const previousScope = useRef<{ nationality: string; customerType: number } | null>(null);
   useEffect(() => {
+    const scope = { nationality, customerType };
+    const previous = previousScope.current;
+    previousScope.current = scope;
+
+    // First run: adopt whatever was loaded.
+    if (!previous) return;
+    if (
+      previous.nationality === scope.nationality &&
+      previous.customerType === scope.customerType
+    ) {
+      return;
+    }
+
     const currentCode = form.identification?.code;
     const isValid = filteredIdTypes.some((t) => t.code === currentCode);
     if (!isValid && filteredIdTypes.length > 0) {
@@ -187,7 +222,7 @@ export function IdentitySection({
             disabled={loadingID || !canEditCriticalFields}
           >
             {loadingID && <option value="">Cargando…</option>}
-            {filteredIdTypes.map((t) => (
+            {idTypeOptions.map((t) => (
               <option key={t.code} value={t.code}>
                 {t.description}
               </option>

@@ -99,7 +99,16 @@ export function IvaTaxSection({
                     value={tax.taxRateId ?? ""}
                     onChange={(e) => {
                       const r = rateList.find((r: { id: number }) => String(r.id) === e.target.value);
-                      if (r) onUpdate(tax.taxCode, { taxRateId: r.id, rate: (r as { percentage: number }).percentage });
+                      // The Hacienda rate CODE is stored alongside the id and
+                      // the percentage. The percentage alone does not identify
+                      // the treatment: exento, no sujeto and crédito pleno are
+                      // all 0%, so a document that infers the code back from
+                      // the rate can declare the wrong one.
+                      if (r) onUpdate(tax.taxCode, {
+                        taxRateId: r.id,
+                        rate: (r as { percentage: number }).percentage,
+                        taxRateCode: (r as { code?: string }).code,
+                      });
                     }}
                   >
                     <option value="">{t("products.taxRate")}</option>
@@ -172,6 +181,7 @@ export function IvaTaxSection({
                   taxCode: (tt as { code?: string }).code ?? "",
                   rate: (defaultRate as { percentage: number })?.percentage ?? 13,
                   taxRateId: defaultRate?.id,
+                  taxRateCode: (defaultRate as { code?: string })?.code,
                 });
               }
             }}

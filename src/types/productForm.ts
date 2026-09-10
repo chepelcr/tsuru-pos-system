@@ -18,6 +18,15 @@ export interface TaxFormEntry {
   /** Hacienda tax type code: "01" IVA, "02" ISC, "07" IVACE, "08" IVARBU, "99" OTROS, etc. */
   taxCode: string;
   rate: number;
+  /**
+   * Hacienda Nota 8.1 rate code ("08" general 13%, "10" exenta, ...).
+   *
+   * Persisted alongside the percentage rather than inferred from it. The
+   * mapping is one-way at 0%: exento (10), no sujeto (11) and crédito pleno
+   * (01) are all "0%", so a document built by guessing the code back from the
+   * percentage can carry the wrong tax treatment.
+   */
+  taxRateCode?: string;
   /** data-services tax-rate catalog id (opaque). */
   taxRateId?: number;
   /** data-services tax-factor catalog id (opaque). */
@@ -87,6 +96,24 @@ export interface ProductFormState {
   // Pricing
   price: string;
 
+  // ── The rest of the document line ────────────────────────────────────
+  // A product is the template a `DetalleLinea` is built from, so it carries
+  // the same fields. These were absent, which is why every product reached an
+  // invoice with `unit_measure` unset — Hacienda requires `UnidadMedida` on
+  // every line, and the checkout had to fall back to "Unid" regardless of what
+  // the product is actually sold by.
+  /** Hacienda `UnidadMedida` code. Defaults to `Unid` — never saved empty. */
+  unitMeasure: string;
+  /** Free-text commercial unit shown to the customer ("Caja de 12"). */
+  commercialUnitMeasure: string;
+  /** Partida arancelaria, for imported goods. */
+  customsPart: string;
+  /**
+   * Editable taxable base. Legal only alongside tax code 07 (IVA cálculo
+   * especial) or `IVACobradoFabrica` "01"; the backend rejects it elsewhere.
+   */
+  baseAmount: string;
+
   // Taxes & Discounts
   taxes: TaxFormEntry[];
   discounts: DiscountFormEntry[];
@@ -94,6 +121,29 @@ export interface ProductFormState {
   // Image (handled externally via File, stored here as URL for edit mode)
   image_url?: string;
 }
+
+/**
+ * Hacienda unit-of-measure code every product starts with.
+ *
+ * "Unid" (unidad) is the right default for a discrete article, which is what
+ * most catalog entries are, and — more to the point — an EMPTY unit is not a
+ * legal document line. Defaulting here means the field is never saved blank.
+ */
+export const DEFAULT_UNIT_MEASURE = "Unid";
+
+/**
+ * A new product starts with NO tax row: the IVA comes from the CABYS.
+ *
+ * Picking a CABYS code is what determines the rate — that is the whole point
+ * of the taxonomy, and `FiscalInformationSection` fills the tax in from the
+ * selected row. Seeding a 13% row here instead would put the general rate on
+ * an article the catalog says is exempt or reduced, and the operator would have
+ * to notice and undo it.
+ *
+ * The 13% fill is for products that ALREADY exist with no taxes and no CABYS —
+ * the ones auto-created by an order import, which have nothing to derive from.
+ * That runs once, in `be/store-be/scripts/backfill_product_iva.py`.
+ */
 
 export const EMPTY_PRODUCT_FORM: ProductFormState = {
   name: "",
@@ -111,6 +161,10 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   hasFactoryTax: false,
   codes: [],
   price: "",
+  unitMeasure: DEFAULT_UNIT_MEASURE,
+  commercialUnitMeasure: "",
+  customsPart: "",
+  baseAmount: "",
   taxes: [],
   discounts: [],
 };

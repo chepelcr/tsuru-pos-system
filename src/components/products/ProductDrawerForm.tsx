@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
 import { useAllProductTypes, useAllMeasurementUnits, useAllTaxes, useAllTaxRates } from "@/hooks/useDataApi";
 import { useAccordionSections } from "@/hooks/useAccordionSections";
-import { TaxCalculationService, type LineTax, type LineDiscount } from "@/services/taxCalculationService";
+import { useProductLineAmounts } from "@/hooks/useProductLineAmounts";
 import { CountryISO, TaxTypeCode } from "@/lib/enums";
 import type { Product, Category } from "@/types";
 import type { CabysItem } from "@/services/data-api";
@@ -21,6 +21,7 @@ import { DiscountsSection } from "./sections/DiscountsSection";
 import { CommercialValueSection } from "./sections/CommercialValueSection";
 import { CodesSection } from "./sections/CodesSection";
 
+import { EMPTY_PRODUCT_FORM } from "@/types/productForm";
 import type { ProductFormState, TaxFormEntry, DiscountFormEntry, CodeFormEntry } from "@/types/productForm";
 export type { ProductFormState, TaxFormEntry, DiscountFormEntry, CodeFormEntry };
 
@@ -30,25 +31,13 @@ const IVA_CODES: readonly string[] = [
   TaxTypeCode.IVARBU,
 ];
 
-export const EMPTY_FORM: ProductFormState = {
-  name: "",
-  description: "",
-  category_id: "",
-  track_inventory: false,
-  has_fiscal_info: false,
-  has_package_info: false,
-  low_stock_threshold: "",
-  cabysId: "",
-  cabys: "",
-  cabysDescription: "",
-  productTypeId: undefined,
-  factoryTaxChargeId: undefined,
-  hasFactoryTax: false,
-  codes: [],
-  price: "",
-  taxes: [],
-  discounts: [],
-};
+/**
+ * Re-exported so existing call sites keep working. The definition lives in
+ * `types/productForm` — there were two copies of this object and they had
+ * already drifted, which is how a new field could reach one blank form and not
+ * the other.
+ */
+export const EMPTY_FORM = EMPTY_PRODUCT_FORM;
 
 const ISO = CountryISO.COSTA_RICA;
 
@@ -213,14 +202,22 @@ export function ProductDrawerForm({
     const ivaTaxType = allTaxes.find((t: { code?: string }) => t.code === TaxTypeCode.IVA);
     if (!ivaTaxType) return;
 
-    const matchingRate = allRates.find(
-      (r: { percentage: number }) => r.percentage === suggestedPct
-    ) ?? allRates[0];
+    // The CABYS row names the rate directly, so prefer its id and its CODE over
+    // matching the catalog on percentage. The percentage is not a key: exento
+    // (10), no sujeto (11) and crédito pleno (01) are all 0%, so a match by
+    // rate picks one of three treatments arbitrarily. Falling back to the
+    // percentage match keeps a CABYS row that carries no rate working.
+    const matchingRate =
+      allRates.find((r: { id: number }) => r.id === item.tax_rate?.id) ??
+      allRates.find((r: { percentage: number }) => r.percentage === suggestedPct) ??
+      allRates[0];
 
     const ivaEntry: TaxFormEntry = {
       taxCode: ivaTaxType.code ?? TaxTypeCode.IVA,
       rate: (matchingRate as { percentage: number })?.percentage ?? suggestedPct,
       taxRateId: matchingRate?.id,
+      // Persisted so nothing downstream has to infer it back from the rate.
+      taxRateCode: item.tax_rate?.code ?? (matchingRate as { code?: string })?.code,
     };
 
     const existingIva = form.taxes.find((t) => IVA_CODES.includes(t.taxCode));
@@ -327,38 +324,32 @@ export function ProductDrawerForm({
     Number(form.price) > 0 &&
     validationErrors.length === 0;
 
-  // Compute base amount for IVA calculation (after discounts + special taxes)
   const price = Number(form.price) || 0;
-  const baseAmountForIva = price > 0 && form.taxes.length > 0
-    ? TaxCalculationService.getLineAmounts({
-        subtotal: price,
-        monto_total_original: price,
-        taxes: form.taxes.map((tx) => ({
-          code: tx.taxCode,
-          rate: tx.rate,
-          // Inline factor (IVARBU) and unit amount (special-amount taxes) so the
-          // preview matches what the BE will compute from the same payload.
-          factor: tx.taxFactor,
-          special_fields: tx.specialFields
-            ? {
-                quantity: tx.specialFields.quantity,
-                percentage: tx.specialFields.percentage,
-                volume_consumption: tx.specialFields.volumeConsumption,
-                tax_amount_id: tx.specialFields.taxAmountId,
-                tax_unit_amount: tx.specialFields.taxAmount,
-              }
-            : undefined,
-        })) as LineTax[],
-        tax_types: (taxesData ?? []) as any,
-        discounts: form.discounts.map((d) => ({
-          discount_type: d.discountCode,
-          percentage: d.rate ?? 0,
-        })) as LineDiscount[],
-        detail_quantity: 1,
-        cabys: form.cabys || undefined,
-        has_factory_tax: form.hasFactoryTax,
-      }).base_amount
-    : price;
+
+  // The IVA base, from the SAME engines the checkout and the backend use.
+  //
+  // This used to be a second, divergent call: it passed `subtotal: price` —
+  // the PRE-discount amount — and handed the tax service a `discounts` array
+  // that the service documents as ignored for routing. So a product with a
+  // discount previewed its IVA on the wrong base, and a royalty or bonus
+  // nature never routed into factory-assumed at all, while
+  // `CommercialValueSection` right below it computed the correct figures from
+  // the same form. Two numbers for one question, on the same screen.
+  //
+  // Now the discount cascade runs first (which is also what validates nature
+  // 99's required reason), and its result feeds the tax service — the same
+  // order `LineDetailDrawer` and `useCartFlow` use. Quantity is 1: a product is
+  // the template for a line, not a line.
+  const productLine = useProductLineAmounts({
+    price,
+    taxes: form.taxes,
+    discounts: form.discounts,
+    cabys: form.cabys || undefined,
+    hasFactoryTax: form.hasFactoryTax,
+    baseAmountOverride: form.baseAmount ? Number(form.baseAmount) : undefined,
+    taxTypes: taxesData ?? [],
+  });
+  const baseAmountForIva = productLine.amounts?.base_amount ?? price;
 
   return (
     <Drawer

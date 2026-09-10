@@ -1,3 +1,4 @@
+import { DEFAULT_UNIT_MEASURE } from "@/types/productForm";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -190,6 +191,15 @@ export default function ProductsPage() {
       cabysId: p.cabys?.id ?? "",
       cabys: p.cabys?.code ?? "",
       cabysDescription: p.cabys?.description ?? "",
+      // Never blank: an empty unit is not a legal document line, and an
+      // existing product that predates the field still has to open with one.
+      unitMeasure: (p as any).unit_measure || DEFAULT_UNIT_MEASURE,
+      commercialUnitMeasure: (p as any).commercial_unit_measure ?? "",
+      customsPart: (p as any).customs_part ?? "",
+      baseAmount:
+        (p as any).base_amount !== null && (p as any).base_amount !== undefined
+          ? String((p as any).base_amount)
+          : "",
       productTypeId: p.cabys?.product_type_id ?? undefined,
       factoryTaxChargeId: (p as any).factory_tax_charge_id ?? undefined,
       hasFactoryTax: !!(p as any).factory_tax || !!(p as any).factory_tax_charge_id,
@@ -203,6 +213,7 @@ export default function ProductsPage() {
       taxes: (p.taxes ?? []).map((t: any) => ({
         taxCode: String(t.tax_type_id ?? ""),
         rate: t.tax_rate?.percentage ?? t.rate ?? 0,
+        taxRateCode: t.tax_rate?.code ?? t.rate_code ?? undefined,
         taxRateId: t.tax_rate?.id,
         taxFactorId: t.tax_factor?.id,
         taxFactor: t.tax_factor?.factor,
@@ -245,6 +256,15 @@ export default function ProductsPage() {
         // CABYS — single UUID referencing an existing data-services cabys row.
         cabys_id: form.cabysId || undefined,
 
+        // The rest of the document line. A product is the template a
+        // `DetalleLinea` is built from, and these never travelled — so every
+        // product reached an invoice with no unit of measure, and the checkout
+        // fell back to "Unid" whatever the article is actually sold by.
+        unit_measure: form.unitMeasure || DEFAULT_UNIT_MEASURE,
+        commercial_unit_measure: form.commercialUnitMeasure.trim() || undefined,
+        customs_part: form.customsPart.trim() || undefined,
+        base_amount: form.baseAmount ? Number(form.baseAmount) : undefined,
+
         // Factory-tax charge id (data-services numeric id). The BE persists
         // the canonical IVA-collected-at-factory linkage on the product.
         factory_tax_charge_id: form.factoryTaxChargeId || undefined,
@@ -259,9 +279,17 @@ export default function ProductsPage() {
         // special_fields.tax_amount.amount carry real catalog values captured at select time.
         taxes: form.taxes.length > 0 ? form.taxes.map(t => ({
           tax_type_id: t.taxCode,
-          tax_rate: t.taxRateId ? {
-            id: String(t.taxRateId),
+          // The rate CODE travels with the percentage. Without it the checkout
+          // has to infer the code back from the rate, which is unambiguous at
+          // 13% but not at 0% — exento (10), no sujeto (11) and crédito pleno
+          // (01) are all "0%", and guessing puts a wrong tax treatment on a
+          // legal document. Sent whenever either half is known, since the
+          // catalog id is optional on the backend but the code is not
+          // recoverable.
+          tax_rate: (t.taxRateId || t.taxRateCode) ? {
+            id: t.taxRateId ? String(t.taxRateId) : undefined,
             percentage: t.rate,
+            code: t.taxRateCode,
           } : undefined,
           tax_factor: t.taxFactorId ? {
             id: String(t.taxFactorId),
