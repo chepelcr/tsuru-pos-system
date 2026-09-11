@@ -652,15 +652,20 @@ preview builds): the bell still lists what the hydrate loaded, it just stops
 updating live. Backend side: `be/sales-be/shared/jbiller_common/notifications/`
 (create = persist + publish, one method) and the `user-notifications` Lambda.
 
-**Where that variable comes from.** Not a repo variable and not a literal in the
-workflow: the build assumes the deploy role and reads
-`/tsuru/{env}/platform/appsync/events-url` from SSM, so the CloudFormation stack
-that owns the endpoint is the one that publishes it. The value is
-`https://events.tsuru.jcampos.dev/event` — a custom domain, precisely so it is a
-constant that can be hardcoded in a params stack instead of a generated hash
-that changes if the API is recreated. Amplify derives the WebSocket URL from it
-by appending `/realtime` (it recognises a non-AppSync host as a custom domain),
-so this one value drives both endpoints. Locally, put it in `.env`.
+**Where that variable comes from.** A literal in the workflow,
+`https://events.tsuru.jcampos.dev/event`, like every other `VITE_*` value — and
+for the same reason: it is a constant. That is the point of the Events API
+having a custom domain rather than its generated 26-character hostname, which
+would change if the API were recreated. Amplify derives the WebSocket URL from
+it by appending `/realtime` (it recognises a non-AppSync host as a custom
+domain), so this one value drives both endpoints. Locally, put it in `.env`.
+
+It is *also* published at `/tsuru/{env}/platform/appsync/events-url` for
+consumers that resolve config at runtime. This build deliberately does not read
+it from there: this repo is public and has no AWS deploy role (the S3/CloudFront
+one went away with the move to GitHub Pages), and standing one up so CI can
+fetch a value that never changes would be a real security surface bought for
+nothing.
 
 ---
 
