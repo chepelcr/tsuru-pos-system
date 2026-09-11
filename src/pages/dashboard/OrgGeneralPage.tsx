@@ -17,6 +17,7 @@ import {
   BusinessIdentityFields,
   type BusinessIdentityValue,
 } from "@/components/org-settings/BusinessIdentityFields";
+import { FeatureVisibilityFields } from "@/components/org-settings/FeatureVisibilityFields";
 import { ROUTES } from "@/routePaths";
 
 const buildSchema = (t: (k: string) => string) =>
@@ -182,6 +183,13 @@ export default function OrgGeneralPage() {
             onChange={(patch) => setIdentity((prev) => ({ ...prev, ...patch }))}
             disabled={!canUpdate}
           />
+
+          <div className="pt-1 border-t border-border" />
+
+          {/* Visibility is a preference, not part of the org record: it saves
+              as you toggle rather than on submit, so it does not ride along
+              with the name/description PATCH. */}
+          <FeatureVisibilityFields orgId={org.id} disabled={!canUpdate} />
 
           {canUpdate && (
             <div className="flex justify-end pt-1">
