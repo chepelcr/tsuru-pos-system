@@ -32,26 +32,63 @@ jobs:
       VITE_ORDERS_API_URL: https://orders-api.tsuru.jcampos.dev
       VITE_SALES_API_URL: https://sales-api.tsuru.jcampos.dev
       VITE_DATA_API_URL: https://data-api.tsuru.jcampos.dev
-      # AppSync Events API — real-time notifications. A literal like every
-      # other value here, and for the same reason: it is a constant. That is
-      # the whole point of giving the Events API a custom domain instead of
-      # using its generated 26-character hostname — the hash would change if
-      # the API were ever recreated, the name will not.
-      #
-      # It is also published at /tsuru/{env}/platform/appsync/events-url for
-      # consumers that resolve config at runtime. This build does not read it
-      # from there: fetching a constant would mean giving a public repo's CI an
-      # assumable AWS role, which is a real security surface to take on in
-      # exchange for nothing. Empty builds a POS whose bell works but does not
-      # update live.
-      VITE_APPSYNC_EVENTS_URL: https://events.tsuru.jcampos.dev/event
+      # VITE_APPSYNC_EVENTS_URL is resolved from SSM below, not inlined — see
+      # the note on the "Resolve runtime config" step.
       VITE_BASE_DOMAIN: tsuru.jcampos.dev
       VITE_TEMPLATE_NAME: pos-system
       VITE_TEMPLATE_DISPLAY_NAME: Tsuru POS
       VITE_TEMPLATE_INDUSTRY: pos
       VITE_SINPE_NUMBER: 8888-8888
+    permissions:
+      contents: read
+      # Mints the OIDC token for the role below. The Pages deploy job declares
+      # its own id-token permission separately.
+      id-token: write
     steps:
       - uses: actions/checkout@v7
+
+      # ── Build configuration owned by a stack, read from that stack ─────────
+      # The values above are literals because they are ours to choose. The
+      # AppSync Events endpoint is not: it is an output of a CloudFormation
+      # stack in another repo, and copying it here would mean two places to
+      # change and one of them quietly going stale. It is published to
+      # /tsuru/{env}/platform/* alongside the API URLs and Cognito ids, and read
+      # from there with a role scoped to exactly that path
+      # (cloudformation/deploy-role.yml).
+      #
+      # Soft-fail on purpose — but LOUDLY. An earlier version swallowed the
+      # OIDC failure and shipped a POS with no real-time endpoint while the job
+      # still showed green, so the failure paths below all emit a ::warning::
+      # and the build's own log says which endpoint it compiled in.
+      - name: Configure AWS credentials (OIDC)
+        id: aws
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Warn when credentials are unavailable
+        if: steps.aws.outcome != 'success'
+        run: |
+          echo "::warning::Could not assume the deploy role — building without \
+          live notifications. Check the AWS_DEPLOY_ROLE_ARN secret and the role's \
+          trust policy (cloudformation/deploy-role.yml)."
+
+      - name: Resolve runtime config from SSM
+        if: steps.aws.outcome == 'success'
+        run: |
+          set -o pipefail
+          events_url=$(aws ssm get-parameter \
+            --name "/tsuru/${ENVIRONMENT:-dev}/platform/appsync/events-url" \
+            --query 'Parameter.Value' --output text 2>/dev/null || true)
+          if [ -n "$events_url" ] && [ "$events_url" != "None" ]; then
+            echo "VITE_APPSYNC_EVENTS_URL=$events_url" >> "$GITHUB_ENV"
+            echo "Events endpoint: $events_url"
+          else
+            echo "::warning::/tsuru/${ENVIRONMENT:-dev}/platform/appsync/events-url \
+            is missing or empty — building without live notifications."
+          fi
 
       - uses: pnpm/action-setup@v6
 
@@ -64,7 +101,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm run build
+        run: |
+          echo "Building with events endpoint: ${VITE_APPSYNC_EVENTS_URL:-<none>}"
+          pnpm run build
 
       - name: SPA 404 fallback (client-side routing on GitHub Pages)
         run: cp dist/index.html dist/404.html

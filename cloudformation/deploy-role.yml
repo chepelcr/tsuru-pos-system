@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  GitHub Actions OIDC role for chepelcr/tsuru-pos-system — read-only access to
+  the frontend build configuration in SSM.
+
+  This repo deploys to GitHub Pages, not to AWS, so unlike the backend deploy
+  roles it needs no ECR, Lambda, CloudFormation or API Gateway rights. Its ONLY
+  job is to let the build read /tsuru/{env}/platform/* so the values the
+  frontend is compiled with come from the stacks that own them rather than from
+  literals copied into a workflow.
+
+  Deploy once per environment with an admin profile (creates IAM):
+    aws cloudformation deploy --template-file cloudformation/deploy-role.yml \
+      --stack-name tsuru-pos-system-dev-deploy-role \
+      --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Environment=dev
+
+  Then store the DeployRoleArn output as the repo secret AWS_DEPLOY_ROLE_ARN.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, stag, prod]
+
+  GitHubRepo:
+    Type: String
+    Default: chepelcr/tsuru-pos-system
+    Description: org/repo allowed to assume this role via OIDC
+
+  GitHubRef:
+    Type: String
+    Default: refs/heads/main
+    Description: >-
+      Git ref allowed to assume the role. THIS REPOSITORY IS PUBLIC, so the
+      trust is pinned to the deploy branch rather than the repo as a whole
+      (`repo:owner/name:*`, which the backend roles use). That wildcard would
+      also match pull-request and other-branch workflow runs; anyone able to
+      land a workflow change on another branch could then read these
+      parameters. The build only ever runs on this ref — push to it, or a
+      manual dispatch against it — so nothing legitimate is lost.
+
+Resources:
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tsuru-pos-system-${Environment}-github-deploy"
+      Description: !Sub "GitHub Actions config-read role for ${GitHubRepo} (${Environment})"
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              # The account-global provider shared by every repo's deploy role.
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub "repo:${GitHubRepo}:ref:${GitHubRef}"
+      Policies:
+        # Read-only, and only the frontend configuration namespace. Not
+        # /tsuru/{env}/* — that path also holds the backends' database secret
+        # names and Hacienda configuration, none of which a browser bundle has
+        # any business reading.
+        - PolicyName: platform-config-read
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/platform/*"
+
+Outputs:
+  DeployRoleArn:
+    Description: Store as the AWS_DEPLOY_ROLE_ARN repo secret in tsuru-pos-system
+    Value: !GetAtt DeployRole.Arn
+    Export:
+      Name: !Sub "tsuru-pos-system-${Environment}-deploy-role-arn"

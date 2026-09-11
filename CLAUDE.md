@@ -652,20 +652,30 @@ preview builds): the bell still lists what the hydrate loaded, it just stops
 updating live. Backend side: `be/sales-be/shared/jbiller_common/notifications/`
 (create = persist + publish, one method) and the `user-notifications` Lambda.
 
-**Where that variable comes from.** A literal in the workflow,
-`https://events.tsuru.jcampos.dev/event`, like every other `VITE_*` value — and
-for the same reason: it is a constant. That is the point of the Events API
-having a custom domain rather than its generated 26-character hostname, which
-would change if the API were recreated. Amplify derives the WebSocket URL from
-it by appending `/realtime` (it recognises a non-AppSync host as a custom
-domain), so this one value drives both endpoints. Locally, put it in `.env`.
+**Where that variable comes from.** SSM, at build time — not a literal and not
+a repo variable. It is an output of a CloudFormation stack in another repo, so
+the stack that owns it publishes it to
+`/tsuru/{env}/platform/appsync/events-url` and the build reads it there;
+copying it into the workflow would mean two places to change and one of them
+quietly going stale. The value is `https://events.tsuru.jcampos.dev/event`, a
+custom domain rather than the API's generated 26-character hostname, so it
+survives the API being recreated. Amplify derives the WebSocket URL by
+appending `/realtime` (it recognises a non-AppSync host as a custom domain), so
+this one value drives both endpoints. Locally, put it in `.env`.
 
-It is *also* published at `/tsuru/{env}/platform/appsync/events-url` for
-consumers that resolve config at runtime. This build deliberately does not read
-it from there: this repo is public and has no AWS deploy role (the S3/CloudFront
-one went away with the move to GitHub Pages), and standing one up so CI can
-fetch a value that never changes would be a real security surface bought for
-nothing.
+**This repo is PUBLIC**, so the role that reads it (`cloudformation/deploy-role.yml`)
+is scoped harder than the backend deploy roles: read-only, only
+`/tsuru/{env}/platform/*` — not the whole `/tsuru/{env}/*` tree, which also
+holds database secret names and Hacienda configuration — and its trust is
+pinned to `ref:refs/heads/main` rather than the `repo:owner/name:*` wildcard the
+backends use, so a workflow on another branch cannot assume it. If you add a
+parameter for the build to read, put it under `platform/`; anything outside
+that path is deliberately unreachable from here.
+
+The build logs the endpoint it compiled in, and every failure path emits a
+`::warning::`. An earlier version swallowed an OIDC failure and shipped a POS
+with no real-time endpoint while the job still showed green — a silent
+misconfiguration is worse than a red build.
 
 ---
 
