@@ -9,7 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
 import type { EditorDocTypeCode, EditorDocumentTypeInfo } from "@/types/invoice";
-import { Icon, Logo, Badge } from "@/components/ui";
+import { Icon, Logo } from "@/components/ui";
 import { roleLabel } from "@/lib/rbacI18n";
 
 import type { NavId } from "./navIds";
@@ -325,11 +325,19 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             session is open, which is the honest rendering: there is nothing
             live to report. */}
         {activeSession?.name && (
-          <div className="flex items-center gap-2 px-3 pt-1.5">
-            <Badge variant="success" className="gap-1.5 shrink-0">
-              <span className="status-dot status-dot-live !w-1.5 !h-1.5" />
-              {t("shell.liveLabel")}
-            </Badge>
+          <div className="flex items-center gap-2.5 px-3 pt-1.5">
+            {/* The pulsing dot carries "en vivo" on its own — the word next to
+                it was saying the same thing twice. It keeps the label as an
+                accessible name, because a bare coloured dot means nothing to a
+                screen reader; the text is dropped visually, not semantically.
+                Back to the default 8px too: the size override existed only to
+                fit inside the badge that used to wrap it. */}
+            <span
+              role="img"
+              aria-label={t("shell.liveLabel")}
+              title={t("shell.liveLabel")}
+              className="status-dot status-dot-live"
+            />
             <div className="min-w-0">
               <div className="t-label !text-[10px]">{t("shell.activeSession")}</div>
               <div className="text-[12px] font-bold overflow-hidden text-ellipsis whitespace-nowrap">
