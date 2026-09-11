@@ -38,7 +38,12 @@ export interface SelectFieldProps {
    * the listbox adopts the surrounding form's look instead of fighting it.
    */
   baseClass?: string;
-  /** Show a filter box once the list is at least this long. 0 disables it. */
+  /**
+   * Show the filter box up front once the list is at least this long. 0 never
+   * shows it up front — but typing still reveals it, because a list short
+   * enough not to warrant a visible search box is not a list you should be
+   * unable to type into.
+   */
   searchThreshold?: number;
   /**
    * Focus handlers for the trigger. Callers use these to populate options
@@ -51,9 +56,8 @@ export interface SelectFieldProps {
   "aria-labelledby"?: string;
 }
 
-/** Show the filter box only when scanning the list by eye stops being viable. */
+/** Show the filter box up front only when scanning the list by eye stops being viable. */
 const DEFAULT_SEARCH_THRESHOLD = 8;
-const TYPEAHEAD_RESET_MS = 600;
 
 /**
  * The app's select control: a token-styled listbox, not a native `<select>`.
@@ -91,20 +95,30 @@ export function SelectField({
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  /**
+   * Typing on the trigger reveals the filter box for the rest of this open.
+   *
+   * Without it, the list is only searchable when it is long enough to render
+   * the box up front — so on every shorter list, typing did nothing visible and
+   * the only way to search was to open a longer one. It stays revealed even
+   * after the query is emptied with backspace: unmounting the input mid-typing
+   * drops focus to the body, and the next keystroke would go nowhere.
+   */
+  const [searchRevealed, setSearchRevealed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [pos, setPos] = useState<{ top: number; left: number; width: number; dropUp: boolean } | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const typeahead = useRef<{ buffer: string; at: number }>({ buffer: "", at: 0 });
 
   const selected = useMemo(
     () => options.find((o) => o.value === value) ?? null,
     [options, value],
   );
 
-  const showSearch = searchThreshold > 0 && options.length >= searchThreshold;
+  const showSearch =
+    (searchThreshold > 0 && options.length >= searchThreshold) || searchRevealed;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -123,6 +137,7 @@ export function SelectField({
   const close = useCallback((refocus = true) => {
     setOpen(false);
     setQuery("");
+    setSearchRevealed(false);
     setActiveIndex(-1);
     if (refocus) triggerRef.current?.focus();
   }, []);
@@ -217,6 +232,10 @@ export function SelectField({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
+    // The same handler is bound to the trigger AND to the filter input; the
+    // text-editing keys belong to whichever of the two actually holds an
+    // editable value.
+    const fromSearch = e.target === searchRef.current;
 
     if (!open) {
       if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key)) {
@@ -259,22 +278,33 @@ export function SelectField({
         if (option) commit(option);
         return;
       }
+      case "Backspace":
+        // The filter input edits its own value (caret position and all); only
+        // a keystroke landing on the TRIGGER is ours to interpret.
+        if (!fromSearch && query) {
+          e.preventDefault();
+          setQuery((q) => q.slice(0, -1));
+          setActiveIndex(0);
+        }
+        return;
       default:
         break;
     }
 
-    // Type-ahead: jump to the first option starting with what was typed.
-    if (!showSearch && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
-      const now = Date.now();
-      const buffer =
-        now - typeahead.current.at > TYPEAHEAD_RESET_MS
-          ? e.key.toLowerCase()
-          : typeahead.current.buffer + e.key.toLowerCase();
-      typeahead.current = { buffer, at: now };
-      const idx = filtered.findIndex(
-        (o) => !o.disabled && o.label.toLowerCase().startsWith(buffer),
-      );
-      if (idx >= 0) setActiveIndex(idx);
+    // Typing filters the list, wherever the focus happens to be.
+    //
+    // This used to be a type-ahead that only MOVED the highlight to the first
+    // option starting with the typed prefix, and only on lists too short to
+    // show the filter box. The result was a select that looked like it ignored
+    // the keyboard: nothing on screen changed as you typed, and the only way to
+    // actually search was to open a list long enough to render the box and
+    // click into it. Typing now does the same thing everywhere — it filters —
+    // and reveals the box so you can see what you typed.
+    if (!fromSearch && e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      setSearchRevealed(true);
+      setQuery((q) => q + e.key);
+      setActiveIndex(0);
     }
   };
 

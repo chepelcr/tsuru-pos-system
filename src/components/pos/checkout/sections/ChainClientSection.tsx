@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Building2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
@@ -55,6 +56,60 @@ export function ChainClientSection({
   const { data: storesResp } = useStores(orgId, clientId, { page_size: 100 });
   const departments = departmentsResp?.data ?? [];
   const stores = storesResp?.data ?? [];
+
+  // ─── Back-fill the row ids an order-sourced prefill cannot know ──────────
+  //
+  // Both selects are keyed by UUID, but an order carries CODES, not ids: the
+  // Excel import writes the chain's own `department_code` and the delivery
+  // point's `gln`, and the POS-captured order stores the same. So billing a
+  // pedido arrived with `department_code`/`gln` set and `department_id`/
+  // `store_id` empty — the selects had nothing to match and rendered as if
+  // nothing had been chosen, even though the order plainly said otherwise. Only
+  // the purchase-order number, which is a plain text input, showed up.
+  //
+  // The lists are the only place that maps a code to its id, so the resolution
+  // happens once they load, and the resolved id is written back into the form
+  // rather than merely displayed — the document payload needs it too.
+  //
+  // `supplier_code` is included for the department because the chain's own
+  // paperwork calls it the *provider code*, and an order captured from that
+  // paperwork carries that number rather than our internal department code.
+  useEffect(() => {
+    if (data.department_id || departments.length === 0) return;
+    const code = data.department_code?.trim();
+    if (!code) return;
+    const match = departments.find(
+      (d) => d.department_code === code || d.supplier_code === code,
+    );
+    if (match) {
+      onChange({
+        department_id: match.department_id,
+        department_code: match.department_code,
+      });
+    }
+    // `onChange` is a fresh closure on every render of the drawer; depending on
+    // it would re-run this on every keystroke elsewhere in the form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [departments, data.department_id, data.department_code]);
+
+  useEffect(() => {
+    if (data.store_id || stores.length === 0) return;
+    const gln = data.gln?.trim();
+    const code = data.store_code?.trim();
+    if (!gln && !code) return;
+    const match =
+      (gln ? stores.find((st) => st.gln === gln) : undefined) ??
+      (code ? stores.find((st) => st.store_code === code) : undefined);
+    if (match) {
+      onChange({
+        store_id: match.store_id,
+        store_code: match.store_code,
+        store_name: match.store_name ?? undefined,
+        gln: match.gln ?? undefined,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stores, data.store_id, data.store_code, data.gln]);
 
   const emptyLabel = (count: number) =>
     !clientId

@@ -241,7 +241,6 @@ DASHBOARD_DOCUMENTS /dashboard/documents → DocumentsPage (+ documentEditorPath
 DASHBOARD_CLIENTS  /dashboard/clients  → ClientsPage (+ /:id ClientDetailPage)
 
 POS standalone flow (cashier device):
-/pos/setup     → SessionSetupScreen   (pick branch + terminal)
 /pos/opening   → InventoryOpening     (count starting inventory + cash)
 /pos/payment   → PaymentScreen
 /pos/success   → SuccessScreen
@@ -285,7 +284,8 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 | Document version (electronic invoicing version) | `DocumentVersionContext` — auto-injects `document_version_id` into data-api params |
 | Cart (POS) | `zustand` store `src/store/cart.ts` |
 | Local inventory | `zustand` `src/store/inventory.ts` (mirrors Dexie DB) |
-| POS session context (branch+terminal) | `zustand` `src/store/sessionContext.ts` |
+| POS session context (branch+terminal) | `zustand` `src/store/sessionContext.ts`. **Nothing gates on it any more** (TSR-237): `useSessionSelection` resolves it automatically (assignment → still-valid current → first branch that has a terminal) and the checkout drawer's `BranchTerminalSection` shows/overrides it *on the document*. The old full-screen `SessionSetupScreen` is deleted — do not reintroduce a "start your shift" gate in front of the workspace. |
+| Per-org feature visibility (which optional surfaces the org shows) | `zustand` `src/store/orgFeatureVisibility.ts`. A **preference**, not a permission — nothing on the backend reads it. See §13 "Gate a feature by business type". |
 | Document editor tabs | `zustand` `src/store/documentStore.ts` (`open_documents`, `is_received`, `addDocumentTab`, `removeDocumentTab`, `newDocTabId`) |
 | Confirm modals | `useConfirmModal()` hook → returns `{ confirm, ConfirmModal }`. Always render `<ConfirmModal/>` at the end of the page |
 | Server state | React Query (`@tanstack/react-query`). Query keys convention: `[resource, orgId, ...filters]` |
@@ -607,7 +607,9 @@ If you write a helper component or render function that produces user-visible te
 | Touch the IVA declaration report | `pages/dashboard/IvaReportPage.tsx` + `components/reports/` + `hooks/useIvaReport.ts` + `docs/IVA_TAX_REPORT.md` |
 | Touch manual orders (pedidos manuales) | `hooks/useFiscalMode.ts` (the gate) + `types/invoice.ts` (`PM` doc type) + `hooks/useCartFlow.ts` + `components/pos/checkout/` + `docs/MANUAL_ORDERS.md` |
 | Invoice a delivered order | `lib/orderToInvoice.ts` + `components/orders/InvoiceOrderModal.tsx` + `pages/dashboard/OrderDetailPage.tsx` + `docs/MANUAL_ORDERS.md` §7 |
-| Gate a feature by business type | `hooks/useBusinessType.ts` (fails **closed**; do NOT use `hasModule()` — it fails open and auto-grants to owners) + `components/org-settings/BusinessIdentityFields.tsx` + `management-be` `seeds/rbac-seed.ts` `BUSINESS_TYPE_MODULES` |
+| Gate a feature by business type | **Don't** (TSR-240). Every org holds every vertical module; the business type only decides what the app *promotes* (`useBusinessType().emphasises`). If a surface is too noisy for some orgs, add it to `HIDEABLE_MODULES` in `store/orgFeatureVisibility.ts` so the org can hide it itself from org settings → General. `hooks/useBusinessType.ts` + `components/org-settings/{BusinessIdentityFields,FeatureVisibilityFields}.tsx` + `management-be` `seeds/rbac-seed.ts` `BUSINESS_TYPE_EMPHASIS` / `ALL_ORG_MODULE_NAMES` |
+| Change which branch/terminal a document is issued from | `hooks/useSessionSelection.ts` + `components/pos/checkout/sections/BranchTerminalSection.tsx` + `hooks/useBranches.ts` |
+| Touch notifications (the bell) | `hooks/useUserNotifications.ts` (hydrate + mark-read), `hooks/useRealtimeNotifications.ts` (AppSync Events subscribe), `components/layout/NotificationsBell.tsx`, `contexts/NotificationsContext.tsx` (ephemeral app toasts only). **Never add a `refetchInterval`** — the feed is server-pushed; see below |
 | Touch mesas / cuentas abiertas | `hooks/useTables.ts` + `components/pos/TablesPanel.tsx` + store-be `tables_controller.py` (branch **code**, not UUID) |
 | Touch combos / servicio 10% / cuenta dividida | `lib/comboExplosion.ts`, `lib/serviceCharge.ts`, `lib/splitBill.ts` (all have tests — the tax reasoning lives in their doc comments) |
 | Add a scanner / scale-barcode behaviour | `hooks/useProductByCode.ts` + `lib/scaleBarcode.ts` + `services/offlineCatalog.ts` `readCachedProductByCode` — **ungated**, every org has it |
@@ -616,6 +618,49 @@ If you write a helper component or render function that produces user-visible te
 | Change anything offline / PWA | `services/offlineCatalog.ts` + `services/offlineBootstrap.ts` + `lib/db.ts` + `lib/queryClient.ts` + `scripts/sw-template.js` + `docs/OFFLINE.md` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |
+
+---
+
+## 13.1 Notifications — one hydrate, then pure server push
+
+The bell has **two** sources, and they are not interchangeable:
+
+| | Server notifications | Local notifications |
+|---|---|---|
+| Type | `types/notification.ts` `ServerNotification` | `contexts/NotificationsContext.tsx` `Notification` |
+| Lives | `app_notifications` + `user_notifications` (sales-be) | React state, gone on reload |
+| Copy | **rendered text** from the backend | **i18n keys**, resolved at render |
+| Arrives by | AppSync Events push | `add()` from app code |
+| Read state | `PATCH .../{id}/read` | in-memory |
+
+Server copy is text because the backend knows things the client has no key for —
+Hacienda's rejection reason is Hacienda's sentence, not ours. Local copy stays
+keyed so it re-renders when the user toggles language. `NotificationsBell`
+normalizes both into one sorted list; don't collapse the two types.
+
+**The rule: never poll.** `useUserNotifications` is `staleTime: Infinity` with no
+`refetchInterval`, deliberately. New notifications arrive over
+`useRealtimeNotifications` (channel `/notifications/{cognitoSub}`), which writes
+them straight into that query's cache, deduped by id. The list is re-fetched
+exactly twice: on mount, and once after a socket reconnect (channels don't
+buffer, so a reconnect means a gap). Adding an interval here would spend a
+request per cashier every few seconds to be told nothing happened — and still be
+slower than the push.
+
+Push degrades to nothing when `VITE_APPSYNC_EVENTS_URL` is unset (local dev,
+preview builds): the bell still lists what the hydrate loaded, it just stops
+updating live. Backend side: `be/sales-be/shared/jbiller_common/notifications/`
+(create = persist + publish, one method) and the `user-notifications` Lambda.
+
+**Where that variable comes from.** Not a repo variable and not a literal in the
+workflow: the build assumes the deploy role and reads
+`/tsuru/{env}/platform/appsync/events-url` from SSM, so the CloudFormation stack
+that owns the endpoint is the one that publishes it. The value is
+`https://events.tsuru.jcampos.dev/event` — a custom domain, precisely so it is a
+constant that can be hardcoded in a params stack instead of a generated hash
+that changes if the API is recreated. Amplify derives the WebSocket URL from it
+by appending `/realtime` (it recognises a non-AppSync host as a custom domain),
+so this one value drives both endpoints. Locally, put it in `.env`.
 
 ---
 

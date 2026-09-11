@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
 import { Landmark, X, Search } from "lucide-react";
 import { Spinner, FormLabel, Modal } from "@/components/ui";
+import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { CabysManualEntry } from "@/components/common/CabysManualEntry";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -59,15 +59,27 @@ export function FiscalInformationSection({
     { enabled: false }
   );
 
+  // Viewport coordinates, kept in step while the list is open.
+  //
+  // The menu is `fixed`, not `absolute`, because the thing it hangs off is
+  // inside a drawer that scrolls independently of the document: document
+  // coordinates taken once at open time drift away from the input the moment
+  // the drawer body is scrolled. `capture: true` on the scroll listener is what
+  // catches that inner scroll — a bubbling listener on window never sees it.
   useEffect(() => {
-    if (showResults && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
+    if (!showResults) return;
+    const update = () => {
+      const rect = inputRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setDropdownPosition({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
   }, [showResults]);
 
   useEffect(() => {
@@ -242,42 +254,43 @@ export function FiscalInformationSection({
               </button>
             </div>
 
-            {showResults && (searchResults.length > 0 || (!loading && searchResults.length === 0)) && createPortal(
-              <div
-                ref={dropdownRef}
-                className="absolute z-popover bg-card border border-border rounded-lg shadow-dropdown overflow-hidden max-h-[260px] overflow-y-auto"
-                style={{
-                  top: dropdownPosition.top,
-                  left: dropdownPosition.left,
-                  width: dropdownPosition.width,
-                }}
-              >
-                {searchResults.length > 0 ? (
-                  searchResults.map((item) => (
-                    <button
-                      key={item.code}
-                      type="button"
-                      onClick={() => selectCabys(item)}
-                      className="w-full px-3.5 py-2.5 text-left bg-transparent border-0 border-b border-border/50 cursor-pointer flex flex-col gap-0.5 hover:bg-muted/50"
-                    >
-                      <span className="font-mono text-[11px] text-primary font-bold">
-                        {item.code}
-                      </span>
-                      <span className="text-xs text-foreground">{item.description}</span>
-                      {item.tax_rate && (
-                        <span className="text-[11px] text-muted-foreground">
-                          {t("products.suggestedIva", { pct: String(item.tax_rate.percentage) })}
+            {showResults && (searchResults.length > 0 || (!loading && searchResults.length === 0)) && (
+              <OverlayPortal>
+                <div
+                  ref={dropdownRef}
+                  className="fixed z-drawer-modal bg-card border border-border rounded-lg shadow-dropdown overflow-hidden max-h-[260px] overflow-y-auto"
+                  style={{
+                    top: dropdownPosition.top,
+                    left: dropdownPosition.left,
+                    width: dropdownPosition.width,
+                  }}
+                >
+                  {searchResults.length > 0 ? (
+                    searchResults.map((item) => (
+                      <button
+                        key={item.code}
+                        type="button"
+                        onClick={() => selectCabys(item)}
+                        className="w-full px-3.5 py-2.5 text-left bg-transparent border-0 border-b border-border/50 cursor-pointer flex flex-col gap-0.5 hover:bg-muted/50"
+                      >
+                        <span className="font-mono text-[11px] text-primary font-bold">
+                          {item.code}
                         </span>
-                      )}
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-4 py-3 text-xs text-muted-foreground text-center">
-                    {t("products.noResultsFor", { query: searchTerm })}
-                  </div>
-                )}
-              </div>,
-              document.body
+                        <span className="text-xs text-foreground">{item.description}</span>
+                        {item.tax_rate && (
+                          <span className="text-[11px] text-muted-foreground">
+                            {t("products.suggestedIva", { pct: String(item.tax_rate.percentage) })}
+                          </span>
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-xs text-muted-foreground text-center">
+                      {t("products.noResultsFor", { query: searchTerm })}
+                    </div>
+                  )}
+                </div>
+              </OverlayPortal>
             )}
           </div>
         )}
