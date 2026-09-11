@@ -72,7 +72,15 @@ Resources:
                   - ssm:GetParameter
                   - ssm:GetParameters
                   - ssm:GetParametersByPath
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/platform/*"
+                Resource:
+                  # BOTH forms are required. GetParametersByPath authorizes
+                  # against the PATH BEING QUERIED, not the parameters it
+                  # returns, and `.../platform/*` does not match
+                  # `.../platform` itself — so with only the wildcard the call
+                  # is denied outright (AWS CLI exit 254) even though every
+                  # parameter it would return is covered.
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/platform"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/platform/*"
 
 Outputs:
   DeployRoleArn:
