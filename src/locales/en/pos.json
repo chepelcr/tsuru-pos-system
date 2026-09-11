@@ -273,5 +273,7 @@
   "tables.needsBranch": "Pick a branch",
   "tables.close": "Close tab",
   "tables.closeBlocked": "The table still has an open order",
-  "tables.held": "Order in progress"
+  "tables.held": "Order in progress",
+  "checkout.branchTerminal.title": "Branch and terminal",
+  "checkout.branchTerminal.noBranches": "This organization has no branches yet. Create one under Stations before issuing documents."
 }

@@ -27,6 +27,7 @@ import { DocumentSection } from './sections/DocumentSection';
 import { ReferencesSection } from './sections/ReferencesSection';
 import { ManualOrderSection } from './sections/ManualOrderSection';
 import { ChainClientSection } from './sections/ChainClientSection';
+import { BranchTerminalSection } from './sections/BranchTerminalSection';
 import { useChainClient } from '@/hooks/useChainClient';
 import type { ChainClientInfo } from '@/types/order';
 import { CopiesSection } from './sections/CopiesSection';
@@ -34,7 +35,15 @@ import { Receipt } from './Receipt';
 
 
 type Step = 'payment' | 'processing' | 'done';
-type SectionId = 'payment' | 'receiver' | 'document' | 'references' | 'copies' | 'manualOrder' | 'chainClient';
+type SectionId =
+  | 'payment'
+  | 'receiver'
+  | 'document'
+  | 'references'
+  | 'copies'
+  | 'manualOrder'
+  | 'chainClient'
+  | 'branchTerminal';
 
 interface CartItem { id: string; name: string; price: number; qty: number; }
 
@@ -208,6 +217,9 @@ export function CheckoutDrawer({
     manualOrder: isManualOrder,
     // Opens by default: if a chain needs these, they are not optional.
     chainClient: chainState.show,
+    // Collapsed: it is auto-answered for almost every organization, so it is
+    // there to be checked and overridden, not to be filled in.
+    branchTerminal: false,
   });
 
   const validate = (): string | null => {
@@ -353,6 +365,16 @@ export function CheckoutDrawer({
               onChange={(patch) =>
                 updateData({ manual_order: { ...manualOrder, ...patch } })
               }
+            />
+          )}
+
+          {/* A pedido is not issued against a Hacienda consecutive, so it has
+              no sucursal/terminal segment to pick. */}
+          {!isManualOrder && (
+            <BranchTerminalSection
+              isExpanded={expanded.branchTerminal}
+              onToggle={() => toggle('branchTerminal')}
+              orgId={orgId}
             />
           )}
 

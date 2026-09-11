@@ -273,5 +273,7 @@
   "tables.needsBranch": "Seleccioná una sucursal",
   "tables.close": "Cerrar cuenta",
   "tables.closeBlocked": "La mesa todavía tiene un pedido abierto",
-  "tables.held": "Pedido en curso"
+  "tables.held": "Pedido en curso",
+  "checkout.branchTerminal.title": "Sucursal y terminal",
+  "checkout.branchTerminal.noBranches": "Esta organización aún no tiene sucursales. Crea una en Puestos antes de emitir documentos."
 }

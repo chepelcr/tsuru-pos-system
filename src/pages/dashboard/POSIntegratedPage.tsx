@@ -20,7 +20,7 @@ import { CartSidebar } from "@/components/pos/CartSidebar";
 import { CheckoutDrawer } from "@/components/pos/checkout/CheckoutDrawer";
 import { ClientDrawerForm } from "@/components/clients/ClientDrawerForm";
 import { POSPageSkeleton } from "@/components/pos/POSPageSkeleton";
-import SessionSetupScreen from "@/pages/pos/SessionSetupScreen";
+import { useSessionSelection } from "@/hooks/useSessionSelection";
 import type { CurrencyCode, EditorDocTypeCode, InvoiceFormData } from "@/types/invoice";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import type { SaleReceiver } from "@/types/receiver";
@@ -40,6 +40,11 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
   const { data: assignment, isLoading: assignmentLoading } = useAssignment();
   const sessionCtx = useSessionContext();
+  // Resolves the shift's branch/terminal in the background (assignment first,
+  // then whatever is already selected, then the first available). The POS no
+  // longer gates on it: the answer is shown — and overridable — on the
+  // document itself, in the checkout drawer's Sucursal y terminal card.
+  useSessionSelection(org?.id);
   const { holdDocument } = useTableMutations(org?.id, sessionCtx.branch_code);
   const { t } = useLanguage();
   // When rendered as the editor body for a document tab, let DocumentsPage own
@@ -192,10 +197,6 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
         <span className="text-muted-foreground text-sm">{t("empty.noOrganization")}</span>
       </div>
     );
-  }
-
-  if (!sessionCtx.branch_code || !sessionCtx.terminal_code) {
-    return <SessionSetupScreen org={org} />;
   }
 
   const cartSidebar = (
