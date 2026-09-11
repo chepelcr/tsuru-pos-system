@@ -652,12 +652,18 @@ preview builds): the bell still lists what the hydrate loaded, it just stops
 updating live. Backend side: `be/sales-be/shared/jbiller_common/notifications/`
 (create = persist + publish, one method) and the `user-notifications` Lambda.
 
-**Where that variable comes from.** SSM, at build time — not a literal and not
-a repo variable. It is an output of a CloudFormation stack in another repo, so
-the stack that owns it publishes it to
-`/tsuru/{env}/platform/appsync/events-url` and the build reads it there;
-copying it into the workflow would mean two places to change and one of them
-quietly going stale. The value is `https://events.tsuru.jcampos.dev/event`, a
+**Where that variable comes from.** SSM, at build time — and so do the API URLs
+and the Cognito ids. Everything the frontend is compiled with that belongs to
+infrastructure lives under `/tsuru/{env}/platform/*` and is read in one call by
+the workflow's "Resolve build configuration" step; only values this repo owns
+(branding, region) stay literal. Copying an infrastructure output into the
+workflow means two places to change and one of them quietly going stale.
+
+The required set — `api/url`, `api/orders-url`, `api/sales-url`, `api/data-url`,
+`cognito/user-pool-id`, `cognito/client-id` — **fails the build** when missing;
+a bundle pointed at nothing is not worth shipping. `appsync/events-url` is the
+one optional value (no live notifications without it). Publish them with the
+monorepo's `deploys/deploy-params.sh`. The value is `https://events.tsuru.jcampos.dev/event`, a
 custom domain rather than the API's generated 26-character hostname, so it
 survives the API being recreated. Amplify derives the WebSocket URL by
 appending `/realtime` (it recognises a non-AppSync host as a custom domain), so

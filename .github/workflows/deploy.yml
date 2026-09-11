@@ -26,14 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_AWS_REGION: us-east-1
-      VITE_AWS_COGNITO_USER_POOL_ID: us-east-1_0cTNJ31eo
-      VITE_AWS_COGNITO_CLIENT_ID: 366o8d5l3fqpofd5igjplge3e0
-      VITE_API_URL: https://api.tsuru.jcampos.dev
-      VITE_ORDERS_API_URL: https://orders-api.tsuru.jcampos.dev
-      VITE_SALES_API_URL: https://sales-api.tsuru.jcampos.dev
-      VITE_DATA_API_URL: https://data-api.tsuru.jcampos.dev
-      # VITE_APPSYNC_EVENTS_URL is resolved from SSM below, not inlined — see
-      # the note on the "Resolve runtime config" step.
+      # The API URLs, the Cognito ids and the events endpoint are NOT here.
+      # They are infrastructure outputs, owned by CloudFormation stacks in
+      # other repos, and they are resolved from SSM in the "Resolve build
+      # configuration" step below. Only values this repo actually owns — its
+      # own branding and the region — stay literal.
       VITE_BASE_DOMAIN: tsuru.jcampos.dev
       VITE_TEMPLATE_NAME: pos-system
       VITE_TEMPLATE_DISPLAY_NAME: Tsuru POS
@@ -47,47 +44,69 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # ── Build configuration owned by a stack, read from that stack ─────────
-      # The values above are literals because they are ours to choose. The
-      # AppSync Events endpoint is not: it is an output of a CloudFormation
-      # stack in another repo, and copying it here would mean two places to
-      # change and one of them quietly going stale. It is published to
-      # /tsuru/{env}/platform/* alongside the API URLs and Cognito ids, and read
-      # from there with a role scoped to exactly that path
+      # ── Build configuration comes from the stacks that own it ─────────────
+      # The API URLs, Cognito ids and events endpoint are CloudFormation
+      # outputs published to /tsuru/{env}/platform/*. Copying them into this
+      # workflow would mean two places to change and one of them quietly going
+      # stale — which is exactly how a frontend ends up pointed at an endpoint
+      # that moved. The role that reads them is scoped to that path alone
       # (cloudformation/deploy-role.yml).
       #
-      # Soft-fail on purpose — but LOUDLY. An earlier version swallowed the
-      # OIDC failure and shipped a POS with no real-time endpoint while the job
-      # still showed green, so the failure paths below all emit a ::warning::
-      # and the build's own log says which endpoint it compiled in.
+      # This step is NOT soft-fail. An earlier version let `continue-on-error`
+      # swallow an OIDC failure and shipped a POS with no real-time endpoint
+      # while the job showed green; now that the API URLs come from here too,
+      # a config read that fails must stop the build rather than produce a
+      # bundle pointed at nothing.
       - name: Configure AWS credentials (OIDC)
-        id: aws
-        continue-on-error: true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Warn when credentials are unavailable
-        if: steps.aws.outcome != 'success'
+      - name: Resolve build configuration from SSM
         run: |
-          echo "::warning::Could not assume the deploy role — building without \
-          live notifications. Check the AWS_DEPLOY_ROLE_ARN secret and the role's \
-          trust policy (cloudformation/deploy-role.yml)."
+          set -euo pipefail
+          env_name="${ENVIRONMENT:-dev}"
+          base="/tsuru/${env_name}/platform"
 
-      - name: Resolve runtime config from SSM
-        if: steps.aws.outcome == 'success'
-        run: |
-          set -o pipefail
-          events_url=$(aws ssm get-parameter \
-            --name "/tsuru/${ENVIRONMENT:-dev}/platform/appsync/events-url" \
-            --query 'Parameter.Value' --output text 2>/dev/null || true)
-          if [ -n "$events_url" ] && [ "$events_url" != "None" ]; then
-            echo "VITE_APPSYNC_EVENTS_URL=$events_url" >> "$GITHUB_ENV"
-            echo "Events endpoint: $events_url"
+          # One call for the whole namespace: adding a parameter later needs no
+          # change here, only in the map below.
+          params=$(aws ssm get-parameters-by-path --path "$base" --recursive \
+            --query 'Parameters[].[Name,Value]' --output text)
+
+          get() { echo "$params" | awk -F'\t' -v n="$base/$1" '$1==n {print $2; found=1} END {exit !found}'; }
+
+          # Required — a bundle without these is not worth shipping.
+          missing=0
+          for pair in \
+            "VITE_API_URL:api/url" \
+            "VITE_ORDERS_API_URL:api/orders-url" \
+            "VITE_SALES_API_URL:api/sales-url" \
+            "VITE_DATA_API_URL:api/data-url" \
+            "VITE_AWS_COGNITO_USER_POOL_ID:cognito/user-pool-id" \
+            "VITE_AWS_COGNITO_CLIENT_ID:cognito/client-id"; do
+            var="${pair%%:*}"; key="${pair#*:}"
+            if value=$(get "$key"); then
+              echo "${var}=${value}" >> "$GITHUB_ENV"
+              echo "  ${var} <- ${base}/${key}"
+            else
+              echo "::error::Missing required parameter ${base}/${key}"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || {
+            echo "::error::Build configuration incomplete — deploy the platform \
+          params stack (monorepo deploys/deploy-params.sh)."
+            exit 1
+          }
+
+          # Optional — without it the bell still lists what its hydrate loaded,
+          # it just stops updating live. Not worth failing a release over.
+          if value=$(get "appsync/events-url"); then
+            echo "VITE_APPSYNC_EVENTS_URL=${value}" >> "$GITHUB_ENV"
+            echo "  VITE_APPSYNC_EVENTS_URL <- ${base}/appsync/events-url"
           else
-            echo "::warning::/tsuru/${ENVIRONMENT:-dev}/platform/appsync/events-url \
-            is missing or empty — building without live notifications."
+            echo "::warning::No ${base}/appsync/events-url — building without live notifications."
           fi
 
       - uses: pnpm/action-setup@v6
@@ -102,7 +121,11 @@ jobs:
 
       - name: Build
         run: |
-          echo "Building with events endpoint: ${VITE_APPSYNC_EVENTS_URL:-<none>}"
+          echo "API      : ${VITE_API_URL}"
+          echo "Orders   : ${VITE_ORDERS_API_URL}"
+          echo "Sales    : ${VITE_SALES_API_URL}"
+          echo "Data     : ${VITE_DATA_API_URL}"
+          echo "Events   : ${VITE_APPSYNC_EVENTS_URL:-<none>}"
           pnpm run build
 
       - name: SPA 404 fallback (client-side routing on GitHub Pages)
