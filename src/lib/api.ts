@@ -383,3 +383,14 @@ export function xmlPath(orgId: string, saleId: string, suffix: string = '') {
 export function notifyPath(orgId: string, saleId: string, suffix: string = '') {
   return `/api/organizations/${orgId}/sales/${saleId}/notifications${suffix}`;
 }
+
+/**
+ * `/api/users/{user}/notifications[suffix]` — the in-app notification centre.
+ *
+ * Not to be confused with {@link notifyPath}, which re-fires a DOCUMENT's
+ * outbound email/webhook. These are the bell's own notifications, and they
+ * belong to a person rather than to a document — hence the user scope.
+ */
+export function userNotificationsPath(userId: string, suffix: string = '') {
+  return `/api/users/${userId}/notifications${suffix}`;
+}

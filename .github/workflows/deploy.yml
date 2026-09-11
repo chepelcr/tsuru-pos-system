@@ -32,13 +32,53 @@ jobs:
       VITE_ORDERS_API_URL: https://orders-api.tsuru.jcampos.dev
       VITE_SALES_API_URL: https://sales-api.tsuru.jcampos.dev
       VITE_DATA_API_URL: https://data-api.tsuru.jcampos.dev
+      # VITE_APPSYNC_EVENTS_URL is NOT inlined here — it is read from SSM in the
+      # "Resolve runtime config" step below. See the note on that step.
       VITE_BASE_DOMAIN: tsuru.jcampos.dev
       VITE_TEMPLATE_NAME: pos-system
       VITE_TEMPLATE_DISPLAY_NAME: Tsuru POS
       VITE_TEMPLATE_INDUSTRY: pos
       VITE_SINPE_NUMBER: 8888-8888
+    permissions:
+      contents: read
+      # Needed to assume the deploy role for the SSM read below. The Pages
+      # deploy job declares its own id-token permission separately.
+      id-token: write
     steps:
       - uses: actions/checkout@v7
+
+      # ── Runtime config that is not a constant ──────────────────────────────
+      # Everything above is a literal because it genuinely never changes. The
+      # Events API endpoint is different: it is produced by a CloudFormation
+      # stack in another repo, so copying it here would mean two places to
+      # update and one of them silently going stale. It is read from the
+      # platform SSM namespace instead — the same namespace that already holds
+      # the API URLs and Cognito ids — so the stack that owns the value is the
+      # one that publishes it.
+      #
+      # Soft-fail on purpose: without credentials or the parameter, the build
+      # still runs and produces a POS whose bell works but does not update
+      # live. A missing real-time endpoint should not block a release.
+      - name: Configure AWS credentials (OIDC)
+        id: aws
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Resolve runtime config from SSM
+        if: steps.aws.outcome == 'success'
+        run: |
+          events_url=$(aws ssm get-parameter \
+            --name "/tsuru/${ENVIRONMENT:-dev}/platform/appsync/events-url" \
+            --query 'Parameter.Value' --output text 2>/dev/null || true)
+          if [ -n "$events_url" ] && [ "$events_url" != "None" ]; then
+            echo "VITE_APPSYNC_EVENTS_URL=$events_url" >> "$GITHUB_ENV"
+            echo "Events endpoint: $events_url"
+          else
+            echo "::warning::No events-url in SSM — building without live notifications."
+          fi
 
       - uses: pnpm/action-setup@v6
 

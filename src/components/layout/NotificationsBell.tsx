@@ -1,39 +1,140 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Bell, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import {
+  Bell,
+  AlertTriangle,
+  Info,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useNotifications, type Notification, type NotificationLevel } from "@/contexts/NotificationsContext";
+import {
+  useNotifications,
+  type Notification,
+  type NotificationLevel,
+} from "@/contexts/NotificationsContext";
+import {
+  useNotificationMutations,
+  useUserNotifications,
+} from "@/hooks/useUserNotifications";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { isNotificationForCurrentApp } from "@/lib/appCode";
+import type { ServerNotification, ServerNotificationLevel } from "@/types/notification";
 
-const LEVEL_ICON: Record<NotificationLevel, typeof AlertTriangle> = {
+const LEVEL_ICON: Record<ServerNotificationLevel, typeof AlertTriangle> = {
   info: Info,
+  success: CheckCircle2,
   warning: AlertTriangle,
   destructive: AlertCircle,
 };
 
-const LEVEL_DOT_CLASS: Record<NotificationLevel, string> = {
+const LEVEL_DOT_CLASS: Record<ServerNotificationLevel, string> = {
   info: "text-info",
+  success: "text-success",
   warning: "text-warning",
   destructive: "text-destructive",
 };
 
+/**
+ * One row in the bell, whatever produced it.
+ *
+ * Two sources feed this list and they are shaped differently on purpose:
+ *
+ *   * SERVER notifications (`ServerNotification`) are durable, come from the
+ *     backend, and carry already-rendered copy — the client has no translation
+ *     key for "El campo NumeroCedulaReceptor no corresponde a un contribuyente
+ *     activo", because that text is Hacienda's, not ours.
+ *   * LOCAL notifications (`Notification`) are ephemeral, raised by the app
+ *     itself, and carry i18n KEYS so they re-render in the new language when
+ *     the user toggles it.
+ *
+ * They are normalized here rather than forced into one type, because flattening
+ * the server's text into a key would make it untranslatable and turning local
+ * ones into text would freeze them in the language they were raised in.
+ */
+interface BellItem {
+  key: string;
+  level: ServerNotificationLevel;
+  title: string;
+  body?: string | null;
+  href?: string | null;
+  read: boolean;
+  createdAt: number;
+  /** How to mark it read, which differs per source. */
+  markRead: () => void;
+  /** Only local notifications can be dismissed; server ones are history. */
+  dismiss?: () => void;
+}
+
+const LOCAL_LEVEL: Record<NotificationLevel, ServerNotificationLevel> = {
+  info: "info",
+  warning: "warning",
+  destructive: "destructive",
+};
+
 export function NotificationsBell() {
   const { t } = useLanguage();
-  const { notifications, unreadCount, remove, markRead, markAllRead } = useNotifications();
-  // Silent notifications (e.g. catalog-cache invalidation events) ride the
-  // same context channel but must never be rendered. Notifications targeting
-  // other apps in the jmarkets ecosystem are also dropped here.
-  const visible = useMemo(
-    () =>
-      notifications.filter(
-        (n) => !n.silent && isNotificationForCurrentApp(n.target_apps),
-      ),
-    [notifications],
-  );
+  const {
+    notifications: localNotifications,
+    remove,
+    markRead: markLocalRead,
+    markAllRead: markAllLocalRead,
+  } = useNotifications();
+
+  // ─── Server-backed notifications: hydrate once, then pure push ──────────
+  const { data: page } = useUserNotifications();
+  const { markRead, markAllRead, receive, rehydrate } = useNotificationMutations();
+  useRealtimeNotifications({
+    onNotification: receive,
+    // Channels do not buffer, so a reconnect means a gap. One re-read closes
+    // it; `receive` dedupes by id so the overlap costs nothing.
+    onReconnect: rehydrate,
+  });
+
   const [, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const items = useMemo<BellItem[]>(() => {
+    const server: BellItem[] = (page?.data ?? []).map((n: ServerNotification) => ({
+      key: `s:${n.id}`,
+      level: n.level,
+      title: n.title,
+      body: n.body,
+      href: n.action_href,
+      read: n.is_read,
+      createdAt: n.created_on ? Date.parse(n.created_on) : 0,
+      markRead: () => markRead.mutate(n.id),
+    }));
+
+    // Silent notifications (e.g. catalog-cache invalidation events) ride the
+    // same context channel but must never be rendered. Notifications targeting
+    // other apps in the ecosystem are dropped here too.
+    const local: BellItem[] = localNotifications
+      .filter((n: Notification) => !n.silent && isNotificationForCurrentApp(n.target_apps))
+      .map((n: Notification) => ({
+        key: `l:${n.id}`,
+        level: LOCAL_LEVEL[n.level],
+        title: t(n.titleKey),
+        body: n.bodyKey ? t(n.bodyKey) : undefined,
+        href: n.actionHref,
+        read: n.read,
+        createdAt: n.createdAt,
+        markRead: () => markLocalRead(n.id),
+        dismiss: () => remove(n.id),
+      }));
+
+    // Sorted by time rather than by source: a pushed rejection from two minutes
+    // ago belongs above a local toast from an hour ago, and pushes do not
+    // arrive in any guaranteed order.
+    return [...server, ...local].sort((a, b) => b.createdAt - a.createdAt);
+  }, [page?.data, localNotifications, t, markRead, markLocalRead, remove]);
+
+  const unreadCount = useMemo(
+    () => items.reduce((acc, item) => acc + (item.read ? 0 : 1), 0),
+    [items],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -46,12 +147,20 @@ export function NotificationsBell() {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
-  const handleItemClick = (n: Notification) => {
-    markRead(n.id);
-    if (n.actionHref) {
-      setLocation(n.actionHref);
+  const handleItemClick = (item: BellItem) => {
+    item.markRead();
+    if (item.href) {
+      // A rejected document's reasons live on its detail page, so that is where
+      // the notification goes — the point of telling someone their invoice was
+      // rejected is getting them to the thing they have to fix.
+      setLocation(item.href);
       setOpen(false);
     }
+  };
+
+  const handleMarkAllRead = () => {
+    markAllRead.mutate();
+    markAllLocalRead();
   };
 
   return (
@@ -82,10 +191,10 @@ export function NotificationsBell() {
         >
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
             <span className="t-label">{t("notifications.title")}</span>
-            {visible.length > 0 && unreadCount > 0 && (
+            {items.length > 0 && unreadCount > 0 && (
               <button
                 type="button"
-                onClick={markAllRead}
+                onClick={handleMarkAllRead}
                 className="text-[11px] font-semibold text-primary hover:underline"
               >
                 {t("notifications.markAllRead")}
@@ -94,46 +203,48 @@ export function NotificationsBell() {
           </div>
 
           <div className="max-h-[60vh] overflow-y-auto">
-            {visible.length === 0 ? (
+            {items.length === 0 ? (
               <div className="px-4 py-8 text-center t-sm text-muted-foreground">
                 {t("notifications.empty")}
               </div>
             ) : (
               <ul className="flex flex-col">
-                {visible.map((n) => {
-                  const LevelIcon = LEVEL_ICON[n.level];
+                {items.map((item) => {
+                  const LevelIcon = LEVEL_ICON[item.level];
                   return (
                     <li
-                      key={n.id}
+                      key={item.key}
                       className={cn(
                         "border-b border-border last:border-b-0 flex items-start gap-2.5 px-3 py-2.5 hover:bg-muted transition-colors",
-                        !n.read && "bg-muted/40",
+                        !item.read && "bg-muted/40",
                       )}
                     >
                       <LevelIcon
                         size={16}
-                        className={cn("mt-0.5 shrink-0", LEVEL_DOT_CLASS[n.level])}
+                        className={cn("mt-0.5 shrink-0", LEVEL_DOT_CLASS[item.level])}
                       />
                       <button
                         type="button"
-                        onClick={() => handleItemClick(n)}
+                        onClick={() => handleItemClick(item)}
                         className="flex-1 min-w-0 text-left bg-transparent border-0 p-0 cursor-pointer"
                       >
-                        <div className="t-sm font-semibold">{t(n.titleKey)}</div>
-                        {n.bodyKey && (
+                        <div className="t-sm font-semibold">{item.title}</div>
+                        {item.body && (
                           <div className="t-xs text-muted-foreground mt-0.5">
-                            {t(n.bodyKey)}
+                            {item.body}
                           </div>
                         )}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => remove(n.id)}
-                        className="t-xs text-muted-foreground hover:text-foreground px-1 shrink-0 bg-transparent border-0 cursor-pointer"
-                        aria-label={t("common.close")}
-                      >
-                        ×
-                      </button>
+                      {item.dismiss && (
+                        <button
+                          type="button"
+                          onClick={item.dismiss}
+                          className="t-xs text-muted-foreground hover:text-foreground px-1 shrink-0 bg-transparent border-0 cursor-pointer"
+                          aria-label={t("common.close")}
+                        >
+                          ×
+                        </button>
+                      )}
                     </li>
                   );
                 })}
