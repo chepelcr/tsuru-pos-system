@@ -4,11 +4,12 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions, useCanOpenCreateMenu, useCreatableDocTypes } from "@/hooks/useRbac";
 import { useProgramsEnabled } from "@/hooks/useProgramsEnabled";
+import { useActiveSession } from "@/hooks/useActiveSession";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
 import type { EditorDocTypeCode, EditorDocumentTypeInfo } from "@/types/invoice";
-import { Icon, Logo } from "@/components/ui";
+import { Icon, Logo, Badge } from "@/components/ui";
 import { roleLabel } from "@/lib/rbacI18n";
 
 import type { NavId } from "./navIds";
@@ -92,6 +93,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // backend rollout starts with RBAC_ENFORCEMENT=log, so the item only hides
   // once an authoritative permission set says the caller can't read roles.
   const { can, isReady: permsReady, role: orgRole } = usePermissions();
+  const activeSession = useActiveSession();
   // Template-gated visibility (W12): the Programs item shows only when the
   // org's selected template includes a `programs` section (detected from the
   // org's cloned CMS content). Combined with the RBAC read check below — mirror
@@ -315,6 +317,28 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             </div>
           </div>
         </button>
+
+        {/* Live session — under the identity row rather than in the navbar.
+            It describes the shift the person is working, so it belongs with
+            the person, not among the document tabs and toolbar actions it was
+            competing with for horizontal space up there. Absent when no
+            session is open, which is the honest rendering: there is nothing
+            live to report. */}
+        {activeSession?.name && (
+          <div className="flex items-center gap-2 px-3 pt-1.5">
+            <Badge variant="success" className="gap-1.5 shrink-0">
+              <span className="status-dot status-dot-live !w-1.5 !h-1.5" />
+              {t("shell.liveLabel")}
+            </Badge>
+            <div className="min-w-0">
+              <div className="t-label !text-[10px]">{t("shell.activeSession")}</div>
+              <div className="text-[12px] font-bold overflow-hidden text-ellipsis whitespace-nowrap">
+                {activeSession.name}
+                {activeSession.context && ` · ${activeSession.context}`}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

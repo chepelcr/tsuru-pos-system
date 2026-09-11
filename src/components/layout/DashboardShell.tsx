@@ -12,8 +12,6 @@ interface DashboardShellProps {
   children: React.ReactNode;
   active?: NavId;
   onNav?: (id: NavId) => void;
-  sessionName?: string;
-  sessionLocation?: string;
 }
 
 function useDrawerState() {
@@ -42,8 +40,6 @@ export default function DashboardShell({
   children,
   active = "dashboard",
   onNav,
-  sessionName,
-  sessionLocation,
 }: DashboardShellProps) {
   const left = useDrawerState();
   const right = useDrawerState();
@@ -102,8 +98,6 @@ export default function DashboardShell({
           onMenuClick={() => left.setOpen(true)}
           onDocsClick={() => right.setOpen(!right.open)}
           docsOpen={right.open}
-          sessionName={sessionName}
-          sessionLocation={sessionLocation}
         />
         <main className="flex-1">{children}</main>
       </div>

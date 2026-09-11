@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -7,7 +6,6 @@ import { OrgProvider } from "@/contexts/OrgContext";
 import { useOfflineBootstrap } from "@/hooks/useOfflineBootstrap";
 import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { CountryISO } from "@/lib/enums";
-import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { useCatalogInvalidationFeed } from "@/hooks/useCatalogInvalidationFeed";
 
@@ -23,12 +21,6 @@ function NotificationsBridge() {
 }
 
 import type { NavId } from "./navIds";
-
-interface Session {
-  name: string;
-  context: string;
-  status: number;
-}
 
 function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
@@ -97,21 +89,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     navigate(NAV_PATHS[id]);
   };
 
-  // Only the first active session is used (activeSession below), so fetch a
-  // single row — not 100. This query lives in the dashboard shell (wraps every
-  // page), so cache it generously and don't refetch on window focus to avoid a
-  // refetch storm on the /sessions endpoint.
-  const { data: sessionsData } = useQuery({
-    queryKey: ["active-session", org?.id],
-    enabled: !!org,
-    staleTime: 5 * 60_000,
-    gcTime: 10 * 60_000,
-    refetchOnWindowFocus: false,
-    queryFn: () =>
-      crossAppApi.get<{ data: Session[] }>(crossAppOrgPath(org!.id, "/sessions?page_size=1&search=status:1")),
-  });
-  const activeSession = sessionsData?.data?.[0];
-
   if (!org) {
     // Org still loading — shell renders with empty content. Notifications are
     // mounted here so the bell stays available even before the org resolves.
@@ -133,8 +110,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DashboardShell
             active={active}
             onNav={handleNav}
-            sessionName={activeSession?.name}
-            sessionLocation={activeSession?.context}
           >
             {children}
           </DashboardShell>

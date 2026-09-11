@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Icon, Badge, Button, Menu, type MenuItem } from "@/components/ui";
+import { Icon, Button, Menu, type MenuItem } from "@/components/ui";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { ROUTES } from "@/routePaths";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -18,17 +18,12 @@ interface DashboardHeaderProps {
   onDocsClick?: () => void;
   /** Whether the docs drawer is currently open — drives toggle button styling */
   docsOpen?: boolean;
-  /** Live session badge — preserved on the left after the documents toolbar */
-  sessionName?: string;
-  sessionLocation?: string;
 }
 
 export function DashboardHeader({
   onMenuClick,
   onDocsClick,
   docsOpen = false,
-  sessionName,
-  sessionLocation,
 }: DashboardHeaderProps) {
   const { dark, toggle: toggleDark } = useDarkMode();
   const { language, toggle: toggleLanguage } = useLanguageSwitch();
@@ -62,7 +57,12 @@ export function DashboardHeader({
 
   return (
     <header className="nav-bar flex items-center justify-between gap-2.5 px-4 py-2.5">
-      {/* LEFT SLOT — hamburger · page title · documents toolbar · live badge */}
+      {/* LEFT SLOT — hamburger · documents toolbar.
+          The live-session badge used to sit here too, which meant the tab strip
+          and the shift indicator competed for the same horizontal space on
+          every page. It moved to the sidebar footer, under the identity row,
+          where it belongs: it describes the person's shift, not the document
+          they happen to have open. */}
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <button
           className="btn btn-ghost btn-sm btn-icon dashboard-hamburger"
@@ -76,24 +76,6 @@ export function DashboardHeader({
           <DocumentsToolbar />
         </div>
 
-        {/* Live session badge — kept on the left after the toolbar */}
-        {sessionName && (
-          <>
-            <Badge variant="success" className="gap-1.5 shrink-0">
-              <span className="status-dot status-dot-live !w-1.5 !h-1.5" />
-              {t("shell.liveLabel")}
-            </Badge>
-            <div className="min-w-0 shrink-0">
-              <div className="t-label !text-[10px]">
-                {t("shell.activeSession")}
-              </div>
-              <div className="text-[13px] font-bold whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]">
-                {sessionName}
-                {sessionLocation && ` · ${sessionLocation}`}
-              </div>
-            </div>
-          </>
-        )}
       </div>
 
       {/* RIGHT SLOT — + Nuevo · 🔔 · flag · dark · sync · 📄 (mobile drawer toggle) */}
