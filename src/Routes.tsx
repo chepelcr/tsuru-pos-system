@@ -70,7 +70,7 @@ const ROUTE_PERMISSIONS = {
   categories: [["commercial", "read", "categories"]],
   reports: [["reports", "read", "general"]],
   reportsIva: [["reports", "read", "iva"]],
-  historicalDocuments: [["documents", "read", "historical"]],
+  historicalDocuments: [["reports", "read", "historical"]],
   documents: [
     ["documents", "read", "emitted"],
     ["documents", "read", "received"],

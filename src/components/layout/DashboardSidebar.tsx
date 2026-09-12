@@ -22,7 +22,7 @@ interface DashboardSidebarProps {
 
 /** Icon + i18n label for each navigable item. */
 const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
-  historicalDocuments: { icon: "clock", labelKey: "historical.title" },
+  historicalDocuments: { icon: "clock", labelKey: "shell.historicalDocuments" },
   dashboard:     { icon: "chart",       labelKey: "shell.panel" },
   productos:     { icon: "package",     labelKey: "shell.products" },
   categories:    { icon: "layers",      labelKey: "shell.categories" },
@@ -71,7 +71,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   ivaReport:     ["reports", "iva"],
   programs:      ["programs", "programs"],
   documents:     ["documents", "emitted"],
-  historicalDocuments: ["documents", "historical"],
+  historicalDocuments: ["reports", "historical"],
 };
 
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
@@ -79,7 +79,7 @@ const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] 
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
   { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "roles", "config"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
-  { id: "reports",    labelKey: "shell.reports",           icon: "trending", items: ["reporte", "ivaReport"] },
+  { id: "reports",    labelKey: "shell.reports",           icon: "trending", items: ["reporte", "ivaReport", "historicalDocuments"] },
 ];
 
 function sectionOf(active: NavId): SectionId | null {
@@ -290,7 +290,6 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           )}
         </div>
         )}
-        {renderItem("historicalDocuments")}
       </nav>
 
       {/* ── FOOTER (always visible) ── */}

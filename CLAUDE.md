@@ -239,6 +239,7 @@ DASHBOARD_REPORTS_IVA /dashboard/reports/iva → IvaReportPage (declaración de 
 DASHBOARD_POS      /dashboard/pos      → POSIntegratedPage
 DASHBOARD_DOCUMENTS /dashboard/documents → DocumentsPage (+ documentEditorPath(tabId))
 DASHBOARD_HISTORICAL_DOCUMENTS /dashboard/documents/historical → HistoricalDocumentsPage (+ /:clave detail)
+                   (navigated to from the Reportes section)
 DASHBOARD_CLIENTS  /dashboard/clients  → ClientsPage (+ /:id ClientDetailPage)
 
 POS standalone flow (cashier device):
@@ -258,9 +259,29 @@ The RBAC catalog in `be/management-be/src/seeds/rbac-seed.ts` **mirrors this sid
 2. Map it in `be/management-be/src/seeds/rbac-seed.ts`: the module, its submodules, **all its grantable actions** (`submoduleActionMatrix`), and the system-role grants (`rolePermissionMatrix`).
 3. Apply the idempotent catalog seed in management-be (`npm run db:seed`); `src/scripts/run-rbac-reseed.ts` is the re-run path when rows already exist.
 
-Current mapping: `panel`(overview) · `documents`(emitted, received, historical — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. the manual order (`PM`) is always offered, gated on `commercial/create/orders`, while the electronic types need `registered-organization` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`).
+Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. the manual order (`PM`) is always offered, gated on `commercial/create/orders`, while the electronic types need `registered-organization` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`; **historical** — the Hacienda ledger, `read`/`export`/`update`).
 
-`historicalDocuments` is a separate standalone sidebar item mapped to `documents/historical` (read/export/update), not a new module. Owner/admin/manager inherit the grant; staff does not. The two historical routes precede `/dashboard/documents/:saleId` and use the existing route permission boundary; page actions keep `usePermissions().can(...)` fail-open semantics. The history hooks use `salesApi` with `historicalDocumentsPath`, snake_case response types, and 0-indexed API pages adapted to the shared 1-indexed Pagination. `historical_requested` distinguishes an empty ledger from a never-requested sweep; Sync sends `force: true` after an earlier request. CSV export is explicitly the current page. Totals retain Decimal strings and are displayed without an assumed currency because the history response has none.
+`historicalDocuments` is an item of the **Reportes** section, mapped to
+`reports/historical` (read/export/update) — not a standalone item and not a new
+module. It sits in Reportes because it *is* a report: a read-only ledger of what
+Hacienda holds for this taxpayer, not a third documents tab you can compose in.
+`ReportePage` also renders `components/reports/HistoricalDocumentsReport.tsx`, a
+summary card (total, the four ATV verdicts, distribution by document type) that
+links through to the full list. Its counts come from
+`useHistoricalDocumentsSummary`, which issues one `size=1` request per bucket and
+reads `total_elements` — whole-history totals, deliberately not an aggregate of
+the current page, which would silently describe 20 rows as if they were the
+ledger. Owner/admin/manager inherit read+export from the module-wide `reports`
+grant; `update` (the sweep trigger) is granted to admin per-submodule; staff is
+excluded by holding only `reports/general` + `reports/iva`. The two historical
+routes precede `/dashboard/documents/:saleId` and use the existing route
+permission boundary; page actions keep `usePermissions().can(...)` fail-open
+semantics. The history hooks use `salesApi` with `historicalDocumentsPath`,
+snake_case response types, and 0-indexed API pages adapted to the shared
+1-indexed Pagination. `historical_requested` distinguishes an empty ledger from a
+never-requested sweep; Sync sends `force: true` after an earlier request. CSV
+export is explicitly the current page. Totals retain Decimal strings and are
+displayed without an assumed currency because the history response has none.
 
 **Fine-grained twin exception:** a sidebar item whose page hosts multiple config sections can get its own module mirroring those sections. `organization` is the canonical case: the sidebar item stays gated by `admin/organization`, while each org-settings CARD (`OrgSettingsPage.tsx` card ids) is a submodule of the `organization` module (read/update only) — cards are filtered with `can("organization","read",cardId)`. If you add/rename an org-settings card, update the `organization` submodules in `rbac-seed.ts` in the same change (card id = submodule name) and reseed.
 

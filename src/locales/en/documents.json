@@ -190,5 +190,13 @@
   "historical.notFoundDescription": "This key is not available in the organization’s history.",
   "historical.back": "Back to history",
   "historical.accessDenied": "You do not have permission to read Hacienda history.",
-  "historical.items": "historical documents"
+  "historical.items": "historical documents",
+  "historical.report.title": "Hacienda historical documents",
+  "historical.report.subtitle": "Everything the taxpayer has emitted, including before Tsuru.",
+  "historical.report.totalLabel": "Documents on record",
+  "historical.report.byType": "Breakdown by document type",
+  "historical.report.otherTypes": "Other types",
+  "historical.report.viewAll": "View history",
+  "historical.report.barLabel": "{type}: {count} documents ({pct}%)",
+  "historical.report.footnote": "Counts cover the whole history, not just the page shown."
 }

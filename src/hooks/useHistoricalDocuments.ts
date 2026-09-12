@@ -1,5 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi, historicalDocumentsPath } from '@/lib/api';
+import { DOCUMENT_TYPES } from '@/types/invoice';
 import type { HistoricalDocument, HistoricalDocumentFilters, HistoricalDocumentListResponse, HistoricalSyncResponse } from '@/types/historicalDocument';
 
 /** The history API accepts date bounds directly, unlike sales' sale_date ranges. */
@@ -47,4 +49,68 @@ export function useSyncHistoricalDocuments(orgId: string) {
       return client.invalidateQueries({ queryKey: ['historical-documents', orgId] });
     },
   });
+}
+
+/**
+ * Whole-history counts for the Reportes summary.
+ *
+ * Deliberately NOT an aggregate over a fetched page. `size` caps at 250, so
+ * summing rows would quietly describe only the most recent page and call it a
+ * report. Instead each slice is a `size=1` request read for its
+ * `total_elements`, which the backend computes over the entire history — cheap
+ * responses, exact numbers, and it stays correct as the ledger grows.
+ *
+ * Money is not summarised here: totals cannot be derived from a count, and a
+ * partial sum on a fiscal report is worse than no sum at all.
+ */
+export function useHistoricalDocumentsSummary(orgId: string, enabled = true) {
+  const slices = useMemo(() => {
+    const byStatus = ([0, 1, 2, 3] as const).map((atv_status) => ({
+      kind: 'status' as const, key: String(atv_status), query: historicalDocumentsQuery({ atv_status }, 0, 1),
+    }));
+    const byType = DOCUMENT_TYPES.map((dt) => ({
+      kind: 'type' as const, key: dt.code, query: historicalDocumentsQuery({ document_types: [dt.code] }, 0, 1),
+    }));
+    return [{ kind: 'total' as const, key: 'total', query: historicalDocumentsQuery({}, 0, 1) }, ...byStatus, ...byType];
+  }, []);
+
+  const results = useQueries({
+    queries: slices.map((slice) => ({
+      queryKey: ['historical-summary', orgId, slice.query],
+      queryFn: () => salesApi.get<HistoricalDocumentListResponse>(historicalDocumentsPath(orgId, `?${slice.query}`)),
+      enabled: !!orgId && enabled,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  const isLoading = results.some((r) => r.isLoading);
+  const isError = results.some((r) => r.isError);
+
+  const count = (key: string) => {
+    const index = slices.findIndex((slice) => slice.key === key);
+    return results[index]?.data?.pagination.total_elements ?? 0;
+  };
+
+  const total = count('total');
+  const byType = DOCUMENT_TYPES
+    .map((dt) => ({ code: dt.code, count: count(dt.code) }))
+    .filter((row) => row.count > 0);
+
+  // Hacienda history can contain types the POS never issues (05/06/07), so the
+  // remainder is shown rather than silently dropped — a bar chart that does not
+  // add up to the headline is a bug the reader has to notice for us.
+  const accountedFor = byType.reduce((sum, row) => sum + row.count, 0);
+  const other = Math.max(0, total - accountedFor);
+
+  return {
+    isLoading,
+    isError,
+    total,
+    byStatus: ([0, 1, 2, 3] as const).map((status) => ({ status, count: count(String(status)) })),
+    byType,
+    other,
+    // `historical_requested` distinguishes an empty ledger from one never swept.
+    historicalRequested: results[0]?.data?.historical_requested,
+    refetch: () => { results.forEach((r) => { void r.refetch(); }); },
+  };
 }

@@ -28,7 +28,7 @@ export default function HistoricalDocumentDetailPage({ clave }: { clave: string 
   const { orgId } = useOrgContext();
   const { t, language } = useLanguage();
   const { can } = usePermissions();
-  const canRead = can('documents', 'read', 'historical');
+  const canRead = can('reports', 'read', 'historical');
   const query = useHistoricalDocument(orgId, clave, canRead);
   const doc = query.data;
   usePageTitle([t('historical.title'), doc?.consecutive_key]);

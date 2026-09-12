@@ -25,8 +25,8 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
   const [filters, setFilters] = useState<HistoricalDocumentFilters>({});
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
-  const canRead = can('documents', 'read', 'historical');
-  const canSync = can('documents', 'update', 'historical');
+  const canRead = can('reports', 'read', 'historical');
+  const canSync = can('reports', 'update', 'historical');
   const validRange = !filters.start_date || !filters.end_date || filters.start_date <= filters.end_date;
   // `filters` is part of the React Query key, so an un-debounced search input
   // fires one request per keystroke. Debounce only the free-text term — the
@@ -65,7 +65,7 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
         <div><h1 className="t-h1 mb-1.5">{t('historical.title')}</h1><p className="t-body text-muted-foreground">{t('historical.subtitle')}</p></div>
         <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="outline" disabled={query.isFetching || !validRange} onClick={() => query.refetch()}>{t('common.refresh')}</Button>
-          {can('documents', 'export', 'historical') && <Button size="sm" variant="outline" icon="download" disabled={!documents.length || query.isFetching || !validRange || query.isError} onClick={exportPage}>{t('historical.exportPage')}</Button>}
+          {can('reports', 'export', 'historical') && <Button size="sm" variant="outline" icon="download" disabled={!documents.length || query.isFetching || !validRange || query.isError} onClick={exportPage}>{t('historical.exportPage')}</Button>}
           {syncButton}
         </div>
       </div>

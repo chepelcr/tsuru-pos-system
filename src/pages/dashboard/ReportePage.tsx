@@ -3,6 +3,7 @@ import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { HistoricalDocumentsReport } from "@/components/reports/HistoricalDocumentsReport";
 import { usePermissions } from "@/hooks/useRbac";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -273,6 +274,11 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
           </table>
         </div>
       </Card>
+
+      {/* Hacienda historical ledger. Its own card because it summarises a
+          different corpus than the session report above — everything the
+          taxpayer has ever emitted, including before Tsuru. */}
+      {org?.id && <HistoricalDocumentsReport orgId={org.id} />}
     </div>
   );
 }

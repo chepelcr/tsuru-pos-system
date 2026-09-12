@@ -165,5 +165,6 @@
   "common.uploading": "Subiendo…",
   "common.processing": "Procesando…",
   "common.paginationSummary": "Mostrando {start}-{end} de {total} {items}",
-  "common.pageSize": "Elementos por página"
+  "common.pageSize": "Elementos por página",
+  "shell.historicalDocuments": "Documentos históricos"
 }

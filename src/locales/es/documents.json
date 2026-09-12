@@ -190,5 +190,13 @@
   "historical.notFoundDescription": "Esta clave no está disponible en el historial de la organización.",
   "historical.back": "Volver al historial",
   "historical.accessDenied": "No tenés permiso para consultar el historial de Hacienda.",
-  "historical.items": "documentos históricos"
+  "historical.items": "documentos históricos",
+  "historical.report.title": "Documentos históricos de Hacienda",
+  "historical.report.subtitle": "Todo lo que el contribuyente ha emitido, incluso antes de Tsuru.",
+  "historical.report.totalLabel": "Documentos en el historial",
+  "historical.report.byType": "Distribución por tipo de documento",
+  "historical.report.otherTypes": "Otros tipos",
+  "historical.report.viewAll": "Ver historial",
+  "historical.report.barLabel": "{type}: {count} documentos ({pct}%)",
+  "historical.report.footnote": "Los conteos cubren el historial completo, no solo la página mostrada."
 }
