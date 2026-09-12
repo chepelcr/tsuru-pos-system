@@ -34,14 +34,15 @@ export function Pagination({
       {/* Info + Page Size Selector */}
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-[13px] text-muted-foreground">
-          Mostrando {startItem}-{endItem} de {totalElements} {itemName}
+          {t('common.paginationSummary', { start: startItem, end: endItem, total: totalElements, items: itemName })}
         </span>
 
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">Mostrar:</span>
+            <span className="text-xs text-muted-foreground">{t('common.pageSize')}</span>
             <Select
               value={pageSize}
+              aria-label={t('common.pageSize')}
               onChange={(e) => {
                 const newSize = Number(e.target.value);
                 onPageChange(1);

@@ -19,6 +19,7 @@ export type NavId =
   | "reporte"
   | "ivaReport"
   | "documents"
+  | "historicalDocuments"
   | "clients"
   | "orders"
   | "confirmations"

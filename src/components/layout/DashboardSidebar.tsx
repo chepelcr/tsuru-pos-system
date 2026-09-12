@@ -22,6 +22,7 @@ interface DashboardSidebarProps {
 
 /** Icon + i18n label for each navigable item. */
 const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
+  historicalDocuments: { icon: "clock", labelKey: "historical.title" },
   dashboard:     { icon: "chart",       labelKey: "shell.panel" },
   productos:     { icon: "package",     labelKey: "shell.products" },
   categories:    { icon: "layers",      labelKey: "shell.categories" },
@@ -47,7 +48,7 @@ type SectionId = "commercial" | "admin" | "storefront" | "reports";
 /**
  * RBAC map — the catalog mirrors this sidebar 1:1 (modules = sections /
  * standalone items, submodules = section items; see rbac-seed.ts in
- * tsuru-platform-api). Every NavId maps to its [module, submodule]; items
+ * management-be). Every NavId maps to its [module, submodule]; items
  * hide when the org/role lacks read on that pair (legacy validar_permiso).
  */
 const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
@@ -70,6 +71,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   ivaReport:     ["reports", "iva"],
   programs:      ["programs", "programs"],
   documents:     ["documents", "emitted"],
+  historicalDocuments: ["documents", "historical"],
 };
 
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
@@ -288,6 +290,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           )}
         </div>
         )}
+        {renderItem("historicalDocuments")}
       </nav>
 
       {/* ── FOOTER (always visible) ── */}

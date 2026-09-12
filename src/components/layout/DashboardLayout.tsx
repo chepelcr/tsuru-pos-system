@@ -30,6 +30,7 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS_IVA)) return "ivaReport";
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS))  return "reporte";
   // Document editor and list both highlight the "documents" sidebar item
+  if (location.startsWith(ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS)) return "historicalDocuments";
   if (location.startsWith(ROUTES.DASHBOARD_DOCUMENTS)) return "documents";
   if (location.startsWith(ROUTES.DASHBOARD_CLIENTS))  return "clients";
   if (location.startsWith(ROUTES.DASHBOARD_CONFIRMATIONS)) return "confirmations";
@@ -58,6 +59,7 @@ const NAV_PATHS: Record<NavId, string> = {
   reporte:   ROUTES.DASHBOARD_REPORTS,
   ivaReport: ROUTES.DASHBOARD_REPORTS_IVA,
   documents: ROUTES.DASHBOARD_DOCUMENTS,
+  historicalDocuments: ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS,
   clients:   ROUTES.DASHBOARD_CLIENTS,
   orders:    ROUTES.DASHBOARD_ORDERS,
   confirmations: ROUTES.DASHBOARD_CONFIRMATIONS,

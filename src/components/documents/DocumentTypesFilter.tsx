@@ -108,7 +108,7 @@ export function DocumentTypesFilter({ selectedTypes, onChange }: DocumentTypesFi
                 <span className={cn('label-section !text-[10px]', dt.color)}>
                   {dt.short}
                 </span>
-                <span className="truncate">{dt.label}</span>
+                <span className="truncate">{t(`docTypes.${dt.code}`)}</span>
               </button>
             );
           })}

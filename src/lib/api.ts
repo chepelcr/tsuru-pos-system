@@ -327,6 +327,11 @@ export function ordersOrgPath(orgId: string, endpoint: string) {
 
 export const salesApi = createClient(SALES_API_BASE, { snakeCaseResponses: true });
 
+/** Hacienda history is a sibling Lambda behind the same sales gateway. */
+export function historicalDocumentsPath(orgId: string, suffix = '') {
+  return `/api/organizations/${encodeURIComponent(orgId)}/historical-documents${suffix}`;
+}
+
 /** /api/organizations/{org}/sales[suffix] */
 export function salesOrgPath(orgId: string, suffix: string = '') {
   return `/api/organizations/${orgId}/sales${suffix}`;

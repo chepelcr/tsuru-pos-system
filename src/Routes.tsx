@@ -30,6 +30,8 @@ const ProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
 const ReportePage = lazy(() => import("@/pages/dashboard/ReportePage"));
 const IvaReportPage = lazy(() => import("@/pages/dashboard/IvaReportPage"));
 const DocumentsPage = lazy(() => import("@/pages/dashboard/DocumentsPage"));
+const HistoricalDocumentsPage = lazy(() => import("@/pages/dashboard/HistoricalDocumentsPage"));
+const HistoricalDocumentDetailPage = lazy(() => import("@/pages/dashboard/HistoricalDocumentDetailPage"));
 const DocumentDetailPage = lazy(() => import("@/pages/dashboard/DocumentDetailPage"));
 const ClientsPage = lazy(() => import("@/pages/dashboard/ClientsPage"));
 const ClientDetailPage = lazy(() => import("@/pages/dashboard/ClientDetailPage"));
@@ -68,6 +70,7 @@ const ROUTE_PERMISSIONS = {
   categories: [["commercial", "read", "categories"]],
   reports: [["reports", "read", "general"]],
   reportsIva: [["reports", "read", "iva"]],
+  historicalDocuments: [["documents", "read", "historical"]],
   documents: [
     ["documents", "read", "emitted"],
     ["documents", "read", "received"],
@@ -234,6 +237,15 @@ function DocumentDetailRoute() {
   );
 }
 
+function HistoricalDocumentDetailRoute() {
+  const { clave } = useParams<{ clave: string }>();
+  return (
+    <DashboardPage permissions={ROUTE_PERMISSIONS.historicalDocuments}>
+      <HistoricalDocumentDetailPage clave={clave ?? ""} />
+    </DashboardPage>
+  );
+}
+
 // Single documents route — handles both list (/dashboard/documents)
 // and editor (/dashboard/documents/new/:tabId) under one mounted component
 // so the nav stays persistent and content can animate internally.
@@ -350,6 +362,8 @@ export default function Routes() {
 
       {/* Documents — single wildcard route covers both list and editor sub-paths.
           The DocumentsContainer reads useLocation directly and animates content swaps. */}
+      <Route path={`${ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS}/:clave`} component={HistoricalDocumentDetailRoute} />
+      <Route path={ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS} component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.historicalDocuments}><HistoricalDocumentsPage /></DashboardPage>} />
       <Route path={ROUTES.DASHBOARD_DOCUMENTS} component={DocumentsRoute} />
       <Route path="/dashboard/documents/new/:tabId" component={DocumentsRoute} />
       {/* Detail LAST: `/documents/new/:tabId` is more specific and must match

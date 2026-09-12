@@ -163,5 +163,7 @@
   "common.filters": "Filters",
   "common.sortBy": "Sort by",
   "common.uploading": "Uploading…",
-  "common.processing": "Processing…"
+  "common.processing": "Processing…",
+  "common.paginationSummary": "Showing {start}-{end} of {total} {items}",
+  "common.pageSize": "Items per page"
 }

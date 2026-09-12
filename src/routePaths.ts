@@ -21,6 +21,7 @@ export const ROUTES = {
   DASHBOARD_REPORTS: "/dashboard/reports",
   DASHBOARD_REPORTS_IVA: "/dashboard/reports/iva",
   DASHBOARD_DOCUMENTS: "/dashboard/documents",
+  DASHBOARD_HISTORICAL_DOCUMENTS: "/dashboard/documents/historical",
   DASHBOARD_CLIENTS: "/dashboard/clients",
   DASHBOARD_ORG_SETTINGS: "/dashboard/organization",
   DASHBOARD_ORG_GENERAL: "/dashboard/organization/general",
@@ -47,6 +48,10 @@ export function documentEditorPath(tabId: string) {
 /** Build the document-detail URL for a specific sale id */
 export function documentDetailPath(saleId: string) {
   return `/dashboard/documents/${saleId}`;
+}
+
+export function historicalDocumentDetailPath(clave: string) {
+  return `${ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS}/${encodeURIComponent(clave)}`;
 }
 
 /** Build the confirmation-detail URL for a specific confirmation number */
