@@ -6,24 +6,86 @@ This document gives Claude (or any agent) the context needed to navigate and mod
 
 ---
 
-## 0. Standalone repo (repo split in progress)
+## 0. Standalone repo
 
-This project now lives in its own public repository: **[`chepelcr/tsuru-pos-system`](https://github.com/chepelcr/tsuru-pos-system)**. It is **not a store-front template** — it is a standalone POS + Costa Rica/Hacienda electronic-invoicing system.
+This project lives in its own public repository:
+**[`chepelcr/tsuru-pos-system`](https://github.com/chepelcr/tsuru-pos-system)**. It is **not a
+store-front template** — it is a standalone POS + Costa Rica/Hacienda electronic-invoicing system.
 
-During the transition it still physically resides at `BeautyMarket/templates/pos-system/` inside the monorepo (and is gitignored there) because the CI/CD pipelines still reference these paths. **Do new work in the standalone repo.** The monorepo copy will be removed once pipelines are migrated.
+The split is **finished**. A working copy sits at `fe/pos-system/` inside the `Tsuru-CR`
+monorepo, but it is gitignored there and **untracked** (0 files) — this repo is the only home
+for POS changes, and there are no mirror commits to make. Never `git add -f` it back.
 
-> 📍 **Roadmap tracking:** the whole Tsuru ecosystem (this POS included) is tracked in the monorepo at `E:/dev/BeautyMarket/docs/roadmap/tsuru_roadmap.md` (TSR-### board, pending manual steps, changelog). When you complete or start work here, **update that roadmap in the same session** (status cells + §8 changelog) so a fresh session can pick up from it.
+> 📍 **Roadmap tracking:** the whole Tsuru ecosystem (this POS included) is tracked in the
+> monorepo at `docs/roadmap/tsuru_roadmap.md` (TSR-### board, pending manual steps, changelog).
+> When you complete or start work here, **update that roadmap in the same session** (status
+> cells + §8 changelog) so a fresh session can pick up from it.
 
-### Deployment (GitHub Actions — own repo)
+### Deployment — GitHub Pages
 
-**Package manager: pnpm** (enforced by `preinstall: npx only-allow pnpm`; `packageManager` field pins the version). Use `pnpm install` / `pnpm run <script>` / `pnpm add`. The committed lockfile is `pnpm-lock.yaml` (there is no `package-lock.json` — CI runs `pnpm install --frozen-lockfile`, so any dep change must update `pnpm-lock.yaml`). `pnpm run check` = `tsc --noEmit`.
+**Package manager: pnpm** (enforced by `preinstall: npx only-allow pnpm`; the `packageManager`
+field pins the version). Use `pnpm install` / `pnpm run <script>` / `pnpm add`. The committed
+lockfile is `pnpm-lock.yaml` — there is no `package-lock.json`, and CI runs
+`pnpm install --frozen-lockfile`, so any dependency change must update it.
+`pnpm run check` = `tsc --noEmit`.
 
-CI/CD now lives in this repo, replacing the monorepo CodePipeline stage:
-- `.github/workflows/deploy.yml` — on push to `main` (or manual dispatch). Sets up pnpm (`pnpm/action-setup@v4`) + Node 20, runs `pnpm install --frozen-lockfile`, builds the SPA (`pnpm run build`, Vite → `dist/`, env from SSM `/jcampos/${ENVIRONMENT}/jmarkets/*`) and runs `scripts/deploy.sh`.
-- `scripts/deploy.sh` — deploys `cloudformation/frontend-site.yml` (stack `jmarkets-${ENVIRONMENT}-frontend-pos-system`), syncs `dist/` → `s3://jmarkets-${ENVIRONMENT}-pos-system`, invalidates CloudFront. Same names as the old monorepo pipeline, so it updates infra in place. Live at `pos.j-markets.jcampos.dev`.
-- AWS auth: GitHub OIDC → IAM role (no static keys). The **OIDC provider** is shared IaC in `biller-apps/Infrastructure/policies/jcampos-iam-roles.yaml` (account-global, dev-stack owned). The **deploy role** (`jcampos-tsuru-pos-system-gha-deploy`, repo-scoped) lives in `cloudformation/frontend-site.yml` — so the site stack owns it. Set its ARN as repo secret `AWS_DEPLOY_ROLE_ARN`. Routine GH deploys are IAM no-ops; changing the role requires an admin (`J-CAMPOS`) deploy.
-- Local deploy: `pnpm run build && AWS_PROFILE=J-CAMPOS bash scripts/deploy.sh` (uses `--capabilities CAPABILITY_NAMED_IAM`).
-- **Vite `build.outDir` is repo-local `dist/`** (not the old monorepo `../../dist/templates/pos-system`).
+**Live at `app.tsuru.jcampos.dev`.** The domain comes from `public/CNAME` plus the repo's Pages
+configuration — not from DNS this repo controls, so changing it means changing both.
+
+`.github/workflows/deploy.yml`, on push to `main` or manual dispatch, in two jobs:
+
+1. **build** — assume the OIDC role → read build config from SSM → `pnpm/action-setup@v6` +
+   Node 20 → `pnpm install --frozen-lockfile` → `pnpm run build` (Vite → repo-local `dist/`) →
+   copy `dist/index.html` to `dist/404.html` → upload the Pages artifact.
+2. **deploy** — `actions/deploy-pages@v5`.
+
+The 404 copy is what makes client-side routing work: GitHub Pages serves `404.html` for any
+path it has no file for, so without it every deep link into the SPA is a hard 404.
+
+`concurrency: pages` with `cancel-in-progress: false` — one production deploy at a time, and an
+in-flight one is never killed half-way.
+
+**Build configuration comes from SSM, not from the workflow.** The API URLs, the Cognito ids and
+the AppSync events endpoint are CloudFormation outputs owned by other repos, published to
+`/tsuru/{env}/platform/*` and read in one `get-parameters-by-path` call. Copying them here would
+mean two places to change and one of them quietly going stale. Only values this repo owns — its
+branding and the region — stay literal in the workflow env.
+
+The six required parameters (`api/url`, `api/orders-url`, `api/sales-url`, `api/data-url`,
+`cognito/user-pool-id`, `cognito/client-id`) **fail the build** when missing; a bundle pointed at
+nothing is not worth shipping. `appsync/events-url` is the one optional value — without it the
+notification bell still lists what its hydrate loaded, it just stops updating live. Publish them
+with the monorepo's `deploys/deploy-params.sh`. See §13.1 for the detail.
+
+**AWS auth: GitHub OIDC, no static keys.**
+
+| Piece | Where |
+|---|---|
+| OIDC provider (account-global) | monorepo `Infrastructure/policies/tsuru-iam-roles.yaml` |
+| This repo's role | `cloudformation/deploy-role.yml` |
+| Role ARN | repo secret `AWS_DEPLOY_ROLE_ARN` |
+
+**This repo is PUBLIC**, so that role is scoped harder than the backend deploy roles: read-only,
+`ssm:GetParameter*` on `/tsuru/{env}/platform` and nothing else — not the whole `/tsuru/{env}/*`
+tree, which also holds database secret names and Hacienda configuration — and its trust is pinned
+to `ref:refs/heads/main` rather than the `repo:owner/name:*` wildcard the backends use, so a
+workflow on another branch cannot assume it. **If you add a parameter for the build to read, put
+it under `platform/`**; anything outside that path is deliberately unreachable from here.
+
+The build logs the endpoints it compiled in, and every failure path emits a `::warning::` or
+`::error::`. An earlier version let `continue-on-error` swallow an OIDC failure and shipped a POS
+with no real-time endpoint while the job still showed green — a silent misconfiguration is worse
+than a red build, which is why the SSM step is not soft-fail.
+
+**There is no local deploy path, and that is deliberate** — Pages is published from the workflow
+artifact, so `pnpm run build` locally only produces `dist/` for inspection.
+
+> ⚠️ **Retired: the S3 + CloudFront deploy.** This section used to describe `scripts/deploy.sh`
+> deploying `cloudformation/frontend-site.yml` to an S3 bucket behind CloudFront at
+> `pos.j-markets.jcampos.dev`, under the now-retired `J-CAMPOS` account. None of that exists any
+> more: the script and the template are deleted, and `cloudformation/` holds only
+> `deploy-role.yml`. If you find a doc still pointing at `pos.j-markets.jcampos.dev` or at a
+> `jmarkets-*` bucket, it is stale.
 
 ---
 
@@ -33,7 +95,10 @@ A Vite + React 18 + TypeScript single-page app — a **standalone POS + electron
 - **POS workstation** (`/dashboard/pos`, `/pos/*`) — cashier-facing checkout flow
 - **Admin dashboard** (`/dashboard/*`) — products, clients, sessions, stations, electronic invoicing (documents), assignments, reports
 
-It is deployed independently per organization to its own subdomain (`{org}.j-markets.jcampos.dev`).
+It is deployed as a **single** Pages site at `app.tsuru.jcampos.dev`, serving every organization
+— the org is resolved from the signed-in user's membership, not from the hostname. (It was once
+deployed per organization to `{org}.j-markets.jcampos.dev`; that went with the S3/CloudFront
+retirement in §0.)
 
 **Stack** (versions are intentional — don't bump without checking):
 - React 18.3, TypeScript 5.6, Vite 5.4
@@ -48,20 +113,32 @@ It is deployed independently per organization to its own subdomain (`{org}.j-mar
 
 ---
 
-## 2. Three backend APIs
+## 2. Four backend APIs
 
-Requests are split across **three independent API Gateways**. Always use the helper from `src/lib/api.ts` — never hardcode URLs.
+Requests are split across **four independent API Gateways**, each with its own build-time base
+URL. Always use the helper — never hardcode a URL. The four `VITE_*_URL` values are exactly the
+four the deploy workflow resolves from SSM (§0), and every one of them fails the build when
+missing.
 
-| Helper | Base | Purpose | Path builder |
-|---|---|---|---|
-| `api` | `VITE_API_URL` (markets-api) | User profile, org membership | `orgPath(userId, orgId, endpoint)` → `/api/users/{u}/memberships/organization/{o}{e}`, `userPath(userId, endpoint)` |
-| `crossAppApi` | `VITE_ORDERS_API_URL` (cross-app-be) | Sessions, assignments, branches, terminals, dashboard, closings, clients, dataApi | `crossAppOrgPath(orgId, endpoint)` → `/api/organizations/{o}{e}`, `crossAppUserOrgPath(userId, orgId, endpoint)` |
-| `ordersApi` | same base as crossApp | Products, categories | `ordersOrgPath(orgId, endpoint)` |
-| `salesApi` | `VITE_SALES_API_URL` (sales-api) | Electronic invoices, validation, XML, notifications, tax reports | `salesOrgPath(orgId, suffix)`, `validationPath`, `xmlPath`, `notifyPath`, `salesTaxReportPath(orgId, suffix)` |
+| Helper | Base (env var) | Defined in | Purpose | Path builder |
+|---|---|---|---|---|
+| `api` | `VITE_API_URL` (platform api) | `src/lib/api.ts` | User profile, org membership | `orgPath(userId, orgId, endpoint)` → `/api/users/{u}/memberships/organization/{o}{e}`, `userPath(userId, endpoint)` |
+| `crossAppApi` | `VITE_ORDERS_API_URL` (store-be) | `src/lib/api.ts` | Sessions, assignments, branches, terminals, dashboard, closings, clients, orders | `crossAppOrgPath(orgId, endpoint)` → `/api/organizations/{o}{e}`, `crossAppUserOrgPath(userId, orgId, endpoint)` |
+| `ordersApi` | same base as `crossAppApi` | `src/lib/api.ts` | Products, categories | `ordersOrgPath(orgId, endpoint)` |
+| `salesApi` | `VITE_SALES_API_URL` (sales-be) | `src/lib/api.ts` | Electronic invoices, validation, XML, notifications, tax reports | `salesOrgPath(orgId, suffix)`, `validationPath`, `xmlPath`, `notifyPath`, `salesTaxReportPath(orgId, suffix)` |
+| `dataApiClient` | `VITE_DATA_API_URL` (data-be) | `src/services/data-api/client.ts` | Hacienda catalogs | via the hooks in `src/hooks/useDataApi.ts` |
 
-**Important quirk**: `crossAppApi` requests automatically include `x-user-id` header extracted from the Cognito JWT `sub` claim. The markets-api does not.
+Each falls back to a `*.tsuru.jcampos.dev` literal when its variable is unset, so a local `pnpm
+dev` with no `.env` still talks to dev rather than to nothing.
 
-**Data API** (`/api/data/*` under `crossAppApi`, served by `src/services/data-api/`): catalogs from Hacienda — CABYS codes, tax types/rates/factors, identifications, countries, states/counties/districts, discount types, etc. **All data-api hooks live in `src/hooks/useDataApi.ts`** — check there before adding a new fetch.
+**Important quirk**: `crossAppApi` requests automatically include an `x-user-id` header extracted
+from the Cognito JWT `sub` claim. The platform api does not.
+
+**Data API** — its own gateway (`VITE_DATA_API_URL`, client in `src/services/data-api/client.ts`),
+**not** a path under `crossAppApi`, which this section claimed for a while. Serves the Hacienda
+catalogs: CABYS codes, tax types/rates/factors/amounts, exemptions, reference codes and types,
+identifications, countries, states/counties/districts, discount types. **All data-api hooks live
+in `src/hooks/useDataApi.ts`** — check there before adding a new fetch.
 
 The `document_version_id` param is auto-injected by `DocumentVersionContext` for many data-api calls (sale conditions, factory charges, reference codes). Don't pass it manually.
 
