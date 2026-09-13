@@ -45,6 +45,19 @@ export function CommercialValueSection({
 
   const hasIvaTaxes = detail.taxes.some((t) => IVA_CODES.includes(t.code ?? ''));
 
+  // The IVA family has three members and they are not the same tax: 01 is
+  // ordinary VAT, 07 the special-calculation variant and 08 the used-goods
+  // factor regime. Naming the row after whichever one the line carries beats a
+  // generic "IVA", and the catalog description is what the section above it
+  // already shows.
+  const ivaCode = detail.taxes.find((t) => IVA_CODES.includes(t.code ?? ''))?.code;
+  const ivaLabel =
+    ivaCode === TaxTypeCode.IVACE
+      ? t('lineDetail.ivaSpecialLabel')
+      : ivaCode === TaxTypeCode.IVARBU
+        ? t('lineDetail.ivaUsedGoodsLabel')
+        : t('lineDetail.ivaLabel');
+
   return (
     <SectionWrapper
       title={t('lineDetail.commercialValue')}
@@ -105,8 +118,12 @@ export function CommercialValueSection({
           {(ivaTaxTotal > 0 || otherTaxTotal > 0) && (
             <>
               <div className="border-t border-border/50 my-1" />
+              {/* Named for the tax itself, not "Total IVA". At most ONE
+                  IVA-family tax is legal per line, so this is that tax's
+                  amount rather than a sum of several — and the product form
+                  labels the same number with the same words. */}
               {ivaTaxTotal > 0 && (
-                <Row label={t('products.totalIva')} value={`+${fmt(ivaTaxTotal)}`} bold />
+                <Row label={ivaLabel} value={`+${fmt(ivaTaxTotal)}`} bold />
               )}
               {otherTaxTotal > 0 && (
                 <Row label={t('lineDetail.totalOtherTaxes')} value={`+${fmt(otherTaxTotal)}`} bold />

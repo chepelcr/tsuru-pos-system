@@ -186,15 +186,16 @@ export function CommercialValueSection({
               />
             )}
 
-            {(ivaTaxes.length > 0 || otherTaxes.length > 0) && (
+            {/* No "Total IVA" row: Hacienda allows at most ONE IVA-family tax
+                per line (`TaxValidator`: "Only one IVA tax is allowed per
+                line"), so a total could never aggregate more than the single
+                row rendered above it — it just restated the same number under a
+                second name. The other-taxes total stays, because those DO
+                accumulate. */}
+            {otherTaxes.length > 0 && (calc?.other_tax_total ?? 0) > 0 && (
               <>
                 <div className="border-t border-border/50 my-1" />
-                {(calc?.iva_tax_total ?? 0) > 0 && (
-                  <Row label={t("products.totalIva")} value={`+${fmt(calc!.iva_tax_total)}`} bold />
-                )}
-                {(calc?.other_tax_total ?? 0) > 0 && (
-                  <Row label={t("products.totalOtherTaxes")} value={`+${fmt(calc!.other_tax_total)}`} bold />
-                )}
+                <Row label={t("products.totalOtherTaxes")} value={`+${fmt(calc!.other_tax_total)}`} bold />
               </>
             )}
           </div>
