@@ -6,8 +6,7 @@ import { usePermissions } from '@/hooks/useRbac';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { documentDetailPath } from '@/routePaths';
 import type { DocumentListItem } from '@/types/document';
-
-const fmt = (n: number) => '₡' + Math.round(n).toLocaleString('es-CR');
+import { formatMoney as fmt } from "@/lib/money";
 
 /**
  * ATV codes: 0 = recién enviado (aún sin respuesta), 1 = aceptado,

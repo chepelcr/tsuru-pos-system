@@ -6,11 +6,10 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { db } from "@/lib/db";
 import { useInventory } from "@/store/inventory";
 import type { Product } from "@/types";
-import { Icon, Card, Button, SyncPill, Modal } from "@/components/ui";
+import { Icon, Card, Button, SyncPill, Modal, MoneyInput } from "@/components/ui";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-const fmt = (n: number) => "₡" + Math.round(n).toLocaleString("es-CR");
+import { formatMoney as fmt } from "@/lib/money";
 
 interface InventoryOpeningProps {
   products: Product[];
@@ -141,18 +140,12 @@ export default function InventoryOpening({
               <div className="t-xs text-muted-foreground">{t("inv.initialFund")}</div>
             </div>
           </div>
-          <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-lg">
-              ₡
-            </span>
-            <input
-              className="pp-input pp-input-lg pl-[30px] !text-[22px] !font-bold !font-display"
-              type="number"
-              value={cash}
-              onChange={(e) => setCash(e.target.value)}
-              placeholder="0"
-            />
-          </div>
+          <MoneyInput
+            className="pp-input-lg !text-[22px] !font-bold !font-display"
+            value={cash}
+            onChange={setCash}
+            placeholder="0"
+          />
         </Card>
       </div>
 

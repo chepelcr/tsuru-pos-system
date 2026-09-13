@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { DollarSign } from "lucide-react";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { FormLabel } from "@/components/ui";
+import { FormLabel, MoneyInput } from "@/components/ui";
 import { useProductLineAmounts } from "@/hooks/useProductLineAmounts";
 import { useAllTaxes, useAllDiscountTypes } from "@/hooks/useDataApi";
 import { CountryISO, TaxTypeCode } from "@/lib/enums";
@@ -9,8 +9,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { labelByCode } from "@/lib/catalogLabels";
 import type { TaxResponse } from "@/services/data-api/dtos";
 import type { TaxFormEntry, DiscountFormEntry, ProductFormState } from "@/types/productForm";
+import { formatMoney as fmt } from "@/lib/money";
 
-const fmt = (n: number) => "₡" + Math.round(n).toLocaleString("es-CR");
 const IVA_CODES: readonly string[] = [
   TaxTypeCode.IVA,
   TaxTypeCode.IVACE,
@@ -116,19 +116,12 @@ export function CommercialValueSection({
       {/* Base price input */}
       <div>
         <FormLabel required>{t("products.basePriceNoTax")}</FormLabel>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground pointer-events-none">
-            ₡
-          </span>
-          <input
-            type="number"
-            className="pp-input pl-8"
-            placeholder="0"
-            min={0}
-            value={form.price}
-            onChange={(e) => onChange({ price: e.target.value })}
-          />
-        </div>
+        <MoneyInput
+          placeholder="0"
+          min={0}
+          value={form.price}
+          onChange={(price) => onChange({ price })}
+        />
       </div>
 
       {price > 0 && (

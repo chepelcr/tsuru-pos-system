@@ -6,9 +6,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { CountryISO, DiscountTypeCode } from "@/lib/enums";
 import { labelByCode } from "@/lib/catalogLabels";
 import type { DiscountFormEntry } from "@/types/productForm";
+import { formatMoney as fmt } from "@/lib/money";
 
 const ISO = CountryISO.COSTA_RICA;
-const fmt = (n: number) => "₡" + Math.round(n).toLocaleString("es-CR");
 
 interface DiscountsSectionProps {
   discounts: DiscountFormEntry[];

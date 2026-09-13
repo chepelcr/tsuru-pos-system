@@ -1,5 +1,5 @@
 import { Card, Icon, Badge } from "@/components/ui";
-import { fmt } from "@/utils/formatDate";
+import { formatMoney as fmt } from "@/lib/money";
 import type { DashboardData } from "@/types";
 
 interface SessionOverviewTabProps {

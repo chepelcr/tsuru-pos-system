@@ -4,6 +4,7 @@ import { FormLabel, Select } from "@/components/ui";
 import { useAllMeasurementUnits } from '@/hooks/useDataApi';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineDetail } from '@/types/lineDetail';
+import { formatMoney } from "@/lib/money";
 
 interface GeneralTabProps {
   detail: LineDetail;
@@ -134,7 +135,7 @@ export function GeneralTab({ detail, onChange, isExpanded, onToggle, isExportInv
         <div className="flex justify-between items-center pt-2 border-t border-border">
           <span className="text-xs text-muted-foreground">{t('cart.subtotal')}</span>
           <span className="font-mono font-semibold">
-            ₡{(detail.quantity * detail.net_price).toLocaleString('es-CR', { minimumFractionDigits: 2 })}
+            {formatMoney(detail.quantity * detail.net_price)}
           </span>
         </div>
       </div>

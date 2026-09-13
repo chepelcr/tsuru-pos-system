@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useAllCurrencies } from '@/hooks/useDataApi';
+import { CRC_SYMBOL, formatMoney } from '@/lib/money';
 import type { CurrencyCode } from '@/types/invoice';
 
 interface DocumentCurrencyContextType {
@@ -51,15 +52,15 @@ export function DocumentCurrencyProvider({
     const symbol =
       catalog?.currency_symbol || HARDCODED_SYMBOLS[code] || code + ' ';
 
-    const formatAmount = (n: number) =>
-      Math.round(n).toLocaleString('es-CR');
-
     return {
       currency: currency ?? { currency_code: 'CRC', exchange_rate: 1 },
       rate,
       symbol,
-      fmt: (crcAmount: number) => symbol + formatAmount(crcAmount / rate),
-      fmtConverted: (amount: number) => symbol + formatAmount(amount),
+      // Two decimals, and the SELECTED currency's symbol — this is the one
+      // place a document may not be in colones. It used to round to whole
+      // units, so a checkout showed ₡79 697 for a ₡79 696,64 total.
+      fmt: (crcAmount: number) => formatMoney(crcAmount / rate, symbol),
+      fmtConverted: (amount: number) => formatMoney(amount, symbol),
     };
   }, [currency, currencies]);
 
@@ -84,12 +85,13 @@ export function useDocumentCurrency(): DocumentCurrencyContextType {
 export function useDocumentCurrencyOptional(): DocumentCurrencyContextType {
   const ctx = useContext(DocumentCurrencyContext);
   if (ctx) return ctx;
-  // Default formatter — preserves the pre-existing ₡ behavior.
+  // Outside a checkout there is no document, so there is no document currency:
+  // everything else in the app is in the org's own colones.
   return {
     currency: { currency_code: 'CRC', exchange_rate: 1 },
     rate: 1,
-    symbol: '₡',
-    fmt: (n: number) => '₡' + Math.round(n).toLocaleString('es-CR'),
-    fmtConverted: (n: number) => '₡' + Math.round(n).toLocaleString('es-CR'),
+    symbol: CRC_SYMBOL,
+    fmt: (n: number) => formatMoney(n),
+    fmtConverted: (n: number) => formatMoney(n),
   };
 }

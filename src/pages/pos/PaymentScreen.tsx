@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Icon, Card, Button, Input, FormLabel } from "@/components/ui";
+import { Icon, Card, Button, FormLabel, MoneyInput } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 type PaymentMethod = "Efectivo" | "SINPE" | "Tarjeta";
@@ -89,12 +89,10 @@ export default function PaymentScreen({ total, onBack, onConfirm }: PaymentScree
       {method === "Efectivo" && (
         <div className="flex flex-col gap-2.5">
           <FormLabel>{t("payment.receivedLabel")}</FormLabel>
-          <Input
-            type="number"
-            placeholder="₡0"
+          <MoneyInput
+            placeholder="0"
             value={received}
-            onChange={(e) => setReceived(e.target.value)}
-            inputSize="lg"
+            onChange={setReceived}
             className={`!font-display !font-extrabold !text-3xl !text-center ${
               received
                 ? receivedNum >= total

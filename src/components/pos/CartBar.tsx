@@ -2,6 +2,7 @@ import { Icon, Button } from "@/components/ui";
 import { ProductImage } from "@/components/ui/ProductImage";
 import type { Product } from "@/hooks/useProducts";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatMoney } from "@/lib/money";
 
 interface CartItem {
   product: Product;
@@ -51,7 +52,7 @@ export default function CartBar({ items, total, count, onAdd, onRemove, onChecko
                 <span className="t-sm font-medium">{product.name}</span>
               </div>
               <span className="t-num text-[13px] font-bold text-primary">
-                ₡{(product.price * qty).toLocaleString("es-CR")}
+                {formatMoney(product.price * qty)}
               </span>
             </div>
           ))}
@@ -73,7 +74,7 @@ export default function CartBar({ items, total, count, onAdd, onRemove, onChecko
         </span>
         {items.length > 0 && (
           <span className="t-num text-lg font-extrabold">
-            ₡{total.toLocaleString("es-CR")}
+            {formatMoney(total)}
           </span>
         )}
       </Button>

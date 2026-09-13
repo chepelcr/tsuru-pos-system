@@ -4,6 +4,8 @@ export { Card, CardHeader, CardBody, CardFooter, CardTitle, CardDescription } fr
 export { Badge } from "./Badge";
 export { Button } from "./Button";
 export { Input, Select } from "./Input";
+export { MoneyInput } from "./MoneyInput";
+export type { MoneyInputProps } from "./MoneyInput";
 export type { SelectChangeEvent } from "./Input";
 export { SelectField } from "./SelectField";
 export type { SelectFieldOption } from "./SelectField";

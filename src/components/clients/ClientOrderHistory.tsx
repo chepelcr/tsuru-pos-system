@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useOrders } from "@/hooks/useOrders";
 import { ROUTES } from "@/routePaths";
 import type { Order } from "@/hooks/useOrders";
+import { formatMoney } from "@/lib/money";
 
 interface ClientOrderHistoryProps {
   orgId: string | undefined;
@@ -12,7 +13,7 @@ interface ClientOrderHistoryProps {
 }
 
 function formatColones(amount: number): string {
-  return `₡${(amount ?? 0).toLocaleString("es-CR")}`;
+  return formatMoney(amount);
 }
 
 function formatDate(dateString: string | undefined, locale: string): string {

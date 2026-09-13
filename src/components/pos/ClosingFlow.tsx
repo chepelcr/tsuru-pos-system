@@ -8,8 +8,8 @@ import type { Product } from "@/types";
 import { Icon, Card, Badge, Button } from "@/components/ui";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatMoney as fmt } from "@/lib/money";
 
-const fmt = (n: number) => "₡" + Math.round(n).toLocaleString("es-CR");
 const fmtTime = (d: number) => new Date(d).toLocaleTimeString("es-CR", { hour: "2-digit", minute: "2-digit" });
 
 interface ClosingFlowProps {

@@ -12,6 +12,7 @@ import { alcoholAmountFor, isebecAmountFor, isToiletSoap } from "@/lib/specialTa
 import { getTaxConfig } from "@/types/taxTypeConfig";
 import type { TaxFormEntry } from "@/types/productForm";
 import type { TaxAmountResponse, TaxResponse } from "@/services/data-api/dtos";
+import { formatMoney as fmt } from "@/lib/money";
 
 const ISO = CountryISO.COSTA_RICA;
 const IVA_CODES: readonly string[] = [
@@ -19,7 +20,7 @@ const IVA_CODES: readonly string[] = [
   TaxTypeCode.IVACE,
   TaxTypeCode.IVARBU,
 ];
-const fmt = (n: number) => "₡" + Math.round(n).toLocaleString("es-CR");
+
 const SPECIAL_AMOUNT_CODES: readonly string[] = [
   TaxTypeCode.IUC,
   TaxTypeCode.ISEBA,
@@ -83,8 +84,6 @@ function SpecialTaxRow({
   // removed; code 05 uses the generic picker, and which formula applies (soap
   // per gram vs. beverage by volume) is decided in lib/specialTaxes from the
   // CABYS, not in the form.
-
-
 
   return (
     <div className="px-3 py-2.5 bg-muted/30 rounded-lg border border-border">
@@ -158,7 +157,7 @@ function SpecialTaxRow({
                 <option value="">{t("products.selectAmount")}</option>
                 {taxAmounts.map((ta) => (
                   <option key={ta.id} value={String(ta.id)}>
-                    {ta.description} — ₡{ta.amount.toLocaleString("es-CR")}
+                    {ta.description} — {fmt(ta.amount)}
                   </option>
                 ))}
               </Select>

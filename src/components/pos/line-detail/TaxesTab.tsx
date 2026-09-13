@@ -10,6 +10,7 @@ import {
 import { CountryISO } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineTax } from '@/types/lineDetail';
+import { formatMoney } from "@/lib/money";
 
 interface TaxesTabProps {
   taxes: LineTax[];
@@ -245,14 +246,14 @@ export function TaxesTab({
             <div className="flex justify-between text-muted-foreground">
               <span>{t('lineDetail.factoryAssumed')}</span>
               <span className="font-mono">
-                ₡{factoryAssumedTax.toLocaleString('es-CR', { minimumFractionDigits: 2 })}
+                {formatMoney(factoryAssumedTax)}
               </span>
             </div>
           )}
           <div className="flex justify-between font-semibold">
             <span>{t('lineDetail.totalTaxes')}</span>
             <span className="font-mono">
-              ₡{totalTaxes.toLocaleString('es-CR', { minimumFractionDigits: 2 })}
+              {formatMoney(totalTaxes)}
             </span>
           </div>
         </div>

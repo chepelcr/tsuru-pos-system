@@ -1,6 +1,5 @@
-import { Icon } from "@/components/ui";
-
-const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
+import { Icon, MoneyInput } from "@/components/ui";
+import { formatMoney as fmt } from "@/lib/money";
 
 interface ProductPriceEditorProps {
   productId: string;
@@ -45,12 +44,11 @@ export function ProductPriceEditor({
       <div
         className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}
       >
-        <input
-          type="number"
+        <MoneyInput
           value={inputValue}
-          onChange={(e) => onInputChange(e.target.value)}
+          onChange={onInputChange}
           autoFocus
-          className="pp-input pp-input-sm w-[90px]"
+          className="pp-input-sm w-[110px]"
         />
         <button
           className="btn btn-success btn-xs"

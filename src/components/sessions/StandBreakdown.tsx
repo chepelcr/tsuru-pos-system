@@ -1,7 +1,6 @@
 import { Card, CardTitle, CardDescription, Badge } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
+import { formatMoney as fmt } from "@/lib/money";
 
 export interface StandStat {
   name: string;

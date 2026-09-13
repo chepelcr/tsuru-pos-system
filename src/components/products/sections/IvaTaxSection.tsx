@@ -7,6 +7,7 @@ import type { GetAllFactoryTaxChargesParams } from "@/services/data-api/dtos";
 import { CountryISO, IvaCollectedFactory, TaxTypeCode } from "@/lib/enums";
 import { labelByCode } from "@/lib/catalogLabels";
 import type { TaxFormEntry } from "@/types/productForm";
+import { formatMoney as fmt } from "@/lib/money";
 
 const ISO = CountryISO.COSTA_RICA;
 const IVA_CODES: readonly string[] = [
@@ -14,8 +15,6 @@ const IVA_CODES: readonly string[] = [
   TaxTypeCode.IVACE,
   TaxTypeCode.IVARBU,
 ];
-
-const fmt = (n: number) => "₡" + Math.round(n).toLocaleString("es-CR");
 
 interface IvaTaxSectionProps {
   taxes: TaxFormEntry[];

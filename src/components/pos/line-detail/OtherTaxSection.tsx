@@ -12,6 +12,7 @@ import { getTaxConfig } from '@/types/taxTypeConfig';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineTax } from '@/types/lineDetail';
 import type { TaxResponse, TaxAmountResponse } from '@/services/data-api/dtos';
+import { formatMoney as fmt } from "@/lib/money";
 
 /**
  * Per-code `special_fields` requirements (Hacienda Nota 7 — DatosImpuestoEspecifico).
@@ -68,7 +69,6 @@ const SPECIAL_AMOUNT_CODES: readonly string[] = [
   TaxTypeCode.ISEBEC,
   TaxTypeCode.IPT,
 ];
-const fmt = (n: number) => '₡' + Math.round(n).toLocaleString('es-CR');
 
 interface OtherTaxSectionProps {
   taxes: LineTax[];
@@ -351,7 +351,7 @@ function TaxCard({
                   <option value="">{t('lineDetail.selectAmount')}</option>
                   {taxAmounts.map((ta) => (
                     <option key={ta.id} value={ta.id}>
-                      {ta.description} — ₡{ta.amount.toLocaleString('es-CR')}
+                      {ta.description} — {fmt(ta.amount)}
                     </option>
                   ))}
                 </Select>

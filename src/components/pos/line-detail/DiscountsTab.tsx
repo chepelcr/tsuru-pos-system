@@ -6,6 +6,7 @@ import { CountryISO, DiscountTypeCode } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineDiscount } from '@/types/lineDetail';
 import type { DiscountTypeResponse } from '@/services/data-api/dtos';
+import { formatMoney } from "@/lib/money";
 
 interface DiscountsTabProps {
   discounts: LineDiscount[];
@@ -135,7 +136,7 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
               )}
 
               <div className="text-[11px] text-muted-foreground text-right mt-1">
-                ₡{disc_amount.toLocaleString('es-CR', { minimumFractionDigits: 2 })}
+                {formatMoney(disc_amount)}
               </div>
             </div>
           );
@@ -156,7 +157,7 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
             </div>
             <div className="flex justify-between font-semibold">
               <span>{t('lineDetail.totalDiscounts')}</span>
-              <span className="font-mono">₡{total_amt.toLocaleString('es-CR', { minimumFractionDigits: 2 })}</span>
+              <span className="font-mono">{formatMoney(total_amt)}</span>
             </div>
             {total_pct > 100 && (
               <div className="text-[11px] text-destructive">{t('products.discountExceeds')}</div>

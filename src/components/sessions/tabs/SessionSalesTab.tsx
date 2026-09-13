@@ -1,5 +1,5 @@
 import { Card, Icon } from "@/components/ui";
-import { fmt } from "@/utils/formatDate";
+import { formatMoney as fmt } from "@/lib/money";
 import type { StandData } from "@/types";
 
 interface SessionSalesTabProps {

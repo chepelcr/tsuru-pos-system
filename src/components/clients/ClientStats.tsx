@@ -1,13 +1,14 @@
 import { StatCard } from "@/components/common/StatCard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Order } from "@/hooks/useOrders";
+import { formatMoney } from "@/lib/money";
 
 interface ClientStatsProps {
   orders: Order[];
 }
 
 function formatColones(amount: number): string {
-  return `₡${amount.toLocaleString("es-CR")}`;
+  return formatMoney(amount);
 }
 
 /** Parse a DD/MM/YYYY delivery date into a localized short date. */

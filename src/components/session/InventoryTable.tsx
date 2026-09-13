@@ -2,6 +2,7 @@ import { Card, CardTitle, CardDescription, Badge } from "@/components/ui";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Product } from "@/hooks/useProducts";
+import { formatMoney as fmt } from "@/lib/money";
 
 interface Branch {
   branch_id: string;
@@ -19,8 +20,6 @@ interface InventoryTableProps {
   toggleProduct: (productId: string) => void;
   setInventory: React.Dispatch<React.SetStateAction<Record<string, Record<string, number>>>>;
 }
-
-const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
 
 export default function InventoryTable({
   products,

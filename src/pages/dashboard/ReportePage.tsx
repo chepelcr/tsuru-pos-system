@@ -9,8 +9,8 @@ import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/compone
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PaymentBreakdown } from "@/components/sessions/PaymentBreakdown";
 import { StandBreakdown } from "@/components/sessions/StandBreakdown";
+import { formatMoney as fmt } from "@/lib/money";
 
-const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
 const fmtNum = (n: number) => Math.round(Number(n) || 0).toLocaleString("es-CR");
 
 interface ReportData {

@@ -6,10 +6,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
 import { useAllPayments } from '@/hooks/useDataApi';
 import { CountryISO } from '@/lib/enums';
-import { Icon } from '@/components/ui';
+import { Icon , MoneyInput } from '@/components/ui';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import type { GetAllPaymentsParams, PaymentResponse } from '@/services/data-api';
 import type { SalePayment } from '@/types/invoice';
+import { moneyInputValue, roundMoney } from '@/lib/money';
 
 const OTHER_PAYMENT_CODE = '99';
 
@@ -69,7 +70,9 @@ export function PaymentSection({
   onChange,
 }: PaymentSectionProps) {
   const { t } = useLanguage();
-  const { fmtConverted: fmt } = useDocumentCurrencyOptional();
+  // The DOCUMENT's currency: a checkout is the one surface that may not be
+  // in colones, so both the formatter and the input adornment come from it.
+  const { fmtConverted: fmt, symbol } = useDocumentCurrencyOptional();
   const [cashInput, setCashInput] = useState<Record<string, string>>({});
   const [visibleCodes, setVisibleCodes] = useState<string[]>([...PRIMARY_CODES]);
   const [overflowOpen, setOverflowOpen] = useState(false);
@@ -242,9 +245,12 @@ export function PaymentSection({
   const exact = () => {
     const others = payments.filter((p) => p.type !== '01');
     const othersTotal = others.reduce((sum, p) => sum + p.amount, 0);
-    const cash = Math.max(0, cartTotal - othersTotal);
+    // Rounded before it reaches the field. `String(cartTotal - othersTotal)`
+    // wrote the raw float — a ₡79 696,64 total showed as 79696.64000000001,
+    // eleven decimals of binary noise on the amount the cashier is confirming.
+    const cash = roundMoney(Math.max(0, cartTotal - othersTotal));
     onChange([...others, { type: '01', amount: cash }]);
-    setCashInput({ '01': String(cash) });
+    setCashInput({ '01': moneyInputValue(cash) });
   };
 
   const badge = paid > 0 ? fmt(paid) : undefined;
@@ -405,11 +411,11 @@ export function PaymentSection({
                 )}
                 {isOther ? (
                   <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
+                    <MoneyInput
+                      symbol={symbol}
                       value={cashInput[code] ?? payments.find((p) => p.type === code)?.amount ?? ''}
-                      onChange={(e) => setAmount(code, e.target.value)}
-                      className="w-full h-11 rounded-md border border-border bg-background px-3 text-[15px] font-mono t-num focus:outline-none focus:border-primary"
+                      onChange={(raw) => setAmount(code, raw)}
+                      className="h-11 text-[15px]"
                       placeholder="0"
                     />
                     <input
@@ -422,11 +428,11 @@ export function PaymentSection({
                     />
                   </div>
                 ) : (
-                  <input
-                    type="number"
+                  <MoneyInput
+                    symbol={symbol}
                     value={cashInput[code] ?? payments.find((p) => p.type === code)?.amount ?? ''}
-                    onChange={(e) => setAmount(code, e.target.value)}
-                    className="w-full h-11 rounded-md border border-border bg-background px-3 text-[15px] font-mono t-num focus:outline-none focus:border-primary"
+                    onChange={(raw) => setAmount(code, raw)}
+                    className="h-11 text-[15px]"
                     placeholder="0"
                   />
                 )}

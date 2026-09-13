@@ -36,8 +36,7 @@ import { FiscalInfoSection } from './FiscalInfoSection';
 import { CommercialValueSection } from './CommercialValueSection';
 import type { LineDetail, LineTax, LineDiscount } from '@/types/lineDetail';
 import type { Product, ProductTax, ProductDiscount } from '@/types';
-
-const fmt = (n: number) => '₡' + n.toLocaleString('es-CR', { minimumFractionDigits: 2 });
+import { formatMoney as fmt } from "@/lib/money";
 
 const IVA_CODES: readonly string[] = [
   TaxTypeCode.IVA,

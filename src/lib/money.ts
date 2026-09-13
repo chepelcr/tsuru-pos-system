@@ -59,3 +59,58 @@ export function sumMoney(values: Iterable<number | null | undefined>): number {
   for (const value of values) total += roundMoney(value);
   return roundMoney(total);
 }
+
+// ── Presentation ────────────────────────────────────────────────────────────
+//
+// One formatter, so "money is two decimals" is true on screen and not only in
+// the arithmetic. Before this there were ~20 local `fmt` helpers, most of them
+// `"₡" + Math.round(n).toLocaleString("es-CR")` — which is ZERO decimals, so a
+// line of ₡4 333,50 was shown as ₡4 334 and a total could visibly fail to equal
+// the sum of its parts. A handful used `minimumFractionDigits: 2` with no
+// maximum, so a five-decimal value from the document side printed all five.
+
+/** The colón. The default everywhere except a document in another currency. */
+export const CRC_SYMBOL = "₡";
+
+/**
+ * An amount, at two decimals, with a currency symbol.
+ *
+ * `symbol` defaults to the colón because that is what every surface outside a
+ * checkout shows: a product price, a session total and a report column are all
+ * in the org's own currency. Only a document can be in another one, and there
+ * the symbol comes from the selected currency — see `DocumentCurrencyContext`.
+ */
+export function formatMoney(
+  value: number | null | undefined,
+  symbol: string = CRC_SYMBOL,
+): string {
+  const n = Number(value ?? 0);
+  return (
+    symbol +
+    (Number.isFinite(n) ? n : 0).toLocaleString("es-CR", {
+      minimumFractionDigits: MONEY_DECIMALS,
+      maximumFractionDigits: MONEY_DECIMALS,
+    })
+  );
+}
+
+/** The same, without a symbol — for a column that carries its own heading. */
+export function formatAmount(value: number | null | undefined): string {
+  return formatMoney(value, "");
+}
+
+/**
+ * The value to put IN a money input.
+ *
+ * Plain digits with a decimal point — never grouped, since a grouped string is
+ * not a valid `<input type="number">` value — and rounded first. Without the
+ * rounding, "exact payment" wrote `String(79696.64000000001)` into the field:
+ * the raw float left over from subtracting the other payments from the total.
+ * It quantized cleanly at the backend, so the document was right, but the
+ * cashier was shown eleven decimals of binary noise on the amount they were
+ * being asked to confirm.
+ */
+export function moneyInputValue(value: number | null | undefined): string {
+  const rounded = roundMoney(value);
+  return Number.isFinite(rounded) ? rounded.toFixed(MONEY_DECIMALS) : "";
+}

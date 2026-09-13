@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { FiltersModal } from "@/components/common/FiltersModal";
 import { RangeSlider } from "@/components/common/RangeSlider";
 import { useProductPriceBounds } from "@/hooks/useProducts";
-import { Select } from "@/components/ui";
+import { Select, MoneyInput } from "@/components/ui";
 
 /**
  * Advanced filters for products — price (single comparison OR range) + sort.
@@ -144,15 +144,10 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
           </div>
           <div className="space-y-1">
             <label className="t-label">{t("products.priceValue")}</label>
-            <input
-              type="number"
+            <MoneyInput
               min={0}
-              inputMode="numeric"
               value={local.priceValue ?? ""}
-              onChange={(e) =>
-                patch({ priceValue: e.target.value ? Number(e.target.value) : undefined })
-              }
-              className="pp-input"
+              onChange={(raw) => patch({ priceValue: raw ? Number(raw) : undefined })}
               placeholder="0"
             />
           </div>
@@ -165,31 +160,21 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="t-label">{t("products.priceMin")}</label>
-              <input
-                type="number"
+              <MoneyInput
                 min={sliderMin}
                 max={sliderMax}
-                inputMode="numeric"
                 value={local.priceMin ?? ""}
-                onChange={(e) =>
-                  patch({ priceMin: e.target.value ? Number(e.target.value) : undefined })
-                }
-                className="pp-input"
+                onChange={(raw) => patch({ priceMin: raw ? Number(raw) : undefined })}
                 placeholder={fmt(sliderMin)}
               />
             </div>
             <div className="space-y-1">
               <label className="t-label">{t("products.priceMax")}</label>
-              <input
-                type="number"
+              <MoneyInput
                 min={sliderMin}
                 max={sliderMax}
-                inputMode="numeric"
                 value={local.priceMax ?? ""}
-                onChange={(e) =>
-                  patch({ priceMax: e.target.value ? Number(e.target.value) : undefined })
-                }
-                className="pp-input"
+                onChange={(raw) => patch({ priceMax: raw ? Number(raw) : undefined })}
                 placeholder={fmt(sliderMax)}
               />
             </div>

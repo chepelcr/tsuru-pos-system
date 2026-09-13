@@ -15,6 +15,7 @@ import { ChartSkeleton } from "@/components/dashboard/ChartSkeleton";
 import { QuickDocActionsCard } from "@/components/dashboard/QuickDocActionsCard";
 import { constructSiteUrl } from "@/lib/siteUrl";
 import type { StandData, DashboardData } from "@/types";
+import { formatMoney as fmt } from "@/lib/money";
 
 const QrShareModal = lazy(() =>
   import("@/components/dashboard/QrShareModal").then((module) => ({
@@ -22,7 +23,6 @@ const QrShareModal = lazy(() =>
   })),
 );
 
-const fmt = (n: number) => "₡" + Math.round(Number(n) || 0).toLocaleString("es-CR");
 const fmtAgo = (ts: number) => {
   const diff = (Date.now() - ts) / 1000;
   if (diff < 60) return "hace " + Math.floor(diff) + "s";

@@ -2,7 +2,8 @@ import { Card, Icon, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
-import { fmt, formatDate } from "@/utils/formatDate";
+import { formatDate } from "@/utils/formatDate";
+import { formatMoney as fmt } from "@/lib/money";
 import type { Session } from "@/types";
 
 interface SessionCardProps {
