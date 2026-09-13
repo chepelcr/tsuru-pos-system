@@ -221,7 +221,6 @@ export function ProductDrawerForm({
     const ivaEntry: TaxFormEntry = {
       taxCode: ivaTaxType.code ?? TaxTypeCode.IVA,
       rate: (matchingRate as { percentage: number })?.percentage ?? suggestedPct,
-      taxRateId: matchingRate?.id,
       // Persisted so nothing downstream has to infer it back from the rate.
       taxRateCode: item.tax_rate?.code ?? (matchingRate as { code?: string })?.code,
     };

@@ -98,16 +98,18 @@ export function productSavePayload(
       form.taxes.length > 0
         ? form.taxes.map((t) => ({
             tax_type_id: t.taxCode,
-            // Sent whenever EITHER half is known: the catalog id is optional on
-            // the backend, the code is not recoverable from anything else.
-            tax_rate:
-              t.taxRateId || t.taxRateCode
-                ? {
-                    id: t.taxRateId ? String(t.taxRateId) : undefined,
-                    percentage: t.rate,
-                    code: t.taxRateCode,
-                  }
-                : undefined,
+            // `id` carries the Hacienda rate CODE, not a data-services row id.
+            // The code is what identifies the treatment and what the document
+            // carries; the row id is environment-specific and a reseed can
+            // renumber it. store-be's own legacy normalizer already reads
+            // `tax_rate.id` as the rate code, so this makes both writers agree.
+            tax_rate: t.taxRateCode
+              ? {
+                  id: t.taxRateCode,
+                  percentage: t.rate,
+                  code: t.taxRateCode,
+                }
+              : undefined,
             tax_factor: t.taxFactorId
               ? { id: String(t.taxFactorId), factor: t.taxFactor ?? 0 }
               : undefined,
@@ -194,8 +196,14 @@ export function productFormFromProduct(p: any): ProductFormState {
     taxes: (p.taxes ?? []).map((t: any) => ({
       taxCode: String(t.tax_type_id ?? ""),
       rate: t.tax_rate?.percentage ?? t.rate ?? 0,
-      taxRateCode: t.tax_rate?.code ?? t.rate_code ?? undefined,
-      taxRateId: t.tax_rate?.id,
+      // `id` is read as a fallback because it carries the same code, and rows
+      // written before that was true hold a data-services row id there — which
+      // is not a rate code, so it is only trusted when `code` is absent AND it
+      // looks like one (two digits).
+      taxRateCode:
+        t.tax_rate?.code ??
+        t.rate_code ??
+        (/^\d{2}$/.test(String(t.tax_rate?.id ?? "")) ? String(t.tax_rate.id) : undefined),
       taxFactorId: t.tax_factor?.id,
       taxFactor: t.tax_factor?.factor,
       specialFields: t.special_fields

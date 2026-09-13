@@ -33,7 +33,7 @@ const FULLY_CONFIGURED = {
   taxes: [
     {
       tax_type_id: "04",
-      tax_rate: { id: "8", percentage: 13, code: "08" },
+      tax_rate: { id: "08", percentage: 13, code: "08" },
       tax_factor: { id: "01", factor: 0.058 },
       special_fields: {
         quantity: 0.355,
@@ -54,10 +54,26 @@ describe("productFormFromProduct", () => {
     expect(form.taxes[0].specialFields?.proportion).toBe(0.01598);
   });
 
-  it("reads the Hacienda rate code alongside the catalog id", () => {
+  it("reads the Hacienda rate code", () => {
     const form = productFormFromProduct(FULLY_CONFIGURED);
     expect(form.taxes[0].taxRateCode).toBe("08");
-    expect(form.taxes[0].taxRateId).toBe("8");
+  });
+
+  it("falls back to `tax_rate.id` only when it looks like a rate code", () => {
+    // Rows written before `id` carried the code hold a data-services row id
+    // there. "8" is not a Nota 8.1 code (they are two digits), so it must not
+    // be mistaken for one; "08" is.
+    const fromId = productFormFromProduct({
+      ...FULLY_CONFIGURED,
+      taxes: [{ tax_type_id: "01", tax_rate: { id: "08", percentage: 13 } }],
+    });
+    expect(fromId.taxes[0].taxRateCode).toBe("08");
+
+    const fromRowId = productFormFromProduct({
+      ...FULLY_CONFIGURED,
+      taxes: [{ tax_type_id: "01", tax_rate: { id: "8", percentage: 13 } }],
+    });
+    expect(fromRowId.taxes[0].taxRateCode).toBeUndefined();
   });
 
   it("never opens with a blank unit of measure", () => {
@@ -83,23 +99,26 @@ describe("productSavePayload", () => {
     // sujeto (11) and crédito pleno (01) are all 0%.
     const body = productSavePayload(productFormFromProduct(FULLY_CONFIGURED));
     expect((body.taxes as any[])[0].tax_rate).toMatchObject({
-      id: "8",
+      id: "08",
       percentage: 13,
       code: "08",
     });
   });
 
-  it("sends tax_rate when only the CODE is known and the catalog id is not", () => {
-    // A CABYS-derived entry gets a code with no catalog id. The broken copy
-    // required the id, so such a tax was saved with NO rate at all.
+  it("puts the rate CODE in `id`, not a data-services row id", () => {
+    // The row id is environment-specific — a reseed renumbers it — while the
+    // code is the Hacienda identifier the document actually carries.
+    const body = productSavePayload(productFormFromProduct(FULLY_CONFIGURED));
+    expect((body.taxes as any[])[0].tax_rate.id).toBe("08");
+  });
+
+  it("omits tax_rate entirely when there is no code", () => {
+    // Better no rate block than one identified by a number that means nothing
+    // to Hacienda.
     const form = productFormFromProduct(FULLY_CONFIGURED);
-    form.taxes[0].taxRateId = undefined;
+    form.taxes[0].taxRateCode = undefined;
     const body = productSavePayload(form);
-    expect((body.taxes as any[])[0].tax_rate).toEqual({
-      id: undefined,
-      percentage: 13,
-      code: "08",
-    });
+    expect((body.taxes as any[])[0].tax_rate).toBeUndefined();
   });
 
   it("sends the alcohol proportion (Hacienda answers -470 without it)", () => {

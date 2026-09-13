@@ -96,24 +96,26 @@ export function IvaTaxSection({
                 {!isIvarbu && (
                   <Select
                     className="pp-input w-[150px] !h-auto !px-2 !py-1 text-[13px]"
-                    value={tax.taxRateId ?? ""}
+                    // Bound to the Hacienda rate CODE, not to the data-services
+                    // row id. The code is what identifies the treatment and
+                    // what the document carries; the row id is an
+                    // environment-specific number that a reseed can change.
+                    // Binding to it also meant a tax loaded with a code but no
+                    // id — which is most of them — rendered as unselected.
+                    value={tax.taxRateCode ?? ""}
                     onChange={(e) => {
-                      const r = rateList.find((r: { id: number }) => String(r.id) === e.target.value);
-                      // The Hacienda rate CODE is stored alongside the id and
-                      // the percentage. The percentage alone does not identify
-                      // the treatment: exento, no sujeto and crédito pleno are
-                      // all 0%, so a document that infers the code back from
-                      // the rate can declare the wrong one.
+                      const r = rateList.find(
+                        (r: { code?: string }) => (r.code ?? "") === e.target.value,
+                      );
                       if (r) onUpdate(tax.taxCode, {
-                        taxRateId: r.id,
                         rate: (r as { percentage: number }).percentage,
                         taxRateCode: (r as { code?: string }).code,
                       });
                     }}
                   >
                     <option value="">{t("products.taxRate")}</option>
-                    {rateList.map((r: { id: number; percentage: number; description: string }) => (
-                      <option key={r.id} value={String(r.id)}>
+                    {rateList.map((r: { id: number; code?: string; percentage: number; description: string }) => (
+                      <option key={r.code ?? r.id} value={r.code ?? ""}>
                         {r.percentage}% — {r.description}
                       </option>
                     ))}
@@ -180,7 +182,6 @@ export function IvaTaxSection({
                 onAdd({
                   taxCode: (tt as { code?: string }).code ?? "",
                   rate: (defaultRate as { percentage: number })?.percentage ?? 13,
-                  taxRateId: defaultRate?.id,
                   taxRateCode: (defaultRate as { code?: string })?.code,
                 });
               }

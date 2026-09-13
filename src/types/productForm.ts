@@ -8,10 +8,17 @@
  * round-trip bugs (sending DB id "17" as discount_type_id, etc.), so the form
  * stores only the canonical code.
  *
- * The remaining numeric ids on these entries (taxRateId, taxFactorId,
- * taxAmountId) are intentionally kept — they reference data-services catalog
- * rows that have no Hacienda equivalent, and the BE accepts them as opaque
- * string references on `tax_rate.id` / `tax_factor.id` / `tax_amount.id`.
+ * The remaining numeric ids on these entries (taxFactorId, taxAmountId) are
+ * intentionally kept — they reference data-services catalog rows that have no
+ * Hacienda equivalent (a factor is a ministry multiplier, an amount is a
+ * catalog figure), and the BE accepts them as opaque string references on
+ * `tax_factor.id` / `tax_amount.id`.
+ *
+ * A tax RATE is not one of those. It has a Hacienda equivalent — the Nota 8.1
+ * rate code — so `tax_rate.id` carries that CODE rather than a data-services
+ * row id, and there is no separate `taxRateId`. The row id is
+ * environment-specific and a reseed can renumber it, which is the same class of
+ * round-trip bug as sending DB id "17" as a discount_type_id.
  */
 
 export interface TaxFormEntry {
@@ -27,8 +34,6 @@ export interface TaxFormEntry {
    * percentage can carry the wrong tax treatment.
    */
   taxRateCode?: string;
-  /** data-services tax-rate catalog id (opaque). */
-  taxRateId?: number;
   /** data-services tax-factor catalog id (opaque). */
   taxFactorId?: number;
   /** IVARBU factor value (e.g. 0.13). Captured at select time so the BE receives the real number. */
