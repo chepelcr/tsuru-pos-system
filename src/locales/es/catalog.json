@@ -62,6 +62,7 @@
   "products.bulkDelete.title": "Eliminar {count}",
   "products.cabysHelp": "Código CABYS de Hacienda (13 dígitos). Requerido para facturación electrónica.",
   "products.cards": "Tarjetas",
+  "products.catalogLoadFailed": "No se pudieron cargar los catálogos fiscales (impuestos, tarifas, tipos de producto). Sin ellos no se puede editar el producto.",
   "products.category": "Categoría",
   "products.categoryLabel": "Categoría",
   "products.changeProductType": "Cambiar tipo de producto",

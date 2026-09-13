@@ -62,6 +62,7 @@
   "products.bulkDelete.title": "Delete {count}",
   "products.cabysHelp": "Hacienda CABYS code (13 digits). Required for electronic invoicing.",
   "products.cards": "Cards",
+  "products.catalogLoadFailed": "Could not load the fiscal catalogs (taxes, rates, product types). The product cannot be edited without them.",
   "products.category": "Category",
   "products.categoryLabel": "Category",
   "products.changeProductType": "Change product type",

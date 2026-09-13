@@ -176,8 +176,48 @@ import type {
   GetAllTaxRatesParams,
 } from './dtos';
 
+/**
+ * Marker set by `injectDocumentVersion` and consumed by `request`.
+ *
+ * It exists so the WAIT for the document version happens inside `request`,
+ * where there is already an async boundary, without every one of the ~40
+ * catalog methods having to await something.
+ */
+const NEEDS_DOCUMENT_VERSION = "__needsDocumentVersion";
+
+/** How long a request will wait for the document version before giving up. */
+const DOCUMENT_VERSION_TIMEOUT_MS = 15_000;
+
 class DataApiClient {
   private documentVersionId: number | undefined;
+
+  /**
+   * Resolves when `setDocumentVersionId` has supplied a version.
+   *
+   * The Hacienda catalogs (`taxes`, `taxRates`, `codes`, …) take
+   * `document_version_id` as a REQUIRED query parameter — without it the API
+   * answers 422 — and the version itself is fetched asynchronously by
+   * `DocumentVersionContext`, which then pushes it in here from an effect.
+   *
+   * That is a race, and it was being lost silently: a catalog hook mounting in
+   * the same tick as the provider called `injectDocumentVersion` while the id
+   * was still undefined, the parameter was quietly omitted, and the request
+   * came back 422. Because the query client sets `retry: false` globally, that
+   * failure was permanent for the life of the page — so anything gated on a
+   * catalog never resolved. The product drawer waits for `taxes` and
+   * `taxRates`, so it sat on "Cargando información…" forever.
+   *
+   * It only reproduced on a cold cache: with the catalogs already in
+   * localStorage the hooks had data immediately and the race went unnoticed.
+   */
+  private documentVersionReady: Promise<void>;
+  private resolveDocumentVersion!: () => void;
+
+  constructor() {
+    this.documentVersionReady = new Promise<void>((resolve) => {
+      this.resolveDocumentVersion = resolve;
+    });
+  }
 
   /**
    * Set the active document version ID to be used for Hacienda-related endpoints.
@@ -185,6 +225,10 @@ class DataApiClient {
    */
   setDocumentVersionId(id: number | undefined) {
     this.documentVersionId = id;
+    // Only a real version releases the waiters. The provider also calls this
+    // with `undefined` on its first render, before its fetch resolves, and
+    // releasing then would reintroduce the very race this closes.
+    if (id !== undefined) this.resolveDocumentVersion();
   }
 
   /**
@@ -195,19 +239,44 @@ class DataApiClient {
   }
 
   private async request<T>(path: string, params?: Record<string, any>): Promise<T> {
-    const url = buildDataApiUrl(path, params);
+    let query = params;
+
+    if (query?.[NEEDS_DOCUMENT_VERSION]) {
+      const { [NEEDS_DOCUMENT_VERSION]: _marker, ...rest } = query;
+      query = rest;
+
+      if (this.documentVersionId === undefined) {
+        // Bounded: a request that hangs forever is worse than one that fails,
+        // and the caller surfaces an error it can retry. Without the bound an
+        // environment where the version never loads would hold every catalog
+        // request open indefinitely.
+        await Promise.race([
+          this.documentVersionReady,
+          new Promise<void>((resolve) =>
+            setTimeout(resolve, DOCUMENT_VERSION_TIMEOUT_MS),
+          ),
+        ]);
+      }
+
+      if (this.documentVersionId !== undefined && !rest.document_version_id) {
+        query = { ...rest, document_version_id: this.documentVersionId };
+      }
+    }
+
+    const url = buildDataApiUrl(path, query);
     const response = await dataApiFetch(url);
     return response.json();
   }
 
   /**
-   * Automatically inject document_version_id for Hacienda endpoints if available.
+   * Mark a request as needing `document_version_id`.
+   *
+   * The value is NOT read here: at the moment a catalog method runs, the
+   * version may still be in flight. `request` waits for it instead — see
+   * `documentVersionReady`.
    */
   private injectDocumentVersion(params: Record<string, any>): Record<string, any> {
-    if (this.documentVersionId !== undefined && !params.document_version_id) {
-      return { ...params, document_version_id: this.documentVersionId };
-    }
-    return params;
+    return { ...params, [NEEDS_DOCUMENT_VERSION]: true };
   }
 
   // Document Versions

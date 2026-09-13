@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Drawer, Button, Spinner } from "@/components/ui";
+import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
@@ -96,13 +97,29 @@ export function ProductDrawerForm({
   const canDelete = !permsReady || can("commercial", "delete", "products");
 
   // Preload data — React Query deduplicates with section-level calls
-  const { data: productTypesData } = useAllProductTypes();
+  const productTypes = useAllProductTypes();
   useAllMeasurementUnits(); // pre-warms cache for GeneralInfoSection
-  const { data: taxesData } = useAllTaxes({ iso_code: ISO });
-  const { data: ratesData } = useAllTaxRates({ iso_code: ISO });
+  const taxes = useAllTaxes({ iso_code: ISO });
+  const rates = useAllTaxRates({ iso_code: ISO });
+  const { data: productTypesData } = productTypes;
+  const { data: taxesData } = taxes;
+  const { data: ratesData } = rates;
 
   // Data-based check: true until all minimum required data is available in cache
   const dataReady = !!(productTypesData && taxesData && ratesData);
+
+  // …and a way OUT when it never will be.
+  //
+  // The loader was shown purely on `!dataReady`, so any catalog that failed
+  // left the drawer spinning for as long as it stayed open. The query client
+  // sets `retry: false` globally, so a single failed fetch is final — one 422
+  // turned into a dead screen with nothing to click and no reason given.
+  const catalogError = productTypes.isError || taxes.isError || rates.isError;
+  const retryCatalogs = () => {
+    void productTypes.refetch();
+    void taxes.refetch();
+    void rates.refetch();
+  };
 
   // Track per-drawer-open session so loader always shows when drawer opens,
   // even if data was cached from a previous session (React Query isLoading = false with cache).
@@ -396,8 +413,17 @@ export function ProductDrawerForm({
       }
     >
       {/* Loader — fills the sidebar body and centers vertically */}
-      {!drawerReady && (
+      {!drawerReady && !catalogError && (
         <Spinner fullHeight label={t("products.loadingInfo")} />
+      )}
+
+      {!drawerReady && catalogError && (
+        <div className="flex flex-col items-center justify-center gap-3 h-full px-6 text-center">
+          <ErrorBox message={t("products.catalogLoadFailed")} />
+          <Button variant="outline" size="sm" icon="refresh" onClick={retryCatalogs}>
+            {t("common.retry")}
+          </Button>
+        </div>
       )}
 
       {/* Form content — only rendered once data is ready */}
