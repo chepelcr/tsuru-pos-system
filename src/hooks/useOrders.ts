@@ -200,6 +200,40 @@ export function useReprocessOrder(orgId: string | undefined, documentNumber: str
   });
 }
 
+/** The electronic document that billed an order — `POST /orders/{doc}/invoice`. */
+export interface LinkOrderInvoicePayload {
+  sale_id: string;
+  document_type?: string;
+  consecutive_number?: string;
+  document_key?: string;
+  issued_on?: string;
+}
+
+/**
+ * Record that a delivered order was billed.
+ *
+ * Without this the order never learns it has an invoice: `isOrderInvoiced`
+ * keeps returning false, "Facturar pedido" stays enabled, and a second click
+ * emits a second real document and burns another consecutive for the same
+ * delivery. The endpoint has existed since TSR-152 — its own description says
+ * "without this link the frontend cannot tell that a pedido is already
+ * invoiced" — but nothing on this side was calling it.
+ *
+ * Returns 409 if the order is already linked to a DIFFERENT sale, which is the
+ * backend refusing to overwrite one invoice with another.
+ */
+export function useLinkOrderInvoice(orgId: string | undefined, documentNumber: string) {
+  const sync = useOrderCacheSync(orgId, documentNumber);
+  return useMutation<Order, Error, LinkOrderInvoicePayload>({
+    mutationFn: (payload) =>
+      ordersStoreApi.post<Order>(
+        ordersStoreOrgPath(orgId!, `/orders/${documentNumber}/invoice`),
+        payload,
+      ),
+    onSuccess: (updated) => sync(updated),
+  });
+}
+
 /** Import orders from an Excel/CSV file (base64 upload). Invalidates the list. */
 export function useUploadOrdersExcel(orgId: string | undefined) {
   const qc = useQueryClient();

@@ -162,6 +162,7 @@
   "orders.invoice.documentType": "Document type",
   "orders.invoice.invoiced": "Invoiced",
   "orders.invoice.invoicedWith": "Invoiced · {num}",
+  "orders.invoice.linkFailed": "Could not link the order to its invoice. The document WAS issued; retry the link or the order will keep appearing billable.",
   "orders.invoice.matchedLines": "{matched} of {total} lines were rebuilt from the catalog.",
   "orders.invoice.noDocTypes": "Your role cannot create invoices or tickets.",
   "orders.invoice.reviewHint": "The order stays as it is until the invoice is issued.",

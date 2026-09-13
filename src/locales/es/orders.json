@@ -162,6 +162,7 @@
   "orders.invoice.documentType": "Tipo de documento",
   "orders.invoice.invoiced": "Facturado",
   "orders.invoice.invoicedWith": "Facturado · {num}",
+  "orders.invoice.linkFailed": "No se pudo enlazar el pedido con su factura. El documento SÍ se emitió; vuelve a intentar el enlace o el pedido seguirá apareciendo como facturable.",
   "orders.invoice.matchedLines": "{matched} de {total} líneas se recuperaron del catálogo.",
   "orders.invoice.noDocTypes": "Tu rol no puede crear facturas ni tiquetes.",
   "orders.invoice.reviewHint": "El pedido queda como está hasta que la factura se emita.",

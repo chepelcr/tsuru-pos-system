@@ -5,6 +5,8 @@ import { useSessionContext } from '@/store/sessionContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCartFlow, type InvoiceCheckoutData } from '@/hooks/useCartFlow';
 import { useClient } from '@/hooks/useClients';
+import { useLinkOrderInvoice } from '@/hooks/useOrders';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import { DocumentCurrencyProvider } from '@/contexts/DocumentCurrencyContext';
 import { ClientDrawerForm } from '@/components/clients/ClientDrawerForm';
 import { CheckoutDrawer } from './CheckoutDrawer';
@@ -93,6 +95,8 @@ export function OrderCheckoutDrawer({
     : undefined;
 
   const flow = useCartFlow({ items, currency });
+  const linkInvoice = useLinkOrderInvoice(orgId, order.document_number);
+  const { add: notify } = useNotifications();
 
   const handleConfirm = async (invoiceData: InvoiceCheckoutData) => {
     if (!assignment || !user) throw new Error(t('checkout.error.sessionIncomplete'));
@@ -101,7 +105,7 @@ export function OrderCheckoutDrawer({
       throw new Error(t('checkout.error.missingBranchTerminal'));
     }
 
-    return flow.handleConfirmPayment({
+    const result = await flow.handleConfirmPayment({
       assignmentId: assignment.assignment_id,
       orgId,
       userId: user.userId,
@@ -112,6 +116,43 @@ export function OrderCheckoutDrawer({
       selectedClient,
       invoiceData,
     });
+
+    // Record on the ORDER which document billed it.
+    //
+    // Without this the order never learns it has an invoice: `isOrderInvoiced`
+    // keeps returning false, "Facturar pedido" stays enabled, and a second
+    // click emits a second real document and burns another consecutive for the
+    // same delivery. The endpoint has existed since TSR-152 and nothing was
+    // calling it.
+    //
+    // Only for a CONFIRMED sale: a queued one has no consecutive yet, and the
+    // outbox replay is what will eventually produce it. Linking a `queued`
+    // result would record an invoice that does not exist.
+    if (result.status === 'confirmed' && result.sale?.sale_id) {
+      try {
+        await linkInvoice.mutateAsync({
+          sale_id: result.sale.sale_id,
+          document_type: result.sale.document_type,
+          consecutive_number: result.sale.consecutive_number,
+          document_key: result.sale.document_key,
+          issued_on: result.sale.sale_date,
+        });
+      } catch (err) {
+        // Deliberately not fatal: the document IS issued and legally exists, so
+        // failing the checkout here would tell the cashier the sale did not
+        // happen when it did. The cost of the link failing is that the order
+        // still looks billable — which is why it is surfaced rather than
+        // swallowed silently.
+        notify({
+          source: 'fe',
+          level: 'destructive',
+          titleKey: 'orders.invoice.linkFailed',
+          bodyKey: err instanceof Error ? err.message : 'orders.invoice.linkFailed',
+        });
+      }
+    }
+
+    return result;
   };
 
   return (
