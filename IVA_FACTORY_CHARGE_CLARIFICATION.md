@@ -141,3 +141,31 @@ Total:                 ₡9,000
 | Bonus/gift discount | IVA → factory assumes |
 
 **The implementation is correct!** IVA only goes to factory_assumed_tax when there's a bonus/gift discount, not when you select a factory charge.
+
+---
+
+## ⚠️ Partially stale (2026-09-12)
+
+The central claim still holds: **selecting a factory CHARGE does not route IVA to
+`factory_assumed_tax`.** It decides which *special* taxes the factory assumes.
+
+But this document predates a **second** route for IVA onto the issuer, so "the only route is a
+bonus/gift discount (nature 01 or 03)" is no longer complete. `IVACobradoFabrica === "01"`
+— VAT settled at the factory level, a line-level field and not a factory charge — also makes
+the issuer absorb the line's IVA. Hacienda answers **-451** when a line declares it and the
+document does not then report the tax in `ImpuestoAsumidoEmisorFabrica`.
+
+So there are two routes, and they are independent:
+
+| Route | Field | Added |
+|---|---|---|
+| Nota 20 royalty / bonificación | discount nature `01` or `03` | original |
+| VAT settled at factory | `iva_collected_factory === "01"` | TSR-222 |
+
+See `taxCalculationService.ts` (`line_assumes_iva`) and `specialBase.test.ts`.
+
+A third thing reduces what the customer pays without being either of these: an **exoneración**
+(TSR-124) subtracts `MontoImpuesto × TarifaExonerada ÷ 100` from `net_tax`. It is not
+issuer-assumed — nobody absorbs it, the tax is simply forgiven — so it accumulates in
+`exonerated_total`, not in `factory_assumed_tax`. Deliberately, an IVA the issuer is already
+absorbing is **not** exonerated on top, or the same tax would be counted twice.

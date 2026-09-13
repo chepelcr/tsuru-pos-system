@@ -4,6 +4,14 @@ import { useAccordionSections } from '@/hooks/useAccordionSections';
 import { useCart } from '@/store/cart';
 import { useDocumentStore } from '@/store/documentStore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  DOC_TYPES_REQUIRING_REFERENCE,
+  LOCAL_EXEMPTION_CODES,
+  MAX_REFERENCES,
+  ReferenceActionCode,
+  ReferenceDocType,
+} from '@/lib/enums';
+import type { LineDetail, LineTax } from '@/types/lineDetail';
 import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
 import { isManualOrderDocType } from '@/types/invoice';
 import type {
@@ -45,7 +53,19 @@ type SectionId =
   | 'chainClient'
   | 'branchTerminal';
 
-interface CartItem { id: string; name: string; price: number; qty: number; }
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+  /**
+   * The line's fiscal detail, when the drawer (or the order it came from) set
+   * one. The caller has always passed this; the local type simply narrowed it
+   * away, which meant the checkout could not see that a line carried a LOCAL
+   * exemption — and a Factura granting one MUST reference the authorization.
+   */
+  lineDetail?: Partial<LineDetail>;
+}
 
 interface CheckoutDrawerProps {
   open: boolean;
@@ -167,7 +187,30 @@ export function CheckoutDrawer({
   // be paid in full at capture time (a pedido is normally settled later).
   const isManualOrder = isManualOrderDocType(doc_type);
   const needsReceiver = isManualOrder || doc_type !== '04'; // All except Tiquete
-  const needsReferences = doc_type === '03' || doc_type === '02'; // NC / ND
+
+  // References: AVAILABLE on every fiscal document, REQUIRED on only some.
+  //
+  // These used to be one flag, which both hid the section and — worse —
+  // discarded whatever it held for any type other than NC/ND. But the spec makes
+  // references mandatory in five situations, not two ("Obligatorio en NC, ND,
+  // REP, FEC (si sustituye o es proveedor extranjero), o FE con exoneraciones
+  // locales"), and five of the reference codes describe a Factura REPLACING an
+  // earlier comprobante — substituting a provisional contingency receipt (05),
+  // substituting an electronic document (07), an endorsed invoice (08). Gating
+  // them to credit notes made the contingency path unreachable.
+  const hasLocalExemption = cartItems.some((item) =>
+    (item.lineDetail?.taxes ?? []).some((tax: LineTax) =>
+      LOCAL_EXEMPTION_CODES.includes(tax.exemption?.type ?? ''),
+    ),
+  );
+  const referencesRequired =
+    !isManualOrder &&
+    (DOC_TYPES_REQUIRING_REFERENCE.includes(doc_type) ||
+      // An FE granting a LOCAL exemption (Nota 10.1 code 04 or 11) must
+      // reference the authorization.
+      (doc_type === '01' && hasLocalExemption));
+  // A pedido is not a fiscal document and carries no Hacienda references.
+  const referencesAvailable = !isManualOrder;
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
   // Money is compared at céntimo precision rather than as raw floats: cart
   // totals carry fractional céntimos (a ₡4 749 cart is really 4749.4013…) while
@@ -212,7 +255,7 @@ export function CheckoutDrawer({
     payment: !isManualOrder,
     receiver: needsReceiver && !hasReceiver,
     document: false,
-    references: needsReferences && references.length === 0,
+    references: referencesRequired && references.length === 0,
     copies: false,
     manualOrder: isManualOrder,
     // Opens by default: if a chain needs these, they are not optional.
@@ -237,7 +280,24 @@ export function CheckoutDrawer({
     if (!isPaid) return t('checkout.error.notPaid');
     if (!docData.activity_code) return t('checkout.error.activityRequired');
     if (needsReceiver && !hasReceiver) return t('checkout.error.receiverRequired');
-    if (needsReferences && references.length === 0) return t('checkout.error.referencesRequired');
+    if (referencesRequired && references.length === 0) return t('checkout.error.referencesRequired');
+    // The reference fields the backend requires but the form used to leave
+    // optional. Each of these is otherwise caught only when the XML is built —
+    // which happens after the consecutive has been allocated.
+    const badReference = references.find(
+      (r) =>
+        !r.type?.trim() ||
+        !r.code?.trim() ||
+        !r.number?.trim() ||
+        !r.date?.trim() ||
+        !r.reason?.trim() ||
+        (r.type === ReferenceDocType.OTHER && !r.other_type?.trim()) ||
+        (r.code === ReferenceActionCode.OTHER && !r.other_code?.trim()),
+    );
+    if (badReference) return t('checkout.error.referenceIncomplete');
+    if (references.length > MAX_REFERENCES) {
+      return t('checkout.references.maxReached', { max: MAX_REFERENCES });
+    }
     // Hacienda payment code "99" (Otros) requires `other_type` description.
     const otherWithoutType = payments.find(
       (p) => p.type === '99' && !p.other_type?.trim()
@@ -257,7 +317,10 @@ export function CheckoutDrawer({
       ...docData,
       document_type: doc_type,
       receiver: needsReceiver ? receiver : null,
-      references: needsReferences ? references : [],
+      // Sent as captured for EVERY document type. This used to be emptied for
+      // anything that was not a credit or debit note, so a reference the user had
+      // entered was silently thrown away on the way to the document.
+      references: referencesAvailable ? references : [],
       copy_emails: copyEmails.filter(Boolean),
       // A pedido carries no payments: it is settled after delivery.
       payments: isManualOrder ? [] : payments,
@@ -392,12 +455,14 @@ export function CheckoutDrawer({
             />
           )}
 
-          {needsReferences && (
+          {referencesAvailable && (
             <ReferencesSection
               isExpanded={expanded.references}
               onToggle={() => toggle('references')}
               references={references}
               onChange={(next) => updateData({ references: next })}
+              documentType={isManualOrder ? undefined : doc_type}
+              required={referencesRequired}
             />
           )}
 

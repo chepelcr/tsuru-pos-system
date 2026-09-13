@@ -345,13 +345,48 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 Two-service split (Hacienda v4.4). **Never mix tax and discount logic in the same file.** See `CALCULATION_AUDIT.md` for the spec-vs-implementation status map.
 
 Business-critical engines live in `src/services/`:
-- **`discountCalculationService.ts`** — `DiscountCalculationService.calculate(net_price, discounts)` returns `LineDiscountResult { subtotalAfterDiscount, totalDiscountAmount, perDiscount[], hasRoyaltyOrBonus, discountedNatures[] }`. Implements the Hacienda **sequential cascade** (apply discount 1 → remainder, then discount 2 to remainder…) — *not* a percentage sum. Validates `nature_discount` required when `discountCode === DiscountTypeCode.OTHER` (throws `DiscountValidationError{ code: "NATURE_DISCOUNT_REQUIRED", index }`).
-- **`taxCalculationService.ts`** — `TaxCalculationService.getLineAmounts(params)` pure tax math. Callers run the discount service first and pass `hasRoyaltyOrBonus` + `discountedNatures` in; the tax service uses those flags to route taxes through `factory_assumed_tax`. Returns `LineAmountsResult { total_amount_line, net_tax, factory_assumed_tax, base_amount, iva_tax_total, other_tax_total }` (snake_case).
+- **`discountCalculationService.ts`** — `DiscountCalculationService.calculate(net_price, discounts)` returns `LineDiscountResult { subtotalAfterDiscount, totalDiscountAmount, perDiscount[], hasRoyaltyOrBonus, discountedNatures[] }`. Implements the Hacienda **sequential cascade** (apply discount 1 → remainder, then discount 2 to remainder…) — *not* a percentage sum. Validates `nature_discount` required when `discountCode === DiscountTypeCode.OTHER` (throws `DiscountValidationError{ code: "REASON_REQUIRED", index }` — this doc said `NATURE_DISCOUNT_REQUIRED` for a while, which is not a code the service has ever emitted).
+- **`taxCalculationService.ts`** — `TaxCalculationService.getLineAmounts(params)` pure tax math. Callers run the discount service first and pass `hasRoyaltyOrBonus` + `discountedNatures` in; the tax service uses those flags to route taxes through `factory_assumed_tax`. Returns `LineAmountsResult { total_amount_line, net_tax, factory_assumed_tax, base_amount, exonerated_total, iva_tax_total, other_tax_total }` (snake_case).
+
+**One mapping per hop, not one per call site.** Three separate bugs in TSR-258 were the same
+shape: the product-save payload, the stored-tax→document-tax translation, and the product-form
+loader each existed in two copies, and every pair had drifted. The single owners now are:
+
+| Hop | Module |
+|---|---|
+| product form ↔ product API | `src/lib/productFormMapping.ts` |
+| stored tax (product / order line) → `LineTax` | `src/services/storedTaxToLineTax.ts` |
+| IVA percentage → Hacienda rate code | `src/services/ivaRateCode.ts` |
+| order → checkout inputs | `src/lib/orderToInvoice.ts` |
+
+Two traps those encode, worth knowing before touching them:
+
+* **`rate_code` is not decoration.** For the IVA family (01/07/08) sales-api derives the
+  percentage from the code alone and ignores `rate`, so a tax with a rate and no code cannot be
+  priced — it is rejected outright. 0% is deliberately NOT derivable from the percentage
+  (exento 10, no sujeto 11 and crédito pleno 01 are all "0%").
+* **`special_fields` has two spellings.** The stored side nests the per-unit amount as
+  `tax_amount: {id, amount}`; the document wants flat `tax_amount_id` / `tax_unit_amount`. An
+  `as never` cast hid the difference and every specific excise priced at zero.
+
+**Exoneración hangs off a TAX, not a line** — as in the XML, where `Exoneracion` sits inside each
+`Impuesto`. `MontoExonerado = MontoImpuesto × TarifaExonerada ÷ 100`, subtracted from `net_tax`
+and reported as `exonerated_total`; it does **not** reduce `BaseImponible` (Hacienda -454
+computes that from Subtotal plus the base-building excises). An IVA the issuer already absorbs is
+not exonerated on top. `MontoExonerado` is an output — never edit it, never send it.
 
 **Hacienda enums** live in `src/lib/enums/hacienda.ts` and are re-exported from `@/lib/enums`. **Never hard-code `'01'`, `'07'`, `'2202'`, etc.** Use:
 - `TaxTypeCode.IVA` / `IVACE` / `IVARBU` / `ISC` / `IUC` / `ISEBA` / `ISEBEC` / `IPT` / `ISEC` / `OTHERS`
 - `TaxRateCode.GENERAL_13` / `EXEMPT` / `REDUCED_4` / …
 - `DiscountTypeCode.ROYALTY` (`"01"`) / `ROYALTY_BONUS_VAT_CUSTOMER` (`"02"`) / `BONUS` (`"03"`) / `OTHER` (`"99"`) + `FACTORY_ASSUMED_DISCOUNT_NATURES` constant
+- `ExemptionCode.*` — the Nota **10.1** authorization types, plus `LOCAL_EXEMPTION_CODES` (04/11)
+  and `NC_ND_ONLY_EXEMPTION_CODES` (01/05/06/07). ⚠️ These were called `ReferenceCode` until
+  TSR-126, which is a *different* Hacienda table on the same document.
+- `ReferenceActionCode.*` — the `Codigo` on `InformacionReferencia`, from the data-api catalog.
+  sales-be's enum disagreed with that catalog on **8 of 14** values: `06` is *Devolución de
+  mercancía*, NOT a contingency substitution (that is `05`), and `09`/`10` are the financial note
+  codes. Plus `REFERENCE_CODE_DOC_TYPES` / `REFERENCE_TYPE_DOC_TYPES` (17 is REP-only, 06 and
+  type 09 NC/ND-only, type 16 FEC-only), `DOC_TYPES_REQUIRING_REFERENCE` and `MAX_REFERENCES`
 - `CabysSpecialPrefix.ISEBEC_NON_ALCOHOLIC` (`"2202"`) / `ISEBEC_ALCOHOLIC` (`"3401"`) + `cabysStartsWith(cabys, prefix)` helper
 - `IvaCollectedFactory.PRE_DETERMINED` / `EXEMPT_BY_FACTORY`
 
@@ -381,6 +416,10 @@ shows up as a rejected document or, worse, an accepted one that misdeclares.
 | `note20.test.ts` | all ten discount natures; nature 99's `reason`; factory-assumed IVA at 13% |
 | `ivaRates.test.ts` | all eleven `TarifaIVA` codes; `ivaRateCodeFor`; Note 20 re-run at every rate |
 | `specialBase.test.ts` | the editable base (tax code 07 / `IVACobradoFabrica` 01) and the code-08 factor |
+| `exoneration.test.ts` | `MontoExonerado`, and that an issuer-assumed IVA is not exonerated twice |
+| `storedTaxToLineTax.test.ts` | the rate-code fallback, the 08 factor, the two `special_fields` spellings, and that an unresolvable row is DROPPED rather than defaulted to IVA |
+| `lib/productFormMapping.test.ts` | that every fiscal field the API returns survives load → save |
+| `lib/enums/references.test.ts` | the reference codes/types against the catalog, and the per-document restrictions |
 
 Three rules for these:
 
@@ -596,6 +635,12 @@ If you write a helper component or render function that produces user-visible te
 
 - ❌ Don't hardcode user-visible strings in JSX, props (`placeholder`, `title`, `aria-label`), confirm/modal labels, validation messages, or thrown error messages — route every visible string through `t()` and define keys in both `es` and `en` blocks of `LanguageContext.tsx`. See §10.
 - ❌ Don't render persisted label/title fields directly when a stable code is available (e.g. `tab.title` vs `t(\`docTypes.${tab.doc_type}\`)`) — persisted labels freeze in the language they were created in. See §10.5.
+- ❌ Don't default a missing fiscal code to a plausible one. An absent tax type is not IVA and an
+  absent discount nature is not "commercial" — defaulting them turns an excise line into an IVA
+  line and un-assumes the issuer's VAT. DROP the row instead: a totals mismatch stops the
+  cashier, a misdeclaration does not (TSR-258).
+- ❌ Don't write a second copy of a fiscal mapping. Every one of them has drifted; see the table
+  in §8.
 - ❌ Don't bypass `getToken()` — always use `api/crossAppApi/ordersApi/salesApi` from `src/lib/api.ts`
 - ❌ Don't hardcode org IDs, user IDs, terminal/branch codes — pull them from contexts/stores
 - ❌ Don't write `style={{ color: "hsl(var(--muted-foreground))" }}` — use `className="text-muted-foreground"`. See §3.

@@ -125,13 +125,33 @@ export interface OrderAttachments {
   ticket_url?: string;
 }
 
+/**
+ * Per-unit parameters for the specific excises, in the shape store-be PERSISTS.
+ *
+ * Note `tax_amount` is nested here. The document's `TaxSpecialFields` flattens
+ * the same data to `tax_amount_id` / `tax_unit_amount`, so the two are not
+ * interchangeable — `specialFieldsToDocument` converts. Passing this straight
+ * through (which an `as never` cast used to allow) left every excise with no
+ * per-unit amount, and it priced at zero.
+ */
+export interface OrderLineTaxSpecialFields {
+  quantity?: number | null;
+  percentage?: number | null;
+  /** Proporción de alcohol absoluto = cantidad × grado (Nota 8). */
+  proportion?: number | null;
+  volume_consumption?: number | null;
+  tax_amount?: { id?: string | number; amount?: number | null } | null;
+}
+
 /** One tax on an order line — mirrors the product's stored tax shape. */
 export interface OrderLineTax {
   tax_type_id?: string;
   tax_rate?: { id?: string; percentage?: number; code?: string } | null;
-  tax_factor?: unknown;
+  /** IVARBU (code 08) multiplier. `tax = subtotal × factor`; the rate is NOT
+   *  applied on top of it. */
+  tax_factor?: { id?: string; factor?: number | null } | null;
   other_tax_type?: string | null;
-  special_fields?: unknown;
+  special_fields?: OrderLineTaxSpecialFields | null;
   is_amount?: boolean | null;
   amount?: number | null;
 }
@@ -487,6 +507,15 @@ export interface ManualOrderLineTaxPayload {
   code: string;
   rate?: number;
   rate_code?: string;
+  /**
+   * IVARBU (code 08) multiplier — `tax = subtotal × factor`.
+   *
+   * store-be has always accepted it (`ManualOrderTaxDTO.factor`) and persisted
+   * it as `tax_factor`; this side simply never sent it, so a POS-captured
+   * used-goods line arrived with no factor and the pedido could not be billed
+   * (`tax.factor is required when tax.code=08`).
+   */
+  factor?: number;
   /** Required when code = "99" (Otros). */
   other_tax_type?: string;
   /** Per-unit parameters for the specific excises (03/04/05/06/12). */

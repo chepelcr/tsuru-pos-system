@@ -26,9 +26,11 @@ import type {
   SalePayment,
 } from "@/types/invoice";
 import { MANUAL_ORDER_SOURCE } from "@/types/order";
-import { DiscountTypeCode, TaxRateCode, TaxTypeCode } from "@/lib/enums";
+import { DiscountTypeCode } from "@/lib/enums";
 import { DiscountCalculationService } from "@/services/discountCalculationService";
 import { TaxCalculationService } from "@/services/taxCalculationService";
+import { ivaRateCodeFor } from "@/services/ivaRateCode";
+import { lineTaxesFromStored } from "@/services/storedTaxToLineTax";
 import type { LineCode, LineDiscount, LineTax } from "@/types/lineDetail";
 import { roundMoney, sumMoney } from "@/lib/money";
 import { CountryISO } from "@/lib/enums";
@@ -108,42 +110,12 @@ function paymentsForDocument(
 const DEFAULT_UNIT_MEASURE = "Unid";
 
 /**
- * Line taxes from the product's own catalog configuration.
- *
- * Cart lines only carry `lineDetail.taxes` once the cashier has opened the
- * line-detail drawer. A plain scan-and-charge never does, so the document went
- * out with `taxes: []` and sales-api computed a `TotalComprobante` with **no
- * IVA at all** — it answered "Payment total 4749.40130 does not cover document
- * total 4333.00000", the difference being exactly the tax. Had the payment
- * happened to match, the invoice would have been filed under-declaring IVA.
- *
- * The catalog shape has drifted from the declared `ProductTax` type (the API
- * sends `tax_rate: { percentage }` where the type says `rate`), so both
- * spellings are read. `amount` is deliberately NOT forwarded: the backend
- * recomputes it, and the stored value does not tie out against price × rate.
+ * Re-exported for the callers that imported it from here before it moved to
+ * `services/ivaRateCode` (the order→invoice mapping needs the same derivation,
+ * and a percentage→code table is not a hook's business).
  */
-const IVA_RATE_CODE_BY_PERCENTAGE: Record<string, string> = {
-  "0.5": TaxRateCode.REDUCED_HALF,
-  "1": TaxRateCode.REDUCED_1,
-  "2": TaxRateCode.REDUCED_2,
-  "4": TaxRateCode.REDUCED_4,
-  "13": TaxRateCode.GENERAL_13,
-};
+export { ivaRateCodeFor };
 
-/**
- * Hacienda's `TarifaIVA` code for a percentage, when it is unambiguous.
- *
- * sales-api requires `rate_code` on every `01` (IVA) line, and the product
- * catalog stores `tax_rate.percentage` with a null `code`, so it has to be
- * derived. 0% is deliberately NOT mapped: it splits across exento (10),
- * no-sujeto (11), crédito-pleno (01) and the transitional rates, and picking
- * one of those on the operator's behalf would put a wrong tax treatment on a
- * legal document.
- */
-export function ivaRateCodeFor(percentage: number | undefined): string | undefined {
-  if (percentage === undefined || percentage === null) return undefined;
-  return IVA_RATE_CODE_BY_PERCENTAGE[String(percentage)];
-}
 
 /**
  * Line discounts from the product's own catalog configuration.
@@ -227,6 +199,23 @@ function manualOrderCodes(
 }
 
 /**
+ * A line's product codes in the DOCUMENT's spelling (`code_type`, not
+ * `code_type_id`).
+ *
+ * Same source and same fallback as {@link manualOrderCodes} — the line's own
+ * codes win, the product's catalog array covers a scan-and-charge whose drawer
+ * was never opened — but the document's `CodeDTO` names the field `code_type`.
+ * Codes travel because they are what a chain reconciles the invoice against.
+ */
+function documentLineCodes(
+  lineCodes: LineCode[] | undefined,
+  product: { codes?: Array<{ code_type_id: string; number: string }> } | undefined
+): LineCode[] | undefined {
+  const rows = manualOrderCodes(lineCodes, product);
+  return rows?.map((c) => ({ code_type: c.code_type_id, number: c.number }));
+}
+
+/**
  * A line's taxes in the manual-order payload's spelling.
  *
  * The document and the order describe the same thing with the same field names
@@ -243,6 +232,11 @@ function manualOrderTaxes(
     code: tax.code,
     rate: tax.rate,
     rate_code: tax.rate_code,
+    // The IVARBU factor travels too. It used to be dropped here, so a
+    // used-goods line captured in the POS reached the order with no factor —
+    // and `tax = subtotal × factor` with no factor is zero tax, which is also
+    // what the invoice built from that pedido would have declared.
+    factor: tax.factor,
     other_tax_type: tax.other_tax_type,
     special_fields: tax.special_fields as ManualOrderLineTaxPayload["special_fields"],
   }));
@@ -299,30 +293,23 @@ function discountsFromProduct(product: any, discountTypes: any[]): any[] {
     .filter(Boolean);
 }
 
-function taxesFromProduct(product: any): any[] {
-  const configured = product?.taxes;
-  if (!Array.isArray(configured) || configured.length === 0) return [];
-
-  return configured
-    .map((tax: any) => {
-      const code = tax?.tax_type_id ?? tax?.tax_code;
-      if (code === undefined || code === null) return null;
-      const rate = tax?.tax_rate?.percentage ?? tax?.rate;
-      const normalizedCode = String(code).padStart(2, "0");
-      return {
-        code: normalizedCode,
-        rate_code:
-          tax?.tax_rate?.code ??
-          tax?.rate_code ??
-          (normalizedCode === TaxTypeCode.IVA
-            ? ivaRateCodeFor(rate === undefined || rate === null ? undefined : Number(rate))
-            : undefined),
-        rate: rate === undefined || rate === null ? undefined : Number(rate),
-        other_tax_type: tax?.other_tax_type ?? undefined,
-        special_fields: tax?.special_fields ?? undefined,
-      };
-    })
-    .filter(Boolean);
+/**
+ * Line taxes from the product's own catalog configuration.
+ *
+ * Cart lines only carry `lineDetail.taxes` once the cashier has opened the
+ * line-detail drawer. A plain scan-and-charge never does, so the document went
+ * out with `taxes: []` and sales-api computed a `TotalComprobante` with **no
+ * IVA at all** — it answered "Payment total 4749.40130 does not cover document
+ * total 4333.00000", the difference being exactly the tax. Had the payment
+ * happened to match, the invoice would have been filed under-declaring IVA.
+ *
+ * The mapping itself lives in `services/storedTaxToLineTax` because the
+ * order→invoice path reads the identical stored shape and must produce the
+ * identical `LineTax` — a product billed through the cart and the same product
+ * billed through a pedido have to declare the same tax.
+ */
+function taxesFromProduct(product: any): LineTax[] {
+  return lineTaxesFromStored(product?.taxes);
 }
 
 export interface InvoiceCheckoutData {
@@ -897,11 +884,20 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           // Hacienda requires UnidadMedida on every line. It is only populated
           // when the cashier opens the line-detail drawer, which a plain
           // scan-and-charge never does — so the most ordinary sale there is
-          // came back rejected with "unit_measure is required".
-          unit_measure: ld?.unit_measure || DEFAULT_UNIT_MEASURE,
+          // came back rejected with "unit_measure is required". The PRODUCT's
+          // unit is the fallback before "Unid": the manual-order payload has
+          // always consulted it, and without it anything sold by weight or
+          // volume was filed as a discrete unit.
+          unit_measure:
+            ld?.unit_measure || item.product?.unit_measure || DEFAULT_UNIT_MEASURE,
           net_price: item.netPrice,
           // BE Product.cabys is now an object {id, code, ...} but the sales-line
           // payload expects the bare code string. Tolerate both shapes here.
+          //
+          // NOTE the key is `cabys` and sales-be gives it NO camelCase alias,
+          // and no DTO in that chain sets `extra="forbid"` — so a misspelling
+          // like `cabysCode` is silently dropped and surfaces as "cabys must be
+          // exactly 13 digits" rather than as an unknown-field error.
           cabys:
             (typeof (item as any).cabys === 'string'
               ? (item as any).cabys
@@ -909,6 +905,30 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           // Same resolution the cart totals used — see `lineTotals`.
           taxes: lineTotals[index].taxes as any[],
           discounts: lineTotals[index].discounts as any[],
+
+          // ── The rest of `LineDetail` ──────────────────────────────────────
+          // Everything below was declared on the type, captured by the drawer,
+          // used to compute the totals on screen, and sent on the (non-fiscal)
+          // pedido payload — but omitted from the DOCUMENT, which is the one
+          // payload where it has legal effect. sales-be has accepted all of it
+          // all along (`CommonDetailDTO` / `DetailDTO`).
+          //
+          // `base_amount` is the IVACE (07) manual base. The cart total honours
+          // it; the document did not, so the till and the comprobante differed
+          // by exactly the tax.
+          base_amount: ld?.base_amount,
+          // `IVACobradoFabrica`. Hacienda answers -451 when a line declares it
+          // and the issuer does not then absorb the IVA — and it is also what
+          // makes `base_amount` legal in the first place.
+          iva_collected_factory:
+            ld?.iva_collected_factory ?? item.product?.iva_collected_factory ?? undefined,
+          factory_tax: ld?.factory_tax,
+          // The LINE's own Nota-6 codes — what a retail chain reconciles the
+          // invoice against, and not derivable from anything else on it.
+          codes: documentLineCodes(ld?.codes, item.product),
+          commercial_unit_measure: ld?.commercial_unit_measure,
+          customs_part: ld?.customs_part,
+          product_type: ld?.product_type,
         };
       }),
 

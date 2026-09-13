@@ -1,4 +1,4 @@
-import { DEFAULT_UNIT_MEASURE } from "@/types/productForm";
+import { productFormFromProduct, productSavePayload } from "@/lib/productFormMapping";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -177,62 +177,7 @@ export default function ProductsPage() {
   const openNew = () => { setForm({ ...EMPTY_FORM }); setImageUrl(""); setUnitsPerBox(""); setDrawerProduct("new"); };
 
   const openEdit = (p: Product) => {
-    const hasCabys = !!p.cabys?.id;
-    const hasTaxes = (p.taxes ?? []).length > 0;
-    setForm({
-      name: p.name,
-      description: p.description ?? "",
-      price: String(p.price),
-      category_id: p.category_id ?? "",
-      track_inventory: p.track_inventory ?? false,
-      has_fiscal_info: hasCabys || hasTaxes,
-      has_package_info: !!(p.units_per_box && p.units_per_box > 0),
-      low_stock_threshold: p.low_stock_threshold ? String(p.low_stock_threshold) : "",
-      cabysId: p.cabys?.id ?? "",
-      cabys: p.cabys?.code ?? "",
-      cabysDescription: p.cabys?.description ?? "",
-      // Never blank: an empty unit is not a legal document line, and an
-      // existing product that predates the field still has to open with one.
-      unitMeasure: (p as any).unit_measure || DEFAULT_UNIT_MEASURE,
-      commercialUnitMeasure: (p as any).commercial_unit_measure ?? "",
-      customsPart: (p as any).customs_part ?? "",
-      baseAmount:
-        (p as any).base_amount !== null && (p as any).base_amount !== undefined
-          ? String((p as any).base_amount)
-          : "",
-      productTypeId: p.cabys?.product_type_id ?? undefined,
-      factoryTaxChargeId: (p as any).factory_tax_charge_id ?? undefined,
-      hasFactoryTax: !!(p as any).factory_tax || !!(p as any).factory_tax_charge_id,
-      // BE returns Hacienda code strings in *_type_id fields (see _map_product in cross-app-be).
-      // Form entries carry the code only — numeric data-services catalog ids are looked up by
-      // section components when needed (e.g. tax-amounts filter by data-services tax_id).
-      codes: (p.codes ?? []).map((c: any) => ({
-        codeTypeCode: String(c.code_type_id ?? ""),
-        value: c.number,
-      })),
-      taxes: (p.taxes ?? []).map((t: any) => ({
-        taxCode: String(t.tax_type_id ?? ""),
-        rate: t.tax_rate?.percentage ?? t.rate ?? 0,
-        taxRateCode: t.tax_rate?.code ?? t.rate_code ?? undefined,
-        taxRateId: t.tax_rate?.id,
-        taxFactorId: t.tax_factor?.id,
-        taxFactor: t.tax_factor?.factor,
-        specialFields: t.special_fields ? {
-          quantity: t.special_fields.quantity,
-          percentage: t.special_fields.percentage,
-          proportion: t.special_fields.proportion,
-          volumeConsumption: t.special_fields.volume_consumption,
-          taxAmountId: t.special_fields.tax_amount?.id,
-          taxAmount: t.special_fields.tax_amount?.amount,
-        } : undefined,
-      })),
-      discounts: (p.discounts ?? []).map((d, i) => ({
-        id: `edit-${d.discount_type_id}-${i}`,
-        discountCode: String(d.discount_type_id ?? ""),
-        rate: d.percentage ?? d.rate,
-        reason: d.reason,
-      })),
-    });
+    setForm(productFormFromProduct(p));
     setUnitsPerBox(p.units_per_box ? String(p.units_per_box) : "");
     setImageUrl(p.image_url ?? "");
     setDrawerProduct(p);
@@ -242,85 +187,7 @@ export default function ProductsPage() {
     if (!form.name.trim() || !form.price) return;
     setSaving(true);
     try {
-      const body: Record<string, unknown> = {
-        // Basic fields
-        name: form.name.trim(),
-        description: form.description.trim() || undefined,
-        price: Number(form.price),
-        category_id: form.category_id || undefined,
-        track_inventory: form.track_inventory,
-        low_stock_threshold: form.track_inventory && form.low_stock_threshold ? Number(form.low_stock_threshold) : undefined,
-        
-        // Packaging
-        units_per_box: unitsPerBox ? Number(unitsPerBox) : undefined,
-        
-        // CABYS — single UUID referencing an existing data-services cabys row.
-        cabys_id: form.cabysId || undefined,
-
-        // The rest of the document line. A product is the template a
-        // `DetalleLinea` is built from, and these never travelled — so every
-        // product reached an invoice with no unit of measure, and the checkout
-        // fell back to "Unid" whatever the article is actually sold by.
-        unit_measure: form.unitMeasure || DEFAULT_UNIT_MEASURE,
-        commercial_unit_measure: form.commercialUnitMeasure.trim() || undefined,
-        customs_part: form.customsPart.trim() || undefined,
-        base_amount: form.baseAmount ? Number(form.baseAmount) : undefined,
-
-        // Factory-tax charge id (data-services numeric id). The BE persists
-        // the canonical IVA-collected-at-factory linkage on the product.
-        factory_tax_charge_id: form.factoryTaxChargeId || undefined,
-        
-        // Product codes — Hacienda code strings (01/02/03/04/99).
-        codes: form.codes.length > 0 ? form.codes.map(c => ({
-          code_type_id: c.codeTypeCode,
-          number: c.value,
-        })) : undefined,
-
-        // Taxes — BE keys taxes by Hacienda code (01 IVA, 02 ISC, ...). tax_factor.factor and
-        // special_fields.tax_amount.amount carry real catalog values captured at select time.
-        taxes: form.taxes.length > 0 ? form.taxes.map(t => ({
-          tax_type_id: t.taxCode,
-          // The rate CODE travels with the percentage. Without it the checkout
-          // has to infer the code back from the rate, which is unambiguous at
-          // 13% but not at 0% — exento (10), no sujeto (11) and crédito pleno
-          // (01) are all "0%", and guessing puts a wrong tax treatment on a
-          // legal document. Sent whenever either half is known, since the
-          // catalog id is optional on the backend but the code is not
-          // recoverable.
-          tax_rate: (t.taxRateId || t.taxRateCode) ? {
-            id: t.taxRateId ? String(t.taxRateId) : undefined,
-            percentage: t.rate,
-            code: t.taxRateCode,
-          } : undefined,
-          tax_factor: t.taxFactorId ? {
-            id: String(t.taxFactorId),
-            factor: t.taxFactor ?? 0,
-          } : undefined,
-          special_fields: t.specialFields ? {
-            quantity: t.specialFields.quantity,
-            percentage: t.specialFields.percentage,
-            proportion: t.specialFields.proportion,
-            tax_amount: t.specialFields.taxAmountId ? {
-              id: String(t.specialFields.taxAmountId),
-              amount: t.specialFields.taxAmount ?? 0,
-            } : undefined,
-            volume_consumption: t.specialFields.volumeConsumption,
-          } : undefined,
-        })) : undefined,
-
-        // Discounts — Hacienda discount type code (01/02/03/99).
-        // `reason` is the canonical Nota-20 descriptor: auto-filled for known
-        // codes (01/02/03), required free-text for code 99.
-        discounts: form.discounts.length > 0 ? form.discounts.map(d => ({
-          discount_type_id: d.discountCode,
-          percentage: d.rate,
-          reason: d.reason?.trim() || undefined,
-        })) : undefined,
-      };
-      
-      // Image — the MediaPicker already uploaded to the org S3 bucket and gave
-      // us the absolute URL; just persist it (empty string clears).
-      body.image_url = imageUrl || null;
+      const body = productSavePayload(form, { unitsPerBox, imageUrl });
 
       if (drawerProduct === "new") await createProduct.mutateAsync(body);
       else if (drawerProduct) await updateProduct.mutateAsync({ id: drawerProduct.product_id, body });

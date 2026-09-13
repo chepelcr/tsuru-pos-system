@@ -306,3 +306,109 @@ describe("the order line carries the whole document line", () => {
     ]);
   });
 });
+
+describe("cartItemsFromOrder — the fiscal structure an order carries", () => {
+  it("derives the rate code when the order line inherited a null one", () => {
+    // The reported failure: an imported line copies the product's taxes, and
+    // the product's `tax_rate.code` is routinely null, so billing the pedido
+    // died on `tax.rate_code is required when tax.code='01'`.
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            taxes: [{ tax_type_id: "01", tax_rate: { percentage: 13, code: undefined } }],
+          }),
+        ],
+      })
+    );
+    expect(items.p1.lineDetail?.taxes?.[0].rate_code).toBe("08");
+  });
+
+  it("carries the IVARBU factor onto the invoice line", () => {
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            taxes: [
+              {
+                tax_type_id: "08",
+                tax_rate: { percentage: 13, code: "08" },
+                tax_factor: { id: "01", factor: 0.058 },
+              },
+            ],
+          }),
+        ],
+      })
+    );
+    expect(items.p1.lineDetail?.taxes?.[0].factor).toBe(0.058);
+  });
+
+  it("flattens the nested per-unit amount so an excise still prices", () => {
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            taxes: [
+              {
+                tax_type_id: "04",
+                special_fields: {
+                  quantity: 0.355,
+                  percentage: 4.5,
+                  tax_amount: { id: "14", amount: 3.66 },
+                },
+              },
+            ],
+          }),
+        ],
+      })
+    );
+    expect(items.p1.lineDetail?.taxes?.[0].special_fields).toMatchObject({
+      tax_amount_id: 14,
+      tax_unit_amount: 3.66,
+    });
+  });
+
+  it("drops a tax row with no type instead of declaring it IVA", () => {
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            taxes: [{ tax_rate: { percentage: 13, code: "08" } }],
+          }),
+        ],
+      })
+    );
+    expect(items.p1.lineDetail?.taxes).toBeUndefined();
+  });
+
+  it("drops a discount with no nature instead of calling it commercial", () => {
+    // 01/03 make the ISSUER absorb the line's IVA; 07 does not. Guessing
+    // between them changes who Hacienda is told paid the tax.
+    const items = cartItemsFromOrder(
+      order({
+        lines: [line({ product_id: "p1", discounts: [{ amount: 250 }] })],
+      })
+    );
+    expect(items.p1.lineDetail?.discounts).toBeUndefined();
+  });
+
+  it("keeps a discount that does carry its nature, reason included", () => {
+    const items = cartItemsFromOrder(
+      order({
+        lines: [
+          line({
+            product_id: "p1",
+            discounts: [{ discount_type_id: "99", amount: 250, reason: "Acuerdo comercial" }],
+          }),
+        ],
+      })
+    );
+    expect(items.p1.lineDetail?.discounts).toEqual([
+      { discount_type: "99", amount: 250, reason: "Acuerdo comercial" },
+    ]);
+  });
+});

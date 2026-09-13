@@ -209,6 +209,23 @@ function StatusTimeline({ order }: { order: Order }) {
   );
 }
 
+/**
+ * What a line is missing before it can become an invoice line.
+ *
+ * The page used to show description, code, price, quantity and total — and
+ * nothing fiscal. So a line with no CABYS, no taxes or no unit of measure looked
+ * completely normal right up until the document was filed and Hacienda refused
+ * it (or, for a missing tax, accepted an invoice declaring no IVA). These are
+ * the three the biller treats as mandatory.
+ */
+function missingFiscal(line: OrderLine, t: (k: string) => string): string[] {
+  const gaps: string[] = [];
+  if (!line.cabys) gaps.push(t('orders.lineItems.noCabys'));
+  if (!line.taxes?.length) gaps.push(t('orders.lineItems.noTaxes'));
+  if (!line.unit_measure) gaps.push(t('orders.lineItems.noUnit'));
+  return gaps;
+}
+
 function LineItems({ order }: { order: Order }) {
   const { t } = useLanguage();
   const lines: OrderLine[] = order.lines ?? [];
@@ -220,25 +237,46 @@ function LineItems({ order }: { order: Order }) {
           <thead>
             <tr className="border-b border-border bg-muted/30">
               <th className="pp-th">{t('orders.lineItems.product')}</th>
+              <th className="pp-th">{t('orders.lineItems.cabys')}</th>
+              <th className="pp-th text-center">{t('orders.lineItems.unit')}</th>
               <th className="pp-th text-right">{t('orders.lineItems.price')}</th>
               <th className="pp-th text-center">{t('orders.lineItems.quantity')}</th>
+              <th className="pp-th text-right">{t('orders.lineItems.tax')}</th>
               <th className="pp-th text-right">{t('common.total')}</th>
             </tr>
           </thead>
           <tbody>
-            {lines.map((item) => (
-              <tr key={item.line_number} className="border-b border-border last:border-b-0">
-                <td className="pp-td">
-                  <div className="font-semibold text-foreground">{item.description}</div>
-                  <div className="t-xs text-muted-foreground">
-                    {t('orders.lineItems.code')}: {item.code} · {item.internal_code}
-                  </div>
-                </td>
-                <td className="pp-td text-right text-muted-foreground">{fmt(item.unit_price)}</td>
-                <td className="pp-td text-center">{item.quantity_ordered}</td>
-                <td className="pp-td text-right font-semibold">{fmt(item.line_total)}</td>
-              </tr>
-            ))}
+            {lines.map((item) => {
+              const gaps = missingFiscal(item, t);
+              return (
+                <tr key={item.line_number} className="border-b border-border last:border-b-0">
+                  <td className="pp-td">
+                    <div className="font-semibold text-foreground">{item.description}</div>
+                    <div className="t-xs text-muted-foreground">
+                      {t('orders.lineItems.code')}: {item.code} · {item.internal_code}
+                    </div>
+                    {gaps.length > 0 && (
+                      <div
+                        className="t-xs text-warning mt-1"
+                        title={t('orders.lineItems.missingFiscal')}
+                      >
+                        {gaps.join(' · ')}
+                      </div>
+                    )}
+                  </td>
+                  <td className="pp-td font-mono t-xs text-muted-foreground">
+                    {item.cabys || '—'}
+                  </td>
+                  <td className="pp-td text-center t-xs text-muted-foreground">
+                    {item.unit_measure || '—'}
+                  </td>
+                  <td className="pp-td text-right text-muted-foreground">{fmt(item.unit_price)}</td>
+                  <td className="pp-td text-center">{item.quantity_ordered}</td>
+                  <td className="pp-td text-right text-muted-foreground">{fmt(item.tax)}</td>
+                  <td className="pp-td text-right font-semibold">{fmt(item.line_total)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -31,6 +31,7 @@ import { GeneralTab } from './GeneralTab';
 import { IvaTaxSection } from './IvaTaxSection';
 import { OtherTaxSection } from './OtherTaxSection';
 import { DiscountsTab } from './DiscountsTab';
+import { ExemptionSection } from './ExemptionSection';
 import { FiscalInfoSection } from './FiscalInfoSection';
 import { CommercialValueSection } from './CommercialValueSection';
 import type { LineDetail, LineTax, LineDiscount } from '@/types/lineDetail';
@@ -50,6 +51,7 @@ interface SectionExpanded {
   discounts: boolean;
   otherTaxes: boolean;
   ivaTax: boolean;
+  exemption: boolean;
   commercial: boolean;
 }
 
@@ -119,12 +121,15 @@ export function LineDetailDrawer({
     discounts: false,
     otherTaxes: false,
     ivaTax: false,
+    exemption: false,
     commercial: true,
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [specialFieldsErrors, setSpecialFieldsErrors] = useState<string[]>([]);
   const [rateCodeErrors, setRateCodeErrors] = useState<string[]>([]);
+  /** Exoneración errors — mirrors sales-be's `ExonerationValidator`. */
+  const [exemptionErrors, setExemptionErrors] = useState<string[]>([]);
 
   const [detail, setDetail] = useState<LineDetail>(() => {
     if (!product) {
@@ -354,8 +359,18 @@ export function LineDetailDrawer({
     for (const e of rateCodeErrors) {
       if (!errs.includes(e)) errs.push(e);
     }
+    for (const e of exemptionErrors) {
+      if (!errs.includes(e)) errs.push(e);
+    }
     setValidationErrors(errs);
-  }, [discountResult.error, ivaceValidationError, specialFieldsErrors, rateCodeErrors, t]);
+  }, [
+    discountResult.error,
+    ivaceValidationError,
+    specialFieldsErrors,
+    rateCodeErrors,
+    exemptionErrors,
+    t,
+  ]);
 
   const handleDelete = () => {
     confirm({
@@ -509,7 +524,18 @@ export function LineDetailDrawer({
               onValidationChange={setRateCodeErrors}
             />
 
-            {/* 6. Commercial Value */}
+            {/* 6. Exoneración (v4.4) — hangs off the line's IVA tax */}
+            <ExemptionSection
+              taxes={detail.taxes}
+              onChange={(taxes) => patch({ taxes })}
+              ivaTaxTotal={lineAmounts.iva_tax_total}
+              documentType={typeof documentType === 'string' ? documentType : undefined}
+              isExpanded={expanded.exemption}
+              onToggle={() => toggle('exemption')}
+              onValidationChange={setExemptionErrors}
+            />
+
+            {/* 7. Commercial Value */}
             <CommercialValueSection
               detail={detail}
               subtotalAfterDiscount={subtotalAfterDiscount}

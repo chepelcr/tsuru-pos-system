@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { productFormFromProduct, productSavePayload } from "@/lib/productFormMapping";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ROUTES } from "@/routePaths";
@@ -12,7 +13,6 @@ import { usePermissions } from "@/hooks/useRbac";
 import type { Product, Category } from "@/types";
 import { Card, Icon, Button, Badge, Menu } from "@/components/ui";
 import { ProductDrawerForm, EMPTY_FORM, type ProductFormState } from "@/components/products/ProductDrawerForm";
-import { DEFAULT_UNIT_MEASURE } from "@/types/productForm";
 
 function InfoRow({ icon, label, value }: { icon: string; label: string; value: string | number }) {
   return (
@@ -126,58 +126,11 @@ export default function ProductDetailPage({ productId }: Props) {
 
   const openEdit = () => {
     if (!product) return;
-    const hasCabys = !!product.cabys?.id;
-    const hasTaxes = (product.taxes ?? []).length > 0;
-    setForm({
-      name: product.name,
-      description: product.description ?? "",
-      price: String(product.price),
-      category_id: product.category_id ?? "",
-      track_inventory: product.track_inventory ?? false,
-      has_fiscal_info: hasCabys || hasTaxes,
-      has_package_info: !!(product.units_per_box && product.units_per_box > 0),
-      low_stock_threshold: product.low_stock_threshold ? String(product.low_stock_threshold) : "",
-      cabysId: product.cabys?.id ?? "",
-      cabys: product.cabys?.code ?? "",
-      cabysDescription: product.cabys?.description ?? "",
-      // Never blank: an empty unit is not a legal document line, and an
-      // existing product that predates the field still has to open with one.
-      unitMeasure: (product as any).unit_measure || DEFAULT_UNIT_MEASURE,
-      commercialUnitMeasure: (product as any).commercial_unit_measure ?? "",
-      customsPart: (product as any).customs_part ?? "",
-      baseAmount:
-        (product as any).base_amount !== null && (product as any).base_amount !== undefined
-          ? String((product as any).base_amount)
-          : "",
-      productTypeId: product.cabys?.product_type_id ?? undefined,
-      factoryTaxChargeId: (product as any).factory_tax_charge_id ?? undefined,
-      hasFactoryTax: !!(product as any).factory_tax || !!(product as any).factory_tax_charge_id,
-      codes: (product.codes ?? []).map((c: any) => ({
-        codeTypeCode: String(c.code_type_id ?? ""),
-        value: c.number,
-      })),
-      taxes: (product.taxes ?? []).map((t: any) => ({
-        taxCode: String(t.tax_type_id ?? ""),
-        rate: t.tax_rate?.percentage ?? t.rate ?? 0,
-        taxRateCode: (t as any).tax_rate?.code ?? (t as any).rate_code ?? undefined,
-        taxRateId: t.tax_rate?.id,
-        taxFactorId: t.tax_factor?.id,
-        taxFactor: t.tax_factor?.factor,
-        specialFields: t.special_fields ? {
-          quantity: t.special_fields.quantity,
-          percentage: t.special_fields.percentage,
-          volumeConsumption: t.special_fields.volume_consumption,
-          taxAmountId: t.special_fields.tax_amount?.id,
-          taxAmount: t.special_fields.tax_amount?.amount,
-        } : undefined,
-      })),
-      discounts: (product.discounts ?? []).map((d, i) => ({
-        id: `edit-${d.discount_type_id}-${i}`,
-        discountCode: String(d.discount_type_id ?? ""),
-        rate: d.percentage ?? d.rate,
-        reason: d.reason,
-      })),
-    });
+    // Same mapping the list drawer uses — see lib/productFormMapping. The two
+    // copies had drifted: this one dropped `special_fields.proportion` on read,
+    // so the alcohol proportion could not survive an edit here even once the
+    // save path was fixed.
+    setForm(productFormFromProduct(product));
     setUnitsPerBox(product.units_per_box ? String(product.units_per_box) : "");
     setImageUrl(product.image_url ?? "");
     setEditOpen(true);
@@ -187,53 +140,11 @@ export default function ProductDetailPage({ productId }: Props) {
     if (!form.name.trim() || !form.price) return;
     setSaving(true);
     try {
-      const body: Record<string, unknown> = {
-        name: form.name.trim(),
-        description: form.description.trim() || undefined,
-        price: Number(form.price),
-        category_id: form.category_id || undefined,
-        track_inventory: form.track_inventory,
-        low_stock_threshold: form.track_inventory && form.low_stock_threshold ? Number(form.low_stock_threshold) : undefined,
-        units_per_box: unitsPerBox ? Number(unitsPerBox) : undefined,
-        cabys_id: form.cabysId || undefined,
-        // Factory-tax charge id (data-services numeric id) — see ProductsPage.
-        factory_tax_charge_id: form.factoryTaxChargeId || undefined,
-        codes: form.codes.length > 0 ? form.codes.map(c => ({
-          code_type_id: c.codeTypeCode,
-          number: c.value,
-        })) : undefined,
-        taxes: form.taxes.length > 0 ? form.taxes.map(t => ({
-          tax_type_id: t.taxCode,
-          tax_rate: t.taxRateId ? {
-            id: String(t.taxRateId),
-            percentage: t.rate,
-          } : undefined,
-          tax_factor: t.taxFactorId ? {
-            id: String(t.taxFactorId),
-            factor: t.taxFactor ?? 0,
-          } : undefined,
-          special_fields: t.specialFields ? {
-            quantity: t.specialFields.quantity,
-            percentage: t.specialFields.percentage,
-            tax_amount: t.specialFields.taxAmountId ? {
-              id: String(t.specialFields.taxAmountId),
-              amount: t.specialFields.taxAmount ?? 0,
-            } : undefined,
-            volume_consumption: t.specialFields.volumeConsumption,
-          } : undefined,
-        })) : undefined,
-        // Hacienda Nota 20: `reason` is the canonical free-text descriptor —
-        // auto-filled for codes 01/02/03, required for code 99 (validated FE-side).
-        discounts: form.discounts.length > 0 ? form.discounts.map(d => ({
-          discount_type_id: d.discountCode,
-          percentage: d.rate,
-          reason: d.reason?.trim() || undefined,
-        })) : undefined,
-      };
-
-      // Image already uploaded to the org S3 bucket by the MediaPicker — send
-      // the resulting URL (empty string clears it).
-      body.image_url = imageUrl || null;
+      // The SAME builder the list drawer uses. This used to be a second copy
+      // that silently dropped the rate code, the unit of measure, the customs
+      // part, the editable base and the alcohol proportion — so editing a
+      // product here undid fiscal data configured elsewhere.
+      const body = productSavePayload(form, { unitsPerBox, imageUrl });
 
       await updateProduct.mutateAsync({ id: productId, body });
     } finally {

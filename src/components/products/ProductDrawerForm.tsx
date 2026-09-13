@@ -18,6 +18,7 @@ import { FiscalInformationSection } from "./sections/FiscalInformationSection";
 import { IvaTaxSection } from "./sections/IvaTaxSection";
 import { OtherTaxSection } from "./sections/OtherTaxSection";
 import { DiscountsSection } from "./sections/DiscountsSection";
+import { ExemptionSection } from "./sections/ExemptionSection";
 import { CommercialValueSection } from "./sections/CommercialValueSection";
 import { CodesSection } from "./sections/CodesSection";
 
@@ -66,6 +67,7 @@ interface SectionExpanded {
   fiscal: boolean;
   ivaTax: boolean;
   otherTax: boolean;
+  exemption: boolean;
   discounts: boolean;
   commercial: boolean;
 }
@@ -125,6 +127,7 @@ export function ProductDrawerForm({
     fiscal: false,
     ivaTax: false,
     otherTax: false,
+    exemption: false,
     discounts: false,
     commercial: false,
   });
@@ -142,6 +145,9 @@ export function ProductDrawerForm({
       fiscal: editing && !!((drawerProduct as Product).cabys || ((drawerProduct as Product).taxes ?? []).length > 0),
       ivaTax: editing && ((drawerProduct as Product).taxes ?? []).some(t => IVA_CODES.includes(t.tax_code ?? "")),
       otherTax: editing && ((drawerProduct as Product).taxes ?? []).some(t => !IVA_CODES.includes(t.tax_code ?? "")),
+      // Open only when the article actually carries an exoneration, so an
+      // ordinary product does not grow a section nobody needs.
+      exemption: editing && !!(drawerProduct as Product).exemption_authorization_code,
       discounts: editing && ((drawerProduct as Product).discounts ?? []).length > 0,
       commercial: editing,
     });
@@ -495,7 +501,18 @@ export function ProductDrawerForm({
               onFactoryTaxChargeChange={handleFactoryTaxChange}
             />
 
-            {/* 10. Commercial Value — last, after taxes */}
+            {/* 10. Exoneración del artículo (Nota 10.1) */}
+            <ExemptionSection
+              authorizationCode={form.exemptionAuthorizationCode}
+              exemptedRate={form.exemptedRate}
+              exemptionNumber={form.exemptionNumber}
+              isExpanded={expanded.exemption}
+              onToggle={() => toggle("exemption")}
+              disabled={!fiscalAndCabys}
+              onChange={onFormChange}
+            />
+
+            {/* 11. Commercial Value — last, after taxes */}
             <CommercialValueSection
               form={form}
               taxes={form.taxes}

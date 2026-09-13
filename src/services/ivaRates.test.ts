@@ -16,7 +16,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { TaxCalculationService } from "./taxCalculationService";
-import { ivaRateCodeFor } from "@/hooks/useCartFlow";
+import { ivaRateCodeFor } from "@/services/ivaRateCode";
 import { TaxTypeCode, TaxRateCode, DiscountTypeCode } from "@/lib/enums";
 import { DiscountCalculationService } from "./discountCalculationService";
 

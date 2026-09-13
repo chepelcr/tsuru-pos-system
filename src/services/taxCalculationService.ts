@@ -18,7 +18,7 @@ import {
   type DiscountTypeCodeValue,
   type TaxTypeCodeValue,
 } from '@/lib/enums';
-import type { LineTax, LineDiscount } from '@/types/lineDetail';
+import type { Exemption, LineTax, LineDiscount } from '@/types/lineDetail';
 
 // Re-export so internal types here remain stable while delegating to the
 // canonical type module.
@@ -140,6 +140,8 @@ export interface LineAmountsResult {
   net_tax: number;
   total_amount_line: number;
   base_amount: number;
+  /** Σ `MontoExonerado` — the tax the customer does NOT pay, per Nota 10.1. */
+  exonerated_total: number;
   factory_assumed_tax: number;
   iva_tax_total: number;
   other_tax_total: number;
@@ -160,6 +162,35 @@ const PURCHASE_OR_EXPORT_TYPES = new Set([
  * special regime) is declarative.
  */
 const IVA_COLLECTED_AT_FACTORY = "01";
+
+/**
+ * `MontoExonerado` for one tax — the portion of it the customer does not pay.
+ *
+ * Mirrors sales-be's `ExonerationService.applied_amount`:
+ *
+ *     MontoExonerado = MontoImpuesto × (TarifaExonerada / 100)
+ *
+ * and `impuesto_neto = Σ (MontoImpuesto − MontoExonerado)`.
+ *
+ * Clamped to the tax amount and to [0, 100] for the same reason the backend
+ * validates both: an exoneration larger than the tax it exonerates is rejected
+ * (`HACIENDA_EXONERATION_AMOUNT_OVER_TAX`), and silently exceeding it here would
+ * show the cashier a negative tax.
+ *
+ * The `amount` field on the exemption is NOT used. It is an output the backend
+ * computes and echoes back; trusting an inbound one would let a client name its
+ * own exonerated figure.
+ */
+export function exoneratedAmount(
+  exemption: Exemption | undefined,
+  taxAmount: number,
+): number {
+  if (!exemption) return 0;
+  const pct = Number(exemption.percentage ?? 0);
+  if (!Number.isFinite(pct) || pct <= 0) return 0;
+  const clamped = Math.min(Math.max(pct, 0), 100);
+  return Math.min((taxAmount * clamped) / 100, taxAmount);
+}
 
 export class TaxCalculationService {
   static getLineAmounts(params: LineAmountsParams): LineAmountsResult {
@@ -182,6 +213,14 @@ export class TaxCalculationService {
 
     let total_amount_line = subtotal;
     let net_tax = 0;
+    /**
+     * Σ MontoExonerado across the line's taxes.
+     *
+     * Reported so the checkout can show it and the summary can route it to
+     * `TotalServExonerado` / `TotalMercExonerada`, which are separate buckets
+     * from gravado and exento in `ResumenFactura`.
+     */
+    let exonerated_total = 0;
     let base_amount = initial_base_amount || subtotal;
     let factory_assumed_tax = 0;
     let iva_tax_total = 0;
@@ -241,8 +280,16 @@ export class TaxCalculationService {
         cabys,
       });
 
-      net_tax += amount;
-      total_amount_line += amount;
+      // An exonerated portion reduces what the customer pays, but NOT the
+      // taxable base: `BaseImponible` is Subtotal plus the base-building
+      // excises at their full amount (Hacienda -454), and the exoneration is
+      // applied to the tax, not to the base it was computed on.
+      const exonerated = exoneratedAmount(tax.exemption, amount);
+      const payable = amount - exonerated;
+
+      net_tax += payable;
+      total_amount_line += payable;
+      exonerated_total += exonerated;
 
       if (tax_config?.forBaseAmount) {
         base_amount += amount;
@@ -260,11 +307,11 @@ export class TaxCalculationService {
         (tax_config?.forFactoryTax && !has_factory_tax) ||
         (isIsecOrIuc && has_factory_tax)
       ) {
-        factory_assumed_tax += amount;
-        total_amount_line -= amount;
-        net_tax -= amount;
+        factory_assumed_tax += payable;
+        total_amount_line -= payable;
+        net_tax -= payable;
       } else {
-        other_tax_total += amount;
+        other_tax_total += payable;
       }
     });
 
@@ -335,12 +382,20 @@ export class TaxCalculationService {
         (has_discounts_bonus_or_gifts && !is_purchase_or_export_bill) ||
         iva_collected_factory === IVA_COLLECTED_AT_FACTORY;
 
+      // The exonerated portion comes off what the customer pays. When the
+      // ISSUER is absorbing this IVA anyway, there is nothing to exonerate from
+      // the customer's side — the tax never reached them — so the full amount
+      // stays on `factory_assumed_tax` and the exoneration does not double-count.
+      const exonerated = line_assumes_iva ? 0 : exoneratedAmount(tax.exemption, amount);
+      const payable = amount - exonerated;
+
       if (line_assumes_iva) {
         factory_assumed_tax += amount;
       } else {
-        net_tax += amount;
-        total_amount_line += amount;
-        iva_tax_total += amount;
+        net_tax += payable;
+        total_amount_line += payable;
+        iva_tax_total += payable;
+        exonerated_total += exonerated;
       }
     });
 
@@ -348,6 +403,7 @@ export class TaxCalculationService {
       net_tax,
       total_amount_line,
       base_amount,
+      exonerated_total,
       factory_assumed_tax,
       iva_tax_total,
       other_tax_total,

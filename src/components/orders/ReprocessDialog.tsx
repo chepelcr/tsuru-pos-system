@@ -69,6 +69,17 @@ export function ReprocessDialog({ open, onClose, order, orgId }: ReprocessDialog
     >
       <div className="px-6 py-5">
         <p className="t-sm text-muted-foreground mb-4">{t('orders.colorScheme.reprocessDescription')}</p>
+
+        {/* Reprocess does two separate things and the colour picker was the only
+            one visible, so the action read as "recolour the report". The fiscal
+            repair is the half that decides whether the pedido can be billed at
+            all — it is not optional and not configurable, so it is stated rather
+            than offered as a choice. */}
+        <div className="card-muted p-3.5 mb-5">
+          <p className="t-label mb-1">{t('orders.reprocess.repairTitle')}</p>
+          <p className="t-xs text-muted-foreground">{t('orders.reprocess.repairBody')}</p>
+        </div>
+
         <label className="label-section block mb-3">{t('orders.colorScheme.label')}</label>
         <ReportColorSelector value={color} onChange={setColor} />
       </div>

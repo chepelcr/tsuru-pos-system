@@ -121,6 +121,28 @@ export interface ProductFormState {
    */
   baseAmount: string;
 
+  // ── Exoneración (Nota 10.1) ──────────────────────────────────────────
+  // The CATALOG-level exoneration: an article that is always exonerated (a
+  // free-trade-zone good, say) carries its authorization here, and an imported
+  // order line copies it onto its IVA row. A per-sale exoneration is granted on
+  // the line instead, in the line-detail drawer.
+  //
+  // These columns existed on the product and round-tripped through the types,
+  // but no form could edit them (CALCULATION_AUDIT §"Exoneracion capture"), so
+  // the data was unreachable.
+  /** Nota 10.1 authorization document type (01-11, 99). */
+  exemptionAuthorizationCode: string;
+  /** `TarifaExonerada` — the percentage of the tax that is forgiven. */
+  exemptedRate: string;
+  /**
+   * Authorization document number.
+   *
+   * NOTE: `Product` has no column for this yet, so it is form-only until one
+   * exists — the line-level exoneration carries the number that reaches a
+   * document. Kept here so the form can validate what it shows.
+   */
+  exemptionNumber: string;
+
   // Taxes & Discounts
   taxes: TaxFormEntry[];
   discounts: DiscountFormEntry[];
@@ -172,6 +194,9 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   commercialUnitMeasure: "",
   customsPart: "",
   baseAmount: "",
+  exemptionAuthorizationCode: "",
+  exemptedRate: "",
+  exemptionNumber: "",
   taxes: [],
   discounts: [],
 };

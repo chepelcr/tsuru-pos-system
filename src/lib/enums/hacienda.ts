@@ -146,11 +146,17 @@ export type OtherChargeCodeValue = (typeof OtherChargeCode)[keyof typeof OtherCh
 
 // ─── Reference document types (Nota 10) ───────────────────────────────────
 
+// Aligned with the data-api catalog `catalogs.referenceTypes` (19 rows). It was
+// missing 05, 06, 07, 15, 18 and — load-bearing — 99, whose absence meant the
+// "Otros" branch that requires a free-text description could not be expressed.
 export const ReferenceDocType = {
   ELECTRONIC_INVOICE:          "01",
   DEBIT_NOTE:                  "02",
   CREDIT_NOTE:                 "03",
   ELECTRONIC_TICKET:           "04",
+  DISPATCH_NOTE:               "05",
+  CONTRACT:                    "06",
+  PROCEDURE:                   "07",
   CONTINGENCY_RECEIPT:         "08",
   MERCHANDISE_RETURN:          "09", // NC/ND only
   REJECTED_BY_MH:              "10",
@@ -158,28 +164,110 @@ export const ReferenceDocType = {
   REPLACES_EXPORT_INVOICE:     "12",
   PREVIOUS_MONTH_BILLING:      "13",
   SPECIAL_REGIME_PROOF:        "14",
+  REPLACES_PURCHASE_INVOICE:   "15",
   NON_DOMICILED_SUPPLIER:      "16", // FEC only
   CREDIT_NOTE_TO_PURCHASE:     "17",
-  ELECTRONIC_PAYMENT_RECEIPT:  "20",
+  DEBIT_NOTE_TO_PURCHASE:      "18",
+  // In the analysis doc's REP block but not in the catalog — a recorded
+  // discrepancy, kept so a REP is representable. See sales-be's reference_code.py.
+  ELECTRONIC_PAYMENT_RECEIPT:  "20", // REP only
+  OTHER:                       "99", // requires TipoDocRefOTRO
 } as const;
 export type ReferenceDocTypeValue = (typeof ReferenceDocType)[keyof typeof ReferenceDocType];
 
-// ─── Reference codes (Nota 10.1) ──────────────────────────────────────────
+// ─── Exemption / authorization codes (Nota 10.1) ──────────────────────────
+//
+// These were named `ReferenceCode`, which is a different Hacienda table
+// entirely: this one is the "Exemption or Authorization Codes" list that fills
+// the `Exoneracion` block's document type, while the reference ACTION codes
+// (Anula / Corrige / Sustituye…) are `ReferenceActionCode` below. The two are
+// both two-digit codes on the same document, so the collision was waiting to
+// produce a line that declared a free-trade-zone exemption as "corrects amount".
 
-export const ReferenceCode = {
+export const ExemptionCode = {
   DGT_AUTHORIZED_PURCHASE:        "01", // NC/ND only
   DIPLOMAT_EXEMPTION:             "02",
   SPECIAL_LAW_AUTHORIZATION:      "03",
-  DGH_GENERIC_LOCAL_EXEMPTION:    "04",
+  DGH_GENERIC_LOCAL_EXEMPTION:    "04", // LOCAL — pulls in a mandatory reference
   TRANSITIONAL_ARCHITECTURE:      "05", // NC/ND only
   TRANSITIONAL_ICT:               "06", // NC/ND only
   TRANSITIONAL_RECYCLING:         "07", // NC/ND only
   FREE_TRADE_ZONE:                "08",
   COMPLEMENTARY_EXPORT_SERVICES:  "09",
   MUNICIPAL_CORPORATION_BODY:     "10",
-  DGH_SPECIFIC_LOCAL_EXEMPTION:   "11",
+  DGH_SPECIFIC_LOCAL_EXEMPTION:   "11", // LOCAL — pulls in a mandatory reference
+  OTHER:                          "99", // requires a free-text description
 } as const;
-export type ReferenceCodeValue = (typeof ReferenceCode)[keyof typeof ReferenceCode];
+export type ExemptionCodeValue = (typeof ExemptionCode)[keyof typeof ExemptionCode];
+
+/**
+ * Nota 10.1 codes that are LOCAL authorizations.
+ *
+ * An FE carrying one of these MUST also carry an `InformacionReferencia` — the
+ * analysis doc's "Obligatorio en … FE con exoneraciones locales". Mirrors
+ * `LOCAL_EXEMPTION_CODES` in sales-be.
+ */
+export const LOCAL_EXEMPTION_CODES: readonly string[] = [
+  ExemptionCode.DGH_GENERIC_LOCAL_EXEMPTION,
+  ExemptionCode.DGH_SPECIFIC_LOCAL_EXEMPTION,
+];
+
+/** Nota 10.1 codes reserved for credit and debit notes. */
+export const NC_ND_ONLY_EXEMPTION_CODES: readonly string[] = [
+  ExemptionCode.DGT_AUTHORIZED_PURCHASE,
+  ExemptionCode.TRANSITIONAL_ARCHITECTURE,
+  ExemptionCode.TRANSITIONAL_ICT,
+  ExemptionCode.TRANSITIONAL_RECYCLING,
+];
+
+// ─── Reference action codes (`Codigo` on InformacionReferencia) ────────────
+//
+// Verbatim from the data-api catalog `catalogs.referenceCodes`. sales-be's enum
+// disagreed with this catalog on eight of fourteen values (TSR-126) — notably 06
+// is "Devolución de mercancía", not a contingency substitution, and 09/10 are the
+// financial note codes.
+
+export const ReferenceActionCode = {
+  NULLIFY:                          "01",
+  CORRECT_AMOUNT:                   "02",
+  REFERENCE_OTHER_DOC:              "04",
+  SUBSTITUTE_PROVISIONAL_CONTINGENCY: "05",
+  MERCHANDISE_RETURN:               "06", // NC/ND only
+  SUBSTITUTE_ELECTRONIC_DOC:        "07",
+  ENDORSED_INVOICE:                 "08",
+  FINANCIAL_CREDIT_NOTE:            "09",
+  FINANCIAL_DEBIT_NOTE:             "10",
+  NON_DOMICILED_SUPPLIER:           "11",
+  CREDIT_FOR_LATER_EXEMPTION:       "12",
+  PAYMENT_ON_DOCUMENT:              "17", // REP only
+  OTHER:                            "99", // requires other_code
+} as const;
+export type ReferenceActionCodeValue =
+  (typeof ReferenceActionCode)[keyof typeof ReferenceActionCode];
+
+/**
+ * Reference action codes / doc types that only some documents may carry.
+ *
+ * Mirrors `CODES_BY_DOCUMENT_TYPE` / `TYPES_BY_DOCUMENT_TYPE` in sales-be, so the
+ * dropdowns cannot offer a combination the backend will reject after a
+ * consecutive has been allocated.
+ */
+export const REFERENCE_CODE_DOC_TYPES: Readonly<Record<string, readonly string[]>> = {
+  [ReferenceActionCode.PAYMENT_ON_DOCUMENT]: ["10"],       // REP only
+  [ReferenceActionCode.MERCHANDISE_RETURN]: ["02", "03"],  // NC/ND only
+};
+
+export const REFERENCE_TYPE_DOC_TYPES: Readonly<Record<string, readonly string[]>> = {
+  [ReferenceDocType.NON_DOMICILED_SUPPLIER]: ["08"],       // FEC only
+  [ReferenceDocType.ELECTRONIC_PAYMENT_RECEIPT]: ["10"],   // REP only
+  [ReferenceDocType.MERCHANDISE_RETURN]: ["02", "03"],     // NC/ND only
+};
+
+/** Document types that always require at least one reference. */
+export const DOC_TYPES_REQUIRING_REFERENCE: readonly string[] = ["02", "03", "10"];
+
+/** `"Repeticiones": "1 a 10"` on InformacionReferencia. */
+export const MAX_REFERENCES = 10;
 
 // ─── Product code types (Nota 21) ─────────────────────────────────────────
 

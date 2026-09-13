@@ -33,9 +33,9 @@
 | `BaseImponible` | Decimal(18,5) | If taxable. Code 07 ⇒ manual; Code 08 ⇒ SubTotal × FactorCalculoIVA; else SubTotal + ISC + ISEBA + ISEBEC + ISEC |
 | `IVACobradoFabrica` | `01` / `02` | See spec; `02` forces TaxCode 01 + RateCode 10 |
 | `ImpuestoAsumidoEmisorFabrica` | Decimal(18,5) | Triggered by discount codes 01/03 or factory VAT |
-| `Exoneracion.TipoDocumento` | `01`–`11` (Nota 10.1) | Optional |
-| `Exoneracion.TarifaExonerada` | Decimal(4,2) | If exonerated |
-| `Exoneracion.MontoExoneracion` | Decimal(18,5) | = Tarifa × BaseImponible |
+| `Exoneracion.TipoDocumento` | `01`–`11`, `99` (Nota 10.1) | Optional. **04 and 11 are LOCAL** — an FE carrying one also requires an `InformacionReferencia`. **01 and 05/06/07 are NC/ND only.** |
+| `Exoneracion.TarifaExonerada` | Decimal(4,2) | If exonerated. Range [0, 100] |
+| `Exoneracion.MontoExoneracion` | Decimal(18,5) | **= MontoImpuesto × Tarifa ÷ 100** — of the TAX, not of `BaseImponible` (this row used to say `Tarifa × BaseImponible`, which is not what `ExonerationService.applied_amount` computes). Capped at the tax; it is an OUTPUT and an inbound value is never trusted |
 | `DetalleSurtido[]` | 1–20 components | If assortment / combo |
 
 ### 1.3 Tax block (per line, 1–1000)
@@ -95,9 +95,9 @@
 | `nature_discount` field on discount type `99` | ✅ form-captured + payload-wired | `src/types/lineDetail.ts`, `src/types/productForm.ts`, `DiscountsTab.tsx`, `DiscountsSection.tsx`, `ProductsPage.tsx`, `ProductDetailPage.tsx` |
 | Special-tax amounts catalog client-side | ✅ flattened to `TaxAmountsById` from select-time captures | `LineDetailDrawer.tsx`, `OtherTaxSection.tsx` |
 | `any[]` in product → line mappers | ✅ typed with `ProductTax[]` / `ProductDiscount[]` | `LineDetailDrawer.tsx`, `CommercialValueSection.tsx` |
-| `Exoneracion` capture | ❌ not in line form | — |
+| `Exoneracion` capture | ✅ per TAX, in the line drawer and the product form (TSR-124) | `pos/line-detail/ExemptionSection.tsx`, `products/sections/ExemptionSection.tsx` |
 | OtherCharges block (document level) | ❌ | — |
-| References (NC/ND) full code set + Razon | ⚠️ partial — needs spec audit on `ReferenceTab` | `src/components/pos/checkout/sections/` |
+| References full code set + Razon | ✅ available on every document; required per the doc's five cases; restrictions by document type enforced; `Razon` mandatory (TSR-126) | `pos/checkout/sections/ReferencesSection.tsx`, `src/lib/enums/hacienda.ts` |
 
 ### Magic-string hotspots (FE)
 - `taxCalculationService.ts` lines 114, 139, 155, 255, 268, 300, plus `DISCOUNT_CODE` constants 18–21.
@@ -270,11 +270,28 @@ The product drawer simulates the line at qty = 1. For per-unit special taxes (IU
 
 **Fix shape:** add a "@ 1 unit" caption to the CommercialValueSection header, or render the per-unit + per-line breakdown side by side.
 
-### 7.9 🟡 `tax_rate.code` captured on FE but FE calc never reads it
+### 7.9 ✅ `tax_rate.code` — RESOLVED 2026-09-12 (TSR-258)
 
-**File:** `src/components/pos/line-detail/IvaTaxSection.tsx:99-101` writes `rate_code`; `LineTax` carries it; the tax service ignores it. The new BE Pydantic validator (`TaxRateCode`) now requires this field, so it survives the round-trip and is sent — but the FE calc never branches on it. The pure FE preview can't validate against the rate-code constraint; only the BE will reject on save.
+**It was worse than "captured but not read".** The FE calc still does not branch on the rate
+code, and that is correct — the code identifies the *treatment* while the percentage drives the
+*arithmetic*, so a preview that prices off the percentage is right. The real defect was that the
+code was being **destroyed on save**: `ProductDetailPage` and `ProductsPage` each carried their
+own copy of the product-save mapping, and the detail page's omitted `tax_rate.code` entirely and
+emitted no `tax_rate` at all unless the catalog `id` happened to be set — which a CABYS-derived
+entry often lacks. Editing any product from its detail page silently stripped the code, and an
+imported order line copies the product's taxes verbatim, so billing the pedido later failed with
+`tax.rate_code is required when tax.code='01'`.
 
-**Fix shape:** add a quick FE-side validator (`rate_code` must be in `TaxRateCode` enum values) so the user gets an inline error before save, matching the BE behaviour.
+For the IVA family the code is not decoration: sales-api derives the percentage from
+`rate_code` alone and ignores `rate`, so a line with a rate and no code cannot be priced at all.
+
+**Resolved by:** one mapping in `src/lib/productFormMapping.ts` for both directions and both
+pages; a shared `src/services/storedTaxToLineTax.ts` so the order path and the scan-and-charge
+path cannot diverge again (the order path had no `rate_code` fallback, and neither carried the
+code-08 factor); `ivaRateCodeFor` moved to `src/services/ivaRateCode.ts`; and a guardrail in
+store-be — `ProductTaxDTO` now **rejects** an IVA-family tax with no rate code, so the catalog
+cannot be re-poisoned. The inline FE validator this entry asked for already exists in
+`IvaTaxSection`.
 
 ### 7.10 🟡 Tax service fallback inference of `hasRoyaltyOrBonus` is too permissive
 
@@ -289,6 +306,9 @@ const inferredHasRoyaltyOrBonus =
 The current callers always pass `hasRoyaltyOrBonus` explicitly, so the fallback never fires today. But the fallback `length > 0` would treat *any* discount nature as factory-routable — a future caller that passes only `discountedNatures` would silently misroute taxes.
 
 **Fix shape:** `discountedNatures.some(c => (FACTORY_ASSUMED_DISCOUNT_NATURES as readonly string[]).includes(c))`.
+
+**Status: ✅ hardened** — the fallback now filters against `FACTORY_ASSUMED_DISCOUNT_NATURES`
+rather than testing `length > 0`.
 
 ### 7.11 🔴 Consolidate `reason` and `nature_discount` into a single `reason` field
 
