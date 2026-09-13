@@ -87,6 +87,17 @@ interface CheckoutDrawerProps {
    */
   docType?: EditorDocTypeCode;
   /**
+   * The pedido being billed, when this checkout is billing one.
+   *
+   * Billing an order emits an ordinary electronic document, so nothing in the
+   * cart, the doc type or the result marks it as different from a walk-in sale
+   * — only the caller knows. It changes what the drawer is called ("Facturar
+   * pedido"), what it says when it finishes ("Pedido facturado") and what the
+   * last button offers: "Cerrar", not "Nueva venta", because the cashier came
+   * here to settle one specific pedido and is not mid-shift at a till.
+   */
+  billedOrderNumber?: string;
+  /**
    * Form state owned by the CALLER, making the drawer fully controlled.
    *
    * Three modes, in precedence order:
@@ -125,6 +136,7 @@ export function CheckoutDrawer({
   orgId,
   tabId,
   docType,
+  billedOrderNumber,
   data: controlledData,
   onDataChange,
   onClose,
@@ -341,10 +353,21 @@ export function CheckoutDrawer({
     }
   };
 
+  // Billing a pedido is its own mode: same document, different errand.
+  const isBillingOrder = !!billedOrderNumber;
+
   const title =
-    step === 'payment'    ? (isManualOrder ? t('manualOrder.finalize') : t('checkout.finalize')) :
-    step === 'processing' ? t('common.processing') :
-                            t('checkout.completed');
+    step === 'payment'
+      ? isBillingOrder
+        ? t('checkout.orderMode.finalize')
+        : isManualOrder
+          ? t('manualOrder.finalize')
+          : t('checkout.finalize')
+      : step === 'processing'
+        ? t('common.processing')
+        : isBillingOrder
+          ? t('checkout.orderMode.completed')
+          : t('checkout.completed');
 
   const footer =
     step === 'payment' ? (
@@ -504,6 +527,7 @@ export function CheckoutDrawer({
           cartTotal={receiptSummary.total}
           itemCount={receiptSummary.itemCount}
           onClose={onCompleted}
+          billedOrderNumber={billedOrderNumber}
         />
       )}
     </Drawer>

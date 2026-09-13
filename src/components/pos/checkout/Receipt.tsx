@@ -7,9 +7,28 @@ interface ReceiptProps {
   cartTotal: number;
   itemCount: number;
   onClose: () => void;
+  /**
+   * The document number of the pedido this sale billed, when it billed one.
+   *
+   * Billing an order produces an ordinary `confirmed` sale — there is nothing
+   * in the RESULT that distinguishes it from a walk-in at the till — so the
+   * caller has to say so. Without it the receipt would end on "Nueva venta",
+   * inviting the cashier to start a sale they did not come here to make.
+   *
+   * Not to be confused with a manual order (`PM`), which is the opposite case:
+   * an order being CREATED rather than billed, and recognisable from
+   * `result.status === 'order'`.
+   */
+  billedOrderNumber?: string;
 }
 
-export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps) {
+export function Receipt({
+  result,
+  cartTotal,
+  itemCount,
+  onClose,
+  billedOrderNumber,
+}: ReceiptProps) {
   const { t } = useLanguage();
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
   const sale = result?.status === 'confirmed' ? result.sale : undefined;
@@ -21,6 +40,9 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
   // consecutive number, no XML and no Hacienda PDF to link — the order's own
   // document number is the receipt.
   const order = result?.status === 'order' ? result.order : undefined;
+  // An order was BILLED (as opposed to created) — only true once the document
+  // actually exists, so a queued or failed attempt still reads as pending.
+  const billedOrder = !!billedOrderNumber && result?.status === 'confirmed';
   return (
     <div className="px-5 py-6 flex flex-col items-center gap-4 text-center">
       <div className="w-16 h-16 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center text-3xl">
@@ -29,13 +51,15 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
 
       <div>
         <div className="font-display font-bold text-[20px]">
-          {order
-            ? t('manualOrder.receipt.created')
-            : queuedOrder
-              ? t('manualOrder.receipt.queued')
-              : queued
-                ? t('checkout.receipt.queued')
-                : t('checkout.receipt.completed')}
+          {billedOrder
+            ? t('checkout.orderMode.completed')
+            : order
+              ? t('manualOrder.receipt.created')
+              : queuedOrder
+                ? t('manualOrder.receipt.queued')
+                : queued
+                  ? t('checkout.receipt.queued')
+                  : t('checkout.receipt.completed')}
         </div>
         {order ? (
           <div className="text-[13px] text-muted-foreground mt-1">
@@ -49,6 +73,9 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
           </div>
         ) : sale?.consecutive_number ? (
           <div className="text-[13px] text-muted-foreground mt-1">
+            {billedOrder && (
+              <div>{t('checkout.orderMode.number', { num: billedOrderNumber })}</div>
+            )}
             {t('checkout.receipt.consecutive', { num: sale.consecutive_number })}
           </div>
         ) : (
@@ -96,9 +123,13 @@ export function Receipt({ result, cartTotal, itemCount, onClose }: ReceiptProps)
         onClick={onClose}
         className="w-full h-11 rounded-md bg-primary text-primary-foreground font-semibold text-[13px]"
       >
-        {order || queuedOrder
-          ? t('manualOrder.receipt.newOrder')
-          : t('checkout.receipt.newSale')}
+        {billedOrder
+          ? /* `common.close`, not a checkout-specific key: the word is generic
+               and the locales test rejects duplicating common copy. */
+            t('common.close')
+          : order || queuedOrder
+            ? t('manualOrder.receipt.newOrder')
+            : t('checkout.receipt.newSale')}
       </button>
     </div>
   );

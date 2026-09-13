@@ -168,6 +168,9 @@ export function OrderCheckoutDrawer({
         orgId={orgId}
         data={formData}
         onDataChange={patchFormData}
+        // Puts the drawer in order mode: this is the one caller that bills a
+        // pedido rather than ringing up a sale.
+        billedOrderNumber={order.document_number}
         onClose={onClose}
         onCompleted={onCompleted}
         onConfirm={handleConfirm}
