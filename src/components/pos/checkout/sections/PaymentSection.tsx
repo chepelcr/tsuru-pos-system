@@ -184,9 +184,12 @@ export function PaymentSection({
   };
 
   const activatePayment = (code: string) => {
-    const leftover = Math.max(0, cartTotal - paid);
+    // Rounded before it reaches the field, for the same reason as `exact`:
+    // `cartTotal - paid` is a raw float subtraction and `String()` would put
+    // its full binary expansion in front of the cashier.
+    const leftover = roundMoney(Math.max(0, cartTotal - paid));
     onChange([...payments, { type: code, amount: leftover }]);
-    setCashInput((prev) => ({ ...prev, [code]: String(leftover) }));
+    setCashInput((prev) => ({ ...prev, [code]: moneyInputValue(leftover) }));
   };
 
   const deactivatePayment = (code: string) => {
@@ -401,7 +404,12 @@ export function PaymentSection({
                     {QUICK_AMOUNTS.map((v) => (
                       <button
                         key={v}
-                        onClick={() => setAmount('01', String(Math.max(cartTotal, v < cartTotal ? cartTotal : v)))}
+                        onClick={() =>
+                          setAmount(
+                            '01',
+                            moneyInputValue(Math.max(cartTotal, v < cartTotal ? cartTotal : v)),
+                          )
+                        }
                         className="h-8 rounded-md border border-border bg-card text-[11px] font-mono t-num hover:border-primary/40"
                       >
                         {fmt(v)}
