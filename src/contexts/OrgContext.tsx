@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef 
 import { useRegisteredOrganization } from "@/hooks/useRegisteredOrganization";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { useDocumentStore } from "@/store/documentStore";
+import { useSessionContext } from "@/store/sessionContext";
 import { ROUTES } from "@/routePaths";
 import type { RegisteredOrganization } from "@/types/registeredOrganization";
 
@@ -26,6 +27,7 @@ export function OrgProvider({ orgId, orgName, children }: OrgProviderProps) {
   const { data: registeredOrg, isLoading: isRegisteredOrgLoading } = useRegisteredOrganization(orgId);
   const { add: addNotification, remove: removeNotification } = useNotifications();
   const setActiveOrganization = useDocumentStore((s) => s.setActiveOrganization);
+  const setActiveSessionOrganization = useSessionContext((s) => s.setActiveOrganization);
 
   // Point the draft store at this organization before anything renders a tab.
   // Document drafts carry a cart, a client and a receiver, so a tab left over
@@ -38,7 +40,12 @@ export function OrgProvider({ orgId, orgName, children }: OrgProviderProps) {
   // the previous organization's tabs paint for a frame first.
   useLayoutEffect(() => {
     setActiveOrganization(orgId);
-  }, [orgId, setActiveOrganization]);
+    // The branch/terminal selection is the same hazard one field over: it was
+    // global, so switching organizations submitted the previous tenant's
+    // branch and sales-api rejected the sale naming a branch belonging to
+    // somebody else.
+    setActiveSessionOrganization(orgId);
+  }, [orgId, setActiveOrganization, setActiveSessionOrganization]);
 
   // Push a "fiscal info missing" notification while the registered-org record
   // is absent for the active org. The pushed id is tracked in a ref so the

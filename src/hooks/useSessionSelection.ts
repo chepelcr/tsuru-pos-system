@@ -51,6 +51,7 @@ export function useSessionSelection(orgId?: string): UseSessionSelectionResult {
   const { data: assignment } = useAssignment();
   const session = useSessionContext();
   const setSession = useSessionContext((s) => s.setSession);
+  const clearSession = useSessionContext((s) => s.clearSession);
   // The assignment whose branch/terminal has already been applied. See the
   // auto-selection effect below for why this is a ref and not a comparison.
   const appliedAssignmentRef = useRef<string | null>(null);
@@ -142,6 +143,17 @@ export function useSessionSelection(orgId?: string): UseSessionSelectionResult {
     const firstUsable = branches.find((b) => (b.terminals?.length ?? 0) > 0);
     if (firstUsable) {
       apply(firstUsable, firstUsable.terminals![0]);
+      return;
+    }
+
+    // Nothing in THIS org matches what is stored, and there is no usable
+    // branch to fall back to. Clear it: a leftover selection here belongs to
+    // another organization, and leaving it in place is how one tenant's branch
+    // reached another tenant's document — sales-api rejected the sale with
+    // "Branch <uuid> not found for organization", which is the right answer to
+    // the wrong question being asked.
+    if (session.branch_id || session.terminal_id) {
+      clearSession();
     }
     // `apply` and `session.*` are read, not depended on: this effect reconciles
     // the store and must not re-run for every write it makes.

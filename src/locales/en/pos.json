@@ -34,6 +34,7 @@
   "checkout.document.saleCondition": "Sale condition *",
   "checkout.documentFallback": "Document",
   "checkout.error.activityRequired": "Configure and select a fiscal activity before issuing the document.",
+  "checkout.error.branchRequired": "Pick the document's branch and terminal.",
   "checkout.error.missingBranchTerminal": "Select branch and terminal.",
   "checkout.error.notPaid": "Payment does not cover the total.",
   "checkout.error.otherTypeRequired": "Describe the payment type for \"Other\".",

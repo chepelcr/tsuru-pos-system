@@ -39,6 +39,7 @@ import { useChainClient } from '@/hooks/useChainClient';
 import type { ChainClientInfo } from '@/types/order';
 import { CopiesSection } from './sections/CopiesSection';
 import { Receipt } from './Receipt';
+import { useSessionContext } from '@/store/sessionContext';
 
 
 type Step = 'payment' | 'processing' | 'done';
@@ -195,6 +196,7 @@ export function CheckoutDrawer({
   // `PM` is the internal manual-order type: not a fiscal document, so no
   // activity code, no Hacienda references, and no requirement that the order
   // be paid in full at capture time (a pedido is normally settled later).
+  const session = useSessionContext();
   const isManualOrder = isManualOrderDocType(doc_type);
   const needsReceiver = isManualOrder || doc_type !== '04'; // All except Tiquete
 
@@ -289,6 +291,14 @@ export function CheckoutDrawer({
       return null;
     }
     if (!isPaid) return t('checkout.error.notPaid');
+    // sales-api validates the branch and terminal IDENTIFIERS against the
+    // organization, so an unresolved pair — or one left over from another
+    // organization — fails server-side with "Branch <uuid> not found for
+    // organization", naming a branch this cashier has never seen. Say what is
+    // actually wrong, before a consecutive is at stake.
+    if (!session.branch_id || !session.terminal_id) {
+      return t('checkout.error.branchRequired');
+    }
     if (!docData.activity_code) return t('checkout.error.activityRequired');
     if (needsReceiver && !hasReceiver) return t('checkout.error.receiverRequired');
     if (referencesRequired && references.length === 0) return t('checkout.error.referencesRequired');

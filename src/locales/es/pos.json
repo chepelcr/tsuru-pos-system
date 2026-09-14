@@ -34,6 +34,7 @@
   "checkout.document.saleCondition": "Condición de venta *",
   "checkout.documentFallback": "Documento",
   "checkout.error.activityRequired": "Configura y selecciona una actividad fiscal antes de emitir el documento.",
+  "checkout.error.branchRequired": "Seleccioná la sucursal y la terminal del documento.",
   "checkout.error.missingBranchTerminal": "Selecciona sucursal y terminal.",
   "checkout.error.notPaid": "El pago no cubre el total.",
   "checkout.error.otherTypeRequired": "Describe el tipo de pago para \"Otros\".",
