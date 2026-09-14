@@ -26,12 +26,12 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
 
   useEffect(() => {
     if (open) {
-      const ns = config?.notificationSettings;
+      const ns = config?.notification_settings;
       setForm({
-        callbackUrl: ns?.callbackUrl ?? "",
-        notifySentDocuments: ns?.notifySentDocuments ?? 3,
-        notifyProcessingDocuments: ns?.notifyProcessingDocuments ?? false,
-        notifyReceivedDocuments: ns?.notifyReceivedDocuments ?? true,
+        callbackUrl: ns?.callback_url ?? "",
+        notifySentDocuments: ns?.notify_sent_documents ?? 3,
+        notifyProcessingDocuments: ns?.notify_processing_documents ?? false,
+        notifyReceivedDocuments: ns?.notify_received_documents ?? true,
       });
     }
   }, [open, config]);
@@ -52,7 +52,7 @@ export function NotificationsDrawer({ open, onClose, config, orgId }: Notificati
       closeLabel={t("common.close")}
       open={open}
       onClose={onClose}
-      title={config?.notificationSettings
+      title={config?.notification_settings
         ? t("orgSettings.notifications.edit")
         : t("orgSettings.notifications.configure")}
       icon="sliders"

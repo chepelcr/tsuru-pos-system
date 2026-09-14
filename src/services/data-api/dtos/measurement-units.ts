@@ -9,8 +9,10 @@ export interface GetMeasurementUnitParams {
 
 export interface GetAllMeasurementUnitsParams {
   status?: string;
-  unitTypeId?: number;
-  documentVersionId?: number;
+  // snake_case, like `GetMeasurementUnitParams` above and like the query
+  // parameters the service actually reads. These two were the odd ones out.
+  unit_type_id?: number;
+  document_version_id?: number;
 }
 
 /**

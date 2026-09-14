@@ -29,8 +29,8 @@ export interface MediaItem {
 
 /** Presigned upload response from the backend. */
 export interface PresignedUpload {
-  uploadUrl: string;
-  fileUrl: string;
+  upload_url: string;
+  file_url: string;
   key: string;
 }
 

@@ -9,16 +9,19 @@ import { translations } from '@/locales';
 vi.mock('aws-amplify/auth', () => ({ fetchAuthSession: async () => ({ tokens: { idToken: { toString: () => 'test-token' } } }) }));
 
 const clave = '50612092600011664050600100001010000000042100000001';
-// Frozen wire contract: Decimal fields are strings, no receiver, nested errors.
+// Frozen wire contract: snake_case keys, Decimal fields as strings, no
+// receiver, nested errors. sales-be deleted its camelCase aliases, so this is
+// what the endpoint actually returns — the mock says so rather than relying on
+// the client's snake_case converter to make a camelCase fixture pass.
 const wireDocument = {
-  historicalDocumentId: 'history-42', organizationId: 'org-1', clave,
-  documentType: '01', branchNumber: 1, terminalNumber: 1,
-  consecutiveNumber: 42, consecutiveKey: '00100001010000000042',
-  emissionDate: '2026-09-12T00:30:00Z', issuerName: 'Comercio', issuerIdType: '01', issuerIdNumber: '116640506',
-  receiverName: null, receiverIdType: null, receiverIdNumber: null,
-  totalAmount: '1234.56789', taxTotal: '142.03000', atvStatus: 2,
-  atvValidationDate: '2026-09-12T00:31:00Z', atvErrors: [{ errorCode: '123', message: 'Detalle de Hacienda' }],
-  parentClave: null, source: 'HISTORY', saleId: null, status: 1,
+  historical_document_id: 'history-42', organization_id: 'org-1', clave,
+  document_type: '01', branch_number: 1, terminal_number: 1,
+  consecutive_number: 42, consecutive_key: '00100001010000000042',
+  emission_date: '2026-09-12T00:30:00Z', issuer_name: 'Comercio', issuer_id_type: '01', issuer_id_number: '116640506',
+  receiver_name: null, receiver_id_type: null, receiver_id_number: null,
+  total_amount: '1234.56789', tax_total: '142.03000', atv_status: 2,
+  atv_validation_date: '2026-09-12T00:31:00Z', atv_errors: [{ error_code: '123', message: 'Detalle de Hacienda' }],
+  parent_clave: null, source: 'HISTORY', sale_id: null, status: 1,
 };
 
 function wrapper() {
@@ -33,7 +36,7 @@ describe('historical document query contract', () => {
     const params = new URLSearchParams(historicalDocumentsQuery({ document_types: ['01', '03'], branch_number: 1, terminal_number: 7, atv_status: 0, search_term: '  José & hijos  ', start_date: '2026-01-01', end_date: '2026-09-12' }, 0, 250));
     expect(Object.fromEntries(params)).toEqual({
       page: '0', size: '250', document_types: '01,03', branch_number: '1', terminal_number: '7', atv_status: '0',
-      search: JSON.stringify({ searchTerm: 'José & hijos', start_date: '2026-01-01', end_date: '2026-09-12', sort: { emissionDate: 'desc' } }),
+      search: JSON.stringify({ search_term: 'José & hijos', start_date: '2026-01-01', end_date: '2026-09-12', sort: { emission_date: 'desc' } }),
     });
   });
   it('omits unset scalar filters, supports one-sided dates and ascending sort', () => {
@@ -41,7 +44,7 @@ describe('historical document query contract', () => {
     expect(params.get('page')).toBe('2');
     expect(params.has('document_types')).toBe(false);
     expect(params.has('atv_status')).toBe(false);
-    expect(JSON.parse(params.get('search')!)).toEqual({ start_date: '2026-09-01', sort: { emissionDate: 'asc' } });
+    expect(JSON.parse(params.get('search')!)).toEqual({ start_date: '2026-09-01', sort: { emission_date: 'asc' } });
   });
 });
 

@@ -227,7 +227,7 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
                 <div className="t-xs text-muted-foreground">Certificado actual</div>
                 <div className="t-sm font-medium">{config.certificate.name}</div>
                 <div className="t-xs text-muted-foreground">
-                  Vence: {new Date(config.certificate.expirationDate).toLocaleDateString()}
+                  Vence: {new Date(config.certificate.expiration_date).toLocaleDateString()}
                 </div>
               </div>
             )}

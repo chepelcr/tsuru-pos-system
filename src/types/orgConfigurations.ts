@@ -1,24 +1,27 @@
+// Wire types: snake_case, because that is what sales-be sends and accepts.
+// The `*FormState` types below stay camelCase — they are UI state, and the
+// hooks are the seam between the two.
 export interface OrgNotificationSettings {
-  callbackUrl: string;
-  notifySentDocuments: number; // 1=Solo aprobados 2=Solo rechazados 3=Ambos 4=Sin notificaciones
-  notifyProcessingDocuments: boolean;
-  notifyReceivedDocuments: boolean;
+  callback_url: string;
+  notify_sent_documents: number; // 1=Solo aprobados 2=Solo rechazados 3=Ambos 4=Sin notificaciones
+  notify_processing_documents: boolean;
+  notify_received_documents: boolean;
 }
 
 export interface OrgCertificate {
   name: string;
-  expirationDate: string;
+  expiration_date: string;
   pin: string;
   alias: string;
   data: string;
-  contentType: string;
+  content_type: string;
   extension: string;
 }
 
 export interface OrgConfiguration {
   username: string;
   password: string;
-  notificationSettings: OrgNotificationSettings | null;
+  notification_settings: OrgNotificationSettings | null;
   certificate: OrgCertificate | null;
   status: number; // 1=Activo 2=Inactivo 3=Eliminado
   /** POS shell theme id, persisted via PATCH /configurations/theme. */

@@ -29,7 +29,7 @@ export function NotificationsTab({ config, isLoading, onEdit }: NotificationsTab
     );
   }
 
-  const hasNotifications = config !== null && config?.notificationSettings != null;
+  const hasNotifications = config !== null && config?.notification_settings != null;
 
   if (!hasNotifications) {
     return (
@@ -51,7 +51,7 @@ export function NotificationsTab({ config, isLoading, onEdit }: NotificationsTab
     );
   }
 
-  const ns = config!.notificationSettings!;
+  const ns = config!.notification_settings!;
 
   return (
     <div className="p-6">
@@ -78,28 +78,28 @@ export function NotificationsTab({ config, isLoading, onEdit }: NotificationsTab
           <div className="flex items-center justify-between py-2 border-b border-border">
             <span className="t-sm text-muted-foreground">{t("orgSettings.notifications.callbackUrl")}</span>
             <span className="t-sm font-medium truncate max-w-[280px]">
-              {ns.callbackUrl || <span className="text-muted-foreground italic">No configurado</span>}
+              {ns.callback_url || <span className="text-muted-foreground italic">No configurado</span>}
             </span>
           </div>
 
           <div className="flex items-center justify-between py-2 border-b border-border">
             <span className="t-sm text-muted-foreground">{t("orgSettings.notifications.sentDocuments")}</span>
             <span className="t-sm font-medium">
-              {t(SENT_DOCS_LABELS[ns.notifySentDocuments] ?? "orgSettings.notifications.sentOpts.4")}
+              {t(SENT_DOCS_LABELS[ns.notify_sent_documents] ?? "orgSettings.notifications.sentOpts.4")}
             </span>
           </div>
 
           <div className="flex items-center justify-between py-2 border-b border-border">
             <span className="t-sm text-muted-foreground">{t("orgSettings.notifications.processing")}</span>
-            <Badge variant={ns.notifyProcessingDocuments ? "success" : "secondary"}>
-              {ns.notifyProcessingDocuments ? "Sí" : "No"}
+            <Badge variant={ns.notify_processing_documents ? "success" : "secondary"}>
+              {ns.notify_processing_documents ? "Sí" : "No"}
             </Badge>
           </div>
 
           <div className="flex items-center justify-between py-2">
             <span className="t-sm text-muted-foreground">{t("orgSettings.notifications.received")}</span>
-            <Badge variant={ns.notifyReceivedDocuments ? "success" : "secondary"}>
-              {ns.notifyReceivedDocuments ? "Sí" : "No"}
+            <Badge variant={ns.notify_received_documents ? "success" : "secondary"}>
+              {ns.notify_received_documents ? "Sí" : "No"}
             </Badge>
           </div>
         </div>

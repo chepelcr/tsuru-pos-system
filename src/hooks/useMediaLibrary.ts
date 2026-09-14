@@ -31,7 +31,7 @@ export function useMediaLibrary(orgId: string | undefined) {
         authOrgPath(orgId!, "/media/presigned"),
         { fileName: file.name, fileType: contentType },
       );
-      const put = await fetch(presigned.uploadUrl, {
+      const put = await fetch(presigned.upload_url, {
         method: "PUT",
         headers: { "Content-Type": contentType },
         body: file,
@@ -39,7 +39,7 @@ export function useMediaLibrary(orgId: string | undefined) {
       if (!put.ok) throw new Error(`S3 upload failed (${put.status})`);
       // Register the uploaded object in the library registry.
       return salesApi.post<MediaItem>(authOrgPath(orgId!, "/media"), {
-        url: presigned.fileUrl,
+        url: presigned.file_url,
         key: presigned.key,
         filename: file.name,
         mime: contentType,

@@ -33,7 +33,7 @@ const TERM_OR_FIELDS = ['consecutive_number', 'document_key', 'receiver_name'] a
  *   • Single `<=` Y  → `sale_date: "~Y"`       / `total_amount: "~Y"` (`<` for numeric)
  *   • Range  X..Y    → `sale_date: "X~Y"`      / `total_amount: "X~Y"`
  *
- * The free-text term emits a single `searchTerm` plus an explicit `search_fields`
+ * The free-text term emits a single `search_term` plus an explicit `search_fields`
  * array so the BE knows to OR-match across consecutive number, document key,
  * and receiver name.
  */
@@ -43,7 +43,11 @@ function toWireSearch(s: ComplexSearchFilters | undefined): Record<string, unkno
   const out: Record<string, unknown> = {};
 
   if (s.searchTerm) {
-    out.searchTerm = s.searchTerm;
+    // snake_case on the wire, like `search_fields` beside it. The UI type is
+    // camelCase because it is a UI type; this function is the seam where that
+    // stops. sales-api reads either spelling, so the two were mixed in one
+    // payload for no reason a reader could infer.
+    out.search_term = s.searchTerm;
     out.search_fields = [...TERM_OR_FIELDS];
   }
   if (s.status) out.status = s.status;

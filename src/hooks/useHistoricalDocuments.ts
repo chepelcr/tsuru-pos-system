@@ -12,10 +12,10 @@ export function historicalDocumentsQuery(filters: HistoricalDocumentFilters = {}
     if (filters[key] !== undefined) params.set(key, String(filters[key]));
   }
   const search = {
-    ...(filters.search_term?.trim() ? { searchTerm: filters.search_term.trim() } : {}),
+    ...(filters.search_term?.trim() ? { search_term: filters.search_term.trim() } : {}),
     ...(filters.start_date ? { start_date: filters.start_date } : {}),
     ...(filters.end_date ? { end_date: filters.end_date } : {}),
-    sort: { emissionDate: filters.sort_direction ?? 'desc' },
+    sort: { emission_date: filters.sort_direction ?? 'desc' },
   };
   // URLSearchParams performs the URL encoding once; FastAPI receives JSON.
   params.set('search', JSON.stringify(search));

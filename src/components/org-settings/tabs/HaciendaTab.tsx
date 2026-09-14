@@ -124,12 +124,12 @@ export function HaciendaTab({ config, isLoading, onEdit }: HaciendaTabProps) {
               <span className="t-sm text-muted-foreground">{t("orgSettings.hacienda.certExpiry")}</span>
               <div className="flex items-center gap-2">
                 <span className="t-sm font-medium">
-                  {new Date(config.certificate.expirationDate).toLocaleDateString()}
+                  {new Date(config.certificate.expiration_date).toLocaleDateString()}
                 </span>
-                {certExpiryStatus(config.certificate.expirationDate) === "expired" && (
+                {certExpiryStatus(config.certificate.expiration_date) === "expired" && (
                   <Badge variant="destructive">{t("orgSettings.hacienda.certExpired")}</Badge>
                 )}
-                {certExpiryStatus(config.certificate.expirationDate) === "soon" && (
+                {certExpiryStatus(config.certificate.expiration_date) === "soon" && (
                   <Badge variant="warning">{t("orgSettings.hacienda.certExpiringSoon")}</Badge>
                 )}
               </div>

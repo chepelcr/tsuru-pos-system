@@ -58,7 +58,7 @@ export default function OrgSettingsPage() {
   // ghost flashes for a frame on every page mount before the queries resolve.
   //
   // We also wait for `configLoading` so the cards (which depend on
-  // `config.notificationSettings`) don't flicker their "Pendiente" badges
+  // `config.notification_settings`) don't flicker their "Pendiente" badges
   // into "Configurado".
   //
   // `useRegisteredOrganization` / `useOrgConfigurations` are gated by
@@ -159,7 +159,7 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-info",
       title: t("orgSettings.tab.notifications"),
       description: t("orgSettings.notifications.empty.desc"),
-      configured: !!(config?.notificationSettings),
+      configured: !!(config?.notification_settings),
       loading: configLoading,
       route: ROUTES.DASHBOARD_ORG_NOTIFICATIONS,
     },
