@@ -340,7 +340,10 @@ export function ProductDrawerForm({
   // Aggregated validation errors from child sections (discount cascade,
   // special_fields per code, etc.). Mirrors the LineDetailDrawer pattern.
   const [commercialErrors, setCommercialErrors] = useState<string[]>([]);
-  const validationErrors = commercialErrors;
+  // The IVA rules store-be enforces on save (rate code; the code-08 factor).
+  // Blocking here means the user is told beside the field, not by a 422.
+  const [ivaErrors, setIvaErrors] = useState<string[]>([]);
+  const validationErrors = [...commercialErrors, ...ivaErrors];
   const canSave =
     form.name.trim().length > 0 &&
     Number(form.price) > 0 &&
@@ -524,6 +527,7 @@ export function ProductDrawerForm({
               onRemove={removeTax}
               onUpdate={updateTax}
               onFactoryTaxChargeChange={handleFactoryTaxChange}
+              onValidationChange={setIvaErrors}
             />
 
             {/* 10. Exoneración del artículo (Nota 10.1) */}

@@ -83,6 +83,8 @@
   "products.discountTotal": "Total:",
   "products.discounts": "Descuentos",
   "products.editProduct": "Editar producto",
+  "products.error.factorRequired": "Seleccioná el factor de cálculo: el IVA de bienes usados se calcula como subtotal × factor, y sin él la línea va con impuesto cero.",
+  "products.error.rateCodeRequired": "Seleccioná la tarifa del IVA: el código de tarifa es lo que identifica el trato fiscal, no el porcentaje.",
   "products.estimatedSalePrice": "Precio de venta estimado",
   "products.excel.downloadTemplate": "Descargar plantilla",
   "products.excel.dropHint": "Arrastra aqui",

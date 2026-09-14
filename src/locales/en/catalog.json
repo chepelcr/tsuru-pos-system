@@ -83,6 +83,8 @@
   "products.discountTotal": "Total:",
   "products.discounts": "Discounts",
   "products.editProduct": "Edit product",
+  "products.error.factorRequired": "Pick the calculation factor: used-goods IVA is subtotal x factor, and without it the line is taxed at zero.",
+  "products.error.rateCodeRequired": "Pick the IVA rate: the rate code is what identifies the tax treatment, not the percentage.",
   "products.estimatedSalePrice": "Estimated sale price",
   "products.excel.downloadTemplate": "Download template",
   "products.excel.dropHint": "Drag here",

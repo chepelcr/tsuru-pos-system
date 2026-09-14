@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Percent } from "lucide-react";
 import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
@@ -27,6 +28,11 @@ interface IvaTaxSectionProps {
   onRemove: (taxCode: string) => void;
   onUpdate: (taxCode: string, patch: Partial<TaxFormEntry>) => void;
   onFactoryTaxChargeChange: (chargeId: number | undefined, hasFactoryTax: boolean) => void;
+  /**
+   * Surfaces the rules store-be enforces on save, so they read as inline
+   * guidance rather than arriving as a 422 after the user presses Save.
+   */
+  onValidationChange?: (errors: string[]) => void;
 }
 
 export function IvaTaxSection({
@@ -40,6 +46,7 @@ export function IvaTaxSection({
   onRemove,
   onUpdate,
   onFactoryTaxChargeChange,
+  onValidationChange,
 }: IvaTaxSectionProps) {
   const { t } = useLanguage();
   const { data: taxesData } = useAllTaxes({ iso_code: ISO });
@@ -73,6 +80,25 @@ export function IvaTaxSection({
   const selectedCharge = factoryCharges.find(
     (c: { id: number }) => c.id === factoryTaxChargeId
   );
+
+  // The two IVA rules store-be applies at save time, mirrored here so the user
+  // is told while the field that fixes them is on screen:
+  //   * the IVA family is priced from its rate CODE, not its percentage;
+  //   * code 08 is priced as `subtotal x factor`, so with no factor the line is
+  //     taxed at zero — silently, all the way onto the document.
+  useEffect(() => {
+    if (!onValidationChange) return;
+    const errors: string[] = [];
+    for (const tax of addedIvaTaxes) {
+      if (!tax.taxRateCode) {
+        errors.push(t("products.error.rateCodeRequired"));
+      }
+      if (tax.taxCode === TaxTypeCode.IVARBU && tax.taxFactor === undefined) {
+        errors.push(t("products.error.factorRequired"));
+      }
+    }
+    onValidationChange(errors);
+  }, [addedIvaTaxes, onValidationChange, t]);
 
   return (
     <SectionWrapper
