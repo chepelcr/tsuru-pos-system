@@ -111,19 +111,20 @@ function snakeKey(key: string): string {
 /**
  * Recursively rewrite every object key of a parsed JSON payload to snake_case.
  *
- * sales-api serializes Pydantic models with `by_alias=True` (see
- * `jbiller_common/utils/response_utils.py`), so every response field arrives
- * camelCased — `saleId`, `documentType`, `consecutiveNumber`, `atvValidation`.
- * The POS's entire type surface for that API is snake_case (`SaleDocument`,
- * `DocumentListItem`, `IvaReport`, `OrgConfiguration`, ...), so without this
- * every field reads back `undefined`: the documents list rendered blank cards
- * ("?" doc type, "Invalid Date", ₡0) and React warned about duplicate keys
- * because `sale_id` was undefined on every row.
+ * **Now a safety net rather than a necessity.** sales-api used to serialize its
+ * Pydantic models with `by_alias=True`, so every response field arrived
+ * camelCased — `saleId`, `documentType`, `consecutiveNumber` — while the POS's
+ * entire type surface for that API is snake_case. Without this, every field
+ * read back `undefined`: the documents list rendered blank cards ("?" doc type,
+ * "Invalid Date", ₡0) and React warned about duplicate keys because `sale_id`
+ * was undefined on every row.
  *
- * Normalizing here — at the one client that talks to that gateway — keeps the
- * fix in a single place instead of restating it in every hook. Requests are
- * NOT converted: the BE's models set `populate_by_name=True`, so they accept
- * the snake_case field names the POS already sends.
+ * sales-be has since deleted those aliases and answers in snake_case, which is
+ * what it was always asked in. This is kept because it costs nothing to keep:
+ * `snakeKey` is idempotent on a key that is already snake_case, so it is a
+ * no-op on the current wire and still catches any endpoint that has not
+ * followed. Requests were never converted — the BE models set
+ * `populate_by_name=True` and accept the field names the POS already sends.
  */
 function toSnakeCaseDeep<T>(value: unknown): T {
   if (Array.isArray(value)) {
