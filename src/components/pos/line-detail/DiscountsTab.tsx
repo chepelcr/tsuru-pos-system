@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Tag } from 'lucide-react';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { FormLabel, Select } from "@/components/ui";
@@ -7,6 +8,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineDiscount } from '@/types/lineDetail';
 import type { DiscountTypeResponse } from '@/services/data-api/dtos';
 import { formatMoney } from "@/lib/money";
+import { formatPercent } from "@/lib/percent";
+import { DiscountCalculationService } from '@/services/discountCalculationService';
 
 interface DiscountsTabProps {
   discounts: LineDiscount[];
@@ -51,11 +54,26 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
     });
   };
 
-  const total_pct = discounts.reduce((s, d) => s + (d.percentage || 0), 0);
-  const total_amt = discounts.reduce(
-    (s, d) => s + (netPrice * quantity * (d.percentage || 0)) / 100,
-    0,
-  );
+  // Discounts CASCADE — 10% then 5% on 1000 is 855, not 850. Summing the
+  // percentages and applying each to the FULL base overstated both numbers on
+  // any line with more than one discount, and disagreed with the Valor
+  // Comercial card directly below, which runs the real engine.
+  const base = netPrice * quantity;
+  const discountResult = useMemo(() => {
+    try {
+      return DiscountCalculationService.calculate(base, discounts);
+    } catch {
+      // A missing Nota-20 reason throws; the drawer surfaces that on its own
+      // and the totals should not blank out while it is being typed.
+      return null;
+    }
+  }, [base, discounts]);
+
+  const total_amt = discountResult?.totalDiscountAmount ?? 0;
+  const total_pct =
+    base > 0
+      ? (total_amt / base) * 100
+      : discounts.reduce((s, d) => s + (d.percentage || 0), 0);
 
   return (
     <SectionWrapper
@@ -76,7 +94,10 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
           // backend-side in DiscountDTO; the cashier never sees it. Only
           // nature 99 asks for it — on any other nature it means nothing.
           const nature_empty = isOther && !(disc.reason && disc.reason.trim());
-          const disc_amount = (netPrice * quantity * (disc.percentage || 0)) / 100;
+          // From the CASCADE, not `base × rate`: the second discount applies
+          // to what the first left behind, so a per-row figure computed off
+          // the full base does not add up to the total beneath it.
+          const disc_amount = discountResult?.perDiscount[i]?.amount ?? 0;
 
           return (
             <div key={i} className="border border-border rounded-lg p-3">
@@ -153,7 +174,7 @@ export function DiscountsTab({ discounts, netPrice, quantity, onChange, isExpand
           <div className="border-t border-border pt-3 flex flex-col gap-1 text-xs">
             <div className="flex justify-between text-muted-foreground">
               <span>{t('lineDetail.totalPercentage')}</span>
-              <span className="font-mono">{total_pct.toFixed(2)}%</span>
+              <span className="font-mono">{formatPercent(total_pct)}</span>
             </div>
             <div className="flex justify-between font-semibold">
               <span>{t('lineDetail.totalDiscounts')}</span>
