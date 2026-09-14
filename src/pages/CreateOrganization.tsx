@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useTemplates } from "@/hooks/useTemplates";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -16,7 +17,7 @@ import {
   type BusinessIdentityValue,
 } from "@/components/org-settings/BusinessIdentityFields";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
-import { THEME_LIST, DEFAULT_THEME_ID, type ThemeDef } from "@/theme/themes";
+import { DEFAULT_THEME_ID, isKnownThemeId } from "@/theme/themes";
 import { setSelectedOrgId } from "@/lib/selectedOrg";
 
 const BASE_DOMAIN =
@@ -58,6 +59,8 @@ export default function CreateOrganization() {
   const userId = user?.userId;
   const { data: orgs = [], isLoading: orgsLoading } = useUserOrganizations(userId);
   const updateTheme = useUpdateOrgTheme();
+  const { useTemplateList } = useTemplates();
+  const { data: templates = [], isLoading: templatesLoading } = useTemplateList(true);
 
   // ─── Wizard state (parent owns step + form data) ──────────────────────────
   const [stepIndex, setStepIndex] = useState(0);
@@ -95,7 +98,8 @@ export default function CreateOrganization() {
   const [neighborhood_id, setNeighborhoodId] = useState<number | null>(null);
 
   // Step 3
-  const [selectedThemeId, setSelectedThemeId] = useState<string>(DEFAULT_THEME_ID);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
 
   // ─── Resume an incomplete organization (onboarding_step < 3) ──────────────
   const resumeHandled = useRef(false);
@@ -127,12 +131,24 @@ export default function CreateOrganization() {
     setCountyId(org.contact?.county_id ?? null);
     setDistrictId(org.contact?.district_id ?? null);
     setNeighborhoodId(org.contact?.neighborhood_id ?? null);
-    setSelectedThemeId(org.template_id ?? DEFAULT_THEME_ID);
+    setSelectedTemplateId(org.template_id ?? null);
 
     const step = org.onboarding_step ?? 1;
     if (step >= 2) setStepIndex(2);
     else setStepIndex(1);
   }, [orgs, orgsLoading]);
+
+  // Normalize drafts created by the older wizard, which stored a template
+  // name, and select the first active storefront template for new orgs.
+  useEffect(() => {
+    if (templates.length === 0) return;
+    setSelectedTemplateId((current) => {
+      const resolved = templates.find(
+        (template) => template.id === current || template.name === current,
+      );
+      return resolved?.id ?? templates[0].id;
+    });
+  }, [templates]);
 
   // ─── Auto-generate slug/subdomain from name (until user edits them) ───────
   useEffect(() => {
@@ -166,7 +182,11 @@ export default function CreateOrganization() {
     (subdomain === "" || subdomain.length >= 3);
 
   const canAdvance =
-    stepIndex === 0 ? step1Valid : stepIndex === 1 ? true : true;
+    stepIndex === 0
+      ? step1Valid
+      : stepIndex === 1
+        ? true
+        : selectedTemplateId !== null && !templatesLoading;
 
   const isSaving =
     createOrganization.isPending ||
@@ -235,22 +255,26 @@ export default function CreateOrganization() {
   };
 
   const finishOnboarding = async () => {
-    if (!userId || !createdOrgId) {
+    if (!userId || !createdOrgId || !selectedTemplateId) {
       setFormError(t("orgs.create.error.createFailed"));
       return;
     }
     setFormError(null);
     try {
-      // The chosen template seeds the org's content; the same id seeds its theme.
+      // The storefront template UUID seeds the org's pages and content.
       const org = await completeOnboardingStep3.mutateAsync({
         organizationId: createdOrgId,
         userId,
-        templateId: selectedThemeId,
+        templateId: selectedTemplateId,
         includeCategories: true,
       });
-      // Persist + live-apply the selected theme so the shell repaints immediately.
-      await updateTheme.mutateAsync({ orgId: createdOrgId, theme: selectedThemeId });
-      setThemeId(selectedThemeId);
+      // The POS shell theme is a separate setting. Match it by the template's
+      // stable name when available, otherwise retain the default shell theme.
+      const posThemeId = isKnownThemeId(selectedTemplate?.name)
+        ? selectedTemplate.name
+        : DEFAULT_THEME_ID;
+      await updateTheme.mutateAsync({ orgId: createdOrgId, theme: posThemeId });
+      setThemeId(posThemeId);
 
       sessionStorage.removeItem("resumeOrgId");
       setSelectedOrgId(org?.id ?? createdOrgId);
@@ -263,10 +287,10 @@ export default function CreateOrganization() {
   };
 
   const handleSave = () => {
-    const theme = THEME_LIST.find((th) => th.id === selectedThemeId);
+    if (!selectedTemplate) return;
     confirm({
       title: t("orgs.create.confirm.title"),
-      message: t("orgs.create.confirm.message", { name: theme?.name ?? "" }),
+      message: t("orgs.create.confirm.message", { name: selectedTemplate.display_name }),
       confirmLabel: t("orgs.create.confirm.yes"),
       cancelLabel: t("common.cancel"),
       variant: "success",
@@ -449,54 +473,57 @@ export default function CreateOrganization() {
                     </p>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {THEME_LIST.map((theme: ThemeDef) => {
-                      const active = theme.id === selectedThemeId;
-                      return (
-                        <button
-                          key={theme.id}
-                          type="button"
-                          onClick={() => setSelectedThemeId(theme.id)}
-                          aria-pressed={active}
-                          disabled={isSaving}
-                          className={`card card-hover text-left w-full p-4 flex flex-col gap-3 group ${
-                            active ? "card-primary ring-2 ring-primary/40" : ""
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="t-h4 !mb-0 truncate">{theme.name}</span>
-                            {active && (
-                              <span className="icon-pill icon-pill-primary-soft w-7 h-7 flex-shrink-0">
-                                <Icon name="check" size={16} />
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-2" aria-hidden="true">
-                            <span
-                              className="w-7 h-7 rounded-full border border-border"
-                              style={{ background: `hsl(${theme.light.primary})` }}
-                            />
-                            <span
-                              className="w-7 h-7 rounded-full border border-border"
-                              style={{ background: `hsl(${theme.light.secondary})` }}
-                            />
-                            <span
-                              className="w-7 h-7 rounded-full border border-border"
-                              style={{ background: `hsl(${theme.light.accent})` }}
-                            />
-                          </div>
-
-                          <div
-                            className="t-body text-muted-foreground leading-snug"
-                            style={{ fontFamily: theme.fonts.display }}
+                  {templatesLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Spinner size={28} />
+                    </div>
+                  ) : templates.length === 0 ? (
+                    <p className="t-sm text-muted-foreground py-6 text-center">
+                      {t("storefront.none")}
+                    </p>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {templates.map((template) => {
+                        const active = template.id === selectedTemplateId;
+                        return (
+                          <button
+                            key={template.id}
+                            type="button"
+                            onClick={() => setSelectedTemplateId(template.id)}
+                            aria-pressed={active}
+                            disabled={isSaving}
+                            className={`card card-hover text-left w-full p-4 flex flex-col gap-3 group ${
+                              active ? "card-primary ring-2 ring-primary/40" : ""
+                            }`}
                           >
-                            {t("orgs.create.template.fontSample")}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            <div className="relative aspect-[16/10] -m-4 mb-0 bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border">
+                              {template.thumbnail_url ? (
+                                <img
+                                  src={template.thumbnail_url}
+                                  alt={template.display_name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Icon name="store" size={28} className="text-muted-foreground" />
+                              )}
+                              {active && (
+                                <span className="absolute top-2 right-2 icon-pill icon-pill-primary-soft w-7 h-7">
+                                  <Icon name="check" size={16} />
+                                </span>
+                              )}
+                            </div>
+
+                            <span className="t-h4 !mb-0 truncate">
+                              {template.display_name}
+                            </span>
+                            <span className="t-sm text-muted-foreground line-clamp-2">
+                              {template.description}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

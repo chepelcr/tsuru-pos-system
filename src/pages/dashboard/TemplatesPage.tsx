@@ -75,7 +75,9 @@ export default function TemplatesPage() {
     });
   }, [templates, search, category]);
 
-  const activeName = org?.template_id;
+  const activeTemplateId = (templates ?? []).find(
+    (tpl) => tpl.id === org?.template_id || tpl.name === org?.template_id,
+  )?.id ?? org?.template_id;
   const hasFilters = search.trim().length > 0 || category !== ALL;
 
   const handleApply = (templateId: string | null, label: string) => {
@@ -243,7 +245,7 @@ export default function TemplatesPage() {
             {/* Playground / start from scratch — only when no filters narrow it out */}
             {!hasFilters && canApplyTemplate && (
               <TemplatePlaygroundCard
-                isSelected={!activeName}
+                isSelected={!activeTemplateId}
                 onSelect={() => handleApply(null, t("playground.title"))}
                 disabled={applyTemplate.isPending}
               />
@@ -253,7 +255,7 @@ export default function TemplatesPage() {
               <TemplateCard
                 key={tpl.id}
                 template={tpl}
-                isSelected={tpl.name === activeName}
+                isSelected={tpl.id === activeTemplateId}
                 onPreview={setPreviewTemplate}
                 onSelect={(selected) => handleApply(selected.id, selected.display_name)}
                 disabled={applyTemplate.isPending}
@@ -269,7 +271,7 @@ export default function TemplatesPage() {
         open={previewTemplate !== null}
         onClose={() => setPreviewTemplate(null)}
         onUse={(tpl) => handleApply(tpl.id, tpl.display_name)}
-        isSelected={previewTemplate?.name === activeName}
+        isSelected={previewTemplate?.id === activeTemplateId}
         disabled={applyTemplate.isPending}
       />
 

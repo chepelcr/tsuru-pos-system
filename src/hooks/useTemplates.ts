@@ -13,9 +13,8 @@ import type { Template } from "@/types";
  *   2. Apply a template to the EXISTING org (re-clone storefront content +
  *      set `Organization.template_name`). Uses the DEDICATED idempotent route
  *      `PUT userPath(userId, /organizations/{org}/template)`, NOT onboarding
- *      step3 (step3 is registration-only — plain inserts that hit duplicate-key
- *      on re-apply). The dedicated route clears the org's existing cloned
- *      content first and does not touch `onboarding_step`. `templateId === null`
+ *      step3. The dedicated route clears the org's existing cloned content
+ *      first and does not touch `onboarding_step`. `templateId === null`
  *      ⇒ Playground / "start from scratch".
  *
  * markets-api endpoints:
