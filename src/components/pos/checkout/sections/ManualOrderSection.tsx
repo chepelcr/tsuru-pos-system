@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Truck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
@@ -95,27 +95,57 @@ export function ManualOrderSection({
     [showB2b],
   );
 
+  // Copy the ids, not the names: the order stores the cascade the same way the
+  // storefront pedido does.
+  const receiverLocation = useCallback(
+    (mode: DeliveryLocationMode): Partial<ManualOrderDeliveryLocation> => ({
+      mode,
+      store_id: undefined,
+      state_id: receiverAddress?.state_id ?? null,
+      county_id: receiverAddress?.county_id ?? null,
+      district_id: receiverAddress?.district_id ?? null,
+      neighborhood_id: receiverAddress?.neighborhood_id ?? null,
+      address: receiverAddress?.address ?? null,
+    }),
+    [receiverAddress],
+  );
+
+  // What is SAVED is `location`; what the card SHOWS in receiver mode is
+  // `receiverAddress`. Two things used to leave those out of step, and both
+  // ended the same way — a card displaying an address over a payload carrying
+  // none, so `validate()` said "give a delivery point or an address" about a
+  // field that looked filled in:
+  //
+  //   * the mode falling back to 'receiver' here, because "registered point"
+  //     does not apply to a client with no stores on file — the old effect set
+  //     `mode` and copied nothing;
+  //   * the client changing while the mode was already 'receiver', which left
+  //     the previous client's address in the payload.
   useEffect(() => {
-    if (availableModes.includes(location.mode)) return;
-    onChange({ delivery_location: { ...location, mode: availableModes[0] } });
-  }, [availableModes, location, onChange]);
+    const mode = availableModes.includes(location.mode)
+      ? location.mode
+      : availableModes[0];
+
+    if (mode !== 'receiver' || !receiverAddress) {
+      if (mode !== location.mode) onChange({ delivery_location: { ...location, mode } });
+      return;
+    }
+
+    const next = receiverLocation(mode);
+    const settled =
+      mode === location.mode &&
+      location.address === next.address &&
+      location.district_id === next.district_id;
+    if (settled) return;
+    onChange({ delivery_location: { ...location, ...next } });
+  }, [availableModes, location, onChange, receiverAddress, receiverLocation]);
 
   const patchLocation = (patch: Partial<ManualOrderDeliveryLocation>) =>
     onChange({ delivery_location: { ...location, ...patch } });
 
   const selectMode = (mode: DeliveryLocationMode) => {
     if (mode === 'receiver' && receiverAddress) {
-      // Copy the ids, not the names: the order stores the cascade the same way
-      // the storefront pedido does.
-      patchLocation({
-        mode,
-        store_id: undefined,
-        state_id: receiverAddress.state_id ?? null,
-        county_id: receiverAddress.county_id ?? null,
-        district_id: receiverAddress.district_id ?? null,
-        neighborhood_id: receiverAddress.neighborhood_id ?? null,
-        address: receiverAddress.address ?? null,
-      });
+      patchLocation(receiverLocation(mode));
       return;
     }
     patchLocation({ mode });
