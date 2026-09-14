@@ -18,11 +18,11 @@ const buildSchema = (t: (k: string) => string) =>
       .email(t("orgSettings.contact.emailInvalid"))
       .optional()
       .or(z.literal("")),
-    businessHours: z.string().optional(),
-    facebookUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-    instagramUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-    twitterUrl: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-    whatsappNumber: z.string().optional(),
+    business_hours: z.string().optional(),
+    facebook_url: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
+    instagram_url: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
+    twitter_url: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
+    whatsapp_number: z.string().optional(),
   });
 
 type ContactValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -55,11 +55,11 @@ export function ContactSettingsForm({
     resolver: zodResolver(buildSchema(t)),
     defaultValues: {
       email: initialValues?.email ?? "",
-      businessHours: initialValues?.businessHours ?? "",
-      facebookUrl: initialValues?.facebookUrl ?? "",
-      instagramUrl: initialValues?.instagramUrl ?? "",
-      twitterUrl: initialValues?.twitterUrl ?? "",
-      whatsappNumber: initialValues?.whatsappNumber ?? "",
+      business_hours: initialValues?.business_hours ?? "",
+      facebook_url: initialValues?.facebook_url ?? "",
+      instagram_url: initialValues?.instagram_url ?? "",
+      twitter_url: initialValues?.twitter_url ?? "",
+      whatsapp_number: initialValues?.whatsapp_number ?? "",
     },
   });
 
@@ -67,14 +67,14 @@ export function ContactSettingsForm({
   // via the shared LocationSelect — both controlled, merged into the payload on
   // submit. LocationSelect's "otras señas" textarea is the single address field.
   const [phone, setPhone] = useState(initialValues?.phone ?? "");
-  const [phoneCountryCode, setPhoneCountryCode] = useState(
-    initialValues?.phoneCountryCode ?? CountryISO.COSTA_RICA,
+  const [phone_country_code, setPhoneCountryCode] = useState(
+    initialValues?.phone_country_code ?? CountryISO.COSTA_RICA,
   );
   const [location, setLocation] = useState<LocationData>({
-    state_id: initialValues?.stateId ?? null,
-    county_id: initialValues?.countyId ?? null,
-    district_id: initialValues?.districtId ?? null,
-    neighborhood_id: initialValues?.neighborhoodId ?? null,
+    state_id: initialValues?.state_id ?? null,
+    county_id: initialValues?.county_id ?? null,
+    district_id: initialValues?.district_id ?? null,
+    neighborhood_id: initialValues?.neighborhood_id ?? null,
     address: initialValues?.address ?? "",
   });
 
@@ -82,12 +82,12 @@ export function ContactSettingsForm({
     await onSubmit({
       ...data,
       phone,
-      phoneCountryCode,
+      phone_country_code,
       address: location.address ?? "",
-      stateId: location.state_id,
-      countyId: location.county_id,
-      districtId: location.district_id,
-      neighborhoodId: location.neighborhood_id,
+      state_id: location.state_id,
+      county_id: location.county_id,
+      district_id: location.district_id,
+      neighborhood_id: location.neighborhood_id,
     });
   };
 
@@ -106,7 +106,7 @@ export function ContactSettingsForm({
 
           <FormField label={t("common.phone")}>
             <PhoneField
-              countryCode={phoneCountryCode}
+              countryCode={phone_country_code}
               number={phone}
               numberPlaceholder={t("orgSettings.contact.phonePlaceholder")}
               onChange={({ countryCode, number }) => {
@@ -122,51 +122,51 @@ export function ContactSettingsForm({
           <LocationSelect value={location} onChange={setLocation} />
         </div>
 
-        <FormField label={t("orgSettings.contact.businessHours")} error={errors.businessHours?.message}>
+        <FormField label={t("orgSettings.contact.businessHours")} error={errors.business_hours?.message}>
           <textarea
             className="pp-input w-full"
             rows={3}
             placeholder={t("orgSettings.contact.businessHoursPlaceholder")}
-            {...register("businessHours")}
+            {...register("business_hours")}
           />
         </FormField>
       </SectionWrapper>
 
       <SectionWrapper title={t("orgSettings.contact.socialMedia")} icon={Share2}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={t("orgSettings.contact.facebook")} error={errors.facebookUrl?.message}>
+          <FormField label={t("orgSettings.contact.facebook")} error={errors.facebook_url?.message}>
             <input
               className="pp-input w-full"
               type="url"
               placeholder={t("orgSettings.contact.facebookPlaceholder")}
-              {...register("facebookUrl")}
+              {...register("facebook_url")}
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.instagram")} error={errors.instagramUrl?.message}>
+          <FormField label={t("orgSettings.contact.instagram")} error={errors.instagram_url?.message}>
             <input
               className="pp-input w-full"
               type="url"
               placeholder={t("orgSettings.contact.instagramPlaceholder")}
-              {...register("instagramUrl")}
+              {...register("instagram_url")}
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.twitter")} error={errors.twitterUrl?.message}>
+          <FormField label={t("orgSettings.contact.twitter")} error={errors.twitter_url?.message}>
             <input
               className="pp-input w-full"
               type="url"
               placeholder={t("orgSettings.contact.twitterPlaceholder")}
-              {...register("twitterUrl")}
+              {...register("twitter_url")}
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.whatsapp")} error={errors.whatsappNumber?.message}>
+          <FormField label={t("orgSettings.contact.whatsapp")} error={errors.whatsapp_number?.message}>
             <input
               className="pp-input w-full"
               type="tel"
               placeholder={t("orgSettings.contact.whatsappPlaceholder")}
-              {...register("whatsappNumber")}
+              {...register("whatsapp_number")}
             />
           </FormField>
         </div>

@@ -16,7 +16,7 @@ interface ContentFieldProps {
   item: SectionContent;
   value: string;
   onChange: (value: string) => void;
-  sectionType: string;
+  section_type: string;
   /** "single" | "both" — section-level color mode (from BaseSectionEditor). */
   sectionMode?: string;
   onModeChange?: (mode: string) => void;
@@ -25,8 +25,8 @@ interface ContentFieldProps {
 }
 
 /** Field-type → Badge variant. Keeps the editor token-pure (CLAUDE.md §3). */
-function typeBadgeVariant(valueType: string): React.ComponentProps<typeof Badge>["variant"] {
-  switch (valueType) {
+function typeBadgeVariant(value_type: string): React.ComponentProps<typeof Badge>["variant"] {
+  switch (value_type) {
     case "color":
       return "primary-soft";
     case "background":
@@ -48,7 +48,7 @@ function typeBadgeVariant(valueType: string): React.ComponentProps<typeof Badge>
 }
 
 /**
- * Per-field content editor — renders by `valueType`. Ported from the dashboard
+ * Per-field content editor — renders by `value_type`. Ported from the dashboard
  * `cms/ContentField.tsx`, re-skinned to POS primitives.
  *
  * ⚠️ The color / background JSON serialization contract is kept **verbatim**
@@ -59,7 +59,7 @@ export function ContentField({
   item,
   value,
   onChange,
-  sectionType,
+  section_type,
   sectionMode = "both",
   onModeChange,
   showSeparator = true,
@@ -514,7 +514,7 @@ export function ContentField({
 
   const renderJsonInput = () => {
     const key = item.key.toLowerCase();
-    const section = sectionType.toLowerCase();
+    const section = section_type.toLowerCase();
 
     if (key === "stats") {
       return renderRepeater(
@@ -556,7 +556,7 @@ export function ContentField({
   };
 
   const renderInput = () => {
-    switch (item.valueType) {
+    switch (item.value_type) {
       case "color":
         return renderColorInput();
       case "background":
@@ -605,17 +605,17 @@ export function ContentField({
   // Field label: prefer a translation key for the field, else the server label.
   const fieldKey = `content.field.${item.key}`;
   const label =
-    t(fieldKey) !== fieldKey ? t(fieldKey) : item.displayName || item.key;
-  const typeKey = `content.type.${item.valueType}`;
-  const typeLabel = t(typeKey) !== typeKey ? t(typeKey) : item.valueType;
+    t(fieldKey) !== fieldKey ? t(fieldKey) : item.display_name || item.key;
+  const typeKey = `content.type.${item.value_type}`;
+  const typeLabel = t(typeKey) !== typeKey ? t(typeKey) : item.value_type;
 
   return (
-    <div className="flex flex-col gap-2" data-section={sectionType}>
+    <div className="flex flex-col gap-2" data-section={section_type}>
       <div className="flex items-center gap-2 flex-wrap">
         <label htmlFor={item.id} className="t-label text-foreground">
           {label}
         </label>
-        <Badge variant={typeBadgeVariant(item.valueType)}>{typeLabel}</Badge>
+        <Badge variant={typeBadgeVariant(item.value_type)}>{typeLabel}</Badge>
       </div>
       {item.description && (
         <p className="t-xs text-muted-foreground">{item.description}</p>

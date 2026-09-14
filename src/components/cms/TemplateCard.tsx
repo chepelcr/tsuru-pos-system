@@ -41,10 +41,10 @@ export function TemplateCard({
     >
       {/* Thumbnail (fallback placeholder when none) */}
       <div className="relative aspect-[16/10] bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border">
-        {template.thumbnailUrl ? (
+        {template.thumbnail_url ? (
           <img
-            src={template.thumbnailUrl}
-            alt={template.displayName}
+            src={template.thumbnail_url}
+            alt={template.display_name}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -65,7 +65,7 @@ export function TemplateCard({
           <span className="icon-pill icon-pill-primary-soft w-8 h-8 flex-shrink-0">
             <Icon name={templateCategoryIcon(template.category)} size={16} />
           </span>
-          <h3 className="t-h4 !mb-0 truncate flex-1">{template.displayName}</h3>
+          <h3 className="t-h4 !mb-0 truncate flex-1">{template.display_name}</h3>
         </div>
 
         <p className="t-sm text-muted-foreground line-clamp-2 flex-1">

@@ -4,9 +4,9 @@ import { Icon, SelectField, type SelectFieldOption } from "@/components/ui";
 import { BUSINESS_TYPES, type BusinessType } from "@/types/organization";
 
 export interface BusinessIdentityValue {
-  businessType: BusinessType;
-  isRetailSupplier: boolean;
-  isPyme: boolean;
+  business_type: BusinessType;
+  is_retail_supplier: boolean;
+  is_pyme: boolean;
 }
 
 interface BusinessIdentityFieldsProps {
@@ -54,17 +54,17 @@ export function BusinessIdentityFields({
   // list, so the summary can never drift from what the picker promises.
   const summary = useMemo(() => {
     const parts = [t("businessType.summary.base")];
-    if (value.businessType !== "general") {
-      parts.push(t(`businessType.${value.businessType}.hint`).toLowerCase());
+    if (value.business_type !== "general") {
+      parts.push(t(`businessType.${value.business_type}.hint`).toLowerCase());
     }
     return parts.join(" · ");
     // No longer mentions the retail-supplier flag: the toggle that set it is
     // gone, so the summary would describe a capability the user can no longer
     // see or change.
-  }, [t, value.businessType]);
+  }, [t, value.business_type]);
 
   // In the wizard the toggles wait for a type; in settings everything shows.
-  const showToggles = !progressive || !!value.businessType;
+  const showToggles = !progressive || !!value.business_type;
 
   return (
     <div className="space-y-4">
@@ -74,11 +74,11 @@ export function BusinessIdentityFields({
         </label>
         <SelectField
           id="business-type"
-          value={value.businessType}
+          value={value.business_type}
           options={options}
           disabled={disabled}
           searchThreshold={0}
-          onChange={(next) => onChange({ businessType: next as BusinessType })}
+          onChange={(next) => onChange({ business_type: next as BusinessType })}
         />
         <p className="t-xs text-muted-foreground">{t("businessType.help")}</p>
       </div>
@@ -102,9 +102,9 @@ export function BusinessIdentityFields({
             <input
               type="checkbox"
               className="mt-0.5"
-              checked={value.isPyme}
+              checked={value.is_pyme}
               disabled={disabled}
-              onChange={(e) => onChange({ isPyme: e.target.checked })}
+              onChange={(e) => onChange({ is_pyme: e.target.checked })}
             />
             <span className="min-w-0">
               <span className="block t-sm font-semibold">{t("businessType.pyme")}</span>

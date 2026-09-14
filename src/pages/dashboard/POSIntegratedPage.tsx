@@ -256,7 +256,7 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
           <PosHeader
             branchName={sessionCtx.branch_name ?? ""}
             terminalCode={sessionCtx.terminal_code ?? 0}
-            userName={user?.firstName ?? user?.name ?? t("pos.cashier")}
+            userName={user?.first_name ?? user?.name ?? t("pos.cashier")}
             syncStatus={syncStatus}
           />
           <div className="pos-workspace-grid flex-1 grid overflow-hidden">

@@ -12,9 +12,9 @@ const CURRENCIES = ["USD", "CRC", "EUR", "GBP", "MXN"] as const;
 const buildSchema = (t: (k: string) => string) =>
   z.object({
     currency: z.string().min(1, t("orgSettings.payment.currencyRequired")),
-    cashOnDeliveryEnabled: z.boolean(),
-    bankTransferEnabled: z.boolean(),
-    bankAccountDetails: z.string().optional(),
+    cash_on_delivery_enabled: z.boolean(),
+    bank_transfer_enabled: z.boolean(),
+    bank_account_details: z.string().optional(),
   });
 
 type PaymentValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -49,13 +49,13 @@ export function PaymentSettingsForm({
     resolver: zodResolver(buildSchema(t)),
     defaultValues: {
       currency: initialValues?.currency ?? "USD",
-      cashOnDeliveryEnabled: initialValues?.cashOnDeliveryEnabled ?? false,
-      bankTransferEnabled: initialValues?.bankTransferEnabled ?? false,
-      bankAccountDetails: initialValues?.bankAccountDetails ?? "",
+      cash_on_delivery_enabled: initialValues?.cash_on_delivery_enabled ?? false,
+      bank_transfer_enabled: initialValues?.bank_transfer_enabled ?? false,
+      bank_account_details: initialValues?.bank_account_details ?? "",
     },
   });
 
-  const bankTransferEnabled = watch("bankTransferEnabled");
+  const bank_transfer_enabled = watch("bank_transfer_enabled");
 
   const submit = async (data: PaymentValues) => {
     await onSubmit(data);
@@ -84,7 +84,7 @@ export function PaymentSettingsForm({
         <input
           type="checkbox"
           className="mt-0.5 flex-shrink-0"
-          {...register("cashOnDeliveryEnabled")}
+          {...register("cash_on_delivery_enabled")}
         />
         <div className="min-w-0">
           <span className="t-sm font-medium block">{t("orgSettings.payment.cashOnDelivery")}</span>
@@ -98,7 +98,7 @@ export function PaymentSettingsForm({
         <input
           type="checkbox"
           className="mt-0.5 flex-shrink-0"
-          {...register("bankTransferEnabled")}
+          {...register("bank_transfer_enabled")}
         />
         <div className="min-w-0">
           <span className="t-sm font-medium block">{t("orgSettings.payment.bankTransfer")}</span>
@@ -108,16 +108,16 @@ export function PaymentSettingsForm({
         </div>
       </label>
 
-      {bankTransferEnabled && (
+      {bank_transfer_enabled && (
         <FormField
           label={t("orgSettings.payment.bankAccountDetails")}
-          error={errors.bankAccountDetails?.message}
+          error={errors.bank_account_details?.message}
         >
           <textarea
             className="pp-input w-full"
             rows={4}
             placeholder={t("orgSettings.payment.bankAccountDetailsPlaceholder")}
-            {...register("bankAccountDetails")}
+            {...register("bank_account_details")}
           />
           <span className="block t-xs text-muted-foreground mt-1">
             {t("orgSettings.payment.bankAccountDetailsDesc")}

@@ -6,15 +6,17 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { api } from "@/lib/api";
 import { AuthLayout } from "@/components/layout/AuthLayout";
-import { Card, CardBody, Icon, Button, Spinner, Badge } from "@/components/ui";
+import { Card, CardBody, Icon, Button, Spinner } from "@/components/ui";
 
 interface InvitationDetails {
   id: string;
+  organization_id: string;
   email: string;
+  role_id: string;
+  invited_by: string;
   status: "pending" | "accepted" | "expired" | "cancelled";
-  expiresAt: string;
-  organization?: { id: string; name: string };
-  role?: { id: string; name: string; displayName: string };
+  expires_at: string;
+  created_at: string;
 }
 
 export default function AcceptInvitation() {
@@ -41,7 +43,7 @@ export default function AcceptInvitation() {
         );
         if (cancelled) return;
         setInvitation(data);
-        if (new Date(data.expiresAt) < new Date()) {
+        if (new Date(data.expires_at) < new Date()) {
           setError(t("members.invitation.expired"));
         } else if (data.status !== "pending") {
           setError(t("members.invitation.notValid"));
@@ -69,7 +71,7 @@ export default function AcceptInvitation() {
     setAccepting(true);
     try {
       await api.post(`/api/invitations/accept/${token}`, {
-        userId: user.userId,
+        user_id: user.userId,
       });
       setSuccess(true);
       setTimeout(() => navigate(ROUTES.SELECT_ORG), 2000);
@@ -210,26 +212,6 @@ export default function AcceptInvitation() {
                 {invitation?.email}
               </span>
             </div>
-            {invitation?.organization && (
-              <div className="flex justify-between items-center gap-3">
-                <span className="t-sm text-muted-foreground">
-                  {t("members.invitation.organization")}
-                </span>
-                <span className="t-sm font-semibold text-foreground truncate">
-                  {invitation.organization.name}
-                </span>
-              </div>
-            )}
-            {invitation?.role && (
-              <div className="flex justify-between items-center gap-3">
-                <span className="t-sm text-muted-foreground">
-                  {t("common.role")}
-                </span>
-                <Badge variant="primary-soft">
-                  {invitation.role.displayName}
-                </Badge>
-              </div>
-            )}
           </div>
 
           {emailMismatch && (

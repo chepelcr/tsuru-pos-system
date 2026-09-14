@@ -7,8 +7,8 @@ import type { ContentSection } from "@/types/content";
 import { EDITOR_COLORS } from "@/theme/editorColors";
 
 interface BaseSectionEditorProps {
-  /** The grouping key `${page.slug}-${section.sectionType}`. */
-  sectionType: string;
+  /** The grouping key `${page.slug}-${section.section_type}`. */
+  section_type: string;
   content: ContentSection;
   /** Per-section save → bulk-save a single-element updates array. */
   onSave: (content: ContentSection) => void;
@@ -29,7 +29,7 @@ interface BaseSectionEditorProps {
  * badge.
  */
 export function BaseSectionEditor({
-  sectionType,
+  section_type,
   content,
   onSave,
   onInputChange,
@@ -76,7 +76,7 @@ export function BaseSectionEditor({
     }
 
     Object.entries(localContent).forEach(([key, item]) => {
-      if (item.valueType === "color") {
+      if (item.value_type === "color") {
         try {
           const colorData = JSON.parse(item.value || "{}");
           colorData.mode = newMode;
@@ -128,7 +128,7 @@ export function BaseSectionEditor({
   };
 
   const sortedItems = Object.values(localContent).sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
 
   return (
@@ -139,7 +139,7 @@ export function BaseSectionEditor({
           item={item}
           value={localContent[item.key]?.value || ""}
           onChange={(value) => handleChange(item.key, value)}
-          sectionType={sectionType}
+          section_type={section_type}
           sectionMode={getSectionMode()}
           onModeChange={updateSectionMode}
           showSeparator={index < sortedItems.length - 1}

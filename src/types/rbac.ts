@@ -6,24 +6,24 @@
  * is implemented in parallel against the same document.
  */
 
-/** Permission grant row (request + response). `submoduleId: null` = module-wide grant. */
+/** Permission grant row (request + response). `submodule_id: null` = module-wide grant. */
 export interface PermissionGrantDto {
-  moduleId: string;
-  submoduleId: string | null;
-  actionId: string;
+  module_id: string;
+  submodule_id: string | null;
+  action_id: string;
 }
 
 export interface MatrixAction {
   id: string;
   name: string;
-  displayName: string;
+  display_name: string;
 }
 
 export interface MatrixSubmodule {
   id: string;
   name: string;
-  displayName: string;
-  sortOrder: number;
+  display_name: string;
+  sort_order: number;
   /** Grantable actions for this submodule (from submodule_actions). */
   actions: MatrixAction[];
 }
@@ -31,9 +31,9 @@ export interface MatrixSubmodule {
 export interface MatrixModule {
   id: string;
   name: string;
-  displayName: string;
+  display_name: string;
   icon: string | null;
-  sortOrder: number;
+  sort_order: number;
   submodules: MatrixSubmodule[];
 }
 
@@ -50,14 +50,14 @@ export interface MyPermissionsDto {
   role: {
     id: string;
     name: string;
-    displayName: string;
-    isSystem: boolean;
-    isActive: boolean;
+    display_name: string;
+    is_system: boolean;
+    is_active: boolean;
   };
   /** role.name === 'owner' */
-  isOwner: boolean;
+  is_owner: boolean;
   /** owner || admin */
-  isAdmin: boolean;
+  is_admin: boolean;
   /** Module names available AND reachable by this role (nav gating). */
   modules: string[];
   /**
@@ -71,10 +71,10 @@ export interface MyPermissionsDto {
 export interface RoleDto {
   id: string;
   name: string;
-  displayName: string;
+  display_name: string;
   description: string | null;
-  isSystem: boolean;
-  isActive: boolean;
-  organizationId: string | null;
-  createdAt: string;
+  is_system: boolean;
+  is_active: boolean;
+  organization_id: string | null;
+  created_at: string;
 }

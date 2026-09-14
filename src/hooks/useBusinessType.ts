@@ -45,10 +45,10 @@ const BUSINESS_TYPE_EMPHASIS: Record<string, string[]> = {
 };
 
 export interface UseBusinessTypeResult {
-  businessType: BusinessType;
-  isRetailSupplier: boolean;
+  business_type: BusinessType;
+  is_retail_supplier: boolean;
   /** Descriptive label only — never gate on this; it grants nothing. */
-  isPyme: boolean;
+  is_pyme: boolean;
   /**
    * Is this surface shown? True for every vertical unless the ORG itself chose
    * to hide it. Never false because of the business type.
@@ -85,12 +85,12 @@ export function useBusinessType(): UseBusinessTypeResult {
   const { data: org } = useDefaultOrganization(user?.userId);
   const isHidden = useOrgFeatureVisibility((s) => s.isHidden);
 
-  const businessType = (org?.businessType ?? "general") as BusinessType;
+  const business_type = (org?.business_type ?? "general") as BusinessType;
 
   const emphasises = useMemo(() => {
-    const led = new Set(BUSINESS_TYPE_EMPHASIS[businessType] ?? []);
+    const led = new Set(BUSINESS_TYPE_EMPHASIS[business_type] ?? []);
     return (module: string) => led.has(module);
-  }, [businessType]);
+  }, [business_type]);
 
   const hasVertical = useMemo(
     () => (module: string) => !isHidden(org?.id, module),
@@ -98,9 +98,9 @@ export function useBusinessType(): UseBusinessTypeResult {
   );
 
   return {
-    businessType,
-    isRetailSupplier: org?.isRetailSupplier ?? false,
-    isPyme: org?.isPyme ?? false,
+    business_type,
+    is_retail_supplier: org?.is_retail_supplier ?? false,
+    is_pyme: org?.is_pyme ?? false,
     hasVertical,
     emphasises,
     isRestaurant: hasVertical("restaurant"),

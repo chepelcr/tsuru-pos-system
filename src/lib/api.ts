@@ -169,7 +169,7 @@ export const api = {
   post: <T>(path: string, body: unknown) => request<T>("POST", path, body),
   put: <T>(path: string, body: unknown) => request<T>("PUT", path, body),
   patch: <T>(path: string, body: unknown) => request<T>("PATCH", path, body),
-  delete: <T>(path: string) => request<T>("DELETE", path),
+  delete: <T>(path: string, body?: unknown) => request<T>("DELETE", path, body),
 };
 
 // Both built through `createClient` so they accept per-call `RequestOptions`.
@@ -245,7 +245,7 @@ export function orgSettingsPath(userId: string, orgId: string, endpoint: string)
  *   • GET  /pre-deployments | /deployments       (deployment history)
  *
  * Templates are GLOBAL/public — fetched via the bare `api` client
- * (`GET /api/templates?activeOnly=true`); no builder needed.
+ * (`GET /api/templates?active_only=true`); no builder needed.
  *
  * Shares the exact path shape with {@link orgSettingsPath}; kept as a separate
  * named export so CMS callers read intentionally.

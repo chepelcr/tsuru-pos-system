@@ -57,7 +57,7 @@ export function DeploymentPendingCard({
           {t("deployments.pending.created")}
         </div>
         <div className="font-medium text-foreground">
-          {formatDateTime(preDeployment.createdAt)}
+          {formatDateTime(preDeployment.created_at)}
         </div>
       </div>
 

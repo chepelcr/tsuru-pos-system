@@ -14,20 +14,20 @@ interface ProductStat {
   name: string; emoji: string; units: number; revenue: number; sessions: number;
 }
 interface SessionStat {
-  id: string; name: string; type: string; branch: string; date: string; revenue: number; salesCount: number; status: string;
+  id: string; name: string; type: string; branch: string; date: string; revenue: number; sales_count: number; status: string;
 }
 interface VendorStat {
-  name: string; transactions: number; revenue: number; avgTicket: number; favPayment: string; sessions: number;
+  name: string; transactions: number; revenue: number; avg_ticket: number; fav_payment: string; sessions: number;
 }
 interface ContextStat {
-  context: string; branch: string; revenue: number; salesCount: number;
+  context: string; branch: string; revenue: number; sales_count: number;
 }
 interface AnalyticsData {
   products: ProductStat[];
   sessions: SessionStat[];
   vendors: VendorStat[];
   contexts: ContextStat[];
-  kpis: { totalRevenue: number; totalSales: number; topProduct: string; topContext: string };
+  kpis: { total_revenue: number; total_sales: number; top_product: string; top_context: string };
 }
 
 type Period = "today" | "week" | "month" | "season";
@@ -82,10 +82,10 @@ export default function AnalyticsPage() {
       {data && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: t("analytics.revenue"), value: fmtCompact(data.kpis.totalRevenue) },
-            { label: t("analytics.sales"), value: String(data.kpis.totalSales) },
-            { label: t("analytics.topProduct"), value: data.kpis.topProduct },
-            { label: t("analytics.topContext"), value: data.kpis.topContext },
+            { label: t("analytics.revenue"), value: fmtCompact(data.kpis.total_revenue) },
+            { label: t("analytics.sales"), value: String(data.kpis.total_sales) },
+            { label: t("analytics.topProduct"), value: data.kpis.top_product },
+            { label: t("analytics.topContext"), value: data.kpis.top_context },
           ].map(({ label, value }) => (
             <div key={label} className="bg-surface border border-surface-border rounded-xl p-4">
               <div className="text-muted text-xs tracking-widest font-barlow mb-1">{label}</div>
@@ -144,7 +144,7 @@ export default function AnalyticsPage() {
               <td className="px-4 py-3 text-muted text-sm capitalize">{s.type}</td>
               <td className="px-4 py-3 text-muted text-sm font-mono">{s.date}</td>
               <td className="px-4 py-3 text-primary font-barlow font-bold">{fmtCompact(s.revenue)}</td>
-              <td className="px-4 py-3 text-foreground font-barlow">{s.salesCount}</td>
+              <td className="px-4 py-3 text-foreground font-barlow">{s.sales_count}</td>
               <td className="px-4 py-3">
                 <span className={cn("text-xs font-bold px-2 py-1 rounded",
                   s.status === "closed" ? "bg-success/20 text-success" : "bg-warning/20 text-warning")}>
@@ -169,8 +169,8 @@ export default function AnalyticsPage() {
               </td>
               <td className="px-4 py-3 text-foreground font-barlow">{v.transactions}</td>
               <td className="px-4 py-3 text-primary font-barlow font-bold">{fmtCompact(v.revenue)}</td>
-              <td className="px-4 py-3 text-foreground font-barlow">{fmt(v.avgTicket)}</td>
-              <td className="px-4 py-3 text-muted text-sm">{v.favPayment}</td>
+              <td className="px-4 py-3 text-foreground font-barlow">{fmt(v.avg_ticket)}</td>
+              <td className="px-4 py-3 text-muted text-sm">{v.fav_payment}</td>
             </tr>
           ))}
         </AnalyticsTable>
@@ -190,7 +190,7 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-primary font-barlow font-bold">{fmtCompact(c.revenue)}</div>
-                    <div className="text-muted text-xs">{t("analytics.salesCount", { n: String(c.salesCount) })}</div>
+                    <div className="text-muted text-xs">{t("analytics.salesCount", { n: String(c.sales_count) })}</div>
                   </div>
                 </div>
                 <div className="h-1.5 bg-surface-high rounded-full overflow-hidden">

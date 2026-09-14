@@ -143,15 +143,15 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   };
 
   // Initials still come from the full name — "JP" reads better than "JO".
-  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "";
+  const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.name || "";
   const initials = fullName
     ? fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
     : "U";
   // The footer slot is one line beside a 28px avatar, and a full four-part
   // Costa Rican name ("Jose Pablo Campos Solano") only ever rendered ellipsed.
   // Prefer the username the user chose, then the given name alone.
-  const displayName =
-    user?.username || user?.firstName || fullName || user?.email || "Usuario";
+  const display_name =
+    user?.username || user?.first_name || fullName || user?.email || "Usuario";
 
   // Legacy-style nav gating: an item shows only when the role can read its
   // module/submodule (fail-open until my-permissions resolves).
@@ -310,12 +310,12 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
-              {displayName}
+              {display_name}
             </div>
             {/* Org-scoped role from my-permissions — NOT user.role, which is the
                 platform-level role ("customer" on first Cognito sync). */}
             <div className="t-xs text-muted-foreground">
-              {orgRole ? roleLabel(t, orgRole.name, orgRole.displayName) : ""}
+              {orgRole ? roleLabel(t, orgRole.name, orgRole.display_name) : ""}
             </div>
           </div>
         </button>

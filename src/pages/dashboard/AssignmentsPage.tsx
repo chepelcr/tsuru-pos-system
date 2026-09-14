@@ -37,13 +37,13 @@ interface Branch {
 
 interface Member {
   id: string;
-  userId: string;
+  user_id: string;
   user: {
     id: string;
     username: string;
     email: string;
-    firstName: string | null;
-    lastName: string | null;
+    first_name: string | null;
+    last_name: string | null;
   };
 }
 
@@ -215,8 +215,8 @@ export default function AssignmentsPage() {
               <Select value={userId} onChange={(e) => setUserId(e.target.value)}>
                 <option value="">{t("placeholder.selectOption")}</option>
                 {members.map((m) => (
-                  <option key={m.userId} value={m.userId}>
-                    {[m.user.firstName, m.user.lastName].filter(Boolean).join(" ") || m.user.email}
+                  <option key={m.user_id} value={m.user_id}>
+                    {[m.user.first_name, m.user.last_name].filter(Boolean).join(" ") || m.user.email}
                   </option>
                 ))}
               </Select>

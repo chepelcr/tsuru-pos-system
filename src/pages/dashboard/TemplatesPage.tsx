@@ -25,11 +25,11 @@ const ALL = "__all__";
  * Lists the global storefront templates, lets the user search/filter by
  * category, preview a template (modal + live-demo link), and APPLY one to the
  * current org. "Apply" re-clones storefront content + sets
- * `Organization.template_name` — guarded by a warning confirm because it
+ * `Organization.template_id` — guarded by a warning confirm because it
  * OVERWRITES the org's existing storefront content (migration 04 §2B).
  *
  * This sets the STOREFRONT design (the published customer-facing store), NOT
- * the POS admin-shell theme (`Organization.theme`, set on the Theme page). The
+ * the POS admin-shell theme (stored by the sales API from the Theme page). The
  * page surfaces a hint to that effect.
  */
 export default function TemplatesPage() {
@@ -68,14 +68,14 @@ export default function TemplatesPage() {
       if (!matchesCategory) return false;
       if (!term) return true;
       return (
-        tpl.displayName.toLowerCase().includes(term) ||
+        tpl.display_name.toLowerCase().includes(term) ||
         tpl.description.toLowerCase().includes(term) ||
         tpl.category.toLowerCase().includes(term)
       );
     });
   }, [templates, search, category]);
 
-  const activeName = org?.template_name;
+  const activeName = org?.template_id;
   const hasFilters = search.trim().length > 0 || category !== ALL;
 
   const handleApply = (templateId: string | null, label: string) => {
@@ -255,7 +255,7 @@ export default function TemplatesPage() {
                 template={tpl}
                 isSelected={tpl.name === activeName}
                 onPreview={setPreviewTemplate}
-                onSelect={(selected) => handleApply(selected.id, selected.displayName)}
+                onSelect={(selected) => handleApply(selected.id, selected.display_name)}
                 disabled={applyTemplate.isPending}
               />
             ))}
@@ -268,7 +268,7 @@ export default function TemplatesPage() {
         template={previewTemplate}
         open={previewTemplate !== null}
         onClose={() => setPreviewTemplate(null)}
-        onUse={(tpl) => handleApply(tpl.id, tpl.displayName)}
+        onUse={(tpl) => handleApply(tpl.id, tpl.display_name)}
         isSelected={previewTemplate?.name === activeName}
         disabled={applyTemplate.isPending}
       />

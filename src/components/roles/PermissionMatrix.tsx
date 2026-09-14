@@ -22,16 +22,16 @@ const DOC_TYPE_SUBS = new Set(["fe", "te", "nc", "nd", "fc", "fexp"]);
 
 /** Internal grant key — one selected (module, submodule, action) cell. */
 export function grantKey(
-  moduleId: string,
-  submoduleId: string,
-  actionId: string
+  module_id: string,
+  submodule_id: string,
+  action_id: string
 ): string {
-  return `${moduleId}|${submoduleId}|${actionId}`;
+  return `${module_id}|${submodule_id}|${action_id}`;
 }
 
 /**
  * Expand persisted grant rows (O9) into matrix cell keys.
- * Module-wide rows (`submoduleId: null`) expand to every submodule of the
+ * Module-wide rows (`submodule_id: null`) expand to every submodule of the
  * module where the action is available — mirrors the backend's V4 expansion.
  * Grants outside the org's available matrix are dropped (stale rows).
  */
@@ -41,14 +41,14 @@ export function grantsFromPermissions(
 ): Set<string> {
   const next = new Set<string>();
   for (const grant of permissions) {
-    const module = matrix.modules.find((m) => m.id === grant.moduleId);
+    const module = matrix.modules.find((m) => m.id === grant.module_id);
     if (!module) continue;
-    const targets = grant.submoduleId
-      ? module.submodules.filter((s) => s.id === grant.submoduleId)
+    const targets = grant.submodule_id
+      ? module.submodules.filter((s) => s.id === grant.submodule_id)
       : module.submodules;
     for (const sub of targets) {
-      if (sub.actions.some((a) => a.id === grant.actionId)) {
-        next.add(grantKey(module.id, sub.id, grant.actionId));
+      if (sub.actions.some((a) => a.id === grant.action_id)) {
+        next.add(grantKey(module.id, sub.id, grant.action_id));
       }
     }
   }
@@ -58,8 +58,8 @@ export function grantsFromPermissions(
 /** Serialize selected cells back to O10 grant rows (explicit submoduleIds). */
 export function grantsToPermissions(grants: Set<string>): PermissionGrantDto[] {
   return Array.from(grants).map((key) => {
-    const [moduleId, submoduleId, actionId] = key.split("|");
-    return { moduleId, submoduleId, actionId };
+    const [module_id, submodule_id, action_id] = key.split("|");
+    return { module_id, submodule_id, action_id };
   });
 }
 
@@ -94,7 +94,7 @@ export function PermissionMatrix({
     () =>
       (matrix?.modules ?? [])
         .slice()
-        .sort((a, b) => a.sortOrder - b.sortOrder),
+        .sort((a, b) => a.sort_order - b.sort_order),
     [matrix]
   );
 
@@ -184,7 +184,7 @@ export function PermissionMatrix({
         const docTypeSubs = isDocs
           ? module.submodules
               .filter((s) => DOC_TYPE_SUBS.has(s.name))
-              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .sort((a, b) => a.sort_order - b.sort_order)
           : [];
         const rowSubs = module.submodules.filter(
           (s) => !(isDocs && DOC_TYPE_SUBS.has(s.name))
@@ -197,7 +197,7 @@ export function PermissionMatrix({
         return (
           <SectionWrapper
             key={module.id}
-            title={moduleLabel(t, module.name, module.displayName)}
+            title={moduleLabel(t, module.name, module.display_name)}
             icon={Shield}
             badge={t("roles.matrix.selected", { count: selectedCount })}
             isExpanded={isExpanded}
@@ -222,7 +222,7 @@ export function PermissionMatrix({
 
             {rowSubs
               .slice()
-              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .sort((a, b) => a.sort_order - b.sort_order)
               .map((sub) => {
                 const isEmitted = isDocs && sub.name === "emitted";
                 const emittedCreateAction = isEmitted
@@ -242,7 +242,7 @@ export function PermissionMatrix({
                   className="flex flex-col gap-1.5 py-1.5 border-b border-border/40 last:border-b-0"
                 >
                   <span className="t-sm font-semibold text-foreground">
-                    {submoduleLabel(t, module.name, sub.name, sub.displayName)}
+                    {submoduleLabel(t, module.name, sub.name, sub.display_name)}
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {sub.actions.map((action) => {
@@ -272,7 +272,7 @@ export function PermissionMatrix({
                           }`}
                         >
                           {selected && <Icon name="check" size={11} />}
-                          {actionLabel(t, action.name, action.displayName)}
+                          {actionLabel(t, action.name, action.display_name)}
                         </button>
                       );
                     })}
@@ -307,7 +307,7 @@ export function PermissionMatrix({
                               }`}
                             >
                               {selected && <Icon name="check" size={11} />}
-                              {submoduleLabel(t, module.name, typeSub.name, typeSub.displayName)}
+                              {submoduleLabel(t, module.name, typeSub.name, typeSub.display_name)}
                             </button>
                           );
                         })}

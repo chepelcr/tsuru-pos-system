@@ -18,7 +18,7 @@ import type {
 } from "@/types/rbac";
 
 /**
- * Org-scoped RBAC hooks (markets-api `/api/users/{u}/organization/{o}/rbac/*`).
+ * Org-scoped RBAC hooks (markets-api `/api/users/{u}/organizations/{o}/rbac/*`).
  *
  * Contract: docs/roadmap/rbac_express_contract.md (endpoints O1–O11).
  * Query keys follow the contract's FE notes:
@@ -96,7 +96,7 @@ export interface CreateRoleInput {
   userId: string;
   orgId: string;
   name: string;
-  displayName?: string;
+  display_name?: string;
   description?: string;
 }
 
@@ -119,9 +119,9 @@ export interface UpdateRoleInput {
   orgId: string;
   roleId: string;
   name?: string;
-  displayName?: string;
+  display_name?: string;
   description?: string;
-  isActive?: boolean;
+  is_active?: boolean;
 }
 
 /** O7 — update org role (404 cross-org, 400 system roles). */
@@ -198,7 +198,7 @@ export function useAssignMemberRole() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, orgId, memberId, roleId }: AssignMemberRoleInput) =>
-      api.put(orgRbacPath(userId, orgId, `/members/${memberId}/role`), { roleId }),
+      api.put(orgRbacPath(userId, orgId, `/members/${memberId}/role`), { role_id: roleId }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["org-members", variables.userId, variables.orgId],
@@ -223,8 +223,8 @@ export interface UsePermissionsResult {
   /** Module-level nav gating (MyPermissionsDto.modules). */
   hasModule: (module: string) => boolean;
   modules: string[];
-  isOwner: boolean;
-  isAdmin: boolean;
+  is_owner: boolean;
+  is_admin: boolean;
   /** True once my-permissions resolved with data — gating only applies then. */
   isReady: boolean;
   isLoading: boolean;
@@ -258,7 +258,7 @@ export function usePermissions(): UsePermissionsResult {
   const can = useCallback(
     (module: string, action: string, submodule?: string): boolean => {
       if (!data) return true; // fail-open until permissions resolve
-      if (data.isOwner) return true;
+      if (data.is_owner) return true;
       if (submodule) {
         return data.permissions.includes(`${module}:${submodule}:${action}`);
       }
@@ -273,7 +273,7 @@ export function usePermissions(): UsePermissionsResult {
   const hasModule = useCallback(
     (module: string): boolean => {
       if (!data) return true; // fail-open until permissions resolve
-      if (data.isOwner) return true;
+      if (data.is_owner) return true;
       return data.modules.includes(module);
     },
     [data]
@@ -283,8 +283,8 @@ export function usePermissions(): UsePermissionsResult {
     can,
     hasModule,
     modules: data?.modules ?? [],
-    isOwner: data?.isOwner ?? false,
-    isAdmin: data?.isAdmin ?? false,
+    is_owner: data?.is_owner ?? false,
+    is_admin: data?.is_admin ?? false,
     isReady: !!data,
     isLoading: query.isLoading,
     isError: query.isError,

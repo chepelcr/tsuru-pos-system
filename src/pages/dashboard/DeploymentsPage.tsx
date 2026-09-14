@@ -57,7 +57,7 @@ export default function DeploymentsPage() {
 
   const sortedDeployments = [...(deployments.data ?? [])].sort(
     (a, b) =>
-      new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+      new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
   );
 
   return (

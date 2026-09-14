@@ -8,11 +8,11 @@ import type { OrgShippingSettings } from "@/types";
 
 const buildSchema = (t: (k: string) => string) =>
   z.object({
-    freeShippingThreshold: z.number().min(0, t("orgSettings.shipping.minZero")),
-    defaultShippingCost: z.number().min(0, t("orgSettings.shipping.minZero")),
-    enableLocalPickup: z.boolean(),
-    enableCorreosShipping: z.boolean(),
-    enableUberFlash: z.boolean(),
+    free_shipping_threshold: z.number().min(0, t("orgSettings.shipping.minZero")),
+    default_shipping_cost: z.number().min(0, t("orgSettings.shipping.minZero")),
+    enable_local_pickup: z.boolean(),
+    enable_correos_shipping: z.boolean(),
+    enable_uber_flash: z.boolean(),
   });
 
 type ShippingValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -45,11 +45,11 @@ export function ShippingSettingsForm({
   } = useForm<ShippingValues>({
     resolver: zodResolver(buildSchema(t)),
     defaultValues: {
-      freeShippingThreshold: initialValues?.freeShippingThreshold ?? 0,
-      defaultShippingCost: initialValues?.defaultShippingCost ?? 0,
-      enableLocalPickup: initialValues?.enableLocalPickup ?? false,
-      enableCorreosShipping: initialValues?.enableCorreosShipping ?? false,
-      enableUberFlash: initialValues?.enableUberFlash ?? false,
+      free_shipping_threshold: initialValues?.free_shipping_threshold ?? 0,
+      default_shipping_cost: initialValues?.default_shipping_cost ?? 0,
+      enable_local_pickup: initialValues?.enable_local_pickup ?? false,
+      enable_correos_shipping: initialValues?.enable_correos_shipping ?? false,
+      enable_uber_flash: initialValues?.enable_uber_flash ?? false,
     },
   });
 
@@ -62,11 +62,11 @@ export function ShippingSettingsForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
           label={t("orgSettings.shipping.freeShippingThreshold")}
-          error={errors.freeShippingThreshold?.message}
+          error={errors.free_shipping_threshold?.message}
         >
           <Controller
             control={control}
-            name="freeShippingThreshold"
+            name="free_shipping_threshold"
             render={({ field }) => (
               <input
                 className="pp-input w-full"
@@ -86,11 +86,11 @@ export function ShippingSettingsForm({
 
         <FormField
           label={t("orgSettings.shipping.defaultShippingCost")}
-          error={errors.defaultShippingCost?.message}
+          error={errors.default_shipping_cost?.message}
         >
           <Controller
             control={control}
-            name="defaultShippingCost"
+            name="default_shipping_cost"
             render={({ field }) => (
               <input
                 className="pp-input w-full"
@@ -110,7 +110,7 @@ export function ShippingSettingsForm({
       </div>
 
       <label className="flex items-start gap-3 rounded-lg border border-border p-4 cursor-pointer">
-        <input type="checkbox" className="mt-0.5 flex-shrink-0" {...register("enableLocalPickup")} />
+        <input type="checkbox" className="mt-0.5 flex-shrink-0" {...register("enable_local_pickup")} />
         <div className="min-w-0">
           <span className="t-sm font-medium block">{t("orgSettings.shipping.enableLocalPickup")}</span>
           <span className="t-xs text-muted-foreground block mt-0.5">
@@ -120,7 +120,7 @@ export function ShippingSettingsForm({
       </label>
 
       <label className="flex items-start gap-3 rounded-lg border border-border p-4 cursor-pointer">
-        <input type="checkbox" className="mt-0.5 flex-shrink-0" {...register("enableCorreosShipping")} />
+        <input type="checkbox" className="mt-0.5 flex-shrink-0" {...register("enable_correos_shipping")} />
         <div className="min-w-0">
           <span className="t-sm font-medium block">{t("orgSettings.shipping.enableCorreosShipping")}</span>
           <span className="t-xs text-muted-foreground block mt-0.5">
@@ -130,7 +130,7 @@ export function ShippingSettingsForm({
       </label>
 
       <label className="flex items-start gap-3 rounded-lg border border-border p-4 cursor-pointer">
-        <input type="checkbox" className="mt-0.5 flex-shrink-0" {...register("enableUberFlash")} />
+        <input type="checkbox" className="mt-0.5 flex-shrink-0" {...register("enable_uber_flash")} />
         <div className="min-w-0">
           <span className="t-sm font-medium block">{t("orgSettings.shipping.enableUberFlash")}</span>
           <span className="t-xs text-muted-foreground block mt-0.5">

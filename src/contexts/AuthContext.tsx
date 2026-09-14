@@ -31,8 +31,8 @@ interface AuthUser {
   userId: string;
   email: string;
   name?: string;
-  firstName?: string;
-  lastName?: string;
+  first_name?: string;
+  last_name?: string;
   username?: string;
   role: UserRole;
 }
@@ -271,12 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (args: CompleteVerificationArgs) => {
       const profile = await api.post<AuthUser>(
         userPath(args.userId, "/verify-email-complete"),
-        {
-          email: args.email,
-          username: args.username,
-          firstName: args.firstName,
-          lastName: args.lastName,
-        }
+        {}
       );
       const synced = { ...profile, userId: args.userId };
       setUser(synced);

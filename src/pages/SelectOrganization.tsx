@@ -109,7 +109,7 @@ export default function SelectOrganization() {
                   <div className="t-xs text-muted-foreground mt-0.5 truncate">
                     {incomplete
                       ? t("orgs.continueSetup")
-                      : org.template_name || `${org.slug}.`}
+                      : org.template_id || `${org.slug}.`}
                   </div>
                 </div>
                 {incomplete ? (

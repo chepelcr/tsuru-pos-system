@@ -72,9 +72,12 @@ export default function InventoryOpening({
       }
 
       await api.post(orgPath(user!.userId, org!.id, "/inventory/opening"), {
-        assignmentId,
-        items,
-        initialCash: Number(cash) || 0,
+        assignment_id: assignmentId,
+        items: items.map((item) => ({
+          product_id: item.productId,
+          quantity: item.quantity,
+        })),
+        initial_cash: Number(cash) || 0,
       });
     },
     onSuccess: () => {

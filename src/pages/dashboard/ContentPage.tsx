@@ -29,7 +29,7 @@ function groupContent(pages: Page[]): ContentData {
   const grouped: ContentData = {};
   pages.forEach((page) => {
     page.sections?.forEach((section) => {
-      const key = `${page.slug}-${section.sectionType}`;
+      const key = `${page.slug}-${section.section_type}`;
       grouped[key] = (section.content ?? []).reduce((acc, item) => {
         acc[item.key] = item;
         return acc;
@@ -42,14 +42,14 @@ function groupContent(pages: Page[]): ContentData {
 /** Map one section's field map to the bulk-save update shape. */
 function toUpdate(sectionId: string, content: ContentSection): SectionContentUpdate {
   return {
-    sectionId,
+    section_id: sectionId,
     content: Object.values(content).map((item) => ({
       key: item.key,
       value: item.value,
-      valueType: item.valueType,
-      displayName: item.displayName,
+      value_type: item.value_type,
+      display_name: item.display_name,
       description: item.description,
-      sortOrder: item.sortOrder,
+      sort_order: item.sort_order,
     })),
   };
 }
@@ -101,7 +101,7 @@ export default function ContentPage() {
     pagesQuery.data.forEach((page) => {
       order[page.slug] = (page.sections ?? [])
         .slice()
-        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
         .map((s) => s.id);
     });
     setSectionOrder(order);
@@ -116,15 +116,15 @@ export default function ContentPage() {
     return t(key) !== key ? t(key) : page.title || page.slug;
   };
   const sectionLabel = (section: PageSection) => {
-    const key = `content.section.${section.sectionType}`;
-    return t(key) !== key ? t(key) : section.displayName || section.sectionType;
+    const key = `content.section.${section.section_type}`;
+    return t(key) !== key ? t(key) : section.name || section.section_type;
   };
 
   // ── save (per-section, from inside the drawer) ────────────────────────────
   const handleSectionSave = (sectionKey: string, updated: ContentSection) => {
-    const [pageSlug, sectionType] = sectionKey.split("-");
+    const [pageSlug, section_type] = sectionKey.split("-");
     const page = pages.find((p) => p.slug === pageSlug);
-    const section = page?.sections?.find((s) => s.sectionType === sectionType);
+    const section = page?.sections?.find((s) => s.section_type === section_type);
     if (!section) return;
     saveContent.mutate([toUpdate(section.id, updated)]);
   };
@@ -263,7 +263,7 @@ export default function ContentPage() {
             {drawerSectionIds.map((sectionId, idx) => {
               const section = drawerSectionsById.get(sectionId);
               if (!section) return null;
-              const sectionKey = `${openPage.slug}-${section.sectionType}`;
+              const sectionKey = `${openPage.slug}-${section.section_type}`;
               const fields = contentData[sectionKey] || {};
               const fieldCount = Object.keys(fields).length;
               const expanded = openSectionId === section.id;
@@ -283,7 +283,7 @@ export default function ContentPage() {
                 >
                   {/* Section type + reorder controls */}
                   <div className="flex items-center justify-between gap-2 -mt-1 mb-2">
-                    <span className="t-xs text-muted-foreground font-mono">{section.sectionType}</span>
+                    <span className="t-xs text-muted-foreground font-mono">{section.section_type}</span>
                     {canEditContent && (
                       <div className="flex items-center gap-1">
                         <Button
@@ -309,7 +309,7 @@ export default function ContentPage() {
                   </div>
 
                   <BaseSectionEditor
-                    sectionType={sectionKey}
+                    section_type={sectionKey}
                     content={fields}
                     isSaving={isSaving}
                     onInputChange={() => {}}

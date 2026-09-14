@@ -53,11 +53,11 @@ export default function RolesPage() {
     [rolesQuery.data]
   );
   const customRoles = useMemo(
-    () => visibleRoles.filter((r) => !r.isSystem),
+    () => visibleRoles.filter((r) => !r.is_system),
     [visibleRoles]
   );
   const systemRoles = useMemo(
-    () => visibleRoles.filter((r) => r.isSystem),
+    () => visibleRoles.filter((r) => r.is_system),
     [visibleRoles]
   );
 
@@ -86,7 +86,7 @@ export default function RolesPage() {
   const handleDelete = (role: RoleDto) => {
     confirm({
       title: t("roles.deleteTitle"),
-      message: t("roles.deleteConfirm", { name: role.displayName }),
+      message: t("roles.deleteConfirm", { name: role.display_name }),
       variant: "destructive",
       icon: "trash",
       confirmLabel: t("common.delete"),
@@ -119,15 +119,15 @@ export default function RolesPage() {
   }
 
   const renderRoleCard = (role: RoleDto) => {
-    const isSystem = role.isSystem;
+    const is_system = role.is_system;
     // System templates render localized; custom org roles keep their own text
-    const label = roleLabel(t, role.name, role.displayName);
+    const label = roleLabel(t, role.name, role.display_name);
     const descText = roleDescription(t, role.name, role.description);
     return (
       <div key={role.id} className="card card-hover p-4 flex items-center gap-3.5 flex-wrap">
         <div
           className={`icon-pill icon-pill-lg ${
-            isSystem ? "icon-pill-muted" : "icon-pill-primary-soft"
+            is_system ? "icon-pill-muted" : "icon-pill-primary-soft"
           } w-10 h-10 flex-shrink-0`}
         >
           <Icon name="shield" size={18} />
@@ -137,10 +137,10 @@ export default function RolesPage() {
             <span className="t-body font-semibold text-foreground truncate">
               {label}
             </span>
-            <Badge variant={isSystem ? "secondary" : "primary-soft"}>
-              {isSystem ? t("roles.systemBadge") : t("roles.customBadge")}
+            <Badge variant={is_system ? "secondary" : "primary-soft"}>
+              {is_system ? t("roles.systemBadge") : t("roles.customBadge")}
             </Badge>
-            {!role.isActive && (
+            {!role.is_active && (
               <Badge variant="warning">{t("common.inactive")}</Badge>
             )}
           </div>
@@ -151,7 +151,7 @@ export default function RolesPage() {
           )}
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
-          {isSystem ? (
+          {is_system ? (
             <>
               <Button
                 variant="ghost"

@@ -32,13 +32,13 @@ interface Terminal {
 
 interface Member {
   id: string;
-  userId: string;
+  user_id: string;
   user: {
     id: string;
     username: string;
     email: string;
-    firstName: string | null;
-    lastName: string | null;
+    first_name: string | null;
+    last_name: string | null;
   };
 }
 

@@ -10,8 +10,8 @@ import { api, userPath } from "@/lib/api";
  * + re-verification flow — out of scope). See plan 06 §2.2.
  */
 export interface UpdateProfileData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   username: string;
 }
 
@@ -22,7 +22,7 @@ export interface UpdateProfileData {
  * `PUT /api/users/{userId}/profile` (UserController registers `router.put`).
  *
  * TODO(verify-endpoint): confirm the markets-api `PUT /api/users/{userId}/profile`
- * accepts exactly `{ firstName, lastName, username }` and returns the full updated
+ * accepts exactly `{ first_name, last_name, username }` and returns the full updated
  * profile. If a PATCH alias is later added, switch the verb here.
  */
 export function useUpdateProfile() {

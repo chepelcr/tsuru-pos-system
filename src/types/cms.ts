@@ -1,8 +1,8 @@
 /**
  * CMS / storefront content types — mirror the markets-api Drizzle shapes
- * (camelCase JS keys, as returned by `$inferSelect`).
+ * (snake_case JSON keys, as exposed on the management API wire).
  *
- * Org-scoped CMS routes are SINGULAR (`/api/users/{u}/organization/{o}/...`);
+ * Org-scoped CMS routes use `/api/users/{u}/organizations/{o}/...`;
  * fetch with the `orgContentPath` builder + `api` client. Templates are
  * GLOBAL/public (`GET /api/templates`).
  *
@@ -14,7 +14,7 @@
 
 /**
  * A single editable content value within a section.
- * `valueType` is the storage/editor contract (CONFIRMED enum from
+ * `value_type` is the storage/editor contract (CONFIRMED enum from
  * `SectionContent.ts`). The editor source additionally renders `string`,
  * `textarea`, and `image_url` variants — included here for forward-compat.
  */
@@ -32,33 +32,33 @@ export type SectionContentValueType =
 
 export interface SectionContent {
   id: string;
-  sectionId: string;
+  section_id: string;
   /** Stable field identifier (e.g. "heroTitle"). */
   key: string;
   /** Serialized value — plain text, hex/JSON color contract, JSON array, etc. */
   value: string;
-  valueType: SectionContentValueType;
+  value_type: SectionContentValueType;
   /** Human-readable field label shown in the editor. */
-  displayName?: string | null;
+  display_name: string;
   description?: string | null;
-  sortOrder?: number | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
+  sort_order?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 // ── PageSection ───────────────────────────────────────────────────────────
 
 export interface PageSection {
   id: string;
-  pageId: string;
+  page_id: string;
   /** Section archetype (e.g. "hero", "benefits", "footer"). */
-  sectionType: string;
-  displayName?: string | null;
-  sortOrder?: number | null;
-  isActive?: boolean | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  /** Present when fetched via `?includeContent=true`. */
+  section_type: string;
+  name: string;
+  sort_order?: number | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  /** Present when fetched via `?include_content=true`. */
   content?: SectionContent[];
 }
 
@@ -66,16 +66,17 @@ export interface PageSection {
 
 export interface Page {
   id: string;
-  organizationId: string;
+  organization_id: string;
+  type: string;
   /** URL-safe page identifier (e.g. "home", "about"). */
   slug: string;
   title?: string | null;
-  displayName?: string | null;
-  sortOrder?: number | null;
-  isActive?: boolean | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  /** Present when fetched via `?includeContent=true`. */
+  meta_description?: string | null;
+  sort_order?: number | null;
+  is_active?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  /** Present when fetched via `?include_content=true`. */
   sections?: PageSection[];
 }
 
@@ -83,14 +84,14 @@ export interface Page {
 
 /** One section's updated values for `POST /content/bulk-all`. */
 export interface SectionContentUpdate {
-  sectionId: string;
+  section_id: string;
   content: Array<{
     key: string;
     value: string;
-    valueType: SectionContentValueType;
-    displayName?: string | null;
+    value_type: SectionContentValueType;
+    display_name: string;
     description?: string | null;
-    sortOrder?: number | null;
+    sort_order?: number | null;
   }>;
 }
 
@@ -119,18 +120,16 @@ export type DeploymentStatus = 'building' | 'uploading' | 'success' | 'error';
 
 export interface Deployment {
   id: string;
-  organizationId: string;
+  organization_id: string;
   status: DeploymentStatus;
-  buildId?: string | null;
-  deployUrl?: string | null;
-  filesUploaded?: number | null;
-  buildSizeKb?: number | null;
-  triggerType?: string | null;
+  build_id?: string | null;
+  deploy_url?: string | null;
+  files_uploaded?: number | null;
+  build_size_kb?: number | null;
   message?: string | null;
-  errorDetails?: string | null;
-  startedAt?: string | null;
-  completedAt?: string | null;
-  createdAt?: string | null;
+  error_details?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
 }
 
 // ── Pre-deployments (pending changes awaiting publish) ────────────────────
@@ -139,24 +138,24 @@ export type PreDeploymentStatus = 'pending' | 'ready' | 'published' | 'error';
 
 export interface PreDeployment {
   id: string;
-  organizationId: string;
+  organization_id: string;
   status: PreDeploymentStatus;
-  triggerType?: string | null;
-  triggerAction?: string | null;
-  entityType?: string | null;
-  entityId?: string | null;
-  buildId?: string | null;
+  trigger_type?: string | null;
+  trigger_action?: string | null;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  build_id?: string | null;
   /** Opaque diff payload (jsonb). */
   changes?: unknown;
   message?: string | null;
-  errorDetails?: string | null;
-  publishedAt?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
+  error_details?: string | null;
+  published_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 /** `POST /pre-deployments/{id}/publish` success body. */
 export interface PublishResponse {
   success: boolean;
-  deploymentId: string;
+  deployment_id: string;
 }

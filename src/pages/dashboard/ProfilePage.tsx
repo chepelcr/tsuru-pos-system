@@ -29,8 +29,8 @@ import { ROUTES } from "@/routePaths";
 //    FormField call site — same pattern as Register.tsx). ────────────────────
 
 const profileSchema = z.object({
-  firstName: z.string().min(1, "auth.validation.firstNameRequired"),
-  lastName: z.string().min(1, "auth.validation.lastNameRequired"),
+  first_name: z.string().min(1, "auth.validation.firstNameRequired"),
+  last_name: z.string().min(1, "auth.validation.lastNameRequired"),
   username: z
     .string()
     .min(3, "auth.validation.usernameMinLength")
@@ -86,8 +86,8 @@ export default function ProfilePage() {
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.firstName ?? "",
-      lastName: user?.lastName ?? "",
+      first_name: user?.first_name ?? "",
+      last_name: user?.last_name ?? "",
       username: user?.username ?? "",
     },
   });
@@ -105,8 +105,8 @@ export default function ProfilePage() {
 
   const startEdit = () => {
     profileForm.reset({
-      firstName: user?.firstName ?? "",
-      lastName: user?.lastName ?? "",
+      first_name: user?.first_name ?? "",
+      last_name: user?.last_name ?? "",
       username: user?.username ?? "",
     });
     setIsEditing(true);
@@ -114,8 +114,8 @@ export default function ProfilePage() {
 
   const cancelEdit = () => {
     profileForm.reset({
-      firstName: user?.firstName ?? "",
-      lastName: user?.lastName ?? "",
+      first_name: user?.first_name ?? "",
+      last_name: user?.last_name ?? "",
       username: user?.username ?? "",
     });
     setIsEditing(false);
@@ -210,7 +210,7 @@ export default function ProfilePage() {
   // profile read "Cliente" for an owner whose sidebar said "Administrador".
   // Fall back to the platform role only while my-permissions is still loading.
   const roleLabel = orgRole
-    ? orgRoleLabel(t, orgRole.name, orgRole.displayName)
+    ? orgRoleLabel(t, orgRole.name, orgRole.display_name)
     : user?.role
       ? t(`profile.roles.${user.role}`)
       : placeholder;
@@ -262,13 +262,13 @@ export default function ProfilePage() {
                   <div className="min-w-0">
                     <div className="t-label">{t("profile.firstName")}</div>
                     <p className="t-body font-medium text-foreground break-words">
-                      {user?.firstName || placeholder}
+                      {user?.first_name || placeholder}
                     </p>
                   </div>
                   <div className="min-w-0">
                     <div className="t-label">{t("profile.lastName")}</div>
                     <p className="t-body font-medium text-foreground break-words">
-                      {user?.lastName || placeholder}
+                      {user?.last_name || placeholder}
                     </p>
                   </div>
                   <div className="min-w-0">
@@ -298,22 +298,22 @@ export default function ProfilePage() {
                   <FormField
                     label={t("profile.firstName")}
                     required
-                    error={tErr(profileForm.formState.errors.firstName?.message)}
+                    error={tErr(profileForm.formState.errors.first_name?.message)}
                   >
                     <Controller
                       control={profileForm.control}
-                      name="firstName"
+                      name="first_name"
                       render={({ field }) => <Input {...field} />}
                     />
                   </FormField>
                   <FormField
                     label={t("profile.lastName")}
                     required
-                    error={tErr(profileForm.formState.errors.lastName?.message)}
+                    error={tErr(profileForm.formState.errors.last_name?.message)}
                   >
                     <Controller
                       control={profileForm.control}
-                      name="lastName"
+                      name="last_name"
                       render={({ field }) => <Input {...field} />}
                     />
                   </FormField>

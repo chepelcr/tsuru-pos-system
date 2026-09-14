@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelectedOrgId } from '@/hooks/useSelectedOrgId';
 import { useCallback } from 'react';
-import { api, salesApi, userPath, orgPath, authOrgPath } from '@/lib/api';
+import { api, salesApi, userPath, orgPath, orgContentPath, authOrgPath } from '@/lib/api';
 import type { Organization } from '../types';
 import type { BusinessType } from '@/types/organization';
 
@@ -9,26 +9,26 @@ export type { Organization } from '../types';
 
 export interface Invitation {
   id: string;
-  organizationId: string;
+  organization_id: string;
   email: string;
-  roleId: string;
+  role_id: string;
   token: string;
-  invitedBy: string;
+  invited_by: string;
   status: 'pending' | 'accepted' | 'expired' | 'cancelled';
-  expiresAt: string;
-  createdAt: string;
-  role?: { id: string; name: string; displayName: string };
-  inviter?: { id: string; email: string; firstName?: string; lastName?: string };
+  expires_at: string;
+  created_at: string;
+  role?: { id: string; name: string; display_name: string };
+  invited_by_user?: { id: string; email: string; username: string };
 }
 
 export interface OrgMember {
   id: string;
-  userId: string;
-  organizationId: string;
-  roleId: string;
+  user_id: string;
+  organization_id: string;
+  role_id: string;
   status?: string;
-  user?: { id: string; email: string; firstName?: string; lastName?: string };
-  role?: { id: string; name: string; displayName: string };
+  user?: { id: string; email: string; first_name?: string; last_name?: string };
+  role?: { id: string; name: string; display_name: string };
 }
 
 interface CreateOrganizationData {
@@ -37,9 +37,9 @@ interface CreateOrganizationData {
   subdomain?: string;
   ownerId: string;
   /** Business identity captured in wizard step 1 (TSR-150). */
-  businessType?: BusinessType;
-  isRetailSupplier?: boolean;
-  isPyme?: boolean;
+  business_type?: BusinessType;
+  is_retail_supplier?: boolean;
+  is_pyme?: boolean;
 }
 
 interface CompleteStep2Data {
@@ -48,10 +48,10 @@ interface CompleteStep2Data {
   email?: string;
   phone?: string;
   address?: string;
-  stateId?: number;
-  countyId?: number;
-  districtId?: number;
-  neighborhoodId?: number;
+  state_id?: number;
+  county_id?: number;
+  district_id?: number;
+  neighborhood_id?: number;
 }
 
 interface CompleteStep3Data {
@@ -157,10 +157,8 @@ export function useOrganization() {
   // Create organization (Step 1 - draft)
   const createOrganization = useMutation({
     mutationFn: async (data: CreateOrganizationData) => {
-      return api.post<Organization>(
-        userPath(data.ownerId, '/organizations'),
-        data
-      );
+      const { ownerId, ...body } = data;
+      return api.post<Organization>(userPath(ownerId, '/organizations'), body);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
@@ -185,7 +183,7 @@ export function useOrganization() {
       const { organizationId, userId, templateId, includeCategories } = data;
       return api.post<Organization>(
         userPath(userId, `/organizations/${organizationId}/onboarding/step3`),
-        { templateId, includeCategories }
+        { template_id: templateId, include_categories: includeCategories }
       );
     },
     // Invalidate only after final step completes
@@ -214,7 +212,7 @@ export function useOrganization() {
       queryKey: ['org-invitations', userId, orgId],
       queryFn: async () => {
         if (!userId || !orgId) return [];
-        return api.get<Invitation[]>(orgPath(userId, orgId, '/invitations'));
+        return api.get<Invitation[]>(orgContentPath(userId, orgId, '/invitations'));
       },
       enabled: !!userId && !!orgId,
     });
@@ -224,12 +222,12 @@ export function useOrganization() {
   const inviteMember = useMutation({
     mutationFn: async (data: { userId: string; orgId: string; email: string; roleId: string }) => {
       return api.post<Invitation>(
-        orgPath(data.userId, data.orgId, '/invitations'),
+        orgContentPath(data.userId, data.orgId, '/invitations'),
         {
-          organizationId: data.orgId,
+          organization_id: data.orgId,
           email: data.email,
-          roleId: data.roleId,
-          invitedBy: data.userId,
+          role_id: data.roleId,
+          invited_by: data.userId,
         }
       );
     },
@@ -251,7 +249,7 @@ export function useOrganization() {
       orgId: string;
       invitationId: string;
     }) => {
-      return api.delete(orgPath(userId, orgId, `/invitations/${invitationId}`));
+      return api.delete(orgContentPath(userId, orgId, `/invitations/${invitationId}`));
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -272,7 +270,7 @@ export function useOrganization() {
       invitationId: string;
     }) => {
       return api.post(
-        orgPath(userId, orgId, `/invitations/${invitationId}/resend`),
+        orgContentPath(userId, orgId, `/invitations/${invitationId}/resend`),
         {}
       );
     },

@@ -14,7 +14,7 @@ import { api, orgContentPath } from "@/lib/api";
  *   3. PUBLISH — promote the pending pre-deployment to a real build
  *      (`POST /pre-deployments/{id}/publish`).
  *
- * Org-scoped CMS/deployment routes are SINGULAR — use {@link orgContentPath}
+ * Org-scoped CMS/deployment routes use the plural organizations path — use {@link orgContentPath}
  * (NO `/memberships/`). Token auto-injected by the `api` client; never raw
  * `fetch`, never an `x-user-id` header (that is cross-app-be only — CLAUDE.md §2).
  *
@@ -25,7 +25,7 @@ import { api, orgContentPath } from "@/lib/api";
  *
  * TODO(verify-endpoint): none of these endpoints are currently exercised by POS.
  * Confirm against markets-api (path shape, auth via the POS Cognito ID token,
- * and response casing — the dashboard models were camelCase):
+ * and response fields, which are snake_case on the management API wire):
  *   • GET  /pre-deployments                       → PreDeployment[]
  *   • POST /pre-deployments/{id}/publish          → (no body needed)
  *   • GET  /deployments/history                   → DeploymentHistory[]
@@ -35,24 +35,24 @@ export type DeploymentStatus = "building" | "uploading" | "success" | "error";
 
 export interface DeploymentHistory {
   id: string;
-  buildId: string;
+  build_id: string;
   status: DeploymentStatus;
   message: string;
-  startedAt: string;
-  completedAt?: string;
-  deployUrl?: string;
-  errorDetails?: string;
-  filesUploaded?: number;
-  buildSizeKb?: number;
+  started_at: string;
+  completed_at?: string;
+  deploy_url?: string;
+  error_details?: string;
+  files_uploaded?: number;
+  build_size_kb?: number;
 }
 
 export interface PreDeployment {
   id: string;
   status: "ready";
-  triggerType: string;
+  trigger_type: string;
   message: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
   changes?: unknown;
 }
 

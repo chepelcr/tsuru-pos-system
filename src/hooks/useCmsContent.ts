@@ -24,7 +24,7 @@ export function useCmsContent(userId: string | undefined, orgId: string | undefi
     enabled: !!userId && !!orgId,
     queryFn: () =>
       api.get<Page[]>(
-        orgContentPath(userId!, orgId!, "/pages?includeContent=true")
+        orgContentPath(userId!, orgId!, "/pages?include_content=true")
       ),
   });
 

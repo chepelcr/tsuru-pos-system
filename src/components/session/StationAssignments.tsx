@@ -20,13 +20,13 @@ interface Terminal {
 
 interface Member {
   id: string;
-  userId: string;
+  user_id: string;
   user: {
     id: string;
     username: string;
     email: string;
-    firstName: string | null;
-    lastName: string | null;
+    first_name: string | null;
+    last_name: string | null;
   };
 }
 
@@ -157,7 +157,7 @@ export default function StationAssignments({
                       variant="outline"
                       size="sm"
                       icon="plus"
-                      disabled={members.filter((m) => !allAssignedUserIds.has(m.userId)).length === 0}
+                      disabled={members.filter((m) => !allAssignedUserIds.has(m.user_id)).length === 0}
                       onClick={() => addMemberToStation(branch.branch_id)}
                     >
                       {t("session.addMember")}
@@ -174,7 +174,7 @@ export default function StationAssignments({
                     <div className="flex flex-col gap-2.5">
                       {stationMembers.map((member, memberIndex) => {
                         const availableForSlot = members.filter(
-                          (m) => m.userId === member.userId || !allAssignedUserIds.has(m.userId)
+                          (m) => m.user_id === member.userId || !allAssignedUserIds.has(m.user_id)
                         );
 
                         const branchHasSupervisor = stationMembers.some(
@@ -194,8 +194,8 @@ export default function StationAssignments({
                               >
                                 <option value="">{t("placeholder.selectOption")}</option>
                                 {availableForSlot.map((m) => (
-                                  <option key={m.userId} value={m.userId}>
-                                    {[m.user.firstName, m.user.lastName].filter(Boolean).join(" ") || m.user.email}
+                                  <option key={m.user_id} value={m.user_id}>
+                                    {[m.user.first_name, m.user.last_name].filter(Boolean).join(" ") || m.user.email}
                                   </option>
                                 ))}
                               </Select>

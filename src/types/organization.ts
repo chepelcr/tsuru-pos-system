@@ -30,22 +30,22 @@ export interface OrgContactSettings {
   email?: string;
   phone?: string;
   /** Phone country by ISO numeric code (e.g. "188"); mirrors fiscal-info phone. */
-  phoneCountryCode?: string | null;
+  phone_country_code?: string | null;
   address?: string;
   country?: string;
   state?: string;
   city?: string;
-  postalCode?: string;
+  postal_code?: string;
   // Geo FK ids (markets-api response shape) — mirror Hacienda location catalog.
-  stateId?: number | null;
-  countyId?: number | null;
-  districtId?: number | null;
-  neighborhoodId?: number | null;
-  facebookUrl?: string;
-  instagramUrl?: string;
-  twitterUrl?: string;
-  whatsappNumber?: string;
-  businessHours?: string;
+  state_id?: number | null;
+  county_id?: number | null;
+  district_id?: number | null;
+  neighborhood_id?: number | null;
+  facebook_url?: string;
+  instagram_url?: string;
+  twitter_url?: string;
+  whatsapp_number?: string;
+  business_hours?: string;
 }
 
 /**
@@ -55,11 +55,13 @@ export interface OrgContactSettings {
  * "Configurado" badge and initial display).
  */
 export interface OrgBrandingSettings {
-  primaryColor?: string;
-  secondaryColor?: string;
-  logoUrl?: string;
-  faviconUrl?: string;
-  fontFamily?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  logo_url?: string;
+  favicon_url?: string;
+  font_family?: string;
+  loading_icon?: string;
+  product_fallback_icon?: string;
 }
 
 /**
@@ -68,26 +70,24 @@ export interface OrgBrandingSettings {
  * stored alongside the storefront branding.
  */
 export interface OrgThemeBranding extends OrgBrandingSettings {
-  loadingIcon?: string;
-  productFallbackIcon?: string;
 }
 
 export interface OrgPaymentSettings {
   currency?: string;
-  stripeEnabled?: boolean;
-  stripePublishableKey?: string;
-  stripeSecretKey?: string;
-  cashOnDeliveryEnabled?: boolean;
-  bankTransferEnabled?: boolean;
-  bankAccountDetails?: string;
+  stripe_enabled?: boolean;
+  stripe_publishable_key?: string;
+  stripe_secret_key?: string;
+  cash_on_delivery_enabled?: boolean;
+  bank_transfer_enabled?: boolean;
+  bank_account_details?: string;
 }
 
 export interface OrgShippingSettings {
-  freeShippingThreshold?: number;
-  defaultShippingCost?: number;
-  enableLocalPickup?: boolean;
-  enableCorreosShipping?: boolean;
-  enableUberFlash?: boolean;
+  free_shipping_threshold?: number;
+  default_shipping_cost?: number;
+  enable_local_pickup?: boolean;
+  enable_correos_shipping?: boolean;
+  enable_uber_flash?: boolean;
 }
 
 /**
@@ -119,11 +119,11 @@ export interface OrgGeneralSettings {
   name: string;
   description?: string;
   /** One exclusive choice — see BUSINESS_TYPES. */
-  businessType?: BusinessType;
+  business_type?: BusinessType;
   /** "Proveedor de cadena" — a sales channel, not a type. Grants b2b-supply. */
-  isRetailSupplier?: boolean;
+  is_retail_supplier?: boolean;
   /** Descriptive label only: grants nothing, and is NOT a fiscal classification. */
-  isPyme?: boolean;
+  is_pyme?: boolean;
 }
 
 export interface Organization {
@@ -132,31 +132,25 @@ export interface Organization {
   name: string;
   slug: string;
   subdomain?: string;
-  /** Legacy snake_case alias kept for camelCase/snake_case interop. */
   owner_id?: string;
-  ownerId?: string;
   onboarding_step?: number;
-  onboardingStep?: number;
   description?: string;
   created_at?: string;
-  createdAt?: string;
   updated_at?: string;
-  updatedAt?: string;
-  template_name?: string;
-  templateId?: string;
-  customDomain?: string;
-  domainVerified?: boolean;
-  verificationToken?: string;
+  template_id?: string;
+  custom_domain?: string;
+  domain_verified?: boolean;
+  verification_token?: string;
   plan?: string;
   // ── Business identity (TSR-150) ───────────────────────────────────────────
   // One select + two independent switches. Never fold the flags into the type:
   // a minisuper can be a PYME *and* supply a chain.
-  businessType?: BusinessType;
-  isRetailSupplier?: boolean;
-  isPyme?: boolean;
-  billingEmail?: string;
-  stripeCustomerId?: string;
-  isActive?: boolean;
+  business_type?: BusinessType;
+  is_retail_supplier?: boolean;
+  is_pyme?: boolean;
+  billing_email?: string;
+  stripe_customer_id?: string;
+  is_active?: boolean;
 
   // ── Nested sections (each object, or null/absent when not configured) ─────
   contact?: OrgContactSettings | null;

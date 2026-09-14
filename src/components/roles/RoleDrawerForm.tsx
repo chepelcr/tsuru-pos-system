@@ -78,9 +78,9 @@ export function RoleDrawerForm({
   const updateRole = useUpdateRole();
   const setRolePermissions = useSetRolePermissions();
 
-  const [displayName, setDisplayName] = useState("");
+  const [display_name, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
+  const [is_active, setIsActive] = useState(true);
   const [grants, setGrants] = useState<Set<string>>(new Set());
   const [grantsInitialized, setGrantsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,15 +93,15 @@ export function RoleDrawerForm({
   useEffect(() => {
     if (!open) return;
     setDisplayName(
-      role?.displayName ??
+      role?.display_name ??
         (duplicateFrom
           ? t("roles.form.copyName", {
-              name: roleLabel(t, duplicateFrom.name, duplicateFrom.displayName),
+              name: roleLabel(t, duplicateFrom.name, duplicateFrom.display_name),
             })
           : "")
     );
     setDescription(role?.description ?? duplicateFrom?.description ?? "");
-    setIsActive(role?.isActive ?? true);
+    setIsActive(role?.is_active ?? true);
     setGrants(new Set());
     setGrantsInitialized(!sourceRole); // blank role starts empty, no perms to load
     setError(null);
@@ -123,7 +123,7 @@ export function RoleDrawerForm({
 
   const handleSave = async () => {
     if (readOnly || !userId || !orgId || saving) return;
-    const name = displayName.trim();
+    const name = display_name.trim();
     if (!name) {
       setError(t("roles.form.nameRequired"));
       return;
@@ -138,19 +138,19 @@ export function RoleDrawerForm({
           userId,
           orgId,
           name: slugifyRoleName(name),
-          displayName: name,
+          display_name: name,
           description: description.trim() || undefined,
         });
         setCreatedRole(target);
       } else {
-        // O7 — `name` stays stable; only display fields + isActive change.
+        // O7 — `name` stays stable; only display fields + is_active change.
         await updateRole.mutateAsync({
           userId,
           orgId,
           roleId: target.id,
-          displayName: name,
+          display_name: name,
           description: description.trim() || undefined,
-          isActive,
+          is_active,
         });
       }
       // O10 — bulk replace; backend subset-validates against the org matrix.
@@ -176,11 +176,11 @@ export function RoleDrawerForm({
 
   const subtitle = readOnly
     ? sourceRole
-      ? roleLabel(t, sourceRole.name, sourceRole.displayName)
+      ? roleLabel(t, sourceRole.name, sourceRole.display_name)
       : undefined
     : duplicateFrom
       ? t("roles.form.duplicateSubtitle", {
-          name: roleLabel(t, duplicateFrom.name, duplicateFrom.displayName),
+          name: roleLabel(t, duplicateFrom.name, duplicateFrom.display_name),
         })
       : undefined;
 
@@ -252,7 +252,7 @@ export function RoleDrawerForm({
           <>
             <FormField label={t("common.name")} required>
               <Input
-                value={displayName}
+                value={display_name}
                 placeholder={t("roles.form.namePlaceholder")}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
@@ -272,7 +272,7 @@ export function RoleDrawerForm({
                 <input
                   type="checkbox"
                   className="mt-0.5 accent-primary"
-                  checked={isActive}
+                  checked={is_active}
                   onChange={(e) => setIsActive(e.target.checked)}
                 />
                 <span>

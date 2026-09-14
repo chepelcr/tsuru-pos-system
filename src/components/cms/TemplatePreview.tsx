@@ -76,7 +76,7 @@ export function TemplatePreview({
             <Icon name={templateCategoryIcon(template.category)} size={20} />
           </span>
           <div className="flex-1 min-w-0">
-            <h3 id={titleId} className="t-h3 !mb-0.5 truncate">{template.displayName}</h3>
+            <h3 id={titleId} className="t-h3 !mb-0.5 truncate">{template.display_name}</h3>
             <p className="t-xs text-muted-foreground">{t("template.preview.title")}</p>
           </div>
           <button
@@ -93,10 +93,10 @@ export function TemplatePreview({
         <div className="p-5 flex flex-col gap-5">
           {/* Thumbnail */}
           <div className="aspect-[16/9] rounded-lg bg-muted/40 border border-border flex items-center justify-center overflow-hidden">
-            {template.thumbnailUrl ? (
+            {template.thumbnail_url ? (
               <img
-                src={template.thumbnailUrl}
-                alt={template.displayName}
+                src={template.thumbnail_url}
+                alt={template.display_name}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -122,7 +122,7 @@ export function TemplatePreview({
           <div>
             <h4 className="label-section mb-1.5">{t("template.preview.liveDemo")}</h4>
             <a
-              href={template.previewUrl ?? demoUrl(template.name)}
+              href={template.preview_url ?? demoUrl(template.name)}
               target="_blank"
               rel="noreferrer noopener"
               className="btn btn-outline btn-sm w-full"

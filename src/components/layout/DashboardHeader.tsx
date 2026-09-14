@@ -41,7 +41,7 @@ export function DashboardHeader({
 
   // Initials for the avatar trigger; the menu itself carries the labels.
   const accountName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || "";
+    [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.name || "";
   const accountInitials = accountName
     ? accountName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "U";

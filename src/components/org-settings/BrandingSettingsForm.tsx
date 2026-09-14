@@ -35,19 +35,19 @@ const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
 const buildSchema = (t: (k: string) => string) =>
   z.object({
-    primaryColor: z
+    primary_color: z
       .string()
       .min(4, t("orgSettings.branding.colorRequired"))
       .regex(HEX_RE, t("orgSettings.branding.colorInvalid")),
-    secondaryColor: z
+    secondary_color: z
       .string()
       .min(4, t("orgSettings.branding.colorRequired"))
       .regex(HEX_RE, t("orgSettings.branding.colorInvalid")),
-    fontFamily: z.string().optional(),
-    logoUrl: z.string().url(t("orgSettings.branding.urlInvalid")).optional().or(z.literal("")),
-    faviconUrl: z.string().url(t("orgSettings.branding.urlInvalid")).optional().or(z.literal("")),
-    loadingIcon: z.string().optional(),
-    productFallbackIcon: z.string().optional(),
+    font_family: z.string().optional(),
+    logo_url: z.string().url(t("orgSettings.branding.urlInvalid")).optional().or(z.literal("")),
+    favicon_url: z.string().url(t("orgSettings.branding.urlInvalid")).optional().or(z.literal("")),
+    loading_icon: z.string().optional(),
+    product_fallback_icon: z.string().optional(),
   });
 
 type BrandingValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -84,13 +84,13 @@ export function BrandingSettingsForm({
   } = useForm<BrandingValues>({
     resolver: zodResolver(buildSchema(t)),
     defaultValues: {
-      primaryColor: initialValues?.primaryColor || EDITOR_COLORS.brandPrimary,
-      secondaryColor: initialValues?.secondaryColor || EDITOR_COLORS.brandSecondary,
-      fontFamily: initialValues?.fontFamily || "Inter",
-      logoUrl: initialValues?.logoUrl ?? "",
-      faviconUrl: initialValues?.faviconUrl ?? "",
-      loadingIcon: initialValues?.loadingIcon || "Sparkles",
-      productFallbackIcon: initialValues?.productFallbackIcon || "Sparkles",
+      primary_color: initialValues?.primary_color || EDITOR_COLORS.brandPrimary,
+      secondary_color: initialValues?.secondary_color || EDITOR_COLORS.brandSecondary,
+      font_family: initialValues?.font_family || "Inter",
+      logo_url: initialValues?.logo_url ?? "",
+      favicon_url: initialValues?.favicon_url ?? "",
+      loading_icon: initialValues?.loading_icon || "Sparkles",
+      product_fallback_icon: initialValues?.product_fallback_icon || "Sparkles",
     },
   });
 
@@ -107,7 +107,7 @@ export function BrandingSettingsForm({
     placeholder,
     error,
   }: {
-    name: "primaryColor" | "secondaryColor";
+    name: "primary_color" | "secondary_color";
     label: string;
     desc: string;
     placeholder: string;
@@ -145,23 +145,23 @@ export function BrandingSettingsForm({
     <form onSubmit={handleSubmit(submit)} className="card p-5 space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <ColorRow
-          name="primaryColor"
+          name="primary_color"
           label={t("orgSettings.branding.primaryColor")}
           desc={t("orgSettings.branding.primaryColorDesc")}
           placeholder={EDITOR_COLORS.brandPrimary}
-          error={errors.primaryColor?.message}
+          error={errors.primary_color?.message}
         />
         <ColorRow
-          name="secondaryColor"
+          name="secondary_color"
           label={t("orgSettings.branding.secondaryColor")}
           desc={t("orgSettings.branding.secondaryColorDesc")}
           placeholder={EDITOR_COLORS.brandSecondary}
-          error={errors.secondaryColor?.message}
+          error={errors.secondary_color?.message}
         />
       </div>
 
-      <FormField label={t("orgSettings.branding.fontFamily")} error={errors.fontFamily?.message}>
-        <Select className="pp-input w-full" {...register("fontFamily")}>
+      <FormField label={t("orgSettings.branding.fontFamily")} error={errors.font_family?.message}>
+        <Select className="pp-input w-full" {...register("font_family")}>
           {FONT_FAMILIES.map((f) => (
             <option key={f} value={f}>
               {f}
@@ -174,10 +174,10 @@ export function BrandingSettingsForm({
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label={t("orgSettings.branding.logoUrl")} error={errors.logoUrl?.message}>
+        <FormField label={t("orgSettings.branding.logoUrl")} error={errors.logo_url?.message}>
           <Controller
             control={control}
-            name="logoUrl"
+            name="logo_url"
             render={({ field }) => (
               <MediaPicker value={field.value ?? ""} onChange={field.onChange} />
             )}
@@ -187,10 +187,10 @@ export function BrandingSettingsForm({
           </span>
         </FormField>
 
-        <FormField label={t("orgSettings.branding.faviconUrl")} error={errors.faviconUrl?.message}>
+        <FormField label={t("orgSettings.branding.faviconUrl")} error={errors.favicon_url?.message}>
           <Controller
             control={control}
-            name="faviconUrl"
+            name="favicon_url"
             render={({ field }) => (
               <MediaPicker value={field.value ?? ""} onChange={field.onChange} />
             )}
@@ -202,8 +202,8 @@ export function BrandingSettingsForm({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label={t("orgSettings.branding.loadingIcon")} error={errors.loadingIcon?.message}>
-          <Select className="pp-input w-full" {...register("loadingIcon")}>
+        <FormField label={t("orgSettings.branding.loadingIcon")} error={errors.loading_icon?.message}>
+          <Select className="pp-input w-full" {...register("loading_icon")}>
             {ICON_OPTIONS.map((i) => (
               <option key={i} value={i}>
                 {i}
@@ -217,9 +217,9 @@ export function BrandingSettingsForm({
 
         <FormField
           label={t("orgSettings.branding.productFallbackIcon")}
-          error={errors.productFallbackIcon?.message}
+          error={errors.product_fallback_icon?.message}
         >
-          <Select className="pp-input w-full" {...register("productFallbackIcon")}>
+          <Select className="pp-input w-full" {...register("product_fallback_icon")}>
             {ICON_OPTIONS.map((i) => (
               <option key={i} value={i}>
                 {i}

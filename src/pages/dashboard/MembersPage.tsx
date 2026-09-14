@@ -24,9 +24,9 @@ import { roleLabel as rbacRoleLabel } from "@/lib/rbacI18n";
 const PAGE_SIZE = 12;
 
 function memberFullName(m: {
-  user?: { firstName?: string; lastName?: string; email?: string };
+  user?: { first_name?: string; last_name?: string; email?: string };
 }): string {
-  const name = [m.user?.firstName, m.user?.lastName].filter(Boolean).join(" ");
+  const name = [m.user?.first_name, m.user?.last_name].filter(Boolean).join(" ");
   return name || m.user?.email || "";
 }
 
@@ -75,7 +75,7 @@ export default function MembersPage() {
   // Same-org role rule (contract V3): only active, non-platform_admin roles
   // are assignable — filtered defensively here too.
   const roles = useMemo(
-    () => allRoles.filter((r) => r.isActive && r.name !== "platform_admin"),
+    () => allRoles.filter((r) => r.is_active && r.name !== "platform_admin"),
     [allRoles]
   );
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
@@ -154,7 +154,9 @@ export default function MembersPage() {
         // Member removal mirrors the dashboard TeamMembers page: DELETE the
         // member's membership on the markets-api. The member's own userId is
         // the path subject (route: /api/users/{userId}/memberships/organization/{orgId}).
-        await api.delete(orgPath(memberUserId, orgId, ""));
+        await api.delete(orgPath(memberUserId, orgId, ""), {
+          removed_by: userId,
+        });
       },
     });
   };
@@ -198,24 +200,24 @@ export default function MembersPage() {
   };
 
   const roleLabel = (member: {
-    role?: { displayName?: string; name?: string };
+    role?: { display_name?: string; name?: string };
   }) =>
     member.role?.name
-      ? rbacRoleLabel(t, member.role.name, member.role.displayName ?? member.role.name)
-      : member.role?.displayName || t("members.roleMember");
+      ? rbacRoleLabel(t, member.role.name, member.role.display_name ?? member.role.name)
+      : member.role?.display_name || t("members.roleMember");
 
   // O11 — assign a role to a member (server enforces same-org rule V3 +
   // last-owner protection). Controlled <Select> snaps back on cancel because
   // its value always derives from the members query.
   const handleChangeRole = (member: OrgMember, roleId: string) => {
-    if (!userId || !orgId || roleId === member.roleId) return;
+    if (!userId || !orgId || roleId === member.role_id) return;
     const role = roles.find((r) => r.id === roleId);
     if (!role) return;
     const name = memberFullName(member) || member.user?.email || "";
     confirm({
       title: t("roles.members.changeRoleTitle"),
       message: t("roles.members.changeRoleConfirm", {
-        role: rbacRoleLabel(t, role.name, role.displayName),
+        role: rbacRoleLabel(t, role.name, role.display_name),
         name,
       }),
       variant: "default",
@@ -317,7 +319,7 @@ export default function MembersPage() {
         <div className="flex flex-col gap-3">
           {pagedMembers.map((m) => {
             const name = memberFullName(m);
-            const isCurrentUser = m.userId === userId;
+            const isCurrentUser = m.user_id === userId;
             const isOwner = m.role?.name === "owner";
             return (
               <div
@@ -344,19 +346,19 @@ export default function MembersPage() {
                   <div className="w-44 flex-shrink-0">
                     <Select
                       inputSize="sm"
-                      value={m.roleId}
+                      value={m.role_id}
                       aria-label={t("roles.members.changeRoleTitle")}
                       onChange={(e) => handleChangeRole(m, e.target.value)}
                     >
                       {/* Keep the current role visible even when it's no longer assignable (inactive role) */}
-                      {!roles.some((r) => r.id === m.roleId) && (
-                        <option value={m.roleId} disabled>
+                      {!roles.some((r) => r.id === m.role_id) && (
+                        <option value={m.role_id} disabled>
                           {roleLabel(m)}
                         </option>
                       )}
                       {roles.map((role) => (
                         <option key={role.id} value={role.id}>
-                          {rbacRoleLabel(t, role.name, role.displayName)}
+                          {rbacRoleLabel(t, role.name, role.display_name)}
                         </option>
                       ))}
                     </Select>
@@ -372,7 +374,7 @@ export default function MembersPage() {
                     size="sm"
                     icon="trash"
                     aria-label={t("members.remove")}
-                    onClick={() => handleRemoveMember(name || m.user?.email || "", m.userId)}
+                    onClick={() => handleRemoveMember(name || m.user?.email || "", m.user_id)}
                   />
                 )}
               </div>
@@ -430,14 +432,14 @@ export default function MembersPage() {
                   </div>
                   <div className="t-sm text-muted-foreground">
                     {t("members.expiresOn", {
-                      date: new Date(inv.expiresAt).toLocaleDateString(),
+                      date: new Date(inv.expires_at).toLocaleDateString(),
                     })}
                   </div>
                 </div>
                 <Badge variant="secondary">
                   {inv.role?.name
-                    ? rbacRoleLabel(t, inv.role.name, inv.role.displayName ?? inv.role.name)
-                    : inv.role?.displayName ?? inv.roleId}
+                    ? rbacRoleLabel(t, inv.role.name, inv.role.display_name ?? inv.role.name)
+                    : inv.role?.display_name ?? inv.role_id}
                 </Badge>
                 <Badge variant="warning">{t("members.statusPending")}</Badge>
                 {canInviteMembers && (
@@ -523,7 +525,7 @@ export default function MembersPage() {
               </option>
               {roles.map((role) => (
                 <option key={role.id} value={role.id}>
-                  {rbacRoleLabel(t, role.name, role.displayName)}
+                  {rbacRoleLabel(t, role.name, role.display_name)}
                 </option>
               ))}
             </Select>

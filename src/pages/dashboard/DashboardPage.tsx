@@ -72,7 +72,7 @@ export default function DashboardPage() {
               if (hour < 18) return t("dash.afternoonGreeting");
               return t("dash.eveningGreeting");
             })()},{" "}
-            {user?.firstName ?? user?.name?.split(" ")[0] ?? ""}
+            {user?.first_name ?? user?.name?.split(" ")[0] ?? ""}
           </h1>
           <p className="t-body text-muted-foreground">
             {t("dash.activeStations", { n: String(stands.length) })}

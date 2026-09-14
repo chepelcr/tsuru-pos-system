@@ -50,20 +50,20 @@ export default function OrgGeneralPage() {
   // Business identity is three controlled widgets, not text inputs, so it sits
   // in plain state rather than react-hook-form.
   const [identity, setIdentity] = useState<BusinessIdentityValue>({
-    businessType: "general",
-    isRetailSupplier: false,
-    isPyme: false,
+    business_type: "general",
+    is_retail_supplier: false,
+    is_pyme: false,
   });
 
   // Hydrate once the org arrives (same pattern as the RHF `values` prop above).
   useEffect(() => {
     if (!org) return;
     setIdentity({
-      businessType: (org.businessType ?? "general") as BusinessType,
-      isRetailSupplier: org.isRetailSupplier ?? false,
-      isPyme: org.isPyme ?? false,
+      business_type: (org.business_type ?? "general") as BusinessType,
+      is_retail_supplier: org.is_retail_supplier ?? false,
+      is_pyme: org.is_pyme ?? false,
     });
-  }, [org?.businessType, org?.isRetailSupplier, org?.isPyme, org]);
+  }, [org?.business_type, org?.is_retail_supplier, org?.is_pyme, org]);
 
   // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
   const { can, isReady: permsReady } = usePermissions();

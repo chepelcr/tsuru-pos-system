@@ -9,8 +9,8 @@ export interface AuthUser {
   email: string;
   name: string;
   /** Split name fields — used by the Profile / Account page (plan 06). */
-  firstName?: string;
-  lastName?: string;
+  first_name?: string;
+  last_name?: string;
   /** Cognito username — editable in the Profile page. */
   username?: string;
   role?: UserRole;
@@ -29,11 +29,11 @@ export interface AuthContextValue {
  * markets-api `PUT /users/{userId}/profile` swagger accepts only these fields.
  *
  * TODO(verify-endpoint): confirmed route is `PUT /api/users/{userId}/profile`
- * (not PATCH) accepting `{ firstName, lastName, username }`. If a PATCH alias is
+ * (not PATCH) accepting `{ first_name, last_name, username }`. If a PATCH alias is
  * later added, switch the hook.
  */
 export interface UpdateProfileData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   username: string;
 }

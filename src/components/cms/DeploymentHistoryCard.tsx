@@ -19,10 +19,10 @@ function formatDateTime(iso: string): string {
 
 /** Build duration in seconds (one decimal), or null when still running. */
 function durationSeconds(deployment: DeploymentHistory): string | null {
-  if (!deployment.completedAt) return null;
+  if (!deployment.completed_at) return null;
   const ms =
-    new Date(deployment.completedAt).getTime() -
-    new Date(deployment.startedAt).getTime();
+    new Date(deployment.completed_at).getTime() -
+    new Date(deployment.started_at).getTime();
   if (Number.isNaN(ms)) return null;
   return (ms / 1000).toFixed(1);
 }
@@ -71,7 +71,7 @@ export function DeploymentHistoryCard({ deployment }: DeploymentHistoryCardProps
           </span>
           <span className="t-h4 !mb-0 truncate">
             {t("deployments.history.build", {
-              id: deployment.buildId.slice(-6),
+              id: deployment.build_id.slice(-6),
             })}
           </span>
         </div>
@@ -86,12 +86,12 @@ export function DeploymentHistoryCard({ deployment }: DeploymentHistoryCardProps
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetaField
           label={t("deployments.fields.started")}
-          value={formatDateTime(deployment.startedAt)}
+          value={formatDateTime(deployment.started_at)}
         />
-        {deployment.completedAt && (
+        {deployment.completed_at && (
           <MetaField
             label={t("deployments.fields.completed")}
-            value={formatDateTime(deployment.completedAt)}
+            value={formatDateTime(deployment.completed_at)}
             hint={
               duration
                 ? t("deployments.fields.durationValue", { seconds: duration })
@@ -99,36 +99,36 @@ export function DeploymentHistoryCard({ deployment }: DeploymentHistoryCardProps
             }
           />
         )}
-        {deployment.filesUploaded != null && (
+        {deployment.files_uploaded != null && (
           <MetaField
             label={t("deployments.fields.files")}
-            value={String(deployment.filesUploaded)}
+            value={String(deployment.files_uploaded)}
           />
         )}
-        {deployment.buildSizeKb != null && (
+        {deployment.build_size_kb != null && (
           <MetaField
             label={t("deployments.fields.size")}
             value={t("deployments.fields.sizeValue", {
-              mb: (deployment.buildSizeKb / 1024).toFixed(1),
+              mb: (deployment.build_size_kb / 1024).toFixed(1),
             })}
           />
         )}
       </div>
 
       {/* Error panel */}
-      {deployment.status === "error" && deployment.errorDetails && (
+      {deployment.status === "error" && deployment.error_details && (
         <div className="rounded-md bg-destructive/[0.08] border border-destructive/30 p-3">
           <div className="t-sm font-medium text-destructive mb-1">
             {t("deployments.errorDetails")}
           </div>
           <div className="t-xs font-mono text-destructive break-words">
-            {deployment.errorDetails}
+            {deployment.error_details}
           </div>
         </div>
       )}
 
       {/* Success panel */}
-      {deployment.status === "success" && deployment.deployUrl && (
+      {deployment.status === "success" && deployment.deploy_url && (
         <div className="flex items-center justify-between gap-3 rounded-md bg-success/[0.08] border border-success/30 p-3 flex-wrap">
           <div className="t-sm text-success flex items-center gap-1.5">
             <Icon name="checkCircle" size={15} />
@@ -138,7 +138,7 @@ export function DeploymentHistoryCard({ deployment }: DeploymentHistoryCardProps
             variant="outline"
             size="sm"
             iconRight="arrowRight"
-            onClick={() => window.open(deployment.deployUrl, "_blank", "noopener")}
+            onClick={() => window.open(deployment.deploy_url, "_blank", "noopener")}
           >
             {t("deployments.viewSite")}
           </Button>

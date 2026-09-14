@@ -10,7 +10,7 @@ import { useCmsContent } from "@/hooks/useCmsContent";
  * dashboard section ONLY when the org's selected template includes a programs
  * section. We detect that from the org's cloned CMS content
  * (`template_page_sections` → POS `Page.sections`): an active section whose
- * `sectionType === 'programs'` means the template shipped a programs surface to
+ * `section_type === 'programs'` means the template shipped a programs surface to
  * this org (set by TemplateCloneService at onboarding step 3).
  *
  * Mirrors the storefront/templates conditional pattern: the sidebar item / page
@@ -34,8 +34,8 @@ export function useProgramsEnabled(): { enabled: boolean; isReady: boolean } {
     return pages.some((page) =>
       (page.sections ?? []).some(
         (section) =>
-          section.sectionType?.toLowerCase() === "programs" &&
-          section.isActive !== false
+          section.section_type?.toLowerCase() === "programs" &&
+          section.is_active !== false
       )
     );
   }, [pagesQuery.data]);

@@ -75,9 +75,9 @@ export default function CreateOrganization() {
   // Business identity (TSR-150). Defaults keep step 1 valid for anyone who
   // ignores it — `general` grants no vertical module, so nothing changes.
   const [identity, setIdentity] = useState<BusinessIdentityValue>({
-    businessType: "general",
-    isRetailSupplier: false,
-    isPyme: false,
+    business_type: "general",
+    is_retail_supplier: false,
+    is_pyme: false,
   });
   // Step 1 unfolds in beats instead of showing every field at once: the type
   // question appears once the business has a name. Derived from state, never
@@ -89,10 +89,10 @@ export default function CreateOrganization() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [stateId, setStateId] = useState<number | null>(null);
-  const [countyId, setCountyId] = useState<number | null>(null);
-  const [districtId, setDistrictId] = useState<number | null>(null);
-  const [neighborhoodId, setNeighborhoodId] = useState<number | null>(null);
+  const [state_id, setStateId] = useState<number | null>(null);
+  const [county_id, setCountyId] = useState<number | null>(null);
+  const [district_id, setDistrictId] = useState<number | null>(null);
+  const [neighborhood_id, setNeighborhoodId] = useState<number | null>(null);
 
   // Step 3
   const [selectedThemeId, setSelectedThemeId] = useState<string>(DEFAULT_THEME_ID);
@@ -123,11 +123,11 @@ export default function CreateOrganization() {
     setEmail(org.contact?.email ?? "");
     setPhone(org.contact?.phone ?? "");
     setAddress(org.contact?.address ?? "");
-    setStateId(org.contact?.stateId ?? null);
-    setCountyId(org.contact?.countyId ?? null);
-    setDistrictId(org.contact?.districtId ?? null);
-    setNeighborhoodId(org.contact?.neighborhoodId ?? null);
-    setSelectedThemeId(org.template_name ?? DEFAULT_THEME_ID);
+    setStateId(org.contact?.state_id ?? null);
+    setCountyId(org.contact?.county_id ?? null);
+    setDistrictId(org.contact?.district_id ?? null);
+    setNeighborhoodId(org.contact?.neighborhood_id ?? null);
+    setSelectedThemeId(org.template_id ?? DEFAULT_THEME_ID);
 
     const step = org.onboarding_step ?? 1;
     if (step >= 2) setStepIndex(2);
@@ -217,10 +217,10 @@ export default function CreateOrganization() {
           email: email || undefined,
           phone: phone || undefined,
           address: address || undefined,
-          stateId: stateId || undefined,
-          countyId: countyId || undefined,
-          districtId: districtId || undefined,
-          neighborhoodId: neighborhoodId || undefined,
+          state_id: state_id || undefined,
+          county_id: county_id || undefined,
+          district_id: district_id || undefined,
+          neighborhood_id: neighborhood_id || undefined,
         });
         setStepIndex(2);
       } catch {
@@ -421,10 +421,10 @@ export default function CreateOrganization() {
                         org-settings contact form). */}
                     <LocationSelect
                       value={{
-                        state_id: stateId,
-                        county_id: countyId,
-                        district_id: districtId,
-                        neighborhood_id: neighborhoodId,
+                        state_id: state_id,
+                        county_id: county_id,
+                        district_id: district_id,
+                        neighborhood_id: neighborhood_id,
                         address,
                       }}
                       onChange={(loc) => {
