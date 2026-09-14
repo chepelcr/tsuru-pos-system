@@ -29,7 +29,7 @@ export function useMediaLibrary(orgId: string | undefined) {
       const contentType = file.type || "application/octet-stream";
       const presigned = await salesApi.post<PresignedUpload>(
         authOrgPath(orgId!, "/media/presigned"),
-        { fileName: file.name, fileType: contentType },
+        { file_name: file.name, file_type: contentType },
       );
       const put = await fetch(presigned.upload_url, {
         method: "PUT",

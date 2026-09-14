@@ -54,8 +54,19 @@ export function useSaveOrgConfigurations(orgId: string) {
 export function useSaveNotifications(orgId: string) {
   const qc = useQueryClient();
   return useMutation({
+    // The hook is the seam between UI state and the wire. `NotificationsFormState`
+    // is camelCase because it is form state; `NotificationSettingsRequest` is
+    // snake_case because that is what the API speaks. Passing the form straight
+    // through used to work only because the DTO declared camelCase aliases —
+    // with those gone the fields would be dropped silently and the save would
+    // write defaults over the user's settings.
     mutationFn: (data: NotificationsFormState) =>
-      salesApi.patch<OrgConfiguration>(authOrgPath(orgId, "/configurations/notifications"), data),
+      salesApi.patch<OrgConfiguration>(authOrgPath(orgId, "/configurations/notifications"), {
+        callback_url: data.callbackUrl,
+        notify_sent_documents: data.notifySentDocuments,
+        notify_processing_documents: data.notifyProcessingDocuments,
+        notify_received_documents: data.notifyReceivedDocuments,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["org-configurations", orgId] });
     },
