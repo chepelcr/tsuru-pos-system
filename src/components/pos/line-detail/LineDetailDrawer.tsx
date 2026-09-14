@@ -34,9 +34,11 @@ import { DiscountsTab } from './DiscountsTab';
 import { ExemptionSection } from './ExemptionSection';
 import { FiscalInfoSection } from './FiscalInfoSection';
 import { CommercialValueSection } from './CommercialValueSection';
-import type { LineDetail, LineTax, LineDiscount } from '@/types/lineDetail';
-import type { Product, ProductTax, ProductDiscount } from '@/types';
+import type { LineDetail } from '@/types/lineDetail';
+import type { Product } from '@/types';
 import { formatMoney as fmt } from "@/lib/money";
+import { lineTaxesFromStored } from '@/services/storedTaxToLineTax';
+import { lineDiscountsFromStored } from '@/services/storedDiscountToLineDiscount';
 
 const IVA_CODES: readonly string[] = [
   TaxTypeCode.IVA,
@@ -73,27 +75,23 @@ interface LineDetailDrawerProps {
 }
 
 /**
- * Product-shape taxes/discounts use the data-api numeric ids plus a flat
- * `rate` field; project them into the canonical Hacienda code-string shape
- * (`LineTax` / `LineDiscount`) the rest of the line detail expects.
+ * Project a product's stored taxes/discounts into the canonical `LineTax` /
+ * `LineDiscount` shapes the rest of the line detail expects.
+ *
+ * These were a fourth and fifth hand-written copy of mappings that already had
+ * single owners, and both had drifted in the way the others had:
+ *
+ *   * the tax copy never read `tax_rate.code`, so opening any product in this
+ *     drawer showed its IVA rate selector EMPTY — and for the IVA family the
+ *     rate comes from the code alone, so what looked cosmetic was the line
+ *     losing the only field that prices it. It also dropped the code-08
+ *     factor, the exoneration, and the nested→flat `special_fields` rename.
+ *   * the discount copy read `d.rate`, but the product endpoint returns
+ *     `percentage`, so a product configured at 3.17% opened as **0%**.
+ *
+ * Both now go through the owners listed in CLAUDE.md §8. Keep it that way: a
+ * sixth copy will drift too.
  */
-function productTaxesToLineTaxes(productTaxes: ProductTax[] | undefined): LineTax[] {
-  return (productTaxes ?? []).map((t) => ({
-    code: t.tax_code ?? String(t.tax_type_id),
-    rate: t.rate ?? 0,
-    special_fields: t.special_fields,
-  }));
-}
-
-function productDiscountsToLineDiscounts(
-  productDiscounts: ProductDiscount[] | undefined,
-): LineDiscount[] {
-  return (productDiscounts ?? []).map((d) => ({
-    discount_type: String(d.discount_type_id),
-    percentage: d.rate ?? 0,
-    amount: d.amount,
-  }));
-}
 
 export function LineDetailDrawer({
   open,
@@ -176,10 +174,10 @@ export function LineDetailDrawer({
       commercial_unit_measure: undefined,
       customs_part: undefined,
       cabys: product.cabys?.code ?? undefined,
-      taxes: productTaxesToLineTaxes(product.taxes),
+      taxes: lineTaxesFromStored(product.taxes),
       discounts: lineDiscount
         ? [{ discount_type: TaxTypeCode.IVA, percentage: lineDiscount }]
-        : productDiscountsToLineDiscounts(product.discounts),
+        : lineDiscountsFromStored(product.discounts),
     };
   });
 
@@ -216,10 +214,10 @@ export function LineDetailDrawer({
       commercial_unit_measure: undefined,
       customs_part: undefined,
       cabys: product.cabys?.code ?? undefined,
-      taxes: productTaxesToLineTaxes(product.taxes),
+      taxes: lineTaxesFromStored(product.taxes),
       discounts: lineDiscount
         ? [{ discount_type: TaxTypeCode.IVA, percentage: lineDiscount }]
-        : productDiscountsToLineDiscounts(product.discounts),
+        : lineDiscountsFromStored(product.discounts),
     });
   }, [product?.product_id, qty, lineDiscount, lineNote, existingLineDetail]);
 
@@ -520,6 +518,7 @@ export function LineDetailDrawer({
               onToggle={() => toggle('ivaTax')}
               detail={detail}
               onDetailChange={patch}
+              documentType={typeof documentType === 'string' ? documentType : undefined}
               onValidationChange={setRateCodeErrors}
             />
 

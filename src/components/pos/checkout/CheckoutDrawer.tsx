@@ -33,8 +33,7 @@ import { PaymentSection } from './sections/PaymentSection';
 import { ReceiverSection } from './sections/ReceiverSection';
 import { DocumentSection } from './sections/DocumentSection';
 import { ReferencesSection } from './sections/ReferencesSection';
-import { ManualOrderSection } from './sections/ManualOrderSection';
-import { ChainClientSection } from './sections/ChainClientSection';
+import { OrderInfoSection } from './sections/OrderInfoSection';
 import { BranchTerminalSection } from './sections/BranchTerminalSection';
 import { useChainClient } from '@/hooks/useChainClient';
 import type { ChainClientInfo } from '@/types/order';
@@ -49,7 +48,6 @@ type SectionId =
   | 'document'
   | 'references'
   | 'copies'
-  | 'manualOrder'
   | 'chainClient'
   | 'branchTerminal';
 
@@ -261,15 +259,16 @@ export function CheckoutDrawer({
 
   // ─── Section expansion (drawer is orchestrator only) ───────────────────
   const { expanded, toggle } = useAccordionSections<SectionId>({
-    // A manual order opens on its delivery data, not on payment: capturing
-    // when it ships is the point, and payment may not exist yet.
-    // A PM renders neither Pago nor Documento at all — see below.
+    // A manual order has no payment to take — it is settled later — so that
+    // card is not rendered for it at all.
     payment: !isManualOrder,
     receiver: needsReceiver && !hasReceiver,
-    document: false,
+    // Opens for a pedido: Documento now carries the delivery point and the
+    // delivery date, which are the whole point of capturing one, and the
+    // drawer refuses to save without a delivery location.
+    document: isManualOrder,
     references: referencesRequired && references.length === 0,
     copies: false,
-    manualOrder: isManualOrder,
     // Opens by default: if a chain needs these, they are not optional.
     chainClient: chainState.show,
     // Collapsed: it is auto-answered for almost every organization, so it is
@@ -426,33 +425,29 @@ export function CheckoutDrawer({
             needsReceiver={needsReceiver}
           />
 
-          {/* For a PM the Documento fields live on the Pedido card and its
-              Notas duplicated that card's Comentario, so it is absent — not
-              collapsed, not empty. */}
-          {!isManualOrder && (
-            <DocumentSection
-              isExpanded={expanded.document}
-              onToggle={() => toggle('document')}
-              data={docData}
-              onChange={(p) => updateData(p)}
-            />
-          )}
-
-          {isManualOrder && (
-            <ManualOrderSection
-              isExpanded={expanded.manualOrder}
-              onToggle={() => toggle('manualOrder')}
-              data={manualOrder}
-              orgId={orgId}
-              clientId={selectedClient?.client_id}
-              isChainClient={chainState.show}
-              receiver={receiver}
-              selectedClient={selectedClient}
-              onChange={(patch) =>
-                updateData({ manual_order: { ...manualOrder, ...patch } })
-              }
-            />
-          )}
+          {/* One Documento card for both kinds. A PM used to hide this and
+              render a Pedido card that re-declared sale condition, activity
+              code and currency, with its Comentario standing in for Notas —
+              so which card you filled in depended on the document type for no
+              reason a cashier could see. The pedido-only fields now live
+              inside this one. */}
+          <DocumentSection
+            isExpanded={expanded.document}
+            onToggle={() => toggle('document')}
+            data={docData}
+            onChange={(p) => updateData(p)}
+            manualOrder={isManualOrder ? manualOrder : undefined}
+            onManualOrderChange={
+              isManualOrder
+                ? (patch) => updateData({ manual_order: { ...manualOrder, ...patch } })
+                : undefined
+            }
+            orgId={orgId}
+            clientId={selectedClient?.client_id}
+            showRegisteredPoints={chainState.show}
+            receiver={receiver}
+            selectedClient={selectedClient}
+          />
 
           {/* A pedido is not issued against a Hacienda consecutive, so it has
               no sucursal/terminal segment to pick. */}
@@ -464,10 +459,12 @@ export function CheckoutDrawer({
             />
           )}
 
-          {chainState.show && (
-            <ChainClientSection
+          {(chainState.show || !!billedOrderNumber) && (
+            <OrderInfoSection
               isExpanded={expanded.chainClient}
               onToggle={() => toggle('chainClient')}
+              orderNumber={billedOrderNumber}
+              isChainClient={chainState.show}
               chain={chain}
               data={chainInfo}
               orgId={orgId}

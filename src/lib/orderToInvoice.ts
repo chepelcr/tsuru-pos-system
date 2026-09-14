@@ -5,8 +5,7 @@ import type { Product } from "@/types";
 import type { LineDetail } from "@/types/lineDetail";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import { lineTaxesFromStored } from "@/services/storedTaxToLineTax";
-import type { LineDiscount } from "@/types/lineDetail";
-import type { OrderLineDiscount } from "@/types/order";
+import { lineDiscountsFromStored } from "@/services/storedDiscountToLineDiscount";
 
 /**
  * Turn a delivered order into the inputs the checkout drawer needs.
@@ -33,40 +32,6 @@ import type { OrderLineDiscount } from "@/types/order";
  * So the order is authoritative and the catalog is not consulted at all.
  */
 
-/**
- * Stored order-line discounts in the document's spelling.
- *
- * A row with no `discount_type_id` is DROPPED rather than defaulted to `"07"`.
- * The nature is not bookkeeping: 01 (Regalía) and 03 (Bonificación) leave the
- * VAT base un-eroded and move the line's whole IVA into
- * `ImpuestoAsumidoEmisorFabrica`, so defaulting an unknown nature to a
- * commercial discount declares that the customer paid tax the issuer in fact
- * absorbed — or the reverse. Dropping the row surfaces as a totals mismatch,
- * which is the safe way to fail. The cart path already drops unresolvable
- * discounts for this exact reason.
- */
-function lineDiscountsFromStored(
-  stored: OrderLineDiscount[] | null | undefined
-): LineDiscount[] {
-  return (stored ?? [])
-    .filter(Boolean)
-    .map((discount) => {
-      const raw = discount.discount_type_id;
-      if (raw === undefined || raw === null || String(raw).trim() === "") return null;
-      const out: LineDiscount = {
-        discount_type: String(raw).padStart(2, "0"),
-      };
-      if (discount.percentage !== undefined && discount.percentage !== null) {
-        out.percentage = Number(discount.percentage);
-      }
-      if (discount.amount !== undefined && discount.amount !== null) {
-        out.amount = Number(discount.amount);
-      }
-      if (discount.reason) out.reason = discount.reason;
-      return out;
-    })
-    .filter((d): d is LineDiscount => d !== null);
-}
 
 /** Quantity on an order line, however the BE spelled it. */
 function lineQuantity(line: OrderLine): number {

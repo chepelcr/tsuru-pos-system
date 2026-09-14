@@ -76,6 +76,43 @@ export const TaxRateCode = {
 } as const;
 export type TaxRateCodeValue = (typeof TaxRateCode)[keyof typeof TaxRateCode];
 
+/**
+ * The transitional rates (Nota 8.1) are legal ONLY on a credit or debit note.
+ *
+ * They exist to correct documents issued under the previous rate schedule, so
+ * they can never be the rate of a new sale — and 07 is disabled outright. The
+ * pickers used to list all eleven codes everywhere, which offered the cashier
+ * three rates that guarantee a rejection on a Factura, and offered them on the
+ * PRODUCT form too, where there is no document at all: a default tax rate that
+ * is only valid on a corrective note is never a correct default.
+ *
+ * sales-be enforces this (TSR-219); this list is what keeps the UI from
+ * proposing what the backend will refuse.
+ */
+export const NC_ND_ONLY_RATE_CODES: readonly string[] = [
+  TaxRateCode.TRANSITIONAL_0,
+  TaxRateCode.TRANSITIONAL_4,
+  TaxRateCode.TRANSITIONAL_8,
+];
+
+/** Document types that may carry a transitional rate: credit and debit notes. */
+export const NC_ND_DOC_TYPES: readonly string[] = ["02", "03"];
+
+/**
+ * Is `rateCode` selectable on `docType`?
+ *
+ * `docType` is `undefined` on the product form — a stored default, not a
+ * document — and there the transitional codes are excluded, because a product
+ * cannot default to a rate that only a corrective note may use.
+ */
+export function isRateCodeAllowedFor(
+  rateCode: string,
+  docType: string | undefined,
+): boolean {
+  if (!NC_ND_ONLY_RATE_CODES.includes(rateCode)) return true;
+  return docType !== undefined && NC_ND_DOC_TYPES.includes(docType);
+}
+
 // ─── Discount nature codes (Nota 20) ──────────────────────────────────────
 
 export const DiscountTypeCode = {

@@ -4,7 +4,7 @@ import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useAllTaxes, useAllTaxRates, useAllTaxFactors, useAllFactoryTaxCharges } from "@/hooks/useDataApi";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { GetAllFactoryTaxChargesParams } from "@/services/data-api/dtos";
-import { CountryISO, IvaCollectedFactory, TaxTypeCode } from "@/lib/enums";
+import { CountryISO, IvaCollectedFactory, TaxTypeCode, isRateCodeAllowedFor } from "@/lib/enums";
 import { labelByCode } from "@/lib/catalogLabels";
 import type { TaxFormEntry } from "@/types/productForm";
 import { formatMoney as fmt } from "@/lib/money";
@@ -52,7 +52,13 @@ export function IvaTaxSection({
   );
 
   const allTaxTypes = taxesData ?? [];
-  const rateList = taxRatesData ?? [];
+  // A PRODUCT's default rate is not a document, so the transitional codes
+  // (05/06/07 — legal only on a credit or debit note) are excluded outright:
+  // offering them here proposes a default that guarantees a rejection on the
+  // first invoice the product appears on.
+  const rateList = (taxRatesData ?? []).filter(
+    (r: { code?: string }) => isRateCodeAllowedFor(r.code ?? "", undefined),
+  );
   const factorList = taxFactorsData ?? [];
   const factoryCharges = factoryChargesData ?? [];
 

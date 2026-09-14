@@ -13,6 +13,7 @@ import {
   IvaCollectedFactory,
   TaxRateCode,
   TaxTypeCode,
+  isRateCodeAllowedFor,
 } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { LineTax } from '@/types/lineDetail';
@@ -48,6 +49,11 @@ interface IvaTaxSectionProps {
   onToggle: () => void;
   detail: { base_amount?: number };
   onDetailChange: (patch: { base_amount?: number }) => void;
+  /**
+   * Hacienda document type. Gates the transitional rate codes, which are legal
+   * only on a credit or debit note.
+   */
+  documentType?: string;
   /** Bubbles FE-side rate-code validation up so the drawer can block save. */
   onValidationChange?: (errors: string[]) => void;
 }
@@ -55,6 +61,7 @@ interface IvaTaxSectionProps {
 export function IvaTaxSection({
   taxes,
   onChange,
+  documentType,
   factoryTaxChargeCode,
   onFactoryTaxChargeChange,
   baseAmount,
@@ -75,7 +82,13 @@ export function IvaTaxSection({
   );
 
   const allTaxTypes: TaxResponse[] = taxesData ?? [];
-  const rateList: TaxRateResponse[] = taxRatesData ?? [];
+  // The transitional rates (05/06/07) correct documents issued under the
+  // previous schedule, so they are legal only on a credit or debit note. They
+  // were offered on every document type, which is three guaranteed rejections
+  // sitting in the picker on an ordinary Factura.
+  const rateList: TaxRateResponse[] = (taxRatesData ?? []).filter((r) =>
+    isRateCodeAllowedFor(r.code ?? "", documentType),
+  );
   const factorList: TaxFactorResponse[] = taxFactorsData ?? [];
   const factoryCharges: FactoryTaxChargeResponse[] = factoryChargesData ?? [];
 

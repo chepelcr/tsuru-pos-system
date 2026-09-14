@@ -8,9 +8,18 @@ import { useStores } from '@/hooks/useStores';
 import type { ChainClient } from '@/lib/chainClients';
 import type { ChainClientInfo } from '@/types/order';
 
-interface ChainClientSectionProps {
+interface OrderInfoSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
+  /**
+   * The pedido this document is being billed from, when there is one. Shown
+   * read-only: the order exists already and its number is not ours to change
+   * here — renumbering it in the checkout would detach the invoice from the
+   * delivery it is settling.
+   */
+  orderNumber?: string;
+  /** The client is a retail chain, so the chain-specific fields apply. */
+  isChainClient?: boolean;
   /**
    * The registered chain, when the client matched one — it names the card and
    * the purchase-order field. Null when the card is showing because the client
@@ -38,15 +47,17 @@ interface ChainClientSectionProps {
  * the fields stay editable because the order and the invoice can legitimately
  * differ (a partial delivery goes to one store, not all of them).
  */
-export function ChainClientSection({
+export function OrderInfoSection({
   isExpanded,
   onToggle,
+  orderNumber,
+  isChainClient = false,
   chain,
   data,
   onChange,
   orgId,
   clientId,
-}: ChainClientSectionProps) {
+}: OrderInfoSectionProps) {
   const { t } = useLanguage();
   // Falls back to the customer's own name where a chain was not identified, so
   // the card never reads "Datos de " with a blank after it.
@@ -120,12 +131,39 @@ export function ChainClientSection({
 
   return (
     <SectionWrapper
-      title={t('chainClient.title', { chain: chainName })}
+      title={t('orderInfo.title')}
       icon={Building2}
       isExpanded={isExpanded}
       onToggle={onToggle}
     >
       <div className="space-y-3">
+        {/* The order number, for EVERY customer — not only a chain. This card
+            used to be "Datos <cadena>" and appeared only for retail chains, so
+            billing an ordinary customer's pedido showed the order number
+            nowhere in the checkout: the cashier had to trust that the drawer
+            they opened from the order was still about that order. Read-only
+            because the pedido already exists. */}
+        {orderNumber && (
+          <div>
+            <FormLabel htmlFor="order-info-number">
+              {t('orderInfo.orderNumber')}
+            </FormLabel>
+            <input
+              id="order-info-number"
+              type="text"
+              className="input input-sm w-full"
+              value={orderNumber}
+              readOnly
+              aria-readonly="true"
+            />
+            <p className="t-xs text-muted-foreground mt-1">
+              {t('orderInfo.orderNumber.hint')}
+            </p>
+          </div>
+        )}
+
+        {isChainClient && (
+        <>
         <div>
           <FormLabel htmlFor="chain-department">
             {t('manualOrder.department')}
@@ -204,6 +242,8 @@ export function ChainClientSection({
             {t('chainClient.purchaseOrder.hint', { chain: chainName })}
           </div>
         </div>
+        </>
+        )}
       </div>
     </SectionWrapper>
   );

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Tag } from "lucide-react";
 import { FormLabel, Icon, Select } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
@@ -7,6 +8,9 @@ import { CountryISO, DiscountTypeCode } from "@/lib/enums";
 import { labelByCode } from "@/lib/catalogLabels";
 import type { DiscountFormEntry } from "@/types/productForm";
 import { formatMoney as fmt } from "@/lib/money";
+import { formatPercent } from "@/lib/percent";
+import { DiscountCalculationService } from "@/services/discountCalculationService";
+import type { LineDiscount } from "@/types/lineDetail";
 
 const ISO = CountryISO.COSTA_RICA;
 
@@ -35,9 +39,32 @@ export function DiscountsSection({
   const { data: discountTypesData } = useAllDiscountTypes({ iso_code: ISO });
   const discountTypeList = discountTypesData ?? [];
 
-  const totalPct = discounts.reduce((sum, d) => sum + (d.rate ?? 0), 0);
+  // Discounts CASCADE — 10% then 5% on 1000 is 855, not 850 — so the total is
+  // what the engine actually applies, not the sum of the percentages. Summing
+  // them overstated both the rate and the money on any product with more than
+  // one discount, right beside the preview that computed it correctly.
+  const discountResult = useMemo(() => {
+    const rows: LineDiscount[] = discounts.map((d) => ({
+      discount_type: d.discountCode,
+      percentage: d.rate ?? 0,
+      reason: d.reason,
+    }));
+    try {
+      return DiscountCalculationService.calculate(basePrice || 0, rows);
+    } catch {
+      // A missing Nota-20 reason throws here; the form surfaces that error on
+      // its own, and the total should not blank the card out while it is typed.
+      return null;
+    }
+  }, [discounts, basePrice]);
+
+  const totalAmount = discountResult?.totalDiscountAmount ?? 0;
+  // The EFFECTIVE rate off the base, which is what the cascade produced.
+  const totalPct =
+    basePrice > 0
+      ? (totalAmount / basePrice) * 100
+      : discounts.reduce((sum, d) => sum + (d.rate ?? 0), 0);
   const totalExceeds = totalPct > 100;
-  const totalAmount = basePrice * totalPct / 100;
 
   const grouped = discounts.reduce<Record<string, DiscountFormEntry[]>>((acc, d) => {
     if (!acc[d.discountCode]) acc[d.discountCode] = [];
@@ -147,7 +174,7 @@ export function DiscountsSection({
           <div className="flex justify-end items-center gap-2">
             <span className="t-xs text-muted-foreground">{t("products.discountTotal")}</span>
             <span className={`text-[13px] font-bold ${totalExceeds ? "text-destructive" : "text-foreground"}`}>
-              {totalPct.toFixed(1)}%
+              {formatPercent(totalPct)}
             </span>
             {basePrice > 0 && (
               <span className="text-xs font-semibold text-destructive">

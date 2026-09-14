@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getSelectedOrgId } from '@/lib/selectedOrg';
+import { useSelectedOrgId } from '@/hooks/useSelectedOrgId';
 import { useCallback } from 'react';
 import { api, salesApi, userPath, orgPath, authOrgPath } from '@/lib/api';
 import type { Organization } from '../types';
@@ -108,7 +108,17 @@ export function useOrganization() {
   // Get the currently selected organization.
   // Shares the same cache as useUserOrganizations (same query key).
   // Returns the org the user selected (see lib/selectedOrg), or the first org when there's just one.
+  //
+  // The selected id is SUBSCRIBED to, not read inside `select`. `select` re-runs
+  // when the query data changes or the component re-renders, so reading
+  // localStorage there made the answer depend on which consumer happened to
+  // re-render: `ThemeProvider` lives above the router and re-renders for almost
+  // nothing, so after an org switch it kept resolving the previous organization
+  // — the sidebar showed the new tenant while the palette, and the `org-theme`
+  // request behind it, stayed on the old one. Subscribing re-renders every
+  // consumer on a switch, so they cannot disagree about the active tenant.
   const useDefaultOrganization = (userId: string | undefined) => {
+    const selectedId = useSelectedOrgId();
     return useQuery({
       queryKey: ['user-organizations', userId],
       queryFn: async () => {
@@ -118,7 +128,6 @@ export function useOrganization() {
         );
       },
       select: (orgs) => {
-        const selectedId = getSelectedOrgId();
         if (selectedId) {
           return orgs.find((o) => o.id === selectedId) ?? orgs[0] ?? null;
         }
