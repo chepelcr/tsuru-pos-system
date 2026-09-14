@@ -22,23 +22,10 @@ import {
   EMPTY_ORDERS_FILTERS,
   type OrdersAdvancedFilters,
 } from '@/components/orders/OrdersFiltersModal';
+import { formatOrderDate } from '@/lib/orderDate';
 
 const PAGE_SIZE = 12;
 const SKELETON_COUNT = 6;
-
-/** Parse a DD/MM/YYYY (or ISO) backend date into a localized short date. */
-function formatOrderDate(dateStr: string | undefined, locale: string): string {
-  if (!dateStr) return '';
-  let date: Date;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [day, month, year] = dateStr.split('/');
-    date = new Date(Number(year), Number(month) - 1, Number(day));
-  } else {
-    date = new Date(dateStr);
-  }
-  if (Number.isNaN(date.getTime())) return dateStr;
-  return date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
-}
 
 function OrderCardSkeleton() {
   return (

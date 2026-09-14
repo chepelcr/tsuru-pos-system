@@ -23,6 +23,7 @@ import { ReportColorChip } from '@/components/orders/ReportColorSelector';
 import { ReprocessDialog } from '@/components/orders/ReprocessDialog';
 import { CrossdockingUploadDialog } from '@/components/orders/CrossdockingUploadDialog';
 import { CrossdockingDetailsDialog } from '@/components/orders/CrossdockingDetailsDialog';
+import { formatOrderDate } from '@/lib/orderDate';
 
 const STATUS_BADGE = ORDER_STATUS_BADGE;
 
@@ -57,19 +58,6 @@ const TIMELINE_STEPS: { status: OrderStatus; icon: string }[] = [
   { status: 'shipped', icon: 'cart' },
   { status: 'delivered', icon: 'checkCircle' },
 ];
-
-function formatOrderDate(dateStr: string | undefined, locale: string): string {
-  if (!dateStr) return '';
-  let date: Date;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [day, month, year] = dateStr.split('/');
-    date = new Date(Number(year), Number(month) - 1, Number(day));
-  } else {
-    date = new Date(dateStr);
-  }
-  if (Number.isNaN(date.getTime())) return dateStr;
-  return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
-}
 
 function SectionCard({
   title,
@@ -631,7 +619,7 @@ export default function OrderDetailPage({ orderId }: Props) {
             <div className="flex items-center gap-2 text-muted-foreground">
               <Icon name="calendar" size={13} />
               <span className="t-xs">
-                {t('orders.detail.createdAt')}: {formatOrderDate(order.creation_date, locale)}
+                {t('orders.detail.createdAt')}: {formatOrderDate(order.creation_date, locale, 'long')}
               </span>
             </div>
           )}
@@ -639,7 +627,7 @@ export default function OrderDetailPage({ orderId }: Props) {
             <div className="flex items-center gap-2 text-muted-foreground">
               <Icon name="clock" size={13} />
               <span className="t-xs">
-                {t('orders.detail.deliveryDate')}: {formatOrderDate(order.delivery_date, locale)}
+                {t('orders.detail.deliveryDate')}: {formatOrderDate(order.delivery_date, locale, 'long')}
               </span>
             </div>
           )}
