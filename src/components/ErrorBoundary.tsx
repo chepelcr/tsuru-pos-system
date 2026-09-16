@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { reportPosIncident } from '@/lib/supportIncidents';
 
 interface Props {
   children: ReactNode;
@@ -33,6 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    void reportPosIncident({ source: 'react-boundary', error, stack: `${error.stack ?? ''}\n${errorInfo.componentStack ?? ''}` });
   }
 
   private handleReset = () => {

@@ -74,6 +74,15 @@ async function request<T>(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     const retriable = res.status === 408 || res.status === 429 || res.status >= 500;
+    if (res.status >= 500 && !path.startsWith('/api/support/') && !path.startsWith('/api/public/support/')) {
+      const service = baseUrl === CROSS_APP_API_BASE ? 'orders-api'
+        : baseUrl === SALES_API_BASE ? 'sales-api' : 'platform-api';
+      // Dynamic import avoids a cycle: the reporter may use this API client.
+      void import('./supportIncidents').then(({ reportBackendHttpIncident }) =>
+        reportBackendHttpIncident({ service, statusCode: res.status, method, path,
+          message: String(err.message || err.detail || err.error || res.statusText).slice(0, 1000) })
+      ).catch(() => undefined);
+    }
     throw new ApiError(err.message || "Request failed", res.status, retriable);
   }
 

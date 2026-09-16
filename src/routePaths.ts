@@ -37,6 +37,7 @@ export const ROUTES = {
   DASHBOARD_GALLERY: "/dashboard/gallery",
   DASHBOARD_TEMPLATES: "/dashboard/templates",
   DASHBOARD_DEPLOYMENTS: "/dashboard/deployments",
+  DASHBOARD_SUPPORT: "/dashboard/support",
   PROFILE: "/dashboard/profile",
 } as const;
 

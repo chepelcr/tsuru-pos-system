@@ -41,6 +41,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   gallery:       { icon: "grid",        labelKey: "shell.gallery" },
   templates:     { icon: "grid",        labelKey: "shell.templates" },
   deployments:   { icon: "upload",      labelKey: "shell.deployments" },
+  support:       { icon: "mail",        labelKey: "shell.support" },
 };
 
 type SectionId = "commercial" | "admin" | "storefront" | "reports";
@@ -294,6 +295,13 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
       {/* ── FOOTER (always visible) ── */}
       <div className="shrink-0 px-4 pb-4 pt-2 border-t border-sidebar-border flex flex-col gap-0.5">
+        <button
+          className={`sidebar-item ${active === "support" ? "active" : ""}`}
+          onClick={() => goNav("support")}
+        >
+          <Icon name="mail" size={16} />
+          {t("shell.support")}
+        </button>
         {/* Sign out and switch-organization moved to the navbar account menu,
             but the identity row itself stays a shortcut to the profile — it
             looks clickable and people reach for it. */}

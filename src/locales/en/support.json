@@ -1,0 +1,21 @@
+{
+  "support.title": "Support",
+  "support.subtitle": "Tell us about an issue or question for your organization. Requests are linked to your user account.",
+  "support.newTicket": "New request",
+  "support.subject": "Subject",
+  "support.description": "Tell us what happened and what you expected",
+  "support.module": "Affected module",
+  "support.moduleOther": "Other / general",
+  "support.send": "Send request",
+  "support.myTickets": "My requests",
+  "support.noTickets": "You have not created any support requests yet.",
+  "support.ticketDetails": "Conversation",
+  "support.reply": "Write a reply",
+  "support.sendReply": "Reply",
+  "support.created": "Request sent. The support team can see it in the admin dashboard.",
+  "support.error": "The request could not be completed. Check your connection and try again.",
+  "support.status.open": "Open",
+  "support.status.in_progress": "In progress",
+  "support.status.resolved": "Resolved",
+  "support.status.closed": "Closed"
+}

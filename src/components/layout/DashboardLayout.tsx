@@ -45,6 +45,7 @@ function getActiveNav(location: string): NavId {
   // while on the templates page (otherwise the whole sidebar reads unmarked).
   if (location.startsWith(ROUTES.DASHBOARD_TEMPLATES))   return "organization";
   if (location.startsWith(ROUTES.DASHBOARD_DEPLOYMENTS)) return "deployments";
+  if (location.startsWith(ROUTES.DASHBOARD_SUPPORT)) return "support";
   if (location.startsWith(ROUTES.PROFILE))            return "profile";
   if (location.startsWith(ROUTES.DASHBOARD_ORG_SETTINGS)) return "organization"; // covers /general, /branding, /contact, /payment, /shipping, /hacienda, /notifications sub-paths too
   return "dashboard";
@@ -71,6 +72,7 @@ const NAV_PATHS: Record<NavId, string> = {
   templates:   ROUTES.DASHBOARD_TEMPLATES,
   deployments: ROUTES.DASHBOARD_DEPLOYMENTS,
   programs:  ROUTES.DASHBOARD_PROGRAMS,
+  support:   ROUTES.DASHBOARD_SUPPORT,
   profile:   ROUTES.PROFILE,
 };
 

@@ -7,7 +7,18 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { PosIncidentReporter } from './components/PosIncidentReporter';
+import { reportPosIncident } from './lib/supportIncidents';
 import "./index.css";
+
+// Installed before providers/render so login, registration and startup errors
+// are observable even when authentication has not initialized.
+window.addEventListener('error', (event) => {
+  void reportPosIncident({ source: 'window-error', error: event.error ?? event.message });
+});
+window.addEventListener('unhandledrejection', (event) => {
+  void reportPosIncident({ source: 'unhandled-rejection', error: event.reason });
+});
 
 // Register the service worker. In production it precaches the app shell so the
 // POS opens with no connection; in dev `public/sw.js` is a no-op (see there).
@@ -35,6 +46,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <LanguageProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
+            <PosIncidentReporter />
             <NotificationsProvider>
               <App />
             </NotificationsProvider>

@@ -59,6 +59,7 @@ const ContentPage = lazy(() => import("@/pages/dashboard/ContentPage"));
 const GalleryPage = lazy(() => import("@/pages/dashboard/GalleryPage"));
 const TemplatesPage = lazy(() => import("@/pages/dashboard/TemplatesPage"));
 const DeploymentsPage = lazy(() => import("@/pages/dashboard/DeploymentsPage"));
+const SupportPage = lazy(() => import('@/pages/dashboard/SupportPage'));
 
 const DASHBOARD_ROLES = ["gerente", "supervisor", "customer", "cajero"];
 
@@ -404,6 +405,10 @@ export default function Routes() {
       <Route
         path={ROUTES.DASHBOARD_DEPLOYMENTS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.deployments}><DeploymentsPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_SUPPORT}
+        component={() => <DashboardPage><SupportPage /></DashboardPage>}
       />
 
       {/* Storefront / org-settings sub-pages — more-specific paths before the hub */}
