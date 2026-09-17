@@ -100,6 +100,17 @@ jobs:
             exit 1
           }
 
+          # The support control plane is deployed manually. Keep ordinary POS
+          # releases buildable before its first rollout; a later build picks
+          # up the SSM-owned URL automatically once the stack exists.
+          if value=$(get "api/support-url"); then
+            echo "VITE_SUPPORT_API_URL=${value}" >> "$GITHUB_ENV"
+            echo "  VITE_SUPPORT_API_URL <- ${base}/api/support-url"
+          else
+            echo "VITE_SUPPORT_API_URL=https://support.tsuru.jcampos.dev" >> "$GITHUB_ENV"
+            echo "::warning::No ${base}/api/support-url — using the support API custom-domain target."
+          fi
+
           # Optional — without it the bell still lists what its hydrate loaded,
           # it just stops updating live. Not worth failing a release over.
           if value=$(get "appsync/events-url"); then
@@ -125,6 +136,7 @@ jobs:
           echo "Orders   : ${VITE_ORDERS_API_URL}"
           echo "Sales    : ${VITE_SALES_API_URL}"
           echo "Data     : ${VITE_DATA_API_URL}"
+          echo "Support  : ${VITE_SUPPORT_API_URL}"
           echo "Events   : ${VITE_APPSYNC_EVENTS_URL:-<none>}"
           pnpm run build
 
