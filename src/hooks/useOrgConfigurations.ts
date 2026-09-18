@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError, salesApi, authOrgPath } from "@/lib/api";
 import type {
+  CertificateDownload,
   OrgConfiguration,
   ValidateCredentialsResponse,
   NotificationsFormState,
@@ -37,6 +38,21 @@ export function useValidateCredentials(orgId: string) {
   return useMutation({
     mutationFn: (data: { username: string; password: string }) =>
       salesApi.post<ValidateCredentialsResponse>(authOrgPath(orgId, "/credentials"), data),
+  });
+}
+
+/**
+ * Download the organization's own signing certificate.
+ *
+ * A mutation rather than a query on purpose: this is the PKCS12 file, so it is
+ * fetched only when somebody clicks, never cached, and never loaded alongside
+ * the settings screen. The PIN does not come with it — knowing the PIN for your
+ * own certificate is what makes the file usable.
+ */
+export function useDownloadCertificate(orgId: string) {
+  return useMutation({
+    mutationFn: () =>
+      salesApi.get<CertificateDownload>(authOrgPath(orgId, "/configurations/certificate")),
   });
 }
 

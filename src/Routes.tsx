@@ -127,6 +127,37 @@ function RouteLoading({ fullScreen = false }: { fullScreen?: boolean }) {
   );
 }
 
+// Already signed in? The login and register pages have nothing to offer you.
+//
+// Landing on them while authenticated is disorienting — the app looks signed
+// out — and submitting from there re-runs an auth flow for a session that
+// already exists. This sends you where you were actually going.
+function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
+  const { user, isLoading } = useAuthContext();
+  const { t } = useLanguage();
+
+  // Wait for the session to resolve. Rendering the form first would flash the
+  // login page at a signed-in user on every reload.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted font-barlow text-lg animate-pulse">{t("common.loading")}</div>
+      </div>
+    );
+  }
+
+  if (user) {
+    // `RequireAuth` parks the page you were denied here. Honour it, so arriving
+    // at /login with a live session still finishes the trip you started —
+    // then clear it, or it would hijack the next visit too.
+    const intended = sessionStorage.getItem("redirectAfterLogin");
+    sessionStorage.removeItem("redirectAfterLogin");
+    return <Redirect to={intended && intended !== ROUTES.LOGIN ? intended : ROUTES.DASHBOARD} />;
+  }
+
+  return <>{children}</>;
+}
+
 // Auth guard — redirects to login if unauthenticated, checks role if provided
 function RequireAuth({
   children,
@@ -265,8 +296,12 @@ export default function Routes() {
     <Suspense fallback={<RouteLoading fullScreen />}>
       <Switch>
       {/* Public */}
-      <Route path={ROUTES.LOGIN} component={Login} />
-      <Route path={ROUTES.REGISTER} component={Register} />
+      <Route path={ROUTES.LOGIN}>
+        <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
+      </Route>
+      <Route path={ROUTES.REGISTER}>
+        <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
+      </Route>
       <Route path={ROUTES.VERIFY_EMAIL} component={VerifyEmail} />
       <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
       <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />

@@ -33,6 +33,15 @@ export interface OrgConfiguration {
   theme?: string;
 }
 
+/** The stored PKCS12, returned only by the explicit download endpoint. */
+export interface CertificateDownload {
+  file_name: string;
+  content_type: string;
+  /** Base64 PKCS12 bytes. */
+  data: string;
+  expiration_date: string | null;
+}
+
 export interface ValidateCredentialsResponse {
   is_valid: boolean;
 }

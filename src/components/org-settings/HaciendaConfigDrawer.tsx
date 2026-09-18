@@ -3,7 +3,12 @@ import { KeyRound, FileKey } from "lucide-react";
 import { Drawer, Icon, Badge, Spinner } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useValidateCredentials, useSaveOrgConfigurations } from "@/hooks/useOrgConfigurations";
+import {
+  useDownloadCertificate,
+  useSaveOrgConfigurations,
+  useValidateCredentials,
+} from "@/hooks/useOrgConfigurations";
+import { downloadBlob } from "@/lib/downloadUtils";
 import type { OrgConfiguration, HaciendaFormState } from "@/types/orgConfigurations";
 
 interface HaciendaConfigDrawerProps {
@@ -29,10 +34,12 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
   const [form, setForm] = useState<HaciendaFormState>(EMPTY_FORM);
   const [credentialsValid, setCredentialsValid] = useState(false);
   const [verifyError, setVerifyError] = useState("");
+  const [downloadError, setDownloadError] = useState("");
   const [certExpanded, setCertExpanded] = useState(false);
 
   const validateMutation = useValidateCredentials(orgId);
   const saveMutation = useSaveOrgConfigurations(orgId);
+  const downloadMutation = useDownloadCertificate(orgId);
 
   // Pre-fill from existing config when drawer opens
   useEffect(() => {
@@ -79,6 +86,19 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
     } catch {
       setCredentialsValid(false);
       setVerifyError(t("orgSettings.hacienda.verifyError"));
+    }
+  };
+
+  const handleDownloadCertificate = async () => {
+    setDownloadError("");
+    try {
+      const file = await downloadMutation.mutateAsync();
+      // The API sends base64 because the gateway is a JSON edge; turn it back
+      // into the exact bytes that were uploaded before handing it to the user.
+      const bytes = Uint8Array.from(atob(file.data), (c) => c.charCodeAt(0));
+      downloadBlob(new Blob([bytes], { type: file.content_type }), file.file_name);
+    } catch {
+      setDownloadError(t("orgSettings.hacienda.downloadCertificateError"));
     }
   };
 
@@ -234,12 +254,35 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
           <div className="space-y-4 pt-1">
             {/* Existing cert info */}
             {config?.certificate && !form.certData && (
-              <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-1">
-                <div className="t-xs text-muted-foreground">Certificado actual</div>
-                <div className="t-sm font-medium">{config.certificate.name}</div>
-                <div className="t-xs text-muted-foreground">
-                  Vence: {new Date(config.certificate.expiration_date).toLocaleDateString()}
+              <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
+                <div>
+                  <div className="t-xs text-muted-foreground">Certificado actual</div>
+                  <div className="t-sm font-medium">{config.certificate.name}</div>
+                  <div className="t-xs text-muted-foreground">
+                    Vence: {new Date(config.certificate.expiration_date).toLocaleDateString()}
+                  </div>
                 </div>
+
+                {/* The file is fetched only on this click — never with the
+                    settings payload — so it does not sit in the browser cache. */}
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleDownloadCertificate}
+                  disabled={downloadMutation.isPending}
+                >
+                  {downloadMutation.isPending ? (
+                    <><Spinner size={13} /> {t("common.loading")}</>
+                  ) : (
+                    <><Icon name="download" size={14} /> {t("orgSettings.hacienda.downloadCertificate")}</>
+                  )}
+                </button>
+                <p className="t-xs text-muted-foreground">
+                  {t("orgSettings.hacienda.downloadCertificateHint")}
+                </p>
+                {downloadError && (
+                  <p role="alert" className="t-xs text-destructive">{downloadError}</p>
+                )}
               </div>
             )}
 
