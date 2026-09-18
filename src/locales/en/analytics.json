@@ -90,5 +90,7 @@
   "report.sinpeMobile": "SINPE Mobile",
   "report.standPerformance": "Stand performance",
   "report.standsWithDiff": "Stands with difference",
-  "report.units": "Units"
+  "report.stationsHint": "Revenue rung up per till",
+  "report.units": "Units",
+  "report.unitsHint": "Units sold in this period"
 }

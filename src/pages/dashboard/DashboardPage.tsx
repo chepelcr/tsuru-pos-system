@@ -6,14 +6,12 @@ import {
   useOrderStatus,
   useSalesSummary,
   useSalesTrend,
-  useStations,
   useTopProducts,
 } from "@/hooks/useDashboard";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SalesChart } from "@/components/dashboard/SalesChart";
-import { LiveStationsPanel } from "@/components/dashboard/LiveStationsPanel";
 import { TopProductsPanel } from "@/components/dashboard/TopProductsPanel";
 import { ChartSkeleton } from "@/components/dashboard/ChartSkeleton";
 import { OrderStatusPanel } from "@/components/dashboard/OrderStatusPanel";
@@ -48,7 +46,6 @@ export default function DashboardPage() {
   // reason this used to read zero with 45 orders in the database.
   const summary = useSalesSummary(org?.id, !!user);
   const orderStatus = useOrderStatus(org?.id, !!user);
-  const stations = useStations(org?.id);
   const products = useTopProducts(org?.id);
   const trend = useSalesTrend(org?.id);
 
@@ -57,22 +54,15 @@ export default function DashboardPage() {
   const avgTicket = summary.data?.average_ticket ?? 0;
   const openOrders = orderStatus.data?.open_orders ?? 0;
   const openValue = orderStatus.data?.open_value ?? 0;
-  const stands = stations.data?.stations ?? [];
-  const ranking = (products.data?.products ?? []).map((item) => ({
-    name: item.name,
-    emoji: item.image_url,
-    units: item.units,
-    revenue: item.revenue,
-  }));
+  const ranking = products.data?.products ?? [];
 
   // Only the headline figure gates the hero card. A slow product ranking should
   // not hold up the number the operator opened the page to read.
   const isLoading = summary.isLoading;
-  const isRefetching = summary.isRefetching || orderStatus.isRefetching || stations.isRefetching;
+  const isRefetching = summary.isRefetching || orderStatus.isRefetching;
   const refetch = () => {
     void summary.refetch();
     void orderStatus.refetch();
-    void stations.refetch();
     void products.refetch();
     void trend.refetch();
   };
@@ -91,9 +81,10 @@ export default function DashboardPage() {
             })()},{" "}
             {user?.first_name ?? user?.name?.split(" ")[0] ?? ""}
           </h1>
-          <p className="t-body text-muted-foreground">
-            {t("dash.activeStations", { n: String(stands.length) })}
-          </p>
+          {/* Was a station count, which no longer lives on this page. The
+              organization name says WHICH business these figures are for —
+              which is what the scope switcher will extend. */}
+          <p className="t-body text-muted-foreground">{org?.name ?? ""}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" icon="store" onClick={() => setQrOpen(true)}>
@@ -165,8 +156,9 @@ export default function DashboardPage() {
         </div>
       </FadeIn>
 
-      {/* Main 2-col — each panel loads and fails on its own */}
-      <div className="grid-auto-fit-320 gap-3.5 mb-3.5">
+      {/* The chart gets the full width: an hour-by-hour or month-by-month
+          series is unreadable in a half-width 520x180 viewport. */}
+      <div className="mb-3.5">
         <FadeIn duration={0.4}>
           <Card className="p-[22px] min-w-0">
             {trend.isLoading ? <ChartSkeleton /> : (
@@ -190,18 +182,6 @@ export default function DashboardPage() {
                 <SalesChart days={trend.data?.days ?? []} />
               </>
             )}
-          </Card>
-        </FadeIn>
-
-        <FadeIn delay={0.1} duration={0.4}>
-          <Card className="p-[22px] min-w-0">
-            <LiveStationsPanel
-              stations={stands}
-              isLoading={stations.isLoading}
-              isError={stations.isError}
-              onRetry={() => void stations.refetch()}
-              fmt={fmt}
-            />
           </Card>
         </FadeIn>
       </div>

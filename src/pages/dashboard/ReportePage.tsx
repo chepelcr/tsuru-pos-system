@@ -1,5 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -7,46 +5,14 @@ import { HistoricalDocumentsReport } from "@/components/reports/HistoricalDocume
 import { usePermissions } from "@/hooks/useRbac";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { PaymentBreakdown } from "@/components/sessions/PaymentBreakdown";
-import { StandBreakdown } from "@/components/sessions/StandBreakdown";
+import {
+  useSalesSummary,
+  useStations,
+  useTopProducts,
+} from "@/hooks/useDashboard";
 import { formatMoney as fmt } from "@/lib/money";
 
 const fmtNum = (n: number) => Math.round(Number(n) || 0).toLocaleString("es-CR");
-
-interface ReportData {
-  session?: {
-    name: string;
-    date: string;
-    location?: string;
-    startTime?: string;
-    endTime?: string;
-  };
-  totals?: {
-    ventas: number;
-    ordenes: number;
-    ticket: number;
-    diferenciaCaja: number;
-    efectivo: number;
-    tarjeta: number;
-    sinpe: number;
-  };
-  stands?: Array<{
-    name: string;
-    cashierName: string;
-    sales: number;
-    orders: number;
-    diff: number;
-  }>;
-  topProducts?: Array<{
-    id: string | number;
-    name: string;
-    emoji?: string;
-    category?: string;
-    price: number;
-    qty: number;
-    revenue: number;
-  }>;
-}
 
 interface ReportePageProps {
   sessionId?: string;
@@ -63,27 +29,30 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   const { can, isReady: permsReady } = usePermissions();
   const canExport = !permsReady || can("reports", "export", "general");
 
-  const { data, isLoading } = useQuery<ReportData>({
-    queryKey: ["report", org?.id, sessionId],
-    enabled: !!user && !!org,
-    queryFn: () =>
-      crossAppApi.get<ReportData>(
-        crossAppOrgPath(org!.id, `/dashboard${sessionId ? `?session_id=${sessionId}` : ""}`)
-      ),
-  });
+  // This page used to declare its own `ReportData` with camelCase/Spanish keys
+  // (`totals.ventas`, `topProducts`) and fetch the deprecated `/dashboard`,
+  // which answers in snake_case. Nothing matched, so every figure fell through
+  // to its zero default — the report has been showing ₡0 across the board. It
+  // now reads the panel endpoints, which are typed.
+  const summary = useSalesSummary(org?.id, !!user);
+  const stations = useStations(org?.id, sessionId);
+  const products = useTopProducts(org?.id, 20);
 
-  const session = data?.session;
-  const totals = data?.totals ?? {
-    ventas: 0,
-    ordenes: 0,
-    ticket: 0,
-    diferenciaCaja: 0,
-    efectivo: 0,
-    tarjeta: 0,
-    sinpe: 0,
-  };
-  const stands = data?.stands ?? [];
-  const topProducts = data?.topProducts ?? [];
+  // Session mode sums the session's own tills; without a session it is the whole
+  // organisation. The old `?session_id=` passed the filter only to its stations
+  // query, so a "session" report was really the organisation's totals under a
+  // session's name.
+  const tills = stations.data?.stations ?? [];
+  const revenue = sessionId
+    ? tills.reduce((total, till) => total + till.revenue, 0)
+    : summary.data?.revenue ?? 0;
+  const orders = sessionId
+    ? tills.reduce((total, till) => total + till.orders, 0)
+    : summary.data?.orders ?? 0;
+  const averageTicket = orders > 0 ? revenue / orders : 0;
+
+  const topProducts = products.data?.products ?? [];
+  const isLoading = sessionId ? stations.isLoading : summary.isLoading;
   const handlePrint = () => window.print();
 
   if (isLoading) {
@@ -101,12 +70,13 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
         <div className="flex justify-between items-start mb-5 flex-wrap gap-3">
           <div>
             <Badge variant="primary-soft" className="mb-2">{t("report.finalReport")}</Badge>
-            <h1 className="t-h1 mb-1.5">{session?.name ?? "Sesión sin nombre"}</h1>
+            {/* The organisation, not a session: this variant of the page is the
+                session-free report. The session drawer renders the other one. */}
+            <h1 className="t-h1 mb-1.5">{org?.name ?? t("shell.reports")}</h1>
             <p className="t-body text-muted-foreground">
-              {session?.date ? new Date(session.date).toLocaleDateString("es-CR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "Fecha no disponible"}
-              {session?.location ? ` · ${session.location}` : ""}
-              {session?.startTime ? ` · ${session.startTime}` : ""}
-              {session?.endTime ? ` → ${session.endTime}` : ""}
+              {new Date().toLocaleDateString(undefined, {
+                weekday: "long", day: "numeric", month: "long", year: "numeric",
+              })}
             </p>
           </div>
           <div className="flex gap-2">
@@ -132,36 +102,36 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
         {/* Main KPI */}
         <Card className="p-[22px] !border-primary/30 bg-gradient-to-br from-primary/[0.12] to-primary/[0.02]">
           <div className="t-label !text-primary mb-1.5">{t("report.grossIncome")}</div>
-          <div className="t-stat-xl !text-[40px] !text-primary">{fmt(totals.ventas)}</div>
-          <Badge variant="success" className="mt-2">
-            {stands.length} puestos activos
+          <div className="t-stat-xl !text-[40px] !text-primary">{fmt(revenue)}</div>
+          <Badge variant={tills.length ? "success" : "secondary"} className="mt-2">
+            {t("dash.active", { n: String(tills.length) })}
           </Badge>
         </Card>
 
         {[
           {
             l: t("report.orders"),
-            v: fmtNum(totals.ordenes),
+            v: fmtNum(orders),
             i: "cart",
             c: "info",
-            s: t("analytics.salesCount", { n: String(totals.ordenes) }),
+            s: t("analytics.salesCount", { n: String(orders) }),
           },
           {
             l: t("report.avgTicket"),
-            v: fmt(totals.ticket),
+            v: fmt(averageTicket),
             i: "dollar",
             c: "success",
             s: t("report.avgTicket"),
           },
+          // Was "cash difference", which only exists on a session CLOSING — a
+          // record this page never fetched, so it always read ₡0 "balanced".
+          // Units sold is a figure the panels actually carry.
           {
-            l: t("report.cashDiff"),
-            v:
-              totals.diferenciaCaja === 0
-                ? t("report.balanced")
-                : (totals.diferenciaCaja > 0 ? "+" : "") + fmt(totals.diferenciaCaja),
-            i: "alert",
-            c: totals.diferenciaCaja === 0 ? "success" : Math.abs(totals.diferenciaCaja) < 1000 ? "warning" : "destructive",
-            s: totals.diferenciaCaja === 0 ? t("report.allStandsBalanced") : t("report.standsWithDiff"),
+            l: t("report.units"),
+            v: fmtNum(summary.data?.units ?? 0),
+            i: "package",
+            c: "warning",
+            s: t("report.unitsHint"),
           },
         ].map((k) => (
           <Card key={k.l} className="p-[18px]">
@@ -177,10 +147,33 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3.5 mb-5">
-        <PaymentBreakdown totals={totals} />
-        <StandBreakdown stands={stands} />
-      </div>
+      {tills.length > 0 && (
+        <Card className="!p-0 mb-5">
+          <div className="px-6 py-5 border-b border-border">
+            <CardTitle>{t("session.stationPerformance")}</CardTitle>
+            <CardDescription>{t("report.stationsHint")}</CardDescription>
+          </div>
+          {tills.map((till, index) => (
+            <div
+              key={till.assignment_id}
+              className={`px-6 py-3.5 flex justify-between items-center gap-3 ${index < tills.length - 1 ? "border-b border-border" : ""}`}
+            >
+              <div className="min-w-0">
+                <div className="text-sm font-bold truncate">
+                  {till.session_name || t("dash.station")}
+                </div>
+                <div className="t-xs text-muted-foreground truncate">
+                  {t("dash.stationOrders", { n: String(till.orders) })}
+                  {till.session_context ? ` · ${till.session_context}` : ""}
+                </div>
+              </div>
+              <div className="t-num text-base font-extrabold font-display text-primary flex-shrink-0">
+                {fmt(till.revenue)}
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
 
       {/* Top products table */}
       <Card className="!p-0">
@@ -214,10 +207,10 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
                 </tr>
               )}
               {topProducts.map((prod, i) => {
-                const pct = totals.ventas > 0 ? (prod.revenue / totals.ventas) * 100 : 0;
+                const pct = revenue > 0 ? (prod.revenue / revenue) * 100 : 0;
                 return (
                   <tr
-                    key={prod.id}
+                    key={prod.product_id ?? prod.name}
                     className={i < topProducts.length - 1 ? "border-b border-border" : ""}
                   >
                     <td className={`pp-td font-display font-extrabold ${i < 3 ? "text-primary" : "text-muted-foreground"}`}>
@@ -225,19 +218,28 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
                     </td>
                     <td className="pp-td">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center text-lg flex-shrink-0">
-                          {prod.emoji ?? "🍗"}
-                        </div>
-                        <div>
-                          <div className="text-[13px] font-bold">{prod.name}</div>
-                          {prod.category && (
-                            <div className="t-xs text-muted-foreground">{prod.category}</div>
-                          )}
+                        {/* The API returns an image url, not an emoji, and has no
+                            category on a ranking row — the old code rendered a
+                            hardcoded 🍗 for every product in every business. */}
+                        {prod.image_url ? (
+                          <img src={prod.image_url} alt="" className="w-9 h-9 rounded-md object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                            <Icon name="package" size={14} className="text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-bold truncate">{prod.name}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="pp-td t-num !text-right font-bold font-display">{prod.qty}</td>
-                    <td className="pp-td t-num !text-right">{fmt(prod.price)}</td>
+                    <td className="pp-td t-num !text-right font-bold font-display">{prod.units}</td>
+                    {/* Average realised price, derived — the ranking carries units
+                        and revenue, not a list price, and a list price would not
+                        describe what was actually charged anyway. */}
+                    <td className="pp-td t-num !text-right">
+                      {fmt(prod.units > 0 ? prod.revenue / prod.units : 0)}
+                    </td>
                     <td className="pp-td t-num !text-right font-bold font-display !text-primary">
                       {fmt(prod.revenue)}
                     </td>
@@ -261,11 +263,11 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
                   <td className="pp-td" />
                   <td className="pp-td font-extrabold">{t("common.total")}</td>
                   <td className="pp-td t-num !text-right font-extrabold font-display">
-                    {topProducts.reduce((s, t) => s + t.qty, 0)}
+                    {topProducts.reduce((total, row) => total + row.units, 0)}
                   </td>
                   <td className="pp-td" />
                   <td className="pp-td t-num !text-right font-extrabold font-display !text-primary">
-                    {fmt(topProducts.reduce((s, t) => s + t.revenue, 0))}
+                    {fmt(topProducts.reduce((total, row) => total + row.revenue, 0))}
                   </td>
                   <td className="pp-td !text-right font-extrabold">100%</td>
                 </tr>

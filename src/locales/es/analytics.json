@@ -90,5 +90,7 @@
   "report.sinpeMobile": "SINPE Móvil",
   "report.standPerformance": "Rendimiento por puesto",
   "report.standsWithDiff": "Puestos con diferencia",
-  "report.units": "Unidades"
+  "report.stationsHint": "Ventas registradas por puesto",
+  "report.units": "Unidades",
+  "report.unitsHint": "Unidades vendidas en el período"
 }

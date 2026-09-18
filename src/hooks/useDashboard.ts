@@ -77,15 +77,28 @@ export function useSalesTrend(orgId: string | undefined, days = 14) {
   });
 }
 
-/** Tills currently open. Empty means nobody is working — a real answer. */
-export function useStations(orgId: string | undefined) {
+/**
+ * Tills currently open, optionally for one session. Empty means nobody is
+ * working — a real answer, and no longer one that takes the sales figures with
+ * it.
+ *
+ * Lives on the session drawer rather than the dashboard: "who is on a till" is
+ * a question about a session, and it was the reason the whole dashboard used to
+ * read zero. Note the endpoint only returns tills whose session AND assignment
+ * are still open, so a CLOSED session returns nothing — its money is in
+ * `closings`, not here.
+ */
+export function useStations(orgId: string | undefined, sessionId?: string) {
   return useQuery({
-    queryKey: ["dashboard", "stations", orgId],
+    queryKey: ["dashboard", "stations", orgId, sessionId ?? null],
     enabled: !!orgId,
     refetchInterval: LIVE_REFRESH_MS,
     queryFn: () =>
       crossAppApi.get<DashboardStations>(
-        crossAppOrgPath(orgId!, "/dashboard/stations"),
+        crossAppOrgPath(
+          orgId!,
+          `/dashboard/stations${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ""}`,
+        ),
       ),
   });
 }

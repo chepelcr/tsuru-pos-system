@@ -1,9 +1,18 @@
 import { CardTitle, CardDescription } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { ProductRankItem } from "@/types";
+import { Icon } from "@/components/ui";
+import type { DashboardTopProduct } from "@/types/dashboard";
 
+/**
+ * Best sellers, straight from `/dashboard/top-products`.
+ *
+ * Takes the endpoint's own shape rather than the old `ProductRankItem`, whose
+ * `emoji` field the API never populated — it returns an image url, so every
+ * product rendered the same empty square (or, on the report table, a hardcoded
+ * chicken, in every business).
+ */
 interface TopProductsPanelProps {
-  ranking: ProductRankItem[];
+  ranking: DashboardTopProduct[];
   isLoading: boolean;
   fmt: (n: number) => string;
 }
@@ -26,7 +35,7 @@ export function TopProductsPanel({ ranking, isLoading, fmt }: TopProductsPanelPr
       ) : (
         ranking.slice(0, 5).map((item, i) => (
           <div
-            key={item.name}
+            key={item.product_id ?? item.name}
             className={`flex items-center gap-3 py-3 ${i < Math.min(4, ranking.length - 1) ? "border-b border-border" : ""}`}
           >
             <div
@@ -36,11 +45,15 @@ export function TopProductsPanel({ ranking, isLoading, fmt }: TopProductsPanelPr
             >
               #{i + 1}
             </div>
-            <div className="w-[38px] h-[38px] rounded-lg bg-muted flex items-center justify-center text-xl flex-shrink-0">
-              {item.emoji}
-            </div>
+            {item.image_url ? (
+              <img src={item.image_url} alt="" className="w-[38px] h-[38px] rounded-lg object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-[38px] h-[38px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                <Icon name="package" size={15} className="text-muted-foreground" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold">{item.name}</div>
+              <div className="text-[13px] font-bold truncate">{item.name}</div>
               <div className="t-xs t-num text-muted-foreground">
                 {t("dash.units", { n: String(item.units) })} · {fmt(item.revenue)}
               </div>

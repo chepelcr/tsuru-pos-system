@@ -1,5 +1,6 @@
 import { Drawer, Icon, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
+import type { DashboardStation } from "@/types/dashboard";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
 import { formatDate } from "@/utils/formatDate";
@@ -8,7 +9,7 @@ import { SessionOverviewTab } from "./tabs/SessionOverviewTab";
 import { SessionAssignmentsTab } from "./tabs/SessionAssignmentsTab";
 import { SessionSalesTab } from "./tabs/SessionSalesTab";
 import { SessionReportTab } from "./tabs/SessionReportTab";
-import type { Session, Assignment, DashboardData } from "@/types";
+import type { Session, Assignment} from "@/types";
 
 type DrawerTab = "overview" | "assignments" | "sales" | "report";
 
@@ -17,8 +18,8 @@ interface SessionDetailDrawerProps {
   session: Session | null;
   assignments: Assignment[];
   assignmentsLoading: boolean;
-  dashboardData?: DashboardData;
-  dashboardLoading: boolean;
+  stations?: DashboardStation[];
+  stationsLoading: boolean;
   activeTab: DrawerTab;
   endingPending: boolean;
   onClose: () => void;
@@ -32,8 +33,8 @@ export function SessionDetailDrawer({
   session,
   assignments,
   assignmentsLoading,
-  dashboardData,
-  dashboardLoading,
+  stations,
+  stationsLoading,
   activeTab,
   endingPending,
   onClose,
@@ -119,7 +120,7 @@ export function SessionDetailDrawer({
         <div className="flex-1 overflow-y-auto">
           {activeTab === "overview" && (
             <FadeIn key="overview" duration={0.3}>
-              <SessionOverviewTab dashboardData={dashboardData} isLoading={dashboardLoading} />
+              <SessionOverviewTab stations={stations} isLoading={stationsLoading} />
             </FadeIn>
           )}
           {activeTab === "assignments" && (
@@ -129,7 +130,7 @@ export function SessionDetailDrawer({
           )}
           {activeTab === "sales" && (
             <FadeIn key="sales" duration={0.3}>
-              <SessionSalesTab stands={dashboardData?.stands} isLoading={dashboardLoading} />
+              <SessionSalesTab stations={stations} isLoading={stationsLoading} />
             </FadeIn>
           )}
           {activeTab === "report" && (

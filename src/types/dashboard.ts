@@ -1,10 +1,11 @@
 /**
  * Dashboard wire types.
  *
- * One type per panel endpoint. The single `DashboardData` below is the
- * deprecated one-payload shape, kept only while the old endpoint still exists —
- * it is the shape that reported zeros for an organization with real orders,
- * because everything in it was gated on a cashier having a till open.
+ * One type per panel endpoint. The single `DashboardData` payload that used to
+ * live here is gone with its last caller: it was the shape that reported zeros
+ * for an organization with real orders, because everything in it was gated on a
+ * cashier having a till open, and its `emoji` / `cash` / `sinpe` / `card` fields
+ * were never populated by the API at all.
  */
 
 /** `GET /dashboard/sales-summary` — the whole organization, not one till. */
@@ -72,39 +73,4 @@ export interface DashboardStation {
 export interface DashboardStations {
   stations: DashboardStation[];
   active_sessions: number;
-}
-
-export interface StandData {
-  id: string;
-  name: string;
-  cashier_name: string;
-  context: string;
-  total_revenue: number;
-  sales_count: number;
-  cash: number;
-  sinpe: number;
-  card: number;
-  last_sync_at: number;
-}
-
-export interface ProductRankItem {
-  name: string;
-  emoji: string;
-  units: number;
-  revenue: number;
-}
-
-export interface DashboardData {
-  stands: StandData[];
-  total_revenue: number;
-  total_sales: number;
-  avg_ticket: number;
-  product_ranking?: ProductRankItem[];
-}
-
-export interface DashboardKPIs {
-  total_sales?: number;
-  total_transactions?: number;
-  average_ticket?: number;
-  active_cashiers?: number;
 }

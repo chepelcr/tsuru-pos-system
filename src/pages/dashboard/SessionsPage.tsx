@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useStations } from "@/hooks/useDashboard";
 import { useOrganization } from "@/hooks/useOrganization";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { Icon, Card, Button, Drawer, Modal, Pagination } from "@/components/ui";
@@ -13,7 +14,7 @@ import { SessionDetailDrawer } from "@/components/sessions/SessionDetailDrawer";
 import { SessionSkeletonCard } from "@/components/sessions/SessionSkeletonCard";
 import { ListToolbar, type StatusOption } from "@/components/common/ListToolbar";
 import SessionConfig from "./SessionConfig";
-import type { Session, Assignment, DashboardData } from "@/types";
+import type { Session, Assignment} from "@/types";
 
 /**
  * Session.status: 1 = Active, 2 = Closed, 3 = Deleted. The filter exposes
@@ -123,14 +124,13 @@ export default function SessionsPage() {
       ),
   });
 
-  const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
-    queryKey: ["session-dashboard", org?.id, selectedSession?.session_id],
-    enabled: !!org && !!selectedSession,
-    queryFn: () =>
-      crossAppApi.get<DashboardData>(
-        crossAppOrgPath(org!.id, `/dashboard?session_id=${selectedSession!.session_id}`)
-      ),
-  });
+  // The stations panel endpoint, not the deprecated `/dashboard?session_id=`:
+  // that one passed the session id only to its stations query, so its totals
+  // were the whole organisation's shown under a session's name.
+  const stations = useStations(
+    selectedSession ? org?.id : undefined,
+    selectedSession?.session_id,
+  );
 
   const deleteMutation = useMutation({
     mutationFn: (sessionId: string) =>
@@ -243,8 +243,8 @@ export default function SessionsPage() {
         session={selectedSession}
         assignments={assignmentsData?.data ?? []}
         assignmentsLoading={assignmentsLoading}
-        dashboardData={dashboardData}
-        dashboardLoading={dashboardLoading}
+        stations={stations.data?.stations}
+        stationsLoading={stations.isLoading}
         activeTab={drawerTab}
         endingPending={endSessionMutation.isPending}
         onClose={() => setViewOpen(false)}
