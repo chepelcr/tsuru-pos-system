@@ -39,7 +39,10 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
     if (open && config) {
       setForm({
         username: config.username ?? "",
-        password: config.password ?? "",
+        // The password is never sent back to us — it authorizes emitting legal
+        // invoices, so the API reports only that one is stored. The field stays
+        // empty and means "keep what is saved"; typing replaces it.
+        password: "",
         status: config.status ?? 1,
         certData: "",
         certPin: "",
@@ -94,9 +97,12 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
   const handleSave = async () => {
     const payload: Record<string, unknown> = {
       username: form.username,
-      password: form.password,
       status: form.status,
     };
+
+    // Omitted means "keep the stored password". Sending "" would ask the API to
+    // replace a working credential with nothing.
+    if (form.password) payload.password = form.password;
 
     if (form.certData) {
       payload.certificate = {
@@ -170,8 +176,13 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
                 type="password"
                 value={form.password}
                 onChange={(e) => handleCredentialChange({ password: e.target.value })}
-                placeholder="••••••••"
+                placeholder={config?.has_password ? "••••••••" : ""}
               />
+              {config?.has_password && !form.password && (
+                <p className="t-xs text-muted-foreground mt-1">
+                  {t("orgSettings.hacienda.passwordStored")}
+                </p>
+              )}
             </div>
 
             {/* Verify button + status */}
