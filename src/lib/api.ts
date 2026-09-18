@@ -40,8 +40,10 @@ async function request<T>(
     ...options.headers,
   };
   
-  // Only add x-user-id header for cross-app-be API (not for markets API)
-  if (baseUrl === CROSS_APP_API_BASE && token) {
+  // Add x-user-id for the APIs that read the caller from a header rather than
+  // from the path (cross-app-be, and support-api since its URLs name only the
+  // organization). The markets API takes the user id in the path instead.
+  if ((baseUrl === CROSS_APP_API_BASE || baseUrl === SUPPORT_API_BASE) && token) {
     try {
       const [, payloadB64] = token.split('.');
       const { sub } = JSON.parse(atob(payloadB64));
@@ -180,6 +182,18 @@ export const api = {
 // replay depends on.
 export const crossAppApi = createClient(CROSS_APP_API_BASE);
 export const supportApi = createClient(SUPPORT_API_BASE);
+
+/**
+ * `/api/organizations/{org}/support{endpoint}` on the support API.
+ *
+ * Support URLs name the tenant and nothing else: the caller travels in the
+ * verified JWT (plus the `x-user-id` header `request` attaches), so no user id
+ * or `?organization_id=` query parameter appears in the URL.
+ */
+export function supportOrgPath(orgId: string, endpoint: string) {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `/api/organizations/${orgId}/support${cleanEndpoint}`;
+}
 
 export const ordersApi = createClient(CROSS_APP_API_BASE);
 

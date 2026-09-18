@@ -52,6 +52,9 @@ export function DashboardHeader({
   const accountItems: MenuItem[] = [
     { label: t("shell.profile"), icon: "user", action: () => setLocation(ROUTES.PROFILE) },
     { label: t("shell.switchOrg"), icon: "store", action: () => setLocation(ROUTES.SELECT_ORG) },
+    // Support moved out of the sidebar footer: it is an errand the person runs,
+    // not a section of the app, and the sidebar hid it whenever it collapsed.
+    { label: t("shell.support"), icon: "mail", action: () => setLocation(ROUTES.DASHBOARD_SUPPORT) },
     { label: t("shell.logout"), icon: "logOut", action: logout },
   ];
 

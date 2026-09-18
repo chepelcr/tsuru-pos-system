@@ -5,7 +5,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useOrganization } from '@/hooks/useOrganization';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { supportApi } from '@/lib/api';
+import { supportApi, supportOrgPath } from '@/lib/api';
 import { EVENTS_ENDPOINT } from '@/lib/amplify';
 import {
   Button, Card, CardBody, CardHeader, CardTitle, Drawer, FormLabel,
@@ -136,28 +136,33 @@ export default function SupportPage() {
 
   const tickets = useQuery({
     queryKey: ['support-tickets', orgId], enabled: !!orgId,
-    queryFn: () => supportApi.get<SupportTicket[]>(`/api/support/tickets?organization_id=${encodeURIComponent(orgId!)}`),
+    queryFn: () => supportApi.get<SupportTicket[]>(supportOrgPath(orgId!, '/tickets')),
     refetchInterval: 30_000,
   });
   const detail = useQuery({
-    queryKey: ['support-ticket', selectedId], enabled: !!selectedId,
-    queryFn: () => supportApi.get<SupportTicket>(`/api/support/tickets/${selectedId}`),
+    queryKey: ['support-ticket', orgId, selectedId], enabled: !!orgId && !!selectedId,
+    queryFn: () => supportApi.get<SupportTicket>(supportOrgPath(orgId!, `/tickets/${selectedId}`)),
     refetchInterval: 30_000,
   });
   const create = useMutation({
     mutationFn: async () => {
-      const ticket = await supportApi.post<SupportTicket>('/api/support/tickets', {
-        organization_id: orgId, subject: subject.trim(), description: description.trim(), module,
+      // organization_id is NOT in the body — the path carries it, and the API
+      // rejects a body copy that could disagree with the URL.
+      const ticket = await supportApi.post<SupportTicket>(supportOrgPath(orgId!, '/tickets'), {
+        subject: subject.trim(), description: description.trim(), module,
       });
       const failed: string[] = [];
       for (const file of evidence) {
         try {
-          const target = await supportApi.post<EvidenceUploadTarget>(`/api/support/tickets/${ticket.id}/evidence`, {
-            file_name: file.name, content_type: file.type, size_bytes: file.size,
-          });
+          const target = await supportApi.post<EvidenceUploadTarget>(
+            supportOrgPath(orgId!, `/tickets/${ticket.id}/evidence`),
+            { file_name: file.name, content_type: file.type, size_bytes: file.size },
+          );
           const response = await fetch(target.upload_url, { method: 'PUT', headers: target.headers, body: file });
           if (!response.ok) throw new Error(`Evidence upload failed (${response.status})`);
-          await supportApi.post(`/api/support/tickets/${ticket.id}/evidence/${target.id}/complete`, {});
+          await supportApi.post(
+            supportOrgPath(orgId!, `/tickets/${ticket.id}/evidence/${target.id}/complete`), {},
+          );
         } catch { failed.push(file.name); }
       }
       return { ticket, failed };
@@ -167,25 +172,27 @@ export default function SupportPage() {
       setSelectedId(ticket.id); setDrawerOpen(false);
       setNotice(failed.length ? t('support.createdEvidenceFailed') : t('support.created'));
       void queryClient.invalidateQueries({ queryKey: ['support-tickets', orgId] });
-      void queryClient.invalidateQueries({ queryKey: ['support-ticket', ticket.id] });
+      void queryClient.invalidateQueries({ queryKey: ['support-ticket', orgId, ticket.id] });
     },
     onError: () => setNotice(t('support.unavailable')),
   });
   const sendReply = useMutation({
-    mutationFn: () => supportApi.post(`/api/support/tickets/${selectedId}/messages`, { body: reply.trim() }),
+    mutationFn: () => supportApi.post(
+      supportOrgPath(orgId!, `/tickets/${selectedId}/messages`), { body: reply.trim() },
+    ),
     onSuccess: () => {
       setReply(''); setNotice('');
-      void queryClient.invalidateQueries({ queryKey: ['support-ticket', selectedId] });
+      void queryClient.invalidateQueries({ queryKey: ['support-ticket', orgId, selectedId] });
       void queryClient.invalidateQueries({ queryKey: ['support-tickets', orgId] });
     },
     onError: () => setNotice(t('support.unavailable')),
   });
 
   const openEvidence = async (item: SupportEvidence) => {
-    if (!selectedId) return;
+    if (!selectedId || !orgId) return;
     try {
       const result = await supportApi.get<{ download_url: string }>(
-        `/api/support/tickets/${selectedId}/evidence/${item.id}/download`,
+        supportOrgPath(orgId, `/tickets/${selectedId}/evidence/${item.id}/download`),
       );
       const anchor = document.createElement('a');
       anchor.href = result.download_url; anchor.target = '_blank'; anchor.rel = 'noopener noreferrer';
@@ -220,7 +227,7 @@ export default function SupportPage() {
   }, [user?.userId, queryClient]);
 
   return (
-    <div className="space-y-5 py-5 max-w-6xl mx-auto">
+    <div className="px-4 sm:px-6 pt-6 pb-10 max-w-[1100px] mx-auto space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="t-h2">{t('support.title')}</h1>
