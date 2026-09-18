@@ -23,6 +23,10 @@ import { ClientStoresList } from "@/components/clients/ClientStoresList";
 import { ClientDepartmentsList } from "@/components/clients/ClientDepartmentsList";
 import { ClientOrderHistory } from "@/components/clients/ClientOrderHistory";
 import { ClientWhatsAppButton } from "@/components/clients/ClientWhatsAppButton";
+import { useNationalTaxpayer } from "@/hooks/useNationalTaxpayer";
+import { useDepartments } from "@/hooks/useDepartments";
+import { useStores } from "@/hooks/useStores";
+import { useOrders } from "@/hooks/useOrders";
 
 function buildForm(client?: Client | null): CreateClientDto {
   return {
@@ -154,6 +158,37 @@ export default function ClientDetailPage({ clientId }: Props) {
   const canUpdate = !permsReady || can("commercial", "update", "clients");
   const canDelete = !permsReady || can("commercial", "delete", "clients");
 
+  // Is this customer on the national taxpayer registry? The catalog is the
+  // authority — adding a chain is a catalog row, not a frontend release.
+  const taxpayer = useNationalTaxpayer([
+    client?.identification?.number,
+    client?.client_gln,
+  ]);
+  // Rows already on file, which is what an imported chain client has instead of
+  // a cédula. page_size 1 because only existence matters here.
+  const { data: departmentsProbe, isLoading: departmentsLoading } =
+    useDepartments(orgId, clientId, { page_size: 1 });
+  const { data: storesProbe, isLoading: storesLoading } =
+    useStores(orgId, clientId, { page_size: 1 });
+  const hasChainData =
+    (departmentsProbe?.data?.length ?? 0) > 0 || (storesProbe?.data?.length ?? 0) > 0;
+  const chainDataLoading = departmentsLoading || storesLoading;
+
+  const showTaxpayerTabs =
+    taxpayer.isLoading || chainDataLoading || taxpayer.isNationalTaxpayer || hasChainData;
+
+  // Orders for ANY customer that has them, keyed by GLN the same way the history
+  // tab queries. Shown while unresolved for the same reason as above.
+  const { data: ordersProbe, isLoading: ordersLoading } = useOrders({
+    orgId,
+    search: client?.client_gln ? `clientGln:${client.client_gln}` : "",
+    page: 1,
+    pageSize: 1,
+    enabled: !!orgId && !!client?.client_gln,
+  });
+  const showOrdersTab =
+    !client?.client_gln ? false : ordersLoading || (ordersProbe?.data?.length ?? 0) > 0;
+
   const displayName = clientDisplayName(client);
   usePageTitle([t("shell.clients"), displayName || (isLoading ? undefined : t("common.new"))]);
   const [bg, fg] = avatarColor(displayName);
@@ -235,12 +270,41 @@ export default function ClientDetailPage({ clientId }: Props) {
     );
   }
 
+  /**
+   * Which tabs this customer actually needs.
+   *
+   * All four used to show for everyone, so an ordinary customer carried an empty
+   * Orders history and two chain tabs that would never hold anything — and the
+   * tabs that DO matter were no easier to find for being next to two that did not.
+   *
+   *   Departments / Delivery points — for a *contribuyente nacional*: a customer
+   *     on the national taxpayer registry, whose documents have to name a
+   *     department and a delivery point. `hasChainData` keeps them for a customer
+   *     whose rows already exist but whose cédula does not: an order imported
+   *     from a chain's spreadsheet creates its client with no identification at
+   *     all (the file has no such column), so the registry cannot match it while
+   *     its departments and stores are created by that same import.
+   *
+   *   Orders — whenever the customer has any, for ANY customer. It was never
+   *     chain-specific; it simply sat beside the chain tabs.
+   *
+   * While a lookup is unresolved the tab is SHOWN rather than hidden: flashing a
+   * tab away under someone mid-click is worse than briefly offering an empty one.
+   */
   const TABS: { key: TabKey; label: string; icon: string }[] = [
     { key: "overview", label: t("clients.tabs.overview"), icon: "user" },
-    { key: "orders", label: t("shell.orders"), icon: "cart" },
-    { key: "stores", label: t("clients.tabs.stores"), icon: "store" },
-    { key: "departments", label: t("clients.tabs.departments"), icon: "layers" },
+    ...(showOrdersTab ? [{ key: "orders" as const, label: t("shell.orders"), icon: "cart" }] : []),
+    ...(showTaxpayerTabs ? [
+      { key: "stores" as const, label: t("clients.tabs.stores"), icon: "store" },
+      { key: "departments" as const, label: t("clients.tabs.departments"), icon: "layers" },
+    ] : []),
   ];
+
+  // A tab can stop being available while it is the one being shown — the orders
+  // probe resolves to zero, or a lookup finishes and the customer turns out not to
+  // be on the registry. Falling back keeps the page from rendering an empty body
+  // under a tab strip that no longer contains the selection.
+  const activeTab = TABS.some((item) => item.key === tab) ? tab : "overview";
 
   return (
     <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
@@ -308,7 +372,7 @@ export default function ClientDetailPage({ clientId }: Props) {
             <button
               key={tb.key}
               className="tab"
-              aria-selected={tab === tb.key}
+              aria-selected={activeTab === tb.key}
               onClick={() => setTab(tb.key)}
             >
               <Icon name={tb.icon} size={14} /> {tb.label}
@@ -318,7 +382,7 @@ export default function ClientDetailPage({ clientId }: Props) {
       </div>
 
       {/* Overview tab */}
-      {tab === "overview" && (
+      {activeTab === "overview" && (
         <div className="flex flex-col gap-3.5">
           <div className="grid-auto-fit-300 gap-3.5">
             {hasIdentity && (
@@ -370,13 +434,13 @@ export default function ClientDetailPage({ clientId }: Props) {
       )}
 
       {/* Orders tab — paginated history */}
-      {tab === "orders" && <ClientOrderHistory orgId={orgId} clientGln={client.client_gln} />}
+      {activeTab === "orders" && <ClientOrderHistory orgId={orgId} clientGln={client.client_gln} />}
 
       {/* Stores tab */}
-      {tab === "stores" && <ClientStoresList orgId={orgId} clientId={client.client_id} />}
+      {activeTab === "stores" && <ClientStoresList orgId={orgId} clientId={client.client_id} />}
 
       {/* Departments tab */}
-      {tab === "departments" && <ClientDepartmentsList orgId={orgId} clientId={client.client_id} />}
+      {activeTab === "departments" && <ClientDepartmentsList orgId={orgId} clientId={client.client_id} />}
 
       <EditDrawer
         open={editOpen}
