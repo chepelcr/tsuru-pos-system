@@ -605,6 +605,16 @@ export interface ChainClientInfo {
   /** The chain's purchasing department. */
   department_id?: string;
   department_code?: string;
+  /**
+   * The supplier number the chain assigns to US, held on the department.
+   *
+   * Walmart calls it the vendor number and requires it on the document as
+   * `WMNumeroVendedor`. It was captured on the department already (and shown on
+   * the department card) but never travelled to a document, so every invoice to
+   * the chain went out missing a field it demands. Derived from the selected
+   * department rather than typed, because that is where it is maintained.
+   */
+  supplier_code?: string;
   /** Registered delivery point (tienda / bodega). */
   store_id?: string;
   store_code?: string;

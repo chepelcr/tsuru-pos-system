@@ -154,14 +154,26 @@ function cabysCodeOf(product: any): string | undefined {
  * so the chain (and we) can read a single field back without parsing prose.
  * Empty values are omitted entirely — an `OtroTexto` with no text is noise on
  * a fiscal document.
+ *
+ * **The codes are the CHAIN's, not ours.** These were `ordenCompra`,
+ * `departamento`, `puntoEntrega` and `gln` — names we invented, which a chain
+ * matching on the code string cannot find. Walmart reads exactly three:
+ *
+ *   WMNumeroVendedor  the supplier number it assigns us (from the department)
+ *   WMEnviarGLN       the ship-to GLN, which identifies the delivery point
+ *   WMNumeroOrden     its own purchase-order number
+ *
+ * `department_code` and `store_code` are deliberately NOT sent (owner decision
+ * 2026-09-18): the delivery point is identified by its GLN, so a second
+ * identifier for the same thing is redundant on the document. Both are still
+ * captured in the checkout — they drive the selects and the order record.
  */
-function chainOtherFields(info: ChainClientInfo | undefined) {
+export function chainOtherFields(info: ChainClientInfo | undefined) {
   if (!info) return [];
   const entries: Array<[string, string | undefined]> = [
-    ["ordenCompra", info.purchase_order_number],
-    ["departamento", info.department_code],
-    ["puntoEntrega", info.store_code],
-    ["gln", info.gln],
+    ["WMNumeroVendedor", info.supplier_code],
+    ["WMEnviarGLN", info.gln],
+    ["WMNumeroOrden", info.purchase_order_number],
   ];
   return entries
     .filter(([, value]) => !!value && String(value).trim())

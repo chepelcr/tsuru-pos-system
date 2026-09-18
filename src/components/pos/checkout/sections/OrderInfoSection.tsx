@@ -62,6 +62,14 @@ export function OrderInfoSection({
   // Falls back to the customer's own name where a chain was not identified, so
   // the card never reads "Datos de " with a blank after it.
   const chainName = chain?.name ?? t('chainClient.genericName');
+  /**
+   * The document is settling an existing pedido rather than being composed here.
+   *
+   * The selects stay editable — a partial delivery can legitimately go to one
+   * store — but the chain's purchase-order number does not: it identifies the
+   * order being settled.
+   */
+  const fromOrder = !!orderNumber;
 
   const { data: departmentsResp } = useDepartments(orgId, clientId, { page_size: 100 });
   const { data: storesResp } = useStores(orgId, clientId, { page_size: 100 });
@@ -96,6 +104,7 @@ export function OrderInfoSection({
       onChange({
         department_id: match.department_id,
         department_code: match.department_code,
+        supplier_code: match.supplier_code ?? undefined,
       });
     }
     // `onChange` is a fresh closure on every render of the drawer; depending on
@@ -178,6 +187,10 @@ export function OrderInfoSection({
               onChange({
                 department_id: e.target.value || undefined,
                 department_code: dept?.department_code,
+                // The vendor number is maintained on the department, and the
+                // document requires it as WMNumeroVendedor — so it follows the
+                // department rather than being typed again here.
+                supplier_code: dept?.supplier_code ?? undefined,
               });
             }}
           >
@@ -225,6 +238,28 @@ export function OrderInfoSection({
           )}
         </div>
 
+        {/* Derived from the department, shown so the cashier can see the value
+            that will reach the document. Not editable here: it is maintained on
+            the department, and two places to change it means one of them is
+            wrong. */}
+        {data.supplier_code && (
+          <div>
+            <FormLabel htmlFor="chain-vendor">
+              {t('chainClient.vendorNumber')}
+            </FormLabel>
+            <input
+              id="chain-vendor"
+              className="input input-sm w-full font-mono"
+              value={data.supplier_code}
+              readOnly
+              aria-readonly="true"
+            />
+            <div className="t-xs text-muted-foreground mt-1">
+              {t('chainClient.vendorNumber.hint')}
+            </div>
+          </div>
+        )}
+
         <div>
           <FormLabel htmlFor="chain-po">
             {t('chainClient.purchaseOrder', { chain: chainName })}
@@ -233,13 +268,20 @@ export function OrderInfoSection({
             id="chain-po"
             className="input input-sm w-full"
             value={data.purchase_order_number ?? ''}
-            placeholder={t('chainClient.purchaseOrder.placeholder')}
+            placeholder={fromOrder ? undefined : t('chainClient.purchaseOrder.placeholder')}
+            // Billing an existing pedido: the chain's order number came WITH that
+            // order and is what the delivery is being settled against. Retyping it
+            // here would silently invoice against a different purchase order.
+            readOnly={fromOrder}
+            aria-readonly={fromOrder}
             onChange={(e) =>
               onChange({ purchase_order_number: e.target.value || undefined })
             }
           />
           <div className="t-xs text-muted-foreground mt-1">
-            {t('chainClient.purchaseOrder.hint', { chain: chainName })}
+            {fromOrder
+              ? t('chainClient.purchaseOrder.fromOrder')
+              : t('chainClient.purchaseOrder.hint', { chain: chainName })}
           </div>
         </div>
         </>
