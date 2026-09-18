@@ -37,7 +37,7 @@ import { CountryISO } from "@/lib/enums";
 import { useAllDiscountTypes, useAllTaxes } from "@/hooks/useDataApi";
 import { resolveReceiverName } from "@/lib/receiverResolution";
 import type {
-  ManualOrderFields, ChainClientInfo,
+  ManualOrderFields, ChainClientInfo, ManualOrderDeliveryLocation,
   ManualOrderLineDiscountPayload,
   ManualOrderLinePayload,
   OrderLineCode,
@@ -746,6 +746,38 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       // while the screen showed the trade name.
       const clientName = resolveReceiverName(receiver, selectedClient);
 
+      // ─── Chain data on a PEDIDO is ORDER data, not document data ─────────
+      //
+      // A manual order has no OtroTexto block — `other_fields` belongs to the
+      // fiscal document, and this branch returns before that payload is ever
+      // built. So the chain fields captured in the order-info card were simply
+      // DROPPED on a pedido: the card collected a delivery point, a department
+      // and the chain's order number, and none of it reached the order.
+      //
+      // The order already has first-class homes for all three, which is exactly
+      // how `orderToInvoice.chainInfoFromOrder` reads them back when the pedido
+      // is later billed:
+      //
+      //   department      -> department_id / department_code
+      //   delivery point  -> delivery_location (code / name / gln)
+      //   chain order no. -> document_number  (on a supplier order the document
+      //                      number IS the chain's purchase order)
+      //
+      // The order-info card wins over the older Pedido-card fields, since that
+      // is where these moved when the card was consolidated.
+      const chainInfo = invoiceData.chain_info;
+
+      const chainDeliveryLocation: ManualOrderDeliveryLocation | undefined =
+        chainInfo?.store_id || chainInfo?.store_code || chainInfo?.gln
+          ? {
+              mode: "store",
+              store_id: chainInfo.store_id,
+              code: chainInfo.store_code,
+              name: chainInfo.store_name,
+              gln: chainInfo.gln,
+            }
+          : undefined;
+
       const orderPayload: ManualOrderPayload = {
         source: MANUAL_ORDER_SOURCE,
         document_type: invoiceData.document_type,
@@ -756,7 +788,13 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
           internal_code: selectedClient?.identification?.number ?? undefined,
         },
         // User-writable; empty means the server assigns from the PM sequence.
-        document_number: manualFields.document_number?.trim() || undefined,
+        // For a chain, the chain's own purchase-order number IS this order's
+        // document number — that is what they reconcile against, and what
+        // chainInfoFromOrder reads back when the pedido is billed.
+        document_number:
+          chainInfo?.purchase_order_number?.trim()
+          || manualFields.document_number?.trim()
+          || undefined,
         is_quote: manualFields.is_quote || undefined,
         // Captured on the Pedido card now that the Documento card is not
         // rendered for a PM. Persisted so a later factura reuses them.
@@ -764,8 +802,11 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         activity_code: manualFields.activity_code || undefined,
         credit_term: manualFields.credit_term || undefined,
         delivery_date: manualFields.delivery_date || undefined,
-        delivery_location: manualFields.delivery_location,
-        department_id: manualFields.department_id || undefined,
+        delivery_location: chainDeliveryLocation ?? manualFields.delivery_location,
+        // `department_id` only: the payload contract carries the id and the
+        // backend resolves the code from it. The order-info card's code->id
+        // back-fill is what guarantees an order-sourced prefill has one.
+        department_id: chainInfo?.department_id || manualFields.department_id || undefined,
         comment: manualFields.comment || invoiceData.notes || undefined,
         // Currency comes from the Pedido card for a PM; invoiceData is the
         // fallback for anything that still sets it document-level.
