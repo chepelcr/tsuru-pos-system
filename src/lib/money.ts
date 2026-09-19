@@ -84,7 +84,12 @@ export function formatMoney(
   value: number | null | undefined,
   symbol: string = CRC_SYMBOL,
 ): string {
-  const n = Number(value ?? 0);
+  const raw = Number(value ?? 0);
+  // `-0` formats as "-0,00", which shows up wherever a value is negated for
+  // display — the IVA report renders credits as deductions, so an empty period
+  // read "Crédito fiscal ₡-0,00" in five places at once. Adding 0 collapses
+  // negative zero to zero and leaves every other value alone.
+  const n = raw === 0 ? 0 : raw;
   return (
     symbol +
     (Number.isFinite(n) ? n : 0).toLocaleString("es-CR", {

@@ -122,3 +122,18 @@ describe("moneyInputValue — what goes IN a money field", () => {
     expect(moneyInputValue(1.005)).toBe("1.01");
   });
 });
+
+describe("negative zero", () => {
+  it("never renders as -0,00", () => {
+    // Reached wherever a value is negated for display: the IVA report shows
+    // credits as deductions, so an all-zero period printed "₡-0,00" five times.
+    expect(formatMoney(-0)).toBe("₡0,00");
+    expect(formatMoney(-0 as number)).not.toContain("-");
+    expect(formatAmount(-0)).toBe("0,00");
+  });
+
+  it("still renders real negatives", () => {
+    expect(formatMoney(-1234.5)).toContain("-");
+    expect(formatMoney(-0.004)).toBe("₡-0,00");
+  });
+});
