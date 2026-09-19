@@ -51,3 +51,28 @@ export interface HistoricalDocumentFilters {
   end_date?: string;
   sort_direction?: 'asc' | 'desc';
 }
+
+/** One ATV verdict's document count, from the ledger summary. */
+export interface HistoricalStatusCount {
+  atv_status: number;
+  count: number;
+}
+
+/** One Hacienda document-type code's count, from the ledger summary. */
+export interface HistoricalTypeCount {
+  document_type: string;
+  count: number;
+}
+
+/**
+ * `GET .../historical-documents/summary` — whole-ledger counts in one request.
+ *
+ * `by_type` can carry codes the POS never issues (05/06/07), so a renderer must
+ * account for the remainder rather than assume the bars sum to `total`.
+ */
+export interface HistoricalDocumentSummaryResponse {
+  total: number;
+  by_status: HistoricalStatusCount[];
+  by_type: HistoricalTypeCount[];
+  historical_requested: boolean;
+}

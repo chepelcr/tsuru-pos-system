@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi, historicalDocumentsPath } from '@/lib/api';
 import { DOCUMENT_TYPES } from '@/types/invoice';
-import type { HistoricalDocument, HistoricalDocumentFilters, HistoricalDocumentListResponse, HistoricalSyncResponse } from '@/types/historicalDocument';
+import type {
+  HistoricalDocument, HistoricalDocumentFilters, HistoricalDocumentListResponse,
+  HistoricalDocumentSummaryResponse, HistoricalSyncResponse,
+} from '@/types/historicalDocument';
 
 /** The history API accepts date bounds directly, unlike sales' sale_date ranges. */
 export function historicalDocumentsQuery(filters: HistoricalDocumentFilters = {}, page = 0, size = 20): string {
@@ -52,65 +54,57 @@ export function useSyncHistoricalDocuments(orgId: string) {
 }
 
 /**
- * Whole-history counts for the Reportes summary.
+ * Whole-history counts for the Reportes summary — ONE request.
  *
- * Deliberately NOT an aggregate over a fetched page. `size` caps at 250, so
- * summing rows would quietly describe only the most recent page and call it a
- * report. Instead each slice is a `size=1` request read for its
- * `total_elements`, which the backend computes over the entire history — cheap
- * responses, exact numbers, and it stays correct as the ledger grows.
+ * This used to fire eleven parallel `size=1` list requests (total, four ATV
+ * verdicts, six document types) and read each one's `total_elements`. The
+ * numbers were right and the responses were tiny, so it looked cheap. It was
+ * not: the AWS account's Lambda concurrency ceiling is **10**, so the eleventh
+ * request was rejected with `ConcurrentInvocationLimitExceeded` every single
+ * time. API Gateway renders that 429 as a 500, and a gateway 500 carries no
+ * `Access-Control-Allow-Origin`, so the browser reported it as a bare network
+ * error with no status at all — and `isError` being `.some(...)` meant one
+ * unlucky slice blanked the entire card. Deterministically, on every load.
+ *
+ * The backend now answers all of it from one `GROUP BY`. Two lessons worth
+ * keeping: a summary card must not cost a request per number on it, and N
+ * parallel requests where N is a constant you chose is a limit you have
+ * silently assumed.
+ *
+ * Still deliberately NOT an aggregate over a fetched page — `size` caps at 250,
+ * so summing rows would describe the most recent page and call it a report.
  *
  * Money is not summarised here: totals cannot be derived from a count, and a
  * partial sum on a fiscal report is worse than no sum at all.
  */
 export function useHistoricalDocumentsSummary(orgId: string, enabled = true) {
-  const slices = useMemo(() => {
-    const byStatus = ([0, 1, 2, 3] as const).map((atv_status) => ({
-      kind: 'status' as const, key: String(atv_status), query: historicalDocumentsQuery({ atv_status }, 0, 1),
-    }));
-    const byType = DOCUMENT_TYPES.map((dt) => ({
-      kind: 'type' as const, key: dt.code, query: historicalDocumentsQuery({ document_types: [dt.code] }, 0, 1),
-    }));
-    return [{ kind: 'total' as const, key: 'total', query: historicalDocumentsQuery({}, 0, 1) }, ...byStatus, ...byType];
-  }, []);
-
-  const results = useQueries({
-    queries: slices.map((slice) => ({
-      queryKey: ['historical-summary', orgId, slice.query],
-      queryFn: () => salesApi.get<HistoricalDocumentListResponse>(historicalDocumentsPath(orgId, `?${slice.query}`)),
-      enabled: !!orgId && enabled,
-      staleTime: 5 * 60 * 1000,
-    })),
+  const query = useQuery({
+    queryKey: ['historical-summary', orgId],
+    queryFn: () => salesApi.get<HistoricalDocumentSummaryResponse>(historicalDocumentsPath(orgId, '/summary')),
+    enabled: !!orgId && enabled,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const isLoading = results.some((r) => r.isLoading);
-  const isError = results.some((r) => r.isError);
+  const total = query.data?.total ?? 0;
+  const statusCounts = new Map((query.data?.by_status ?? []).map((row) => [row.atv_status, row.count]));
 
-  const count = (key: string) => {
-    const index = slices.findIndex((slice) => slice.key === key);
-    return results[index]?.data?.pagination.total_elements ?? 0;
-  };
-
-  const total = count('total');
+  // Only the types the POS knows how to label are charted; anything else (05/06/07,
+  // or a code Hacienda adds later) lands in `other` so the bars visibly account
+  // for the headline instead of quietly falling short of it.
   const byType = DOCUMENT_TYPES
-    .map((dt) => ({ code: dt.code, count: count(dt.code) }))
+    .map((dt) => ({ code: dt.code, count: query.data?.by_type.find((row) => row.document_type === dt.code)?.count ?? 0 }))
     .filter((row) => row.count > 0);
-
-  // Hacienda history can contain types the POS never issues (05/06/07), so the
-  // remainder is shown rather than silently dropped — a bar chart that does not
-  // add up to the headline is a bug the reader has to notice for us.
   const accountedFor = byType.reduce((sum, row) => sum + row.count, 0);
-  const other = Math.max(0, total - accountedFor);
 
   return {
-    isLoading,
-    isError,
+    isLoading: query.isLoading,
+    isError: query.isError,
     total,
-    byStatus: ([0, 1, 2, 3] as const).map((status) => ({ status, count: count(String(status)) })),
+    byStatus: ([0, 1, 2, 3] as const).map((status) => ({ status, count: statusCounts.get(status) ?? 0 })),
     byType,
-    other,
+    other: Math.max(0, total - accountedFor),
     // `historical_requested` distinguishes an empty ledger from one never swept.
-    historicalRequested: results[0]?.data?.historical_requested,
-    refetch: () => { results.forEach((r) => { void r.refetch(); }); },
+    historicalRequested: query.data?.historical_requested,
+    refetch: () => { void query.refetch(); },
   };
 }
