@@ -355,6 +355,18 @@ export function salesOrgPath(orgId: string, suffix: string = '') {
 }
 
 /**
+ * /api/organizations/{org}/documents[suffix] — sales-api document metrics.
+ *
+ * A sibling of `salesOrgPath`, not a suffix on it: these are the dashboard
+ * aggregate panels (`/documents/summary`, `/status`, `/top-products`, `/trend`),
+ * which sit beside `/sales` rather than under it. Using `salesOrgPath` for them
+ * silently produces `/sales/documents/...` and 404s.
+ */
+export function documentsOrgPath(orgId: string, suffix: string = '') {
+  return `/api/organizations/${orgId}/documents${suffix}`;
+}
+
+/**
  * /api/organizations/{org}/tax-reports[suffix] — sales-api tax reporting.
  * Backs the IVA declaration support report (formulario D-150). Contract:
  * `docs/IVA_TAX_REPORT.md`.

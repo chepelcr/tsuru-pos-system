@@ -8,6 +8,25 @@
  * were never populated by the API at all.
  */
 
+/** Which population the dashboard is counting. */
+export type DashboardSource = "orders" | "documents";
+
+/** Buckets the trend endpoint accepts. */
+export type DashboardGranularity = "hour" | "day" | "week" | "month";
+
+/**
+ * What slice the SERVER answered for — not what the client asked.
+ *
+ * A non-admin asking for a whole session is narrowed to their own rows, so the
+ * response has to say which it is or the UI will label one as the other.
+ */
+export interface DashboardScopeInfo {
+  scope: "organization" | "session" | "session_user";
+  session_id: string | null;
+  user_id: string | null;
+  is_admin: boolean;
+}
+
 /** `GET /dashboard/sales-summary` — the whole organization, not one till. */
 export interface DashboardSalesSummary {
   orders: number;
@@ -15,6 +34,7 @@ export interface DashboardSalesSummary {
   average_ticket: number;
   units: number;
   last_order_at: string | null;
+  scope?: DashboardScopeInfo | null;
 }
 
 export interface DashboardStatusCount {
@@ -30,6 +50,10 @@ export interface DashboardOrderStatus {
   statuses: DashboardStatusCount[];
   open_orders: number;
   open_value: number;
+  /** Documents only: refused by Hacienda, excluded from revenue but shown here. */
+  rejected_orders?: number;
+  rejected_value?: number;
+  scope?: DashboardScopeInfo | null;
 }
 
 export interface DashboardTopProduct {
@@ -43,17 +67,43 @@ export interface DashboardTopProduct {
 /** `GET /dashboard/top-products` */
 export interface DashboardTopProducts {
   products: DashboardTopProduct[];
+  scope?: DashboardScopeInfo | null;
 }
 
 export interface DashboardTrendPoint {
-  day: string | null;
+  /** Bucket start, ISO 8601, with a time component at every granularity. */
+  bucket: string | null;
   orders: number;
   revenue: number;
 }
 
-/** `GET /dashboard/sales-trend` */
+/**
+ * `GET /dashboard/sales-trend`
+ *
+ * Buckets with no sales are ABSENT rather than zero — a missing bucket and a zero
+ * bucket are different facts. `granularity` is echoed so the chart labels its axis
+ * from what it received rather than from what it asked for.
+ */
 export interface DashboardSalesTrend {
-  days: DashboardTrendPoint[];
+  granularity: DashboardGranularity;
+  date_from: string | null;
+  date_to: string | null;
+  points: DashboardTrendPoint[];
+  scope?: DashboardScopeInfo | null;
+}
+
+/** `GET /dashboard/session-sales` — open orders plus today's deliveries. */
+export interface DashboardSessionSales {
+  orders: number;
+  revenue: number;
+  average_ticket: number;
+  /**
+   * Which rule decided whether a DELIVERED order counted.
+   * `created_today` while `delivery_date` is still a two-format string that
+   * cannot be compared safely; `delivery_date_today` once it is a real date.
+   */
+  delivered_rule: string;
+  scope?: DashboardScopeInfo | null;
 }
 
 export interface DashboardStation {

@@ -34,25 +34,27 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   // which answers in snake_case. Nothing matched, so every figure fell through
   // to its zero default — the report has been showing ₡0 across the board. It
   // now reads the panel endpoints, which are typed.
-  const summary = useSalesSummary(org?.id, !!user);
+  // Session mode scopes the summary to that session too, so the report's header
+  // figure and its per-till list describe the same thing. The old endpoint scoped
+  // only the stations, which is why a "session" report showed org-wide totals.
+  const scopeOptions = { sessionId };
+  const summary = useSalesSummary(org?.id, scopeOptions, !!user);
   const stations = useStations(org?.id, sessionId);
-  const products = useTopProducts(org?.id, 20);
+  const products = useTopProducts(org?.id, 20, scopeOptions);
 
   // Session mode sums the session's own tills; without a session it is the whole
   // organisation. The old `?session_id=` passed the filter only to its stations
   // query, so a "session" report was really the organisation's totals under a
   // session's name.
   const tills = stations.data?.stations ?? [];
-  const revenue = sessionId
-    ? tills.reduce((total, till) => total + till.revenue, 0)
-    : summary.data?.revenue ?? 0;
-  const orders = sessionId
-    ? tills.reduce((total, till) => total + till.orders, 0)
-    : summary.data?.orders ?? 0;
-  const averageTicket = orders > 0 ? revenue / orders : 0;
+  // The server scopes the summary now, in both modes — no need to sum the tills,
+  // which only ever covered orders that were rung up on an assigned one.
+  const revenue = summary.data?.revenue ?? 0;
+  const orders = summary.data?.orders ?? 0;
+  const averageTicket = summary.data?.average_ticket ?? 0;
 
   const topProducts = products.data?.products ?? [];
-  const isLoading = sessionId ? stations.isLoading : summary.isLoading;
+  const isLoading = summary.isLoading;
   const handlePrint = () => window.print();
 
   if (isLoading) {

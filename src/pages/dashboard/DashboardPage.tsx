@@ -6,8 +6,11 @@ import {
   useOrderStatus,
   useSalesSummary,
   useSalesTrend,
+  useSessionSales,
   useTopProducts,
 } from "@/hooks/useDashboard";
+import { useDashboardScope } from "@/hooks/useDashboardScope";
+import type { DashboardGranularity, DashboardSource } from "@/types/dashboard";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -31,6 +34,17 @@ const QrShareModal = lazy(() =>
 );
 
 
+/** Remembered per browser: which population the operator prefers to count. */
+const SOURCE_KEY = "pos-dashboard-source";
+
+function readSourcePreference(): DashboardSource {
+  try {
+    return localStorage.getItem(SOURCE_KEY) === "documents" ? "documents" : "orders";
+  } catch {
+    return "orders";
+  }
+}
+
 export default function DashboardPage() {
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
@@ -41,13 +55,31 @@ export default function DashboardPage() {
   const [qrOpen, setQrOpen] = useState(false);
   const siteUrl = org ? constructSiteUrl({ subdomain: org.subdomain }) : null;
 
-  // Five independent panels. Sales figures come from the organization's orders,
+  // What the viewer is allowed to see, and what they may switch it to. Not in a
+  // session → the whole business; in one → that session, and only their own rows
+  // unless they are an admin. The server resolves this independently and narrows
+  // anything it will not answer, so this is about asking the right question.
+  const scope = useDashboardScope();
+  const [source, setSource] = useState<DashboardSource>(readSourcePreference);
+  const [granularity, setGranularity] = useState<DashboardGranularity>("day");
+
+  const queryOptions = {
+    source,
+    sessionId: scope.sessionId,
+    // Sent explicitly so the request states its intent; the server narrows a
+    // non-admin to themselves either way.
+    userId: scope.ownOnly ? user?.userId : undefined,
+  };
+
+  // Independent panels. Sales figures come from the chosen source's own records,
   // so they are right whether or not anybody has a till open — which is the whole
   // reason this used to read zero with 45 orders in the database.
-  const summary = useSalesSummary(org?.id, !!user);
-  const orderStatus = useOrderStatus(org?.id, !!user);
-  const products = useTopProducts(org?.id);
-  const trend = useSalesTrend(org?.id);
+  const summary = useSalesSummary(org?.id, queryOptions, !!user);
+  const orderStatus = useOrderStatus(org?.id, queryOptions, !!user);
+  const products = useTopProducts(org?.id, 10, queryOptions);
+  const trend = useSalesTrend(org?.id, granularity, queryOptions);
+  // Orders only: a document has no delivery to still be pending.
+  const sessionSales = useSessionSales(org?.id, queryOptions);
 
   const totalRevenue = summary.data?.revenue ?? 0;
   const totalSales = summary.data?.orders ?? 0;
@@ -55,6 +87,17 @@ export default function DashboardPage() {
   const openOrders = orderStatus.data?.open_orders ?? 0;
   const openValue = orderStatus.data?.open_value ?? 0;
   const ranking = products.data?.products ?? [];
+  // The scope the SERVER answered for, which is what the header should label.
+  const answeredScope = summary.data?.scope ?? null;
+
+  const changeSource = (next: DashboardSource) => {
+    setSource(next);
+    try {
+      localStorage.setItem(SOURCE_KEY, next);
+    } catch {
+      // Not worth surfacing — the choice simply does not persist.
+    }
+  };
 
   // Only the headline figure gates the hero card. A slow product ranking should
   // not hold up the number the operator opened the page to read.
@@ -65,6 +108,7 @@ export default function DashboardPage() {
     void orderStatus.refetch();
     void products.refetch();
     void trend.refetch();
+    void sessionSales.refetch();
   };
 
   return (
@@ -81,12 +125,49 @@ export default function DashboardPage() {
             })()},{" "}
             {user?.first_name ?? user?.name?.split(" ")[0] ?? ""}
           </h1>
-          {/* Was a station count, which no longer lives on this page. The
-              organization name says WHICH business these figures are for —
-              which is what the scope switcher will extend. */}
-          <p className="t-body text-muted-foreground">{org?.name ?? ""}</p>
+          {/* What these figures cover, read off the RESPONSE rather than the
+              request: a non-admin asking for a whole session is narrowed to
+              their own rows, and the label has to say so. */}
+          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+            <p className="t-body text-muted-foreground">{org?.name ?? ""}</p>
+            {answeredScope && answeredScope.scope !== "organization" && (
+              <Badge variant={answeredScope.scope === "session_user" ? "info" : "primary-soft"}>
+                {t(answeredScope.scope === "session_user"
+                  ? "dash.scope.sessionMine"
+                  : "dash.scope.session")}
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Orders or documents — not the same population. An order may never be
+              billed, and a document may have no order behind it. */}
+          <div className="tabs" role="tablist" aria-label={t("dash.source")}>
+            {(["orders", "documents"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="tab"
+                className="tab"
+                aria-selected={source === option}
+                onClick={() => changeSource(option)}
+              >
+                {t(`dash.source.${option}`)}
+              </button>
+            ))}
+          </div>
+
+          {/* Only an admin inside a session can widen to the whole business. */}
+          {scope.canSwitch && (
+            <Button
+              variant="outline"
+              size="sm"
+              icon={scope.kind === "session" ? "store" : "users"}
+              onClick={() => scope.setKind(scope.kind === "session" ? "organization" : "session")}
+            >
+              {t(scope.kind === "session" ? "dash.scope.viewOrg" : "dash.scope.viewSession")}
+            </Button>
+          )}
           <Button variant="outline" size="sm" icon="store" onClick={() => setQrOpen(true)}>
             {t("qr.shareStore")}
           </Button>
@@ -166,7 +247,23 @@ export default function DashboardPage() {
                 <div className="flex justify-between items-start mb-[18px] flex-wrap gap-2.5">
                   <div>
                     <CardTitle>{t("dash.salesTrend")}</CardTitle>
-                    <CardDescription>{t("dash.lastDays", { n: "14" })}</CardDescription>
+                    <CardDescription>
+                      {t(`dash.granularity.${granularity}.hint`)}
+                    </CardDescription>
+                  </div>
+                  <div className="tabs" role="tablist" aria-label={t("dash.granularity")}>
+                    {(["hour", "day", "week", "month"] as const).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        role="tab"
+                        className="tab"
+                        aria-selected={granularity === option}
+                        onClick={() => setGranularity(option)}
+                      >
+                        {t(`dash.granularity.${option}`)}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <div className="mb-3.5">
@@ -179,7 +276,12 @@ export default function DashboardPage() {
                       : t("dash.noOrders")}
                   </div>
                 </div>
-                <SalesChart days={trend.data?.days ?? []} />
+                {/* Granularity from the response, so the axis cannot disagree
+                    with the data plotted under it. */}
+                <SalesChart
+                  points={trend.data?.points ?? []}
+                  granularity={trend.data?.granularity ?? granularity}
+                />
               </>
             )}
           </Card>
