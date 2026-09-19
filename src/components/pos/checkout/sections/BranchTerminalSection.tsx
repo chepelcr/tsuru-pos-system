@@ -3,6 +3,7 @@ import { Store } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { Button, Drawer, FormLabel, Input, Select } from '@/components/ui';
+import { useAssignment } from '@/hooks/useAssignment';
 import { useCreateTerminal } from '@/hooks/useBranches';
 import { useSessionSelection } from '@/hooks/useSessionSelection';
 import type { CreateTerminalRequest } from '@/types/branch';
@@ -29,6 +30,12 @@ interface BranchTerminalSectionProps {
  * genuinely has nothing to pick from, in which case it asks for the missing
  * piece to be created instead of failing at confirm time with
  * "missing branch/terminal".
+ *
+ * **With an active assignment the selects are read-only.** The till is what the
+ * shift was opened on; changing it on one document would issue that document
+ * from a station the cashier is not assigned to, and the closing would then
+ * reconcile against a different one. Without an assignment — an admin working
+ * outside a shift — they are free to pick, because nothing has decided for them.
  */
 export function BranchTerminalSection({
   isExpanded,
@@ -47,6 +54,10 @@ export function BranchTerminalSection({
     needsTerminal,
     isLoading,
   } = useSessionSelection(orgId);
+
+  // An active assignment pins the till for the whole shift.
+  const assignment = useAssignment();
+  const pinnedByAssignment = !!assignment.data?.assignment_id;
 
   const createTerminal = useCreateTerminal(orgId);
   const [addOpen, setAddOpen] = useState(false);
@@ -83,6 +94,14 @@ export function BranchTerminalSection({
         loading={isLoading}
       >
         <div className="space-y-3">
+          {/* Says why the fields are locked, rather than leaving two greyed-out
+              selects with no explanation. */}
+          {pinnedByAssignment && (
+            <p className="t-xs text-muted-foreground">
+              {t('checkout.branchTerminal.fromAssignment')}
+            </p>
+          )}
+
           {needsBranch ? (
             <div className="t-sm text-muted-foreground">
               {t('checkout.branchTerminal.noBranches')}
@@ -94,6 +113,7 @@ export function BranchTerminalSection({
                 id="checkout-branch"
                 className="input input-sm w-full"
                 value={branch?.branch_id ?? ''}
+                disabled={pinnedByAssignment}
                 onChange={(e) => selectBranch(e.target.value)}
               >
                 <option value="">{t('setup.selectStation')}</option>
@@ -122,7 +142,7 @@ export function BranchTerminalSection({
                   id="checkout-terminal"
                   className="input input-sm w-full"
                   value={terminal?.terminal_id ?? ''}
-                  disabled={!branch}
+                  disabled={!branch || pinnedByAssignment}
                   onChange={(e) => selectTerminal(e.target.value)}
                 >
                   <option value="">

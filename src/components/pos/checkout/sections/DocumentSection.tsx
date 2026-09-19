@@ -1,7 +1,7 @@
 import { FileText } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFiscalMode } from '@/hooks/useFiscalMode';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
-import { FormLabel } from '@/components/ui';
 import { SaleConditionSelect } from '../fields/SaleConditionSelect';
 import { ActivityCodeSelect } from '../fields/ActivityCodeSelect';
 import { CurrencyRateField } from '../fields/CurrencyRateField';
@@ -50,8 +50,18 @@ interface DocumentSectionProps {
  * so which card you filled in depended on the document type for no reason a
  * cashier could see.
  *
- * One card now. The pedido-only fields — proforma, order number, delivery date
- * and delivery point — appear inside it when `manualOrder` is given.
+ * One card now, and it holds only what is genuinely about the DOCUMENT: sale
+ * condition, economic activity, currency and notes.
+ *
+ * The pedido's own facts — proforma, order number, delivery date — moved to the
+ * Order card (`OrderInfoSection`), where they sit beside the chain's department,
+ * delivery point and purchase order. They were under a "Documento" heading while
+ * describing the order, and for a chain customer the order number appeared twice:
+ * once here and once as the chain's purchase order, which is the same number.
+ *
+ * The economic-activity select is hidden for an organization with no registered
+ * Hacienda profile — it has no activities to offer, so it rendered empty and
+ * asked for something that does not exist yet.
  */
 export function DocumentSection({
   isExpanded,
@@ -67,6 +77,8 @@ export function DocumentSection({
   selectedClient,
 }: DocumentSectionProps) {
   const { t } = useLanguage();
+  // Whether this organization has a registered Hacienda profile at all.
+  const { isElectronic } = useFiscalMode(orgId);
   const isManualOrder = !!manualOrder && !!onManualOrderChange;
 
   // A pedido keeps these on `manual_order`, an electronic document on the
@@ -93,43 +105,6 @@ export function DocumentSection({
       isExpanded={isExpanded}
       onToggle={onToggle}
     >
-      {/* Proforma first: it changes what this whole card is saving, and it
-          retitles the confirm button. */}
-      {isManualOrder && (
-        <label className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-md bg-muted/40">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={!!manualOrder!.is_quote}
-            onChange={(e) => onManualOrderChange!({ is_quote: e.target.checked })}
-          />
-          <span className="min-w-0">
-            <span className="block t-sm font-semibold">{t('manualOrder.isQuote')}</span>
-            <span className="block t-xs text-muted-foreground">
-              {t('manualOrder.isQuote.hint')}
-            </span>
-          </span>
-        </label>
-      )}
-
-      {isManualOrder && (
-        <div>
-          <FormLabel htmlFor="manual-order-number">
-            {t('manualOrder.orderNumber')}
-          </FormLabel>
-          <input
-            id="manual-order-number"
-            type="text"
-            className="input input-sm w-full"
-            value={manualOrder!.document_number ?? ''}
-            onChange={(e) => onManualOrderChange!({ document_number: e.target.value })}
-          />
-          <p className="t-xs text-muted-foreground mt-1">
-            {t('manualOrder.orderNumber.hint')}
-          </p>
-        </div>
-      )}
-
       <SaleConditionSelect
         value={saleCondition}
         onChange={(sale_condition) =>
@@ -139,14 +114,21 @@ export function DocumentSection({
         }
       />
 
-      <ActivityCodeSelect
-        value={activityCode}
-        onChange={(activity_code) =>
-          isManualOrder
-            ? onManualOrderChange!({ activity_code })
-            : onChange({ activity_code })
-        }
-      />
+      {/* Economic activity comes from the organization's REGISTERED Hacienda
+          profile. An org with no fiscal identity has no activities to choose
+          from, so the select rendered permanently empty and asked the cashier for
+          something that does not exist yet — on the one document type
+          (`PM`) such an org can actually create. */}
+      {isElectronic && (
+        <ActivityCodeSelect
+          value={activityCode}
+          onChange={(activity_code) =>
+            isManualOrder
+              ? onManualOrderChange!({ activity_code })
+              : onChange({ activity_code })
+          }
+        />
+      )}
 
       <CurrencyRateField
         value={currency}
@@ -160,20 +142,6 @@ export function DocumentSection({
         }
       />
 
-      {isManualOrder && (
-        <div>
-          <FormLabel htmlFor="manual-order-delivery-date">
-            {t('manualOrder.deliveryDate')}
-          </FormLabel>
-          <input
-            id="manual-order-delivery-date"
-            type="date"
-            className="input input-sm w-full"
-            value={manualOrder!.delivery_date ?? ''}
-            onChange={(e) => onManualOrderChange!({ delivery_date: e.target.value })}
-          />
-        </div>
-      )}
 
       {isManualOrder && (
         <DeliveryLocationField

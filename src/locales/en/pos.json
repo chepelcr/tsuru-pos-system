@@ -13,6 +13,7 @@
   "cart.removeTitle": "Remove product",
   "cart.selectProducts": "Select products",
   "cart.subtotal": "Subtotal",
+  "checkout.branchTerminal.fromAssignment": "Set by your open shift — the station and terminal come from your assignment.",
   "checkout.branchTerminal.noBranches": "This organization has no branches yet. Create one under Stations before issuing documents.",
   "checkout.branchTerminal.title": "Branch and terminal",
   "checkout.completed": "Sale completed!",

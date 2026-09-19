@@ -13,6 +13,7 @@
   "cart.removeTitle": "Eliminar producto",
   "cart.selectProducts": "Seleccioná productos",
   "cart.subtotal": "Subtotal",
+  "checkout.branchTerminal.fromAssignment": "Definidos por tu turno abierto — el puesto y la terminal vienen de tu asignación.",
   "checkout.branchTerminal.noBranches": "Esta organización aún no tiene sucursales. Crea una en Puestos antes de emitir documentos.",
   "checkout.branchTerminal.title": "Sucursal y terminal",
   "checkout.completed": "¡Venta completada!",

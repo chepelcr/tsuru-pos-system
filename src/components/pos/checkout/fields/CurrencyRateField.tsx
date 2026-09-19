@@ -76,8 +76,18 @@ export function CurrencyRateField({ value, onChange, disabled }: CurrencyRateFie
   const hasCurrentInList = sortedCurrencies.some((c) => c.code === currentCode);
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <div className="space-y-1">
+    // One column on a narrow screen, two from `sm` up.
+    //
+    // It was `grid-cols-2` unconditionally, which halves a 520px drawer to ~250px
+    // and then to ~120px per field inside the section padding. A currency option
+    // reads "USD — Dólar estadounidense", and the select could not shrink to fit
+    // it, so it overflowed its column — over the exchange-rate field beside it,
+    // which is why the rate looked missing rather than merely cramped. Whether it
+    // showed depended on the theme, because each one sets its own font and
+    // radius: a wider face overflowed sooner. Stacking removes the dependence
+    // instead of tuning per theme.
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="space-y-1 min-w-0">
         <label className="label-section" htmlFor="currency-code">
           {t('checkout.document.currency')}
         </label>
@@ -86,7 +96,9 @@ export function CurrencyRateField({ value, onChange, disabled }: CurrencyRateFie
           value={currentCode}
           disabled={disabled}
           onChange={(e) => handleSelectChange(e.target.value)}
-          className="pp-input w-full"
+          // `min-w-0` so the select may shrink inside its grid column instead of
+          // holding its content width and pushing out of it.
+          className="pp-input w-full min-w-0"
         >
           {!hasCurrentInList && <option value={currentCode}>{currentCode}</option>}
           {sortedCurrencies.map((c) => {
@@ -104,7 +116,7 @@ export function CurrencyRateField({ value, onChange, disabled }: CurrencyRateFie
           })}
         </Select>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1 min-w-0">
         <label className="label-section" htmlFor="exchange-rate">
           {t('checkout.document.exchangeRate')}
         </label>

@@ -459,22 +459,38 @@ export function CheckoutDrawer({
             selectedClient={selectedClient}
           />
 
-          {/* A pedido is not issued against a Hacienda consecutive, so it has
-              no sucursal/terminal segment to pick. */}
-          {!isManualOrder && (
-            <BranchTerminalSection
-              isExpanded={expanded.branchTerminal}
-              onToggle={() => toggle('branchTerminal')}
-              orgId={orgId}
-            />
-          )}
+          {/* Shown for a pedido too. It was hidden on the grounds that a pedido
+              has no Hacienda consecutive to segment — but the manual-order
+              payload sends `branch_number` and `terminal_number` all the same
+              (`useCartFlow`), so the flow required a branch and terminal while
+              giving no way to see or change which. `useSessionSelection`
+              resolves them automatically; this is where you check or override
+              what it chose. */}
+          <BranchTerminalSection
+            isExpanded={expanded.branchTerminal}
+            onToggle={() => toggle('branchTerminal')}
+            orgId={orgId}
+          />
 
-          {(chainState.show || !!billedOrderNumber) && (
+          {/* Also shown for every manual order, not only a chain's: composing a
+              pedido is exactly when its number, due date and proforma flag are
+              decided. Those three used to sit in the Documento card, which put
+              order facts under a document heading. */}
+          {(chainState.show || !!billedOrderNumber || isManualOrder) && (
             <OrderInfoSection
               isExpanded={expanded.chainClient}
               onToggle={() => toggle('chainClient')}
               orderNumber={billedOrderNumber}
               isChainClient={chainState.show}
+              isManualOrder={isManualOrder}
+              isQuote={!!manualOrder.is_quote}
+              documentNumber={manualOrder.document_number}
+              deliveryDate={manualOrder.delivery_date}
+              onManualOrderChange={
+                isManualOrder
+                  ? (patch) => updateData({ manual_order: { ...manualOrder, ...patch } })
+                  : undefined
+              }
               chain={chain}
               data={chainInfo}
               orgId={orgId}

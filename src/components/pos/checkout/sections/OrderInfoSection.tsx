@@ -12,6 +12,25 @@ interface OrderInfoSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   /**
+   * Composing a manual order (`PM`) rather than billing one.
+   *
+   * Flips the order-number field from read-only to editable and reveals the two
+   * fields that only make sense while the order is being created: the proforma
+   * toggle and the delivery date.
+   */
+  isManualOrder?: boolean;
+  /** PM only: save as a quote (cotización) instead of a firm order. */
+  isQuote?: boolean;
+  /** PM only: the number being assigned to the order being created. */
+  documentNumber?: string;
+  /** PM only: when the order is due, ISO `YYYY-MM-DD`. */
+  deliveryDate?: string;
+  onManualOrderChange?: (patch: {
+    is_quote?: boolean;
+    document_number?: string;
+    delivery_date?: string;
+  }) => void;
+  /**
    * The pedido this document is being billed from, when there is one. Shown
    * read-only: the order exists already and its number is not ours to change
    * here — renumbering it in the checkout would detach the invoice from the
@@ -35,21 +54,36 @@ interface OrderInfoSectionProps {
 }
 
 /**
- * The extra data a retail chain requires, in one place.
+ * Everything about the ORDER, in one card — for every customer.
  *
- * These fields used to live in the Pedido card, which meant they were only
- * reachable when the document was a manual order — while the chain needs them
- * on the electronic invoice just as much. They are consolidated here and the
- * card appears whenever the selected client IS a chain, whatever the document
- * type, so the same three answers are captured the same way every time.
+ * The chain-specific fields (department, delivery point, vendor number, their
+ * purchase order) appear when the selected client is a registered chain; the
+ * order's own fields appear for everybody. Same card either way, so a chain
+ * customer and an ordinary one are answered in the same place rather than the
+ * chain getting a card of its own.
+ *
+ * **Two different "order numbers" live here, and they are not interchangeable:**
+ *
+ *   `orderNumber` / `document_number`   OURS   the pedido's own number
+ *   `purchase_order_number`             THEIRS the chain's PO (WMNumeroOrden)
+ *
+ * Only one of ours is ever rendered — read-only when billing an existing pedido
+ * (renumbering it would detach the invoice from the delivery it settles),
+ * editable when composing one. The chain's is a separate, clearly-labelled
+ * field, because sending ours where theirs belongs is a rejected document.
  *
  * When the sale comes from an existing pedido the values are prefilled from it;
- * the fields stay editable because the order and the invoice can legitimately
+ * the selects stay editable because the order and the invoice can legitimately
  * differ (a partial delivery goes to one store, not all of them).
  */
 export function OrderInfoSection({
   isExpanded,
   onToggle,
+  isManualOrder = false,
+  isQuote = false,
+  documentNumber,
+  deliveryDate,
+  onManualOrderChange,
   orderNumber,
   isChainClient = false,
   chain,
@@ -146,13 +180,45 @@ export function OrderInfoSection({
       onToggle={onToggle}
     >
       <div className="space-y-3">
-        {/* The order number, for EVERY customer — not only a chain. This card
-            used to be "Datos <cadena>" and appeared only for retail chains, so
-            billing an ordinary customer's pedido showed the order number
-            nowhere in the checkout: the cashier had to trust that the drawer
-            they opened from the order was still about that order. Read-only
-            because the pedido already exists. */}
-        {orderNumber && (
+        {/* Proforma first: it changes what this card is saving and retitles the
+            confirm button, so it has to be read before anything under it. */}
+        {isManualOrder && (
+          <label className="flex items-start gap-2.5 cursor-pointer p-2.5 rounded-md bg-muted/40">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={isQuote}
+              onChange={(e) => onManualOrderChange?.({ is_quote: e.target.checked })}
+            />
+            <span className="min-w-0">
+              <span className="block t-sm font-semibold">{t('manualOrder.isQuote')}</span>
+              <span className="block t-xs text-muted-foreground">
+                {t('manualOrder.isQuote.hint')}
+              </span>
+            </span>
+          </label>
+        )}
+
+        {/* The order's number — ONE field, never two.
+ 
+            For a chain there is only one number in play: their purchase order IS
+            this order's document number (`useCartFlow` writes
+            `purchase_order_number` into `document_number`, and
+            `chainInfoFromOrder` reads it back when the pedido is billed, where it
+            travels to the document as `WMNumeroOrden`). So for a chain the field
+            below labelled with the chain's name is the order number, and this one
+            is not rendered — otherwise the cashier types the same value twice into
+            two inputs that must agree.
+ 
+            For everybody else this is it: read-only when settling a pedido that
+            already exists (renumbering it would detach the invoice from the
+            delivery it settles), editable when composing one.
+ 
+            This card used to appear only for retail chains, so billing an
+            ordinary customer's pedido showed its number nowhere in the checkout
+            and the cashier had to trust that the drawer they opened was still
+            about that order. */}
+        {!isChainClient && (orderNumber || isManualOrder) && (
           <div>
             <FormLabel htmlFor="order-info-number">
               {t('orderInfo.orderNumber')}
@@ -161,13 +227,37 @@ export function OrderInfoSection({
               id="order-info-number"
               type="text"
               className="input input-sm w-full"
-              value={orderNumber}
-              readOnly
-              aria-readonly="true"
+              value={orderNumber ?? documentNumber ?? ''}
+              readOnly={!!orderNumber}
+              aria-readonly={!!orderNumber || undefined}
+              onChange={
+                orderNumber
+                  ? undefined
+                  : (e) => onManualOrderChange?.({ document_number: e.target.value })
+              }
             />
             <p className="t-xs text-muted-foreground mt-1">
-              {t('orderInfo.orderNumber.hint')}
+              {orderNumber
+                ? t('orderInfo.orderNumber.hint')
+                : t('manualOrder.orderNumber.hint')}
             </p>
+          </div>
+        )}
+
+        {/* When the order is due. Only while composing: on an existing pedido the
+            date is the order's, changed from the order itself. */}
+        {isManualOrder && (
+          <div>
+            <FormLabel htmlFor="order-info-delivery-date">
+              {t('manualOrder.deliveryDate')}
+            </FormLabel>
+            <input
+              id="order-info-delivery-date"
+              type="date"
+              className="input input-sm w-full"
+              value={deliveryDate ?? ''}
+              onChange={(e) => onManualOrderChange?.({ delivery_date: e.target.value })}
+            />
           </div>
         )}
 
@@ -281,7 +371,11 @@ export function OrderInfoSection({
           <div className="t-xs text-muted-foreground mt-1">
             {fromOrder
               ? t('chainClient.purchaseOrder.fromOrder')
-              : t('chainClient.purchaseOrder.hint', { chain: chainName })}
+              : isManualOrder
+                // Says plainly that this doubles as the order's own number, so
+                // the absent second input does not read as a missing field.
+                ? t('chainClient.purchaseOrder.isOrderNumber', { chain: chainName })
+                : t('chainClient.purchaseOrder.hint', { chain: chainName })}
           </div>
         </div>
         </>
