@@ -1,5 +1,7 @@
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Icon, Button, Menu, type MenuItem } from "@/components/ui";
+import { Icon, Menu, type MenuItem } from "@/components/ui";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { ROUTES } from "@/routePaths";
 import { useDarkMode } from "@/hooks/useDarkMode";
@@ -10,6 +12,8 @@ import { useMaxVisibleTabs } from "@/store/uiStore";
 import { DocumentsToolbar } from "@/components/documents/DocumentsToolbar";
 import { NewDocumentButton } from "@/components/documents/NewDocumentButton";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
+import { useNotifications } from "@/contexts/NotificationsContext";
+import { syncPendingSales } from "@/services/pendingSalesSync";
 
 interface DashboardHeaderProps {
   /** Mobile hamburger → opens left sidebar drawer */
@@ -38,6 +42,9 @@ export function DashboardHeader({
 
   const { user, logout } = useAuthContext();
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const notifications = useNotifications();
+  const [syncing, setSyncing] = useState(false);
 
   // Initials for the avatar trigger; the menu itself carries the labels.
   const accountName =
@@ -46,10 +53,47 @@ export function DashboardHeader({
     ? accountName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "U";
 
+  // Replays the offline outbox and refreshes what the page is showing. It used
+  // to be a toolbar button beside the theme toggle — with NO onClick at all, so
+  // it did nothing when pressed. It belongs to the person's session rather than
+  // to the page, and now it actually syncs.
+  const handleSync = async () => {
+    if (!user?.userId || syncing) return;
+    setSyncing(true);
+    try {
+      const result = await syncPendingSales(user.userId);
+      // Reuses the copy the automatic replay already emits, so a manual sync
+      // and an automatic one report the same way. `level` has no "success" —
+      // `info` is the positive case here.
+      if (result.failed > 0) {
+        notifications.add({
+          source: "fe", level: "warning",
+          titleKey: "sync.sales.errorTitle",
+          bodyKey: "sync.sales.errorDescription",
+        });
+      } else if (result.synced > 0) {
+        notifications.add({
+          source: "fe", level: "info",
+          titleKey: "sync.sales.successTitle",
+          bodyKey: "sync.sales.successDescription",
+        });
+      }
+    } finally {
+      // Whatever happened to the outbox, the screen should reflect the server.
+      await queryClient.invalidateQueries();
+      setSyncing(false);
+    }
+  };
+
   // Account actions used to sit at the bottom of the sidebar, where they were
   // out of reach whenever it was collapsed. They belong to the person, not to
   // the navigation, so they live in the navbar now.
   const accountItems: MenuItem[] = [
+    {
+      label: syncing ? t("shell.syncing") : t("shell.sync"),
+      icon: "refresh",
+      action: () => void handleSync(),
+    },
     { label: t("shell.profile"), icon: "user", action: () => setLocation(ROUTES.PROFILE) },
     { label: t("shell.switchOrg"), icon: "store", action: () => setLocation(ROUTES.SELECT_ORG) },
     // Support moved out of the sidebar footer: it is an errand the person runs,
@@ -81,7 +125,9 @@ export function DashboardHeader({
 
       </div>
 
-      {/* RIGHT SLOT — + Nuevo · 🔔 · flag · dark · sync · 📄 (mobile drawer toggle) */}
+      {/* RIGHT SLOT — + · 🔔 · flag · dark · 📄 (mobile drawer toggle) · account.
+          Sync moved into the account menu: it is the person's session, not this
+          page, and as a toolbar button it had no onClick and did nothing. */}
       <div className="flex items-center gap-2 shrink-0">
         {/* New Document button — always visible; collapses to icon-only on sm+ */}
         <NewDocumentButton />
@@ -110,11 +156,6 @@ export function DashboardHeader({
         >
           <Icon name={dark ? "sun" : "moon"} size={16} />
         </button>
-
-        {/* Sync button */}
-        <Button variant="outline" size="sm" icon="refresh">
-          {t("shell.sync")}
-        </Button>
 
         {/* Right-drawer toggle (toggles open/close on click).
             - Mobile (<769px): always visible — the drawer is the only access to docs.

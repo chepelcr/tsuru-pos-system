@@ -8,7 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { ROUTES } from "@/routePaths";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import {
@@ -20,6 +22,35 @@ import {
 } from "@/theme/themes";
 
 const STORAGE_KEY = "pos.themeId";
+
+/**
+ * Routes that come BEFORE an organization is chosen, and therefore always render
+ * the default Tsuru palette.
+ *
+ * Without this they showed the last organization's theme: on these pages there is
+ * no org, so the resolver fell through to the id mirrored in localStorage — which
+ * is whichever org was open last. Signing out and landing on /login in somebody
+ * else's branding is wrong, and on the org picker it is actively misleading,
+ * since it brands the chooser as one of the options.
+ *
+ * `/join/:token` is included as a prefix: an invitee has no organization yet.
+ */
+const PRE_ORGANIZATION_ROUTES = [
+  ROUTES.LOGIN,
+  ROUTES.REGISTER,
+  ROUTES.VERIFY_EMAIL,
+  ROUTES.FORGOT_PASSWORD,
+  ROUTES.RESET_PASSWORD,
+  ROUTES.SELECT_ORG,
+  "/join",
+];
+
+export function isPreOrganizationRoute(pathname: string): boolean {
+  // Prefix match: these routes carry query strings and path params.
+  return PRE_ORGANIZATION_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
 
 interface ThemeContextValue {
   /** The active theme id (always a known id). */
@@ -99,6 +130,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // 404s and omits theme). `themeData` is undefined until resolved.
   const { data: themeData } = useOrgTheme(org?.id);
   const { dark } = useDarkMode();
+  const [location] = useLocation();
+  const beforeOrgChosen = isPreOrganizationRoute(location);
 
   // Manual override (set when the user picks a theme in the gallery). Takes
   // precedence over the org-derived theme until the next mount / org change.
@@ -113,10 +146,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return DEFAULT_THEME_ID;
   }, [themeData?.theme]);
 
-  // First paint uses the stored id; thereafter prefer override → theme → default.
-  // On the /login page there's no org, so `themeData` stays undefined and the
-  // last-applied theme from localStorage (written below) is shown.
-  const themeId = override ?? (themeData ? orgThemeId : readStoredThemeId());
+  // Auth and org-picker routes are always the default palette — an org has not
+  // been chosen, so there is no branding to apply. Everywhere else: override →
+  // org theme → the stored id, which keeps first paint from flashing the default
+  // while the org query resolves.
+  const themeId = beforeOrgChosen
+    ? DEFAULT_THEME_ID
+    : override ?? (themeData ? orgThemeId : readStoredThemeId());
 
   const setThemeId = useCallback((id: string) => {
     const resolved = isKnownThemeId(id) ? id : DEFAULT_THEME_ID;
@@ -135,15 +171,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [orgThemeId]);
 
   // Apply on every change to the resolved theme or dark mode. Mirror to
-  // localStorage for instant first paint next load.
+  // localStorage for instant first paint next load — but NOT while on a
+  // pre-organization route: persisting the default there would erase the org's
+  // theme, and the next load into the dashboard would flash the wrong palette
+  // before the query resolves.
   useEffect(() => {
     applyTheme(themeId, dark);
+    if (beforeOrgChosen) return;
     try {
       localStorage.setItem(STORAGE_KEY, themeId);
     } catch {
       /* ignore persistence failures */
     }
-  }, [themeId, dark]);
+  }, [themeId, dark, beforeOrgChosen]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({

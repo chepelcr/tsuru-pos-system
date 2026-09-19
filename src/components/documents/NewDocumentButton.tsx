@@ -25,7 +25,8 @@ interface NewDocumentButtonProps {
  *  - `fullWidth=false` (default): compact 36px square `+` icon button — matches
  *    the main sidebar's inline `+` button style. Used in the global navbar.
  *  - `fullWidth=true`: full-width button with a left-anchored Plus icon and
- *    "Nuevo" label. Used in the mobile drawer footer.
+ *    "Nuevo" label. Used in the mobile drawer footer, where there IS room for a
+ *    label and the button is the only thing on its row.
  */
 export function NewDocumentButton({
   fullWidth = false,
@@ -97,23 +98,22 @@ export function NewDocumentButton({
           <span className="flex-1 text-left">{t('common.new')}</span>
         </button>
       ) : (
-        // Navbar: shows `+ Nuevo` on mobile and shrinks to an icon-only square on
-        // sm+. Always visible — the create flow must be reachable on any size.
+        // Navbar: an icon-only square at every size. It used to carry a "Nuevo"
+        // label on mobile, which is exactly where horizontal space is scarcest —
+        // the `+` says the same thing, and the accessible name still does for a
+        // screen reader.
         <button
           onClick={() => setOpen((v) => !v)}
           aria-label={t('documents.newDocument')}
           title={t('documents.newDocument')}
           className={cn(
-            'inline-flex items-center justify-center gap-1.5 h-9 px-2.5 sm:px-0 sm:w-9 rounded-md transition-colors',
+            'inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-md transition-colors',
             open
               ? 'bg-primary/10 text-primary border border-primary'
               : 'bg-primary text-primary-foreground border border-transparent shadow-sm shadow-primary/20'
           )}
         >
           <Plus size={16} className="shrink-0" />
-          <span className="text-[13px] font-semibold sm:hidden">
-            {t('common.new')}
-          </span>
         </button>
       )}
 
