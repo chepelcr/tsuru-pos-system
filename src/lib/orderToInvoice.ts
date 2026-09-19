@@ -236,6 +236,14 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
 
   const info: ChainClientInfo = {
     department_code: department?.department_code || undefined,
+    // The vendor number the chain assigns to us. store-be resolves it from the
+    // order's department (`department_rel.supplier_code`) and returns it on the
+    // DTO, so it is read here rather than derived again — and it is available
+    // immediately, instead of waiting for the departments list to load and the
+    // code→id back-fill to run.
+    supplier_code:
+      (typeof order.department === "string" ? undefined : order.department?.supplier_code) ||
+      undefined,
     store_code: location?.code || undefined,
     store_name: location?.name || undefined,
     gln: location?.gln || undefined,

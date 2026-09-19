@@ -210,6 +210,26 @@ describe("checkoutDataFromOrder", () => {
   it("omits the currency when the order was priced in the base one", () => {
     expect(checkoutDataFromOrder(order()).currency).toBeUndefined();
   });
+
+  it("carries the vendor number the backend resolved from the department", () => {
+    // `WMNumeroVendedor` comes from this. It used to be absent here entirely:
+    // the mapping read the department's CODE and not its `supplier_code`, so the
+    // value only appeared once the departments list had loaded and the
+    // code→id back-fill had written it — and on a document composed before that
+    // landed, the chain got an invoice missing a field it requires.
+    const data = checkoutDataFromOrder(
+      order({ department: { department_code: "0042", name: "Textiles", supplier_code: "778899" } }),
+    );
+    expect(data.chain_info?.supplier_code).toBe("778899");
+    expect(data.chain_info?.department_code).toBe("0042");
+  });
+
+  it("tolerates the plain-string department the Excel import writes", () => {
+    const data = checkoutDataFromOrder(order({ department: "0042" }));
+    expect(data.chain_info?.department_code).toBe("0042");
+    // No structured row, so no vendor number to read — the back-fill resolves it.
+    expect(data.chain_info?.supplier_code).toBeUndefined();
+  });
 });
 
 describe("isOrderInvoiced", () => {

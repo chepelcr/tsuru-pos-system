@@ -568,6 +568,15 @@ export interface ManualOrderPayload {
   client: OrderParty;
   delivery_date?: string;
   delivery_location?: ManualOrderDeliveryLocation;
+  /**
+   * The vendor number the chain assigns to us, taken from the selected
+   * department.
+   *
+   * Sent so store-be maps it the way the Excel import does — it BACKFILLS a
+   * department that has none and never overwrites one that does. Not typed
+   * anywhere: the department is where it is maintained.
+   */
+  supplier_code?: string;
   /** B2B department of the client (supplier orgs). */
   department_id?: string;
   /** Taller: the client asset (vehicle/equipment) the OT is about. */

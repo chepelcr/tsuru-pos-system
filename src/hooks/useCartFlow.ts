@@ -803,6 +803,10 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         credit_term: manualFields.credit_term || undefined,
         delivery_date: manualFields.delivery_date || undefined,
         delivery_location: chainDeliveryLocation ?? manualFields.delivery_location,
+        // The vendor number, sent so the order POST can map it the way the Excel
+        // import does — it backfills a department that has none. Held on the
+        // department, never typed here.
+        supplier_code: chainInfo?.supplier_code || undefined,
         // `department_id` only: the payload contract carries the id and the
         // backend resolves the code from it. The order-info card's code->id
         // back-fill is what guarantees an order-sourced prefill has one.

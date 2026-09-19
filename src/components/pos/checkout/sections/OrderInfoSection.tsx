@@ -357,7 +357,12 @@ export function OrderInfoSection({
             ))}
           </Select>
           {/* Says that this select is also where the order is delivered, so the
-              absent general delivery field does not read as a missing step. */}
+              absent general delivery field does not read as a missing step, and
+              shows the two identifiers the chain requires on the document —
+              `WMEnviarGLN` from the delivery point, `WMNumeroVendedor` from the
+              department. Labels, not inputs: both are consequences of the two
+              selects above, maintained on those rows, and an editable copy would
+              be a second place to change one value. */}
           <div className="t-xs text-muted-foreground mt-1">
             {t('chainClient.deliveryPoint.isDestination')}
             {data.gln && (
@@ -369,28 +374,17 @@ export function OrderInfoSection({
           </div>
         </div>
 
-        {/* Derived from the department, shown so the cashier can see the value
-            that will reach the document. Not editable here: it is maintained on
-            the department, and two places to change it means one of them is
-            wrong. */}
+        {/* The vendor number, as a label under the department that determines it
+            — the same treatment as the delivery point's GLN. It was a read-only
+            input, which invited the reading that it was something to fill in;
+            it is the number the chain assigns to US, maintained on the
+            department, so selecting the department IS choosing it. */}
         {data.supplier_code && (
-          <div>
-            <FormLabel htmlFor="chain-vendor">
-              {t('chainClient.vendorNumber')}
-            </FormLabel>
-            <input
-              id="chain-vendor"
-              className="input input-sm w-full font-mono"
-              value={data.supplier_code}
-              readOnly
-              aria-readonly="true"
-            />
-            <div className="t-xs text-muted-foreground mt-1">
-              {t('chainClient.vendorNumber.hint')}
-            </div>
+          <div className="t-xs text-muted-foreground -mt-1">
+            {t('chainClient.vendorNumber')}:{' '}
+            <span className="font-mono">{data.supplier_code}</span>
           </div>
         )}
-
         <div>
           <FormLabel htmlFor="chain-po">
             {t('chainClient.purchaseOrder', { chain: chainName })}

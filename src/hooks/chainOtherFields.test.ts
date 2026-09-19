@@ -56,3 +56,34 @@ describe('chainOtherFields', () => {
     ]);
   });
 });
+
+describe("the three GLNs on an order are not interchangeable", () => {
+  /**
+   * An order carries three, and only one belongs in `WMEnviarGLN`:
+   *
+   *   client.gln                  the CUSTOMER — the chain as a legal entity
+   *   organization.gln            US, the supplier
+   *   delivery_location.gln       the DELIVERY POINT — the store shipped to
+   *
+   * `WMEnviarGLN` is the ship-to, so it is the third. Sending the customer's
+   * would identify the chain's head office as the delivery address, which is
+   * both wrong and plausible enough to survive review — the value is a
+   * well-formed GLN either way.
+   */
+  it("emits the delivery point's GLN, not the customer's", () => {
+    const fields = chainOtherFields({
+      gln: "7441234500017",              // delivery point
+      supplier_code: "778899",
+      purchase_order_number: "4500123456",
+    });
+    const shipTo = fields.find((f) => f.code === "WMEnviarGLN");
+    expect(shipTo?.other_text).toBe("7441234500017");
+  });
+
+  it("carries no GLN at all when no delivery point is chosen", () => {
+    // Better absent than filled from the customer: a missing field is a
+    // rejection that names itself, a wrong one is a delivery to the wrong place.
+    const fields = chainOtherFields({ supplier_code: "778899" });
+    expect(fields.some((f) => f.code === "WMEnviarGLN")).toBe(false);
+  });
+});
