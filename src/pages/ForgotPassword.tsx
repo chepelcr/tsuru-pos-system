@@ -8,8 +8,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
+import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Icon, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
+import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 
 const schema = z.object({
@@ -27,6 +29,7 @@ export default function ForgotPassword() {
   const [submitted, setSubmitted] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
 
   usePageTitle([t("auth.forgotPassword.title")]);
 
@@ -37,6 +40,7 @@ export default function ForgotPassword() {
 
   const onSubmit = async (data: ForgotForm) => {
     setSubmitting(true);
+    setAuthError(null);
     try {
       await resetPassword({ username: data.email });
       sessionStorage.setItem("resetPasswordEmail", data.email);
@@ -49,8 +53,18 @@ export default function ForgotPassword() {
         bodyKey: "auth.forgotPassword.successDescription",
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("auth.forgotPassword.error");
-      add({ source: "fe", level: "destructive", titleKey: "auth.forgotPassword.error", bodyKey: message });
+      // The reported failure: a reset requested for an address that never got a
+      // sign-up code answers InvalidParameterException ("no registered/verified
+      // email"). It went to the bell, which this layout does not render, so the
+      // page just sat there and the user concluded the mail was lost (TSR-309).
+      const info = describeAuthError(error, "auth.forgotPassword.error");
+      setAuthError(info);
+      add({
+        source: "fe",
+        level: "destructive",
+        titleKey: "auth.forgotPassword.error",
+        bodyKey: info.messageKey,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -120,6 +134,19 @@ export default function ForgotPassword() {
                 )}
               />
             </FormField>
+
+            <AuthErrorAlert
+              error={authError}
+              overrides={{
+                verify: () => {
+                  // Reset is impossible until sign-up verification finishes;
+                  // carry the address into that flow.
+                  sessionStorage.setItem("verificationEmail", form.getValues("email"));
+                  sessionStorage.setItem("verificationOrigin", "login");
+                  navigate(ROUTES.VERIFY_EMAIL);
+                },
+              }}
+            />
 
             <Button type="submit" variant="primary" className="w-full" disabled={submitting}>
               {submitting && <Spinner size={16} />}

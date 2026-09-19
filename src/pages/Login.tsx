@@ -8,8 +8,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
+import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Icon, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
+import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 
 const loginSchema = z.object({
@@ -26,6 +28,7 @@ export default function Login() {
   const [, navigate] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
 
   usePageTitle([t("pageTitle.login")]);
 
@@ -54,6 +57,7 @@ export default function Login() {
 
   const onSubmit = async (data: LoginForm) => {
     setSubmitting(true);
+    setAuthError(null);
     try {
       const { needsVerification } = await login(data.email, data.password);
       // An unconfirmed user resolves the sign-in next step to CONFIRM_SIGN_UP
@@ -83,11 +87,15 @@ export default function Login() {
         return;
       }
 
+      // AuthLayout renders no notification bell, so the bell alone means the
+      // user sees nothing at all — show it in the form too (TSR-309).
+      const info = describeAuthError(error, "auth.login.error");
+      setAuthError(info);
       add({
         source: "fe",
         level: "destructive",
         titleKey: "auth.login.error",
-        bodyKey: message,
+        bodyKey: info.messageKey,
       });
     } finally {
       setSubmitting(false);
@@ -149,6 +157,11 @@ export default function Login() {
                 </button>
               </div>
             </FormField>
+
+            <AuthErrorAlert
+              error={authError}
+              overrides={{ verify: () => goToVerification(form.getValues("email")) }}
+            />
 
             <Button type="submit" variant="primary" className="w-full mt-1" disabled={isBusy}>
               {isBusy && <Spinner size={16} />}

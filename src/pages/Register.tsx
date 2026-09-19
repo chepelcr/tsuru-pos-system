@@ -11,8 +11,10 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { BrandStoryPanel } from "@/components/common/BrandStoryPanel";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
+import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Select, Icon, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
+import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 
 // AWS Cognito password policy: min 8 chars, uppercase, lowercase, number, special char.
@@ -84,6 +86,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showGenderInput, setShowGenderInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
   const genderSelectId = "register-gender-select";
 
   const step1Form = useForm<Step1Form>({
@@ -108,6 +111,21 @@ export default function Register() {
     }
   }, [step1Data, currentStep, step1Form]);
 
+  /**
+   * Stash what the verification screen needs (and what `completeVerification`
+   * needs after it) before navigating there. Used by both the success path and
+   * the UsernameExistsException recovery, which lands on the same screen.
+   */
+  const stashVerificationHandoff = (data: Step1Form) => {
+    sessionStorage.setItem("verificationEmail", data.email);
+    sessionStorage.setItem("verificationOrigin", "register");
+    sessionStorage.setItem("verificationUsername", data.username);
+    sessionStorage.setItem("verificationFirstName", data.firstName);
+    sessionStorage.setItem("verificationLastName", data.lastName);
+    if (data.gender) sessionStorage.setItem("verificationGender", data.gender);
+    if (data.genderOther) sessionStorage.setItem("verificationGenderOther", data.genderOther);
+  };
+
   const handleStep1Submit = (values: Step1Form) => {
     setStep1Data(values);
     setCurrentStep("password");
@@ -125,6 +143,7 @@ export default function Register() {
     }
 
     setSubmitting(true);
+    setAuthError(null);
     try {
       const result = await signUp({
         username: step1Data.email,
@@ -137,13 +156,7 @@ export default function Register() {
       });
 
       if (result.needsVerification) {
-        sessionStorage.setItem("verificationEmail", step1Data.email);
-        sessionStorage.setItem("verificationOrigin", "register");
-        sessionStorage.setItem("verificationUsername", step1Data.username);
-        sessionStorage.setItem("verificationFirstName", step1Data.firstName);
-        sessionStorage.setItem("verificationLastName", step1Data.lastName);
-        if (step1Data.gender) sessionStorage.setItem("verificationGender", step1Data.gender);
-        if (step1Data.genderOther) sessionStorage.setItem("verificationGenderOther", step1Data.genderOther);
+        stashVerificationHandoff(step1Data);
 
         add({
           source: "fe",
@@ -162,8 +175,17 @@ export default function Register() {
         navigate(ROUTES.SELECT_ORG);
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("auth.register.error");
-      add({ source: "fe", level: "destructive", titleKey: "common.error", bodyKey: message });
+      // This used to pass the raw Cognito message as an i18n key to the
+      // notification bell — which AuthLayout does not render — so a failed
+      // registration looked like nothing happened at all (TSR-309).
+      const info = describeAuthError(error, "auth.register.error");
+      setAuthError(info);
+      add({
+        source: "fe",
+        level: "destructive",
+        titleKey: "auth.register.error",
+        bodyKey: info.messageKey,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -367,6 +389,18 @@ export default function Register() {
                     </button>
                   </div>
                 </FormField>
+
+                <AuthErrorAlert
+                  error={authError}
+                  overrides={{
+                    // The account exists but the code never arrived: carry the
+                    // form data over so post-verification sync still works.
+                    verify: () => {
+                      if (step1Data) stashVerificationHandoff(step1Data);
+                      navigate(ROUTES.VERIFY_EMAIL);
+                    },
+                  }}
+                />
 
                 <div className="flex gap-3 mt-1">
                   <Button

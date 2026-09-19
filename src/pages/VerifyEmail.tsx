@@ -6,9 +6,11 @@ import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
+import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Icon, Spinner } from "@/components/ui";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { FormField } from "@/components/forms/FormField";
+import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -36,6 +38,7 @@ export default function VerifyEmail() {
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
 
   usePageTitle([t("auth.verifyEmail.title")]);
 
@@ -60,6 +63,11 @@ export default function VerifyEmail() {
 
   const handleVerify = async () => {
     if (!code || code.length !== 6) {
+      setAuthError({
+        messageKey: "auth.verifyEmail.invalidCodeDescription",
+        name: "",
+        action: null,
+      });
       add({
         source: "fe",
         level: "destructive",
@@ -70,6 +78,7 @@ export default function VerifyEmail() {
     }
 
     setVerifying(true);
+    setAuthError(null);
     try {
       await confirmSignUp({ username: email, confirmationCode: code });
 
@@ -118,30 +127,17 @@ export default function VerifyEmail() {
 
       navigate(signedIn ? ROUTES.CREATE_ORG : ROUTES.LOGIN);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("auth.verifyEmail.error");
-      const name = (error as { name?: string })?.name ?? "";
-
-      if (name === "CodeMismatchException" || message.includes("CodeMismatchException")) {
-        add({
-          source: "fe",
-          level: "destructive",
-          titleKey: "auth.verifyEmail.incorrectCode",
-          bodyKey: "auth.verifyEmail.incorrectCodeDescription",
-        });
-        return;
-      }
-
-      if (name === "ExpiredCodeException" || message.includes("ExpiredCodeException")) {
-        add({
-          source: "fe",
-          level: "destructive",
-          titleKey: "auth.verifyEmail.expiredCode",
-          bodyKey: "auth.verifyEmail.expiredCodeDescription",
-        });
-        return;
-      }
-
-      add({ source: "fe", level: "destructive", titleKey: "auth.verifyEmail.error", bodyKey: message });
+      // Was three hand-rolled name checks plus a raw-message fallback, all sent
+      // to a bell this layout does not render (TSR-309). describeAuthError knows
+      // the same two code errors and every other Cognito case besides.
+      const info = describeAuthError(error, "auth.verifyEmail.error");
+      setAuthError(info);
+      add({
+        source: "fe",
+        level: "destructive",
+        titleKey: "auth.verifyEmail.error",
+        bodyKey: info.messageKey,
+      });
     } finally {
       setVerifying(false);
     }
@@ -149,6 +145,7 @@ export default function VerifyEmail() {
 
   const handleResendCode = async () => {
     setResending(true);
+    setAuthError(null);
     try {
       await resendSignUpCode({ username: email });
       setCooldown(RESEND_COOLDOWN_SECONDS);
@@ -159,8 +156,14 @@ export default function VerifyEmail() {
         bodyKey: "auth.verifyEmail.resendSuccessDescription",
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("auth.verifyEmail.resendErrorDescription");
-      add({ source: "fe", level: "destructive", titleKey: "common.error", bodyKey: message });
+      const info = describeAuthError(error, "auth.verifyEmail.resendErrorDescription");
+      setAuthError(info);
+      add({
+        source: "fe",
+        level: "destructive",
+        titleKey: "auth.verifyEmail.resendErrorDescription",
+        bodyKey: info.messageKey,
+      });
     } finally {
       setResending(false);
     }
@@ -186,6 +189,11 @@ export default function VerifyEmail() {
               <FormField label={t("auth.verifyEmail.code")}>
                 <OtpInput value={code} onChange={setCode} autoFocus disabled={isBusy} />
               </FormField>
+
+              <AuthErrorAlert
+                error={authError}
+                overrides={{ resend: handleResendCode }}
+              />
 
               <Button
                 variant="primary"

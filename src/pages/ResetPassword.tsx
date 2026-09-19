@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,9 +8,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
+import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Icon, Spinner } from "@/components/ui";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { FormField } from "@/components/forms/FormField";
+import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 
 // Messages are i18n keys, resolved through t() at the FormField call sites.
@@ -50,6 +52,8 @@ export default function ResetPassword() {
   const { add } = useNotifications();
   const [, navigate] = useLocation();
 
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
+
   usePageTitle([t("auth.resetPassword.title")]);
 
   // Zod messages are i18n keys; resolve through t() (missing keys fall back to the key).
@@ -81,6 +85,7 @@ export default function ResetPassword() {
   const code = watch("code") || "";
 
   const onSubmit = async (data: ResetForm) => {
+    setAuthError(null);
     try {
       await confirmResetPassword({
         username: data.email,
@@ -99,30 +104,16 @@ export default function ResetPassword() {
 
       navigate(ROUTES.LOGIN);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t("auth.resetPassword.error");
-      const name = (error as { name?: string })?.name ?? "";
-
-      if (name === "CodeMismatchException" || message.includes("CodeMismatchException")) {
-        add({
-          source: "fe",
-          level: "destructive",
-          titleKey: "auth.resetPassword.invalidCode",
-          bodyKey: "auth.resetPassword.invalidCodeDescription",
-        });
-        return;
-      }
-
-      if (name === "ExpiredCodeException" || message.includes("ExpiredCodeException")) {
-        add({
-          source: "fe",
-          level: "destructive",
-          titleKey: "auth.resetPassword.expiredCode",
-          bodyKey: "auth.resetPassword.expiredCodeDescription",
-        });
-        return;
-      }
-
-      add({ source: "fe", level: "destructive", titleKey: "common.error", bodyKey: message });
+      // Same shape as the other auth pages: mapped message, shown in the form,
+      // because the bell does not exist on AuthLayout (TSR-309).
+      const info = describeAuthError(error, "auth.resetPassword.error");
+      setAuthError(info);
+      add({
+        source: "fe",
+        level: "destructive",
+        titleKey: "auth.resetPassword.error",
+        bodyKey: info.messageKey,
+      });
     }
   };
 
@@ -212,6 +203,11 @@ export default function ResetPassword() {
                 )}
               />
             </FormField>
+
+            <AuthErrorAlert
+              error={authError}
+              overrides={{ resend: () => navigate(ROUTES.FORGOT_PASSWORD) }}
+            />
 
             <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
               {isSubmitting && <Spinner size={16} />}
