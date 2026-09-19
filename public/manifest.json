@@ -1,7 +1,7 @@
 {
-  "name": "JMarkets POS",
-  "short_name": "JMarkets POS",
-  "description": "Point of sale system by JMarkets",
+  "name": "Tsuru POS",
+  "short_name": "Tsuru POS",
+  "description": "Punto de venta y facturación electrónica de Tsuru",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#111111",
