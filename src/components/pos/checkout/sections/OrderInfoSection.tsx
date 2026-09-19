@@ -327,6 +327,17 @@ export function OrderInfoSection({
               </option>
             ))}
           </Select>
+          {/* The vendor number, under the select that determines it. It is the
+              number the chain assigns to US, maintained on the department, so
+              choosing the department chooses it — a label, not an input, for the
+              same reason the delivery point's GLN is one. Reaches the document as
+              `WMNumeroVendedor`. */}
+          {data.supplier_code && (
+            <div className="t-xs text-muted-foreground mt-1">
+              {t('chainClient.vendorNumber')}:{' '}
+              <span className="font-mono">{data.supplier_code}</span>
+            </div>
+          )}
         </div>
 
         <div>
@@ -356,38 +367,21 @@ export function OrderInfoSection({
               </option>
             ))}
           </Select>
-          {/* Says that this select is also where the order is delivered, so the
-              absent general delivery field does not read as a missing step, and
-              shows the two identifiers the chain requires on the document —
-              `WMEnviarGLN` from the delivery point, `WMNumeroVendedor` from the
-              department. Labels, not inputs: both are consequences of the two
-              selects above, maintained on those rows, and an editable copy would
-              be a second place to change one value. */}
-          <div className="t-xs text-muted-foreground mt-1">
-            {t('chainClient.deliveryPoint.isDestination')}
-            {data.gln && (
-              <>
-                {' · '}
-                {t('chainClient.gln')}: <span className="font-mono">{data.gln}</span>
-              </>
-            )}
-          </div>
+          {/* The delivery point's GLN, which reaches the document as
+              `WMEnviarGLN` — the ship-to, not the customer's own GLN. */}
+          {data.gln && (
+            <div className="t-xs text-muted-foreground mt-1">
+              {t('chainClient.gln')}: <span className="font-mono">{data.gln}</span>
+            </div>
+          )}
         </div>
-
-        {/* The vendor number, as a label under the department that determines it
-            — the same treatment as the delivery point's GLN. It was a read-only
-            input, which invited the reading that it was something to fill in;
-            it is the number the chain assigns to US, maintained on the
-            department, so selecting the department IS choosing it. */}
-        {data.supplier_code && (
-          <div className="t-xs text-muted-foreground -mt-1">
-            {t('chainClient.vendorNumber')}:{' '}
-            <span className="font-mono">{data.supplier_code}</span>
-          </div>
-        )}
         <div>
+          {/* Labelled exactly like the non-chain field above, because it is the
+              same thing: for a chain their purchase-order number IS this order's
+              number. Naming it after the chain made one order number look like
+              two different fields depending on the customer. */}
           <FormLabel htmlFor="chain-po">
-            {t('chainClient.purchaseOrder', { chain: chainName })}
+            {t('orderInfo.orderNumber')}
           </FormLabel>
           <input
             id="chain-po"
@@ -407,9 +401,8 @@ export function OrderInfoSection({
             {fromOrder
               ? t('chainClient.purchaseOrder.fromOrder')
               : isManualOrder
-                // Says plainly that this doubles as the order's own number, so
-                // the absent second input does not read as a missing field.
-                ? t('chainClient.purchaseOrder.isOrderNumber', { chain: chainName })
+                // Same hint the non-chain field carries — one field, one meaning.
+                ? t('manualOrder.orderNumber.hint')
                 : t('chainClient.purchaseOrder.hint', { chain: chainName })}
           </div>
         </div>

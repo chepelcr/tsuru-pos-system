@@ -1,12 +1,10 @@
 {
   "chainClient.deliveryPoint": "Punto de entrega",
-  "chainClient.deliveryPoint.isDestination": "Aquí es donde se entrega el pedido.",
   "chainClient.genericName": "de cadena",
   "chainClient.gln": "GLN",
   "chainClient.purchaseOrder": "Número de orden de {chain}",
   "chainClient.purchaseOrder.fromOrder": "Viene del pedido que se está facturando y no se puede cambiar aquí.",
   "chainClient.purchaseOrder.hint": "Número que asigna {chain}, no el nuestro. Viaja en el comprobante.",
-  "chainClient.purchaseOrder.isOrderNumber": "Orden de compra de {chain}. También es el número de este pedido, por eso se pide una sola vez.",
   "chainClient.purchaseOrder.placeholder": "Ej. 4500123456",
   "chainClient.title": "Datos {chain}",
   "chainClient.vendorNumber": "Número de vendedor",

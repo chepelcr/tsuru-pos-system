@@ -1,12 +1,10 @@
 {
   "chainClient.deliveryPoint": "Delivery point",
-  "chainClient.deliveryPoint.isDestination": "This is where the order is delivered.",
   "chainClient.genericName": "Chain",
   "chainClient.gln": "GLN",
   "chainClient.purchaseOrder": "{chain} order number",
   "chainClient.purchaseOrder.fromOrder": "Comes from the order being billed and cannot be changed here.",
   "chainClient.purchaseOrder.hint": "The number {chain} assigns, not ours. It travels on the document.",
-  "chainClient.purchaseOrder.isOrderNumber": "{chain}'s purchase order. It is also this order's own number, so it is only asked once.",
   "chainClient.purchaseOrder.placeholder": "e.g. 4500123456",
   "chainClient.title": "{chain} details",
   "chainClient.vendorNumber": "Vendor number",
