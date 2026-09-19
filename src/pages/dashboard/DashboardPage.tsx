@@ -83,9 +83,14 @@ export default function DashboardPage() {
 
   const totalRevenue = summary.data?.revenue ?? 0;
   const totalSales = summary.data?.orders ?? 0;
+  // "Ventas de la sesión" is its OWN figure: open orders plus today's
+  // deliveries. The hero card was labelled that and rendered `totalRevenue` —
+  // the organization's whole revenue — because this query was fetched and never
+  // used. Two different questions under one heading.
+  const openRevenue = sessionSales.data?.revenue ?? 0;
+  const openOrderCount = sessionSales.data?.orders ?? 0;
   const avgTicket = summary.data?.average_ticket ?? 0;
   const openOrders = orderStatus.data?.open_orders ?? 0;
-  const openValue = orderStatus.data?.open_value ?? 0;
   const ranking = products.data?.products ?? [];
   // The scope the SERVER answered for, which is what the header should label.
   const answeredScope = summary.data?.scope ?? null;
@@ -101,8 +106,9 @@ export default function DashboardPage() {
 
   // Only the headline figure gates the hero card. A slow product ranking should
   // not hold up the number the operator opened the page to read.
-  const isLoading = summary.isLoading;
-  const isRefetching = summary.isRefetching || orderStatus.isRefetching;
+  const isLoading = summary.isLoading || sessionSales.isLoading;
+  const isRefetching =
+    summary.isRefetching || orderStatus.isRefetching || sessionSales.isRefetching;
   const refetch = () => {
     void summary.refetch();
     void orderStatus.refetch();
@@ -195,7 +201,7 @@ export default function DashboardPage() {
           <div>
             <div className="t-label !text-primary mb-2">{t("dash.sessionSales")}</div>
             <div className="t-stat-xl !text-[44px] !text-primary !leading-none">
-              {fmt(totalRevenue)}
+              {fmt(openRevenue)}
             </div>
             <div className="flex items-center gap-2.5 mt-2.5 flex-wrap">
               <Badge variant="success" className="gap-[5px]">
@@ -203,8 +209,10 @@ export default function DashboardPage() {
                 {t("dash.live")}
               </Badge>
               <span className="t-xs text-muted-foreground">
-                {t("dash.stationOrders", { n: String(totalSales) })}
-                {openOrders > 0 && ` · ${t("dash.inProcess", { n: String(openOrders) })} (${fmt(openValue)})`}
+                {t("dash.stationOrders", { n: String(openOrderCount) })}
+                {/* The total the org has billed is a different figure, named as
+                    such rather than left to look like the session's. */}
+                {` · ${t("dash.orgTotal", { total: fmt(totalRevenue), n: String(totalSales) })}`}
               </span>
             </div>
           </div>

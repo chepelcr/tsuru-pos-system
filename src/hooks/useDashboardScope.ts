@@ -55,8 +55,15 @@ export function useDashboardScope(): DashboardScopeResult {
   // `useAssignment` THROWS when there is no active assignment, so "not attached"
   // arrives as isError rather than as empty data. Both mean the same thing here
   // and neither is an error worth showing: working outside a session is normal.
+  //
+  // BOTH ids are required. Checking only `session_id` was not enough: the hook
+  // used to return the response envelope as an assignment when the list came
+  // back empty, and a stale IndexedDB row could supply a `session_id` from a
+  // shift that ended months ago — which showed a "Mi sesión" toggle to somebody
+  // with no session and scoped the dashboard to a dead assignment.
+  const assignmentId = assignment.data?.assignment_id;
   const sessionId = assignment.data?.session_id;
-  const hasSession = !!sessionId;
+  const hasSession = !!assignmentId && !!sessionId;
 
   const [preference, setPreference] = useState<DashboardScopeKind | null>(readPreference);
 

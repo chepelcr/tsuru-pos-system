@@ -24,8 +24,28 @@ export function useAssignment() {
           crossAppUserOrgPath(user!.userId, org!.id, `/assignments?search=status:1`)
         );
 
-        // Get the first active assignment for this user
-        data = response.data?.[0] || (Array.isArray(response) ? response[0] : response);
+        // The first active assignment, or nothing.
+        //
+        // This used to end `|| response`, which meant that when the list came
+        // back EMPTY — the normal answer for anyone not on a till — the whole
+        // `{data: [], pagination}` envelope was returned AS the assignment. It is
+        // truthy, so:
+        //   * `assignment.data` looked like an active assignment to every caller;
+        //   * the `!data` branch below never ran, so the stale cached assignment
+        //     was never deleted — and the next transport hiccup resurrected a
+        //     previous shift's session from IndexedDB.
+        // That is how the dashboard offered a "Mi sesión" toggle with no session
+        // open, and scoped its figures to an assignment that ended months ago.
+        const rows = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
+        const candidate = rows[0];
+        // An assignment is only an assignment if it identifies itself. Anything
+        // else is a shape we did not expect, and treating it as a live shift is
+        // worse than reporting none.
+        data = candidate?.assignment_id ? candidate : undefined;
       } catch {
         // TRANSPORT failure — this, and only this, is what the offline cache is
         // for. A successful "you have no active assignment" is handled below.

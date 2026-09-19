@@ -67,6 +67,7 @@
   "dash.orderStatusHint": "Todo lo que hay registrado",
   "dash.orders": "Órdenes",
   "dash.ordersRegistered": "{n} órdenes registradas",
+  "dash.orgTotal": "{total} facturado en total ({n} pedidos)",
   "dash.realTime": "En tiempo real",
   "dash.refreshing": "Actualizando…",
   "dash.salesFeed": "Feed de ventas",

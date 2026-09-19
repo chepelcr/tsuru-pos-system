@@ -67,6 +67,7 @@
   "dash.orderStatusHint": "Everything currently on the books",
   "dash.orders": "Orders",
   "dash.ordersRegistered": "{n} orders registered",
+  "dash.orgTotal": "{total} billed overall ({n} orders)",
   "dash.realTime": "Real time",
   "dash.refreshing": "Refreshing…",
   "dash.salesFeed": "Sales feed",
