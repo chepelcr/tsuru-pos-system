@@ -8,6 +8,7 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { useOrder, useUpdateOrderStatus } from '@/hooks/useOrders';
 import { usePermissions } from '@/hooks/useRbac';
+import { canEditDeliveryDate } from '@/types/order';
 import type { Order, OrderStatus, OrderLine } from '@/types/order';
 import { fmt } from '@/lib/utils';
 import { downloadFromUrl } from '@/lib/downloadUtils';
@@ -20,6 +21,7 @@ import { useOrderTicket } from '@/hooks/useOrderTicket';
 import { useFiscalMode } from '@/hooks/useFiscalMode';
 import { isOrderInvoiced } from '@/lib/orderToInvoice';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
+import { DeliveryDateDialog } from '@/components/orders/DeliveryDateDialog';
 import { ReprocessDialog } from '@/components/orders/ReprocessDialog';
 import { CrossdockingUploadDialog } from '@/components/orders/CrossdockingUploadDialog';
 import { CrossdockingDetailsDialog } from '@/components/orders/CrossdockingDetailsDialog';
@@ -310,6 +312,7 @@ export default function OrderDetailPage({ orderId }: Props) {
   const canExport = !permsReady || can('commercial', 'export', 'orders');
 
   const [reprocessOpen, setReprocessOpen] = useState(false);
+  const [deliveryDateOpen, setDeliveryDateOpen] = useState(false);
   const [crossdockUploadOpen, setCrossdockUploadOpen] = useState(false);
   const [crossdockPreviewOpen, setCrossdockPreviewOpen] = useState(false);
 
@@ -629,6 +632,20 @@ export default function OrderDetailPage({ orderId }: Props) {
               <span className="t-xs">
                 {t('orders.detail.deliveryDate')}: {formatOrderDate(order.delivery_date, locale, 'long')}
               </span>
+              {/* Rescheduling used to mean deleting the order and re-importing
+                  its spreadsheet. Offered only where it can succeed — pending or
+                  processing, unbilled — and the server enforces the same. */}
+              {canUpdate && canEditDeliveryDate(order) && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs btn-icon"
+                  onClick={() => setDeliveryDateOpen(true)}
+                  title={t('orders.deliveryDate.edit')}
+                  aria-label={t('orders.deliveryDate.edit')}
+                >
+                  <Icon name="pencil" size={12} />
+                </button>
+              )}
             </div>
           )}
           {text(order.department) && (
@@ -700,6 +717,12 @@ export default function OrderDetailPage({ orderId }: Props) {
       </div>
 
       <ReprocessDialog open={reprocessOpen} onClose={() => setReprocessOpen(false)} order={order} orgId={orgId} />
+      <DeliveryDateDialog
+        open={deliveryDateOpen}
+        onClose={() => setDeliveryDateOpen(false)}
+        order={order}
+        orgId={orgId}
+      />
 
       {/* Billing the pedido: the POS checkout drawer over this order's own
           lines. No document tab and no editor — see `useInvoiceOrder`. */}

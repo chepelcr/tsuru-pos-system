@@ -633,3 +633,27 @@ export interface ChainClientInfo {
   /** The chain's own purchase-order number — theirs, not ours. */
   purchase_order_number?: string;
 }
+
+/**
+ * Statuses in which an order's delivery date may still be moved.
+ *
+ * Mirrors store-be's `DELIVERY_DATE_EDITABLE_STATUSES`. An order still being
+ * prepared can be rescheduled; once it has SHIPPED the date has been acted on and
+ * the customer told, delivered and cancelled are history, and a quote is not a
+ * placed order yet.
+ */
+export const DELIVERY_DATE_EDITABLE_STATUSES: readonly OrderStatus[] = [
+  'pending',
+  'processing',
+] as const;
+
+/**
+ * Whether the UI should offer to change this order's delivery date.
+ *
+ * The backend enforces the same three conditions and answers 400 otherwise; this
+ * exists so the action is not offered when it cannot succeed, not as the check.
+ */
+export function canEditDeliveryDate(order: Pick<Order, 'order_status' | 'invoice'>): boolean {
+  if (order.invoice?.sale_id) return false;   // billed: the date is on the document
+  return DELIVERY_DATE_EDITABLE_STATUSES.includes(order.order_status);
+}

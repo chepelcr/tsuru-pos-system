@@ -186,6 +186,33 @@ export function useUpdateOrderStatus(orgId: string | undefined, documentNumber: 
   });
 }
 
+/**
+ * Move an order's delivery date. Returns the updated order.
+ *
+ * The date is sent ISO — store-be's column is a real date now, and it also
+ * rewrites the order's stored spreadsheets, because `reprocess` re-reads those
+ * and would otherwise revert the change.
+ *
+ * The backend refuses the edit with 400 unless the order is `pending` or
+ * `processing`, is unbilled, and the date is not in the past. `canEditDeliveryDate`
+ * mirrors those conditions so the UI does not offer an edit that cannot succeed —
+ * but the server is what enforces them.
+ */
+export function useUpdateOrderDeliveryDate(
+  orgId: string | undefined,
+  documentNumber: string,
+) {
+  const sync = useOrderCacheSync(orgId, documentNumber);
+  return useMutation<Order, Error, string>({
+    mutationFn: (deliveryDate) =>
+      ordersStoreApi.patch<Order>(
+        ordersStoreOrgPath(orgId!, `/orders/${documentNumber}`),
+        { delivery_date: deliveryDate },
+      ),
+    onSuccess: (updated) => sync(updated),
+  });
+}
+
 /** Reprocess an order with a report-color scheme. Returns the updated order. */
 export function useReprocessOrder(orgId: string | undefined, documentNumber: string) {
   const sync = useOrderCacheSync(orgId, documentNumber);
