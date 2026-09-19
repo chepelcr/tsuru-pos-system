@@ -96,7 +96,10 @@ export function SessionOverviewTab({
                 <Icon name={kpi.icon} size={12} />
               </div>
             </div>
-            <div className="t-stat-xl !text-[22px]">{kpi.value}</div>
+            {/* These cards are 160px at their narrowest — ~128px of content
+                width — and ₡2 553 498,17 at 22px is ~156px, so it ran outside the
+                card. 18px fits, and `break-words` catches anything longer. */}
+            <div className="t-stat-xl !text-[18px] min-w-0 break-words">{kpi.value}</div>
           </Card>
         ))}
       </div>

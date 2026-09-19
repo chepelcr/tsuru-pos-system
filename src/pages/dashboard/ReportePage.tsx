@@ -99,17 +99,24 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
         </div>
       )}
 
-      {/* Hero KPIs */}
-      <div className="grid-auto-fit-220 gap-3.5 mb-5">
-        {/* Main KPI */}
-        <Card className="p-[22px] !border-primary/30 bg-gradient-to-br from-primary/[0.12] to-primary/[0.02]">
-          <div className="t-label !text-primary mb-1.5">{t("report.grossIncome")}</div>
-          <div className="t-stat-xl !text-[40px] !text-primary">{fmt(revenue)}</div>
-          <Badge variant={tills.length ? "success" : "secondary"} className="mt-2">
-            {t("dash.active", { n: String(tills.length) })}
-          </Badge>
-        </Card>
+      {/* The headline figure gets its own full-width row.
+ 
+          It was one cell of a `minmax(220px, 1fr)` auto-fit grid, which leaves
+          176px of content width — and "₡2 553 498,17" at the 40px this card
+          asked for is about 273px, so it ran outside the card. The `!text-[40px]`
+          override was also defeating `t-stat-xl`'s own
+          `clamp(34px, 4vw, 48px)`, which exists to shrink exactly this; even the
+          34px floor does not fit 176px, so the answer is room rather than a
+          smaller number. */}
+      <Card className="p-[22px] mb-3.5 !border-primary/30 bg-gradient-to-br from-primary/[0.12] to-primary/[0.02]">
+        <div className="t-label !text-primary mb-1.5">{t("report.grossIncome")}</div>
+        <div className="t-stat-xl !text-primary min-w-0 break-words">{fmt(revenue)}</div>
+        <Badge variant={tills.length ? "success" : "secondary"} className="mt-2">
+          {t("dash.active", { n: String(tills.length) })}
+        </Badge>
+      </Card>
 
+      <div className="grid-auto-fit-220 gap-3.5 mb-5">
         {[
           {
             l: t("report.orders"),
@@ -143,7 +150,14 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
                 <Icon name={k.i} size={14} />
               </div>
             </div>
-            <div className="t-stat-xl !text-[28px] mb-1">{k.v}</div>
+            {/* 22px, not 28px: these cards are 220px wide at their narrowest, so
+                there is ~184px of content width, and ₡2 553 498,17 at 28px is
+                ~170px — close enough that a longer figure or a wider theme font
+                spills out. A viewport-based clamp would be backwards here (a
+                narrow viewport gives a FULL-WIDTH card, so more room, not less),
+                so the size is the one that fits the tightest case, with
+                `break-words` as the backstop for anything longer still. */}
+            <div className="t-stat-xl !text-[22px] mb-1 min-w-0 break-words">{k.v}</div>
             <div className="t-xs text-muted-foreground">{k.s}</div>
           </Card>
         ))}
