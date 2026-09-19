@@ -1,4 +1,5 @@
 import { StatCard } from "@/components/common/StatCard";
+import { formatOrderDate } from '@/lib/orderDate';
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { Order } from "@/hooks/useOrders";
 import { formatMoney } from "@/lib/money";
@@ -12,12 +13,14 @@ function formatColones(amount: number): string {
 }
 
 /** Parse a DD/MM/YYYY delivery date into a localized short date. */
+/**
+ * Order dates go through `formatOrderDate` — see the note in
+ * `ClientOrderHistory`. The copy here understood only `DD/MM/YYYY` and rendered
+ * a raw ISO string once the API started sending one.
+ */
 function formatDate(dateString: string | undefined, locale: string, fallback: string): string {
   if (!dateString) return fallback;
-  const [day, month, year] = dateString.split("/");
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  if (Number.isNaN(date.getTime())) return fallback;
-  return date.toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
+  return formatOrderDate(dateString, locale, 'short') || fallback;
 }
 
 export function ClientStats({ orders }: ClientStatsProps) {

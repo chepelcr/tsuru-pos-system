@@ -38,9 +38,20 @@ const SORT_FIELD_MAP: Record<string, string> = {
   documentNumber: 'documentNumber',
 };
 
+/**
+ * ISO straight through — the API takes dates as `YYYY-MM-DD`.
+ *
+ * This used to rewrite an ISO date into `DD/MM/YYYY`, because the columns were
+ * VARCHAR and the Excel import had written day-first. Those columns are real
+ * dates now (store-be migration `d3e4f5a6b7c8`), so day-first is no longer the
+ * stored shape — and sending it relies on the backend's tolerance for the old
+ * spelling rather than saying what it means. One format on the wire.
+ *
+ * Kept as a named function rather than inlined so the date inputs still have one
+ * place that decides what reaches the API.
+ */
 function toApiDate(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-');
-  return `${d}/${m}/${y}`;
+  return isoDate;
 }
 
 export function buildOrderSearchString(filters: OrderSearchFilters): string {

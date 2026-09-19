@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatOrderDate } from '@/lib/orderDate';
 import { useLocation } from 'wouter';
 import { ROUTES } from '@/routePaths';
 import { useOrgContext } from '@/contexts/OrgContext';
@@ -23,20 +24,14 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   shipped: 'delivered',
 };
 
-function formatDate(dateStr: string | undefined, locale: string): string {
-  if (!dateStr) return '';
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [day, month, year] = dateStr.split('/');
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-    return Number.isNaN(d.getTime())
-      ? dateStr
-      : d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
-  }
-  const d = new Date(dateStr);
-  return Number.isNaN(d.getTime())
-    ? dateStr
-    : d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
-}
+/**
+ * Order dates go through `formatOrderDate` — it reads both the ISO the API sends
+ * now and the `DD/MM/YYYY` older payloads carried, and builds the date in local
+ * time so it never renders the previous day. The copy here fell back to
+ * `new Date(dateStr)` for the ISO case, which does.
+ */
+const formatDate = (dateStr: string | undefined, locale: string): string =>
+  formatOrderDate(dateStr, locale, 'long');
 
 interface Props {
   confirmationNumber: string;

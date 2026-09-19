@@ -1,4 +1,5 @@
 import { Card, Icon } from '@/components/ui';
+import { formatOrderDate } from '@/lib/orderDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import type { Confirmation } from '@/types/confirmation';
@@ -8,20 +9,15 @@ interface ConfirmationCardProps {
   onClick?: () => void;
 }
 
-function formatDate(dateStr: string | undefined, locale: string): string {
-  if (!dateStr) return '';
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-    const [day, month, year] = dateStr.split('/');
-    const d = new Date(Number(year), Number(month) - 1, Number(day));
-    return Number.isNaN(d.getTime())
-      ? dateStr
-      : d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
-  }
-  const d = new Date(dateStr);
-  return Number.isNaN(d.getTime())
-    ? dateStr
-    : d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
-}
+/**
+ * Order dates go through `formatOrderDate`.
+ *
+ * This copy handled `DD/MM/YYYY` correctly but fell back to `new Date(dateStr)`
+ * for anything else — which parses a bare ISO date as UTC midnight, i.e. the
+ * previous evening in Costa Rica, so an ISO delivery date rendered a day early.
+ */
+const formatDate = (dateStr: string | undefined, locale: string): string =>
+  formatOrderDate(dateStr, locale, 'short');
 
 export function ConfirmationCard({ confirmation, onClick }: ConfirmationCardProps) {
   const { t, language } = useLanguage();

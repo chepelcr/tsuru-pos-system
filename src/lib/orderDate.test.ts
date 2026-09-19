@@ -48,3 +48,36 @@ describe('formatOrderDate', () => {
     expect(formatOrderDate('2026-09-20', 'es-CR', 'short')).not.toContain('septiembre');
   });
 });
+
+describe("the shape the API sends after the date migration", () => {
+  /**
+   * store-be's `creation_date` / `delivery_date` became real `DATE` columns
+   * (migration d3e4f5a6b7c8), so responses now serialise ISO — always, where
+   * before the same field could arrive as `DD/MM/YYYY` from an imported order or
+   * `YYYY-MM-DD` from a POS one.
+   *
+   * Both still have to work: this runs against orders that were already in a
+   * client's cache, and against any payload built before the migration.
+   */
+  it("reads the ISO the API sends now", () => {
+    expect(formatOrderDate("2026-09-20", "es-CR", "short")).toContain("20");
+  });
+
+  it("still reads the day-first shape older payloads carried", () => {
+    expect(formatOrderDate("20/09/2026", "es-CR", "short")).toContain("20");
+  });
+
+  it("renders the same day for both spellings of one date", () => {
+    // The bug this guards: a bare ISO date parsed as UTC midnight is 18:00 the
+    // previous day in Costa Rica, so the two spellings disagreed by one day.
+    expect(formatOrderDate("2026-09-20", "es-CR", "long"))
+      .toBe(formatOrderDate("20/09/2026", "es-CR", "long"));
+  });
+
+  it("does not shift an ISO date backwards", () => {
+    // 1 March is the sharpest case: a day-early bug lands in February.
+    const rendered = formatOrderDate("2026-03-01", "es-CR", "long");
+    expect(rendered).not.toContain("feb");
+    expect(rendered).toContain("1");
+  });
+});

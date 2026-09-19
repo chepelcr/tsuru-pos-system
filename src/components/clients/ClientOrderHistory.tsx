@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatOrderDate } from '@/lib/orderDate';
 import { useLocation } from "wouter";
 import { Card, Icon, EmptyState, Pagination } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -16,13 +17,18 @@ function formatColones(amount: number): string {
   return formatMoney(amount);
 }
 
-function formatDate(dateString: string | undefined, locale: string): string {
-  if (!dateString) return "";
-  const [day, month, year] = dateString.split("/");
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  if (Number.isNaN(date.getTime())) return dateString;
-  return date.toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
-}
+/**
+ * One owner for order dates: `formatOrderDate`.
+ *
+ * The copy that lived here split on "/" unconditionally, so it only ever
+ * understood the Excel import's `DD/MM/YYYY`. With the API now sending ISO
+ * (store-be migration `d3e4f5a6b7c8`), the split produced NaN and the raw string
+ * "2026-09-20" was rendered instead of a date. The shared helper reads both
+ * shapes and builds the date from local-time components, so it also never shows
+ * the previous day.
+ */
+const formatDate = (dateString: string | undefined, locale: string): string =>
+  formatOrderDate(dateString, locale, 'short');
 
 /**
  * Paginated order history for a client. Orders are linked by the client's GLN

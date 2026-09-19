@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { formatOrderDate } from '@/lib/orderDate';
 import { Button, Icon, Select } from "@/components/ui";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -55,16 +56,16 @@ export function OrderMultiPicker({ orgId, value, onChange }: OrderMultiPickerPro
     return orders.filter((o) => !taken.has(o.document_number));
   };
 
-  const formatDate = (dateStr: string) => {
-    const [dd, mm, yyyy] = dateStr.split('/');
-    const d = new Date(`${yyyy}-${mm}-${dd}`);
-    if (Number.isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString(language === 'es' ? 'es-CR' : 'en-US', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+  /**
+   * Order dates go through `formatOrderDate`.
+   *
+   * This copy split on "/" and then rebuilt the string as `YYYY-MM-DD` before
+   * handing it to `new Date` — which parses that as UTC midnight, the previous
+   * evening in Costa Rica, so it rendered a day early. It also understood only
+   * the day-first shape, and the API sends ISO now.
+   */
+  const formatDate = (dateStr: string) =>
+    formatOrderDate(dateStr, language === 'es' ? 'es-CR' : 'en-US', 'short');
 
   return (
     <div className="space-y-3">
