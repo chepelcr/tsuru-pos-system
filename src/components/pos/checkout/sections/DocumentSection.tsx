@@ -5,11 +5,8 @@ import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { SaleConditionSelect } from '../fields/SaleConditionSelect';
 import { ActivityCodeSelect } from '../fields/ActivityCodeSelect';
 import { CurrencyRateField } from '../fields/CurrencyRateField';
-import { DeliveryLocationField } from '../fields/DeliveryLocationField';
 import type { CurrencyCode } from '@/types/invoice';
 import type { ManualOrderFields } from '@/types/order';
-import type { SaleReceiver } from '@/types/receiver';
-import type { ClientSearchResult } from '@/hooks/useClientSearch';
 
 interface DocumentSectionData {
   /** Hacienda sale condition code. */
@@ -33,11 +30,7 @@ interface DocumentSectionProps {
   manualOrder?: ManualOrderFields;
   onManualOrderChange?: (patch: Partial<ManualOrderFields>) => void;
   orgId?: string;
-  clientId?: string;
   /** The client has registered delivery points (a retail chain, typically). */
-  showRegisteredPoints?: boolean;
-  receiver?: SaleReceiver;
-  selectedClient?: ClientSearchResult | null;
 }
 
 /**
@@ -71,10 +64,6 @@ export function DocumentSection({
   manualOrder,
   onManualOrderChange,
   orgId,
-  clientId,
-  showRegisteredPoints,
-  receiver,
-  selectedClient,
 }: DocumentSectionProps) {
   const { t } = useLanguage();
   // Whether this organization has a registered Hacienda profile at all.
@@ -143,17 +132,6 @@ export function DocumentSection({
       />
 
 
-      {isManualOrder && (
-        <DeliveryLocationField
-          value={manualOrder!.delivery_location}
-          onChange={(delivery_location) => onManualOrderChange!({ delivery_location })}
-          orgId={orgId}
-          clientId={clientId}
-          showRegisteredPoints={showRegisteredPoints}
-          receiver={receiver}
-          selectedClient={selectedClient}
-        />
-      )}
 
       <div className="space-y-1">
         <label className="label-section" htmlFor="document-notes">

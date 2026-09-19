@@ -1,5 +1,6 @@
 {
   "chainClient.deliveryPoint": "Punto de entrega",
+  "chainClient.deliveryPoint.isDestination": "Aquí es donde se entrega el pedido.",
   "chainClient.genericName": "de cadena",
   "chainClient.gln": "GLN",
   "chainClient.purchaseOrder": "Número de orden de {chain}",

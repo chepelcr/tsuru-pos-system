@@ -17,8 +17,6 @@ interface DeliveryLocationFieldProps {
   onChange: (location: ManualOrderDeliveryLocation) => void;
   orgId?: string;
   clientId?: string;
-  /** The client has registered delivery points (a retail chain, typically). */
-  showRegisteredPoints?: boolean;
   receiver?: SaleReceiver;
   /**
    * The selected catalog client. Not optional context: selecting a client
@@ -33,15 +31,17 @@ interface DeliveryLocationFieldProps {
  * Where the order goes: a registered point, the receiver's address, or the
  * structured Costa Rica cascade. Never a free-text blob.
  *
- * Extracted from the Pedido card so the Documento card can own it — see
- * `DocumentSection`.
+ * Lives on the Order card (`OrderInfoSection`) — where the order goes is a fact
+ * about the order, not about the document. It is NOT rendered for a retail
+ * chain: there the registered delivery point on that same card is the
+ * destination, and `useCartFlow` derives `delivery_location` from it, so
+ * offering these three modes as well would ask for the address twice.
  */
 export function DeliveryLocationField({
   value,
   onChange,
   orgId,
   clientId,
-  showRegisteredPoints = false,
   receiver,
   selectedClient,
 }: DeliveryLocationFieldProps) {
@@ -55,7 +55,10 @@ export function DeliveryLocationField({
   const receiverAddress = resolveReceiverAddress(receiver, selectedClient);
   const hasReceiverAddress = receiverAddress !== null;
 
-  const showStoreMode = showRegisteredPoints || stores.length > 0;
+  // Whether "registered point" is offered at all. The caller used to be able to
+  // force it on for a chain; a chain no longer renders this field, so the only
+  // question left is whether this client has points on file.
+  const showStoreMode = stores.length > 0;
 
   // "Registered point" only makes sense for a client with points on file, so
   // fall back rather than showing an empty mode as the default.

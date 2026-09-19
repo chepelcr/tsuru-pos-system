@@ -453,10 +453,6 @@ export function CheckoutDrawer({
                 : undefined
             }
             orgId={orgId}
-            clientId={selectedClient?.client_id}
-            showRegisteredPoints={chainState.show}
-            receiver={receiver}
-            selectedClient={selectedClient}
           />
 
           {/* Shown for a pedido too. It was hidden on the grounds that a pedido
@@ -495,6 +491,9 @@ export function CheckoutDrawer({
               data={chainInfo}
               orgId={orgId}
               clientId={selectedClient?.client_id}
+              deliveryLocation={manualOrder.delivery_location}
+              receiver={receiver}
+              selectedClient={selectedClient}
               onChange={(patch) =>
                 updateData({ chain_info: { ...chainInfo, ...patch } })
               }

@@ -5,8 +5,11 @@ import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { FormLabel, Select } from '@/components/ui';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useStores } from '@/hooks/useStores';
+import { DeliveryLocationField } from '../fields/DeliveryLocationField';
 import type { ChainClient } from '@/lib/chainClients';
-import type { ChainClientInfo } from '@/types/order';
+import type { ChainClientInfo, ManualOrderDeliveryLocation } from '@/types/order';
+import type { SaleReceiver } from '@/types/receiver';
+import type { ClientSearchResult } from '@/hooks/useClientSearch';
 
 interface OrderInfoSectionProps {
   isExpanded: boolean;
@@ -29,7 +32,13 @@ interface OrderInfoSectionProps {
     is_quote?: boolean;
     document_number?: string;
     delivery_date?: string;
+    delivery_location?: ManualOrderDeliveryLocation;
   }) => void;
+  /** PM only: where the order goes. Not asked for a chain — see below. */
+  deliveryLocation?: ManualOrderDeliveryLocation;
+  /** Context the delivery field needs to offer "the receiver's address". */
+  receiver?: SaleReceiver;
+  selectedClient?: ClientSearchResult | null;
   /**
    * The pedido this document is being billed from, when there is one. Shown
    * read-only: the order exists already and its number is not ours to change
@@ -83,6 +92,9 @@ export function OrderInfoSection({
   isQuote = false,
   documentNumber,
   deliveryDate,
+  deliveryLocation,
+  receiver,
+  selectedClient,
   onManualOrderChange,
   orderNumber,
   isChainClient = false,
@@ -261,6 +273,29 @@ export function OrderInfoSection({
           </div>
         )}
 
+        {/* Where the order goes.
+ 
+            For a chain this is NOT asked here: the registered delivery point
+            below IS the destination, and `useCartFlow` derives
+            `delivery_location` from it (`chainDeliveryLocation ??
+            manualFields.delivery_location`). Rendering the general field too
+            would ask a Walmart order for its address twice — once as a store and
+            once as a receiver or a cascade — and only one of the two would reach
+            the payload.
+ 
+            For everybody else it is the three-mode field: a registered point, the
+            receiver's address, or the Costa Rica cascade. */}
+        {isManualOrder && !isChainClient && (
+          <DeliveryLocationField
+            value={deliveryLocation}
+            onChange={(delivery_location) => onManualOrderChange?.({ delivery_location })}
+            orgId={orgId}
+            clientId={clientId}
+            receiver={receiver}
+            selectedClient={selectedClient}
+          />
+        )}
+
         {isChainClient && (
         <>
         <div>
@@ -321,11 +356,17 @@ export function OrderInfoSection({
               </option>
             ))}
           </Select>
-          {data.gln && (
-            <div className="t-xs text-muted-foreground mt-1">
-              {t('chainClient.gln')}: <span className="font-mono">{data.gln}</span>
-            </div>
-          )}
+          {/* Says that this select is also where the order is delivered, so the
+              absent general delivery field does not read as a missing step. */}
+          <div className="t-xs text-muted-foreground mt-1">
+            {t('chainClient.deliveryPoint.isDestination')}
+            {data.gln && (
+              <>
+                {' · '}
+                {t('chainClient.gln')}: <span className="font-mono">{data.gln}</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Derived from the department, shown so the cashier can see the value
