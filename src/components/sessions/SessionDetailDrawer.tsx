@@ -20,6 +20,8 @@ interface SessionDetailDrawerProps {
   assignmentsLoading: boolean;
   stations?: DashboardStation[];
   stationsLoading: boolean;
+  /** For the overview tab's backend-computed totals. */
+  orgId?: string;
   activeTab: DrawerTab;
   endingPending: boolean;
   onClose: () => void;
@@ -41,6 +43,7 @@ export function SessionDetailDrawer({
   onTabChange,
   onEdit,
   onEndSession,
+  orgId,
 }: SessionDetailDrawerProps) {
   const { t } = useLanguage();
   // RBAC gating — `can` fails open until my-permissions resolves (log rollout).
@@ -120,7 +123,12 @@ export function SessionDetailDrawer({
         <div className="flex-1 overflow-y-auto">
           {activeTab === "overview" && (
             <FadeIn key="overview" duration={0.3}>
-              <SessionOverviewTab stations={stations} isLoading={stationsLoading} />
+              <SessionOverviewTab
+                orgId={orgId}
+                sessionId={session.session_id}
+                stations={stations}
+                isLoading={stationsLoading}
+              />
             </FadeIn>
           )}
           {activeTab === "assignments" && (

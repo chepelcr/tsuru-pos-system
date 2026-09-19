@@ -239,6 +239,7 @@ export default function SessionsPage() {
 
       {/* Session Detail Drawer */}
       <SessionDetailDrawer
+        orgId={org?.id}
         open={viewOpen}
         session={selectedSession}
         assignments={assignmentsData?.data ?? []}

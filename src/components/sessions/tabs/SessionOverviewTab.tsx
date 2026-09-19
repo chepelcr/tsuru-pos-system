@@ -1,32 +1,44 @@
 import { Card, Icon } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSalesSummary } from "@/hooks/useDashboard";
 import { formatMoney as fmt } from "@/lib/money";
 import type { DashboardStation } from "@/types/dashboard";
 
 /**
- * The session at a glance, summed from its own tills.
+ * The session at a glance.
  *
- * The totals used to come from the deprecated `/dashboard?session_id=` payload,
- * which passed the session id only to its stations query — so `total_revenue`,
- * `total_sales` and `avg_ticket` were the WHOLE ORGANISATION's figures displayed
- * under a session's name. Summing the session's stations is both correct and
- * obviously correct: what the tills in this session took is what this session
- * took.
+ * The totals are computed by the BACKEND, scoped to this session — one SQL
+ * COUNT/SUM over the orders. They previously came from the deprecated
+ * `/dashboard?session_id=` payload, which passed the session id only to its
+ * stations query, so `total_revenue`, `total_sales` and `avg_ticket` were the
+ * WHOLE ORGANISATION's figures under a session's name; then briefly from summing
+ * the stations here, which gave the right number but put "what this session sold"
+ * in two places and the average-ticket guard in a third.
  *
  * The per-method badges are gone with the same payload; they were always ₡0.
  * Cash vs SINPE vs card lives on the session's closing, expected against
  * declared.
  */
 export function SessionOverviewTab({
+  orgId,
+  sessionId,
   stations,
   isLoading,
 }: {
+  orgId?: string;
+  sessionId?: string;
   stations?: DashboardStation[];
   isLoading: boolean;
 }) {
   const { t } = useLanguage();
+  // The totals come from the backend, scoped to this session — one SQL
+  // COUNT/SUM over the orders, not a client-side pass over a list. Summing the
+  // stations here gave the right answer only because a station's revenue is
+  // itself an aggregate; it still put the definition of "what this session sold"
+  // in two places, and the average ticket's divide-by-zero guard in a third.
+  const summary = useSalesSummary(orgId, { sessionId }, !!orgId);
 
-  if (isLoading) {
+  if (isLoading || summary.isLoading) {
     return (
       <div className="p-6">
         <div className="grid-auto-fit-160 gap-3 mb-5">
@@ -61,11 +73,10 @@ export function SessionOverviewTab({
   }
 
   const tills = stations ?? [];
-  const revenue = tills.reduce((sum, station) => sum + station.revenue, 0);
-  const orders = tills.reduce((sum, station) => sum + station.orders, 0);
-  // Guarded: the average of no orders is not 0, but 0 is the only honest thing
-  // to render for an empty session.
-  const averageTicket = orders > 0 ? revenue / orders : 0;
+  const revenue = summary.data?.revenue ?? 0;
+  const orders = summary.data?.orders ?? 0;
+  // Computed server-side, including the guard for a session with no orders.
+  const averageTicket = summary.data?.average_ticket ?? 0;
 
   const kpis = [
     { label: t("session.totalSales"), value: fmt(revenue), icon: "dollar", color: "primary" },
