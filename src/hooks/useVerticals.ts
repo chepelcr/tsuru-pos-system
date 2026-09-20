@@ -117,6 +117,17 @@ export interface PriceSchedule {
   }[];
 }
 
+/**
+ * ⚠️ **The backend route does not exist yet.** store-be has the `PriceSchedule`
+ * model, its migration (`ab8c9d0e1f2a_vertical_modules`) and
+ * `services/price_schedule_service.py`, but `verticals_controller` registers
+ * lots, client assets and appointments — never `/price-schedules`. Calling this
+ * gets a 403 from the gateway, which is what an unmapped path answers.
+ *
+ * Nothing calls it today. Wire the controller before anything does; every other
+ * hook in this file is unused-but-real, and this is the only one that promises
+ * something the backend does not keep.
+ */
 export function usePriceSchedules(orgId?: string, enabled = true) {
   return useQuery({
     queryKey: ['price-schedules', orgId],
