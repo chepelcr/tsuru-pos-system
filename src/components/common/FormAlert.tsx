@@ -24,7 +24,7 @@ interface FormAlertProps {
  * so anything sent to the bell from /login, /register or /forgot-password is
  * invisible. Those pages must show their errors in the form itself; this is
  * that surface (roadmap TSR-309). Styling follows the existing inline-error
- * pattern in `clients/ClientFormBody.tsx`.
+ * pattern in `clients/sections/IdentitySection.tsx`.
  */
 export function FormAlert({
   level = "destructive",

@@ -44,7 +44,16 @@ function buildForm(client?: Client | null): CreateClientDto {
   };
 }
 
-function inferCustomerTypeFromIdCode(code: string | null | undefined): number {
+/**
+ * The customer type implied by an identification code.
+ *
+ * Exported because it is the seed that Bug A turned on: a hardcoded
+ * `customer_type ?? 3` filtered "02" out of the allowed id codes, which reset
+ * the code and BLANKED the identification number before the user touched
+ * anything. Every client auto-created from an order import has a cédula
+ * jurídica and no `customer_type`, so it is the common case, not the edge.
+ */
+export function inferCustomerTypeFromIdCode(code: string | null | undefined): number {
   return code === "02" ? CustomerType.EMPRESA : CustomerType.PERSONA_FISICA;
 }
 
@@ -328,16 +337,27 @@ export function ClientDrawerForm({
     }
 
     // Client mode validation (preserves prior behavior)
-    if (!form.business_name?.trim() && !form.client_gln?.trim()) {
-      setError("Se requiere al menos razón social o código GLN.");
+    // The same rule the backend enforces: SOME name, or a GLN.
+    //
+    // This checked `business_name || client_gln` while store-be checked
+    // `client_name || client_gln`, so the two ends disagreed in both
+    // directions — a company with only a razón social passed here and was
+    // refused there, and a person with only a full name was refused here and
+    // would have been accepted there.
+    if (
+      !form.client_name?.trim() &&
+      !form.business_name?.trim() &&
+      !form.client_gln?.trim()
+    ) {
+      setError(t("clients.validation.nameOrGlnRequired"));
       return;
     }
     if (!hasId) {
-      setError("El número de identificación es requerido.");
+      setError(t("clients.validation.idRequired"));
       return;
     }
     if (!hasEmail) {
-      setError("El correo electrónico es requerido.");
+      setError(t("clients.validation.emailRequired"));
       return;
     }
 

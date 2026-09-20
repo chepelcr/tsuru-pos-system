@@ -187,6 +187,7 @@
   "orders.invoice.linkFailed": "No se pudo enlazar el pedido con su factura. El documento SÍ se emitió; vuelve a intentar el enlace o el pedido seguirá apareciendo como facturable.",
   "orders.invoice.matchedLines": "{matched} de {total} líneas se recuperaron del catálogo.",
   "orders.invoice.noDocTypes": "Tu rol no puede crear facturas ni tiquetes.",
+  "orders.invoice.processing": "Facturando — en validación",
   "orders.invoice.reviewHint": "El pedido queda como está hasta que la factura se emita.",
   "orders.invoice.title": "Facturar pedido",
   "orders.invoice.unmatchedHint": "{n} líneas no se pudieron enlazar a un producto del catálogo: agregalas a mano en el documento.",

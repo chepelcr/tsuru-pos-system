@@ -294,14 +294,47 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
 }
 
 /**
- * An order already billed must not be billed twice.
+ * An order with a document against it must not be billed again.
  *
- * "Billed" means an ACCEPTED document is linked to it, which happens
- * asynchronously — so there is a window after checkout in which this is still
- * false and the document does exist. That window is deliberate: a document
- * Hacienda goes on to REJECT never links, and the order has to stay billable so
- * the cashier can re-issue it.
+ * True from the moment the document is EMITTED, not from the moment Hacienda
+ * accepts it — sales-api claims the order at emission with status PROCESSING.
+ * That is the point: waiting for the verdict left a window, seconds to minutes
+ * wide, in which a real document existed, the order still looked billable, and
+ * a second factura could be issued for the same delivery.
+ *
+ * So this covers both states the operator must be stopped in: in flight, and
+ * accepted. Use `orderDocumentState` to tell them apart for display.
  */
 export function isOrderInvoiced(order: Order): boolean {
   return !!order.document_id || !!order.document_info?.consecutive_number;
+}
+
+/** How far along the document billing this order is. */
+export type OrderDocumentState =
+  | "none"
+  | "processing"
+  | "accepted"
+  | "partial"
+  | "rejected";
+
+/**
+ * The document's state as the order knows it.
+ *
+ * `status` is the Hacienda verdict (0 processing, 1 accepted, 2 partial,
+ * 3 rejected). A link with no status at all is a legacy row — those were
+ * written by the old checkout POST, before a verdict existed to record — and
+ * they are treated as accepted, which is what they meant at the time.
+ */
+export function orderDocumentState(order: Order): OrderDocumentState {
+  if (!isOrderInvoiced(order)) return "none";
+  switch (order.document_info?.status) {
+    case 0:
+      return "processing";
+    case 2:
+      return "partial";
+    case 3:
+      return "rejected";
+    default:
+      return "accepted";
+  }
 }

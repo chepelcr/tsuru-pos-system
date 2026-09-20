@@ -140,17 +140,79 @@ export function useCreateClient(orgId: string | undefined) {
   });
 }
 
+/**
+ * A loaded client as the update payload that would leave it unchanged.
+ *
+ * The update is a **PUT**, so it replaces rather than merges: a payload
+ * carrying only the field you meant to change drops the client's name with it,
+ * and the backend refuses a client with no name at all. Callers that edit one
+ * field — the notes panel — build on this rather than sending that field alone.
+ */
+export function clientToDto(client: Client): UpdateClientDto {
+  return {
+    customer_type: client.customer_type ?? undefined,
+    nationality: client.nationality ?? undefined,
+    ...(client.client_name && { client_name: client.client_name }),
+    ...(client.business_name && { business_name: client.business_name }),
+    ...(client.client_gln && { client_gln: client.client_gln }),
+    ...(client.email && { email: client.email }),
+    // The response types every nested field as nullable; the request type does
+    // not accept null. Dropped rather than coerced — a null on the way out means
+    // "not recorded", and sending it back as "" would record an empty string.
+    ...(client.identification && {
+      identification: {
+        code: client.identification.code ?? undefined,
+        number: client.identification.number ?? undefined,
+      },
+    }),
+    ...(client.phone && {
+      phone: {
+        country_code: client.phone.country_code ?? undefined,
+        area_code: client.phone.area_code ?? undefined,
+        number: client.phone.number ?? undefined,
+        description: client.phone.description ?? undefined,
+      },
+    }),
+    ...(client.residence && {
+      residence: {
+        state_id: client.residence.state_id ?? undefined,
+        county_id: client.residence.county_id ?? undefined,
+        district_id: client.residence.district_id ?? undefined,
+        neighborhood_id: client.residence.neighborhood_id ?? undefined,
+        address: client.residence.address ?? undefined,
+      },
+    }),
+    ...(client.notes != null && { notes: client.notes }),
+  };
+}
+
+/**
+ * Save an edited customer.
+ *
+ * **PUT, not PATCH.** This PATCHed the same path, which store-be reserves for
+ * the status change — so every customer edit sent a full client body to an
+ * endpoint whose only required field is `status`, and came back 422 on every
+ * single save. The field update has always been the PUT.
+ */
 export function useUpdateClient(orgId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ clientId, dto }: { clientId: string; dto: UpdateClientDto }) =>
-      crossAppApi.patch<Client>(crossAppOrgPath(orgId!, `/clients/${clientId}`), dto),
+      crossAppApi.put<Client>(crossAppOrgPath(orgId!, `/clients/${clientId}`), dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients", orgId] });
     },
   });
 }
 
+/**
+ * Activate / deactivate a customer.
+ *
+ * The path was right all along — `/clients/{id}/status`, the convention every
+ * other resource in store-be follows — but clients was the one controller that
+ * had not adopted it, so this hit no route and answered 403 from the gateway.
+ * The backend moved to the convention rather than this moving off it.
+ */
 export function useUpdateClientStatus(orgId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

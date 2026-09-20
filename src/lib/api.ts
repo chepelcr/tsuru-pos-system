@@ -10,6 +10,46 @@ export interface RequestOptions {
   headers?: Record<string, string>;
 }
 
+/**
+ * The readable part of an error body, whichever shape the service used.
+ *
+ * Only `message` was read, and **FastAPI answers `detail`** — so every 4xx from
+ * a Python backend surfaced to the user as the bare fallback "Request failed",
+ * including validation errors that named the exact field at fault. That is how
+ * a 422 on every customer save looked like a generic failure for as long as it
+ * did.
+ *
+ * FastAPI's validation errors put a LIST in `detail`
+ * (`[{loc, msg, type}, ...]`); those are flattened to `field: message` so the
+ * field survives, because the field is the whole value of the message.
+ */
+export function apiErrorMessage(body: unknown): string | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const { message, detail, error } = body as Record<string, unknown>;
+
+  if (typeof message === "string" && message) return message;
+  if (typeof detail === "string" && detail) return detail;
+  if (typeof error === "string" && error) return error;
+
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const { loc, msg } = item as { loc?: unknown[]; msg?: unknown };
+        if (typeof msg !== "string") return null;
+        // `loc` is ["body", "field", ...]; the leading "body" says nothing.
+        const field = Array.isArray(loc)
+          ? loc.filter((p) => typeof p === "string" && p !== "body").join(".")
+          : "";
+        return field ? `${field}: ${msg}` : msg;
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join("; ");
+  }
+
+  return undefined;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -77,7 +117,7 @@ async function request<T>(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     const retriable = res.status === 408 || res.status === 429 || res.status >= 500;
-    throw new ApiError(err.message || "Request failed", res.status, retriable);
+    throw new ApiError(apiErrorMessage(err) || "Request failed", res.status, retriable);
   }
 
   // Tolerate empty / no-content responses (e.g. 204 from DELETE) so callers

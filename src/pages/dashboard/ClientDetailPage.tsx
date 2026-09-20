@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { useOrgContext } from "@/contexts/OrgContext";
@@ -8,15 +8,14 @@ import {
   useClient,
   useUpdateClient,
   useUpdateClientStatus,
+  clientToDto,
   clientDisplayName,
   formatPhone,
-  type Client,
-  type CreateClientDto,
 } from "@/hooks/useClients";
-import ClientFormBody from "@/components/clients/ClientFormBody";
+import { ClientDrawerForm } from "@/components/clients/ClientDrawerForm";
 import { usePermissions } from "@/hooks/useRbac";
 import { ID_TYPE_SHORT, ID_TYPE_LABEL } from "@/lib/enums";
-import { Card, Icon, Drawer, Button, Badge, Menu } from "@/components/ui";
+import { Card, Icon, Button, Badge, Menu } from "@/components/ui";
 import { initials, avatarColor } from "@/utils/avatar";
 import { ClientNotes } from "@/components/clients/ClientNotes";
 import { ClientStoresList } from "@/components/clients/ClientStoresList";
@@ -28,87 +27,22 @@ import { useDepartments } from "@/hooks/useDepartments";
 import { useStores } from "@/hooks/useStores";
 import { useOrders } from "@/hooks/useOrders";
 
-function buildForm(client?: Client | null): CreateClientDto {
-  return {
-    customer_type: client?.customer_type ?? 3,
-    client_name: client?.client_name ?? "",
-    business_name: client?.business_name ?? "",
-    client_gln: client?.client_gln ?? "",
-    nationality: client?.nationality ?? "188",
-    email: client?.email ?? "",
-    identification: { code: client?.identification?.code ?? "01", number: client?.identification?.number ?? "" },
-    phone: { country_code: client?.phone?.country_code ?? "188", area_code: client?.phone?.area_code ?? "", number: client?.phone?.number ?? "", description: "" },
-    residence: { state_id: client?.residence?.state_id ?? undefined, county_id: client?.residence?.county_id ?? undefined, district_id: client?.residence?.district_id ?? undefined, neighborhood_id: client?.residence?.neighborhood_id ?? undefined, address: client?.residence?.address ?? "" },
-  };
-}
-
-function EditDrawer({ open, onClose, client }: { open: boolean; onClose: () => void; client?: Client | null }) {
-  const { t } = useLanguage();
-  const { orgId } = useOrgContext();
-  const updateMutation = useUpdateClient(orgId);
-  const [form, setForm] = useState<CreateClientDto>(() => buildForm(client));
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) { setForm(buildForm(client)); setError(null); }
-  }, [open, client]);
-
-  async function handleSave() {
-    if (!form.business_name?.trim() && !form.client_gln?.trim()) {
-      setError(t("clients.validation.nameOrGlnRequired")); return;
-    }
-    if (!form.identification?.number?.trim()) {
-      setError(t("clients.validation.idRequired")); return;
-    }
-    if (!form.email?.trim()) {
-      setError(t("clients.validation.emailRequired")); return;
-    }
-    setError(null);
-    const dto: CreateClientDto = {
-      customer_type: form.customer_type,
-      nationality: form.nationality,
-      ...(form.client_name?.trim() && { client_name: form.client_name.trim() }),
-      ...(form.business_name?.trim() && { business_name: form.business_name.trim() }),
-      ...(form.client_gln?.trim() && { client_gln: form.client_gln.trim() }),
-      email: form.email.trim(),
-      ...((form.identification?.code || form.identification?.number) && { identification: { code: form.identification.code || undefined, number: form.identification.number || undefined } }),
-      ...((form.phone?.country_code || form.phone?.number) && { phone: { country_code: form.phone.country_code || undefined, area_code: form.phone.area_code || undefined, number: form.phone.number || undefined } }),
-      ...((form.residence?.state_id || form.residence?.address) && { residence: { state_id: form.residence.state_id || undefined, county_id: form.residence.county_id || undefined, district_id: form.residence.district_id || undefined, neighborhood_id: form.residence.neighborhood_id || undefined, address: form.residence.address || undefined } }),
-    };
-    try {
-      await updateMutation.mutateAsync({ clientId: client!.client_id, dto });
-      onClose();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : t("common.error"));
-    }
-  }
-
-  const saving = updateMutation.isPending;
-
-  return (
-    <Drawer
-      closeLabel={t("common.close")}
-      open={open} onClose={onClose}
-      title={t("clients.editClient")}
-      subtitle={clientDisplayName(client)}
-      icon="user"
-      iconBg="hsl(var(--accent-rose-soft))"
-      iconColor="hsl(var(--accent-rose))"
-      width={480}
-      footer={
-        <div className="flex gap-2.5 px-6 py-4 justify-end">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>{t("common.cancel")}</Button>
-          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? t("common.loading") : t("common.save")}
-          </Button>
-        </div>
-      }
-    >
-      <ClientFormBody form={form} setForm={setForm} error={error} isEditing={true} />
-    </Drawer>
-  );
-}
-
+/*
+ * The edit drawer used to be a SECOND copy of the customers-page one, declared
+ * here — and the copies had drifted, which is the whole of the bug it caused.
+ *
+ * It seeded `customer_type` to a hardcoded 3 (persona física) instead of
+ * inferring it from the identification code, and it rendered a second form body
+ * whose id-type reset effect never got the fix that `IdentitySection` did. For
+ * a cédula-jurídica customer with no `customer_type` on record — which is every
+ * client auto-created from an order import — the two combined to filter "02"
+ * out of the allowed codes, reset the code to "01", and BLANK the identification
+ * number, all before the user had touched anything. The list page's drawer was
+ * fine, which is exactly why it looked like the detail page "did not load" the
+ * id.
+ *
+ * One drawer now, so a fix cannot land on one copy and miss the other.
+ */
 function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div className="flex items-center gap-3.5 py-3 border-b border-border">
@@ -203,7 +137,14 @@ export default function ClientDetailPage({ clientId }: Props) {
 
   const handleSaveNotes = async (notes: string) => {
     if (!client) return;
-    await notesMutation.mutateAsync({ clientId: client.client_id, dto: { notes } });
+    // The whole client, plus the note. The update is a PUT, so sending `{notes}`
+    // alone would replace the client with a nameless one — which the backend
+    // refuses outright. (It used to be accepted and silently discarded: there
+    // was no `notes` column at all until now.)
+    await notesMutation.mutateAsync({
+      clientId: client.client_id,
+      dto: { ...clientToDto(client), notes },
+    });
   };
 
   if (isLoading) {
@@ -442,10 +383,11 @@ export default function ClientDetailPage({ clientId }: Props) {
       {/* Departments tab */}
       {activeTab === "departments" && <ClientDepartmentsList orgId={orgId} clientId={client.client_id} />}
 
-      <EditDrawer
+      <ClientDrawerForm
         open={editOpen}
         onClose={() => setEditOpen(false)}
         client={client}
+        orgId={orgId}
       />
     </div>
   );

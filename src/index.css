@@ -427,7 +427,7 @@
 .badge-mini-primary { background: hsl(var(--primary) / 0.12); color: hsl(var(--primary)); border-color: hsl(var(--primary) / 0.3); }
 .badge-mini-rose { background: hsl(var(--accent-rose-soft)); color: hsl(var(--accent-rose)); border-color: hsl(var(--accent-rose-border)); }
 
-/* Client form input — muted-background variant used in ClientFormBody and its sections */
+/* Client form input — muted-background variant used by the client form sections */
 .client-input { width: 100%; padding: 10px 12px; background: hsl(var(--muted) / 0.3); border: 1px solid hsl(var(--border)); border-radius: 8px; color: hsl(var(--foreground)); font-size: 13px; font-family: var(--font-sans); outline: none; box-sizing: border-box; }
 .client-input:focus { border-color: hsl(var(--ring)); }
 .client-input:disabled { opacity: 0.6; cursor: not-allowed; }

@@ -19,7 +19,7 @@ import { useInvoiceOrder } from '@/hooks/useInvoiceOrder';
 import { OrderCheckoutDrawer } from '@/components/pos/checkout/OrderCheckoutDrawer';
 import { useOrderTicket } from '@/hooks/useOrderTicket';
 import { useFiscalMode } from '@/hooks/useFiscalMode';
-import { isOrderInvoiced } from '@/lib/orderToInvoice';
+import { isOrderInvoiced, orderDocumentState } from '@/lib/orderToInvoice';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
 import { DeliveryDateDialog } from '@/components/orders/DeliveryDateDialog';
 import { ReprocessDialog } from '@/components/orders/ReprocessDialog';
@@ -464,7 +464,14 @@ export default function OrderDetailPage({ orderId }: Props) {
 
   // A delivered order can be billed once, and only by an org that can build an
   // electronic document at all. `canCreateDoc` mirrors the editor's own gate.
+  //
+  // `isOrderInvoiced` is true from EMISSION, not from Hacienda's verdict —
+  // sales-api claims the order the moment the document is submitted — so the
+  // action is withheld while the document is still in flight as well as after
+  // it is accepted. Waiting for the verdict left a window in which a real
+  // document existed and this button was still offered.
   const alreadyInvoiced = isOrderInvoiced(order);
+  const documentState = orderDocumentState(order);
   const canInvoice =
     fiscal.isElectronic &&
     order.order_status === 'delivered' &&
@@ -541,13 +548,22 @@ export default function OrderDetailPage({ orderId }: Props) {
               </Badge>
               {text(order.event) && <Badge variant="outline">{text(order.event)}</Badge>}
               {alreadyInvoiced && (
-                <Badge variant="success" className="inline-flex items-center gap-1">
+                <Badge
+                  variant={documentState === 'processing' ? 'warning' : 'success'}
+                  className="inline-flex items-center gap-1"
+                >
                   <Icon name="fileText" size={11} />
-                  {order.document_info?.consecutive_number
-                    ? t('orders.invoice.invoicedWith', {
-                        num: order.document_info.consecutive_number,
-                      })
-                    : t('orders.invoice.invoiced')}
+                  {/* "Facturado" only once Hacienda has accepted it. While the
+                      document is in flight the order is already blocked from
+                      being billed again, but calling it billed would be a
+                      claim nobody has verified yet. */}
+                  {documentState === 'processing'
+                    ? t('orders.invoice.processing')
+                    : order.document_info?.consecutive_number
+                      ? t('orders.invoice.invoicedWith', {
+                          num: order.document_info.consecutive_number,
+                        })
+                      : t('orders.invoice.invoiced')}
                 </Badge>
               )}
             </div>
