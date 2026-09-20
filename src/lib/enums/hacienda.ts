@@ -27,19 +27,38 @@ export type DocumentTypeValue = (typeof DocumentType)[keyof typeof DocumentType]
 
 // ─── Sales condition (Nota 5) ─────────────────────────────────────────────
 
+/**
+ * Reference only — the picker reads the LIVE catalog.
+ *
+ * `SaleConditionSelect` gets its options from `useAllSaleConditions`, i.e. from
+ * data-be, so nothing in the app resolves a code through this object. It is kept
+ * because this file is where a reader looks up what a Hacienda code means, and
+ * because it was the source that turned out to be RIGHT when sales-be's Python
+ * `SaleCondition` was found wrong on 12 of 16 rows.
+ *
+ * It was missing 06, 07, 14 and 15; completed here from
+ * `be/data-be/scripts/catalogs_seed_data.json` → `saleConditions` so the two
+ * halves of the wire agree. Member names match the corrected Python enum.
+ */
 export const SaleConditionCode = {
-  CASH:                      "01",
-  CREDIT:                    "02",
-  CONSIGNMENT:               "03",
-  PO_BOX:                    "04",
-  LEASE_WITH_PURCHASE:       "05",
-  SERVICES_TO_STATE:         "08",
-  PAYMENT_FOR_STATE_SVCS:    "09", // REP only
-  CREDIT_90_VAT_ART_27:      "10",
-  CREDIT_90_VAT_REP:         "11", // REP only
-  NON_NATIONALIZED_GOODS:    "12", // FE only
-  USED_GOODS_NON_TAXPAYER:   "13", // FEC only
-  OTHER:                     "99",
+  CASH:                       "01",
+  CREDIT:                     "02",
+  CONSIGNMENT:                "03",
+  LAYAWAY:                    "04", // Apartado
+  LEASE_WITH_PURCHASE_OPTION: "05",
+  FINANCIAL_FUNCTION_LEASE:   "06",
+  THIRD_PARTY_COLLECTION:     "07", // Cobro a favor de un tercero
+  SERVICES_TO_STATE:          "08",
+  PAYMENT_FOR_STATE_SVCS:     "09", // REP only
+  /** IVA deferred up to 90 days (art. 27 LIVA); declared when collected. */
+  CREDIT_90_VAT_ART_27:       "10",
+  /** That collection, documented with a REP. */
+  CREDIT_90_VAT_PAYMENT:      "11", // REP only
+  NON_NATIONALIZED_GOODS:     "12", // FE only
+  USED_GOODS_NON_TAXPAYER:    "13", // FEC only
+  OPERATING_LEASE:            "14",
+  FINANCIAL_LEASE:            "15",
+  OTHER:                      "99",
 } as const;
 export type SaleConditionCodeValue = (typeof SaleConditionCode)[keyof typeof SaleConditionCode];
 
