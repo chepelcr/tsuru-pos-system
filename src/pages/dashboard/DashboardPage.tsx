@@ -209,7 +209,12 @@ export default function DashboardPage() {
                 {t("dash.live")}
               </Badge>
               <span className="t-xs text-muted-foreground">
-                {t("dash.stationOrders", { n: String(openOrderCount) })}
+                {/* States its own rule. This figure counts open orders PLUS any
+                    delivered today (`session_sales`, the owner's definition), so
+                    it is legitimately higher than a list of open orders — and
+                    "5 órdenes" beside a Pedidos view showing 4 looked like a bug
+                    until the card said which question it was answering. */}
+                {t("dash.sessionOrders", { n: String(openOrderCount) })}
                 {/* The total the org has billed is a different figure, named as
                     such rather than left to look like the session's. */}
                 {` · ${t("dash.orgTotal", { total: fmt(totalRevenue), n: String(totalSales) })}`}

@@ -77,6 +77,7 @@
   "dash.scope.viewOrg": "Whole business",
   "dash.scope.viewSession": "My session",
   "dash.selectOrg": "Select organization",
+  "dash.sessionOrders": "{n} orders (open + delivered today)",
   "dash.sessionSales": "Session sales",
   "dash.source": "Count",
   "dash.source.documents": "Documents",
