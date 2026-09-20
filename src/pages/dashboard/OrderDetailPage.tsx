@@ -547,9 +547,15 @@ export default function OrderDetailPage({ orderId }: Props) {
                 {t(`orders.status.${order.order_status}`)}
               </Badge>
               {text(order.event) && <Badge variant="outline">{text(order.event)}</Badge>}
-              {alreadyInvoiced && (
+              {documentState !== 'none' && (
                 <Badge
-                  variant={documentState === 'processing' ? 'warning' : 'success'}
+                  variant={
+                    documentState === 'processing'
+                      ? 'warning'
+                      : documentState === 'rejected'
+                        ? 'destructive'
+                        : 'success'
+                  }
                   className="inline-flex items-center gap-1"
                 >
                   <Icon name="fileText" size={11} />
@@ -557,7 +563,9 @@ export default function OrderDetailPage({ orderId }: Props) {
                       document is in flight the order is already blocked from
                       being billed again, but calling it billed would be a
                       claim nobody has verified yet. */}
-                  {documentState === 'processing'
+                  {documentState === 'rejected'
+                    ? t('orders.invoice.rejected')
+                    : documentState === 'processing'
                     ? t('orders.invoice.processing')
                     : order.document_info?.consecutive_number
                       ? t('orders.invoice.invoicedWith', {

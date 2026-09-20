@@ -188,6 +188,7 @@
   "orders.invoice.matchedLines": "{matched} of {total} lines were rebuilt from the catalog.",
   "orders.invoice.noDocTypes": "Your role cannot create invoices or tickets.",
   "orders.invoice.processing": "Billing — in validation",
+  "orders.invoice.rejected": "Rejected by Hacienda — bill again",
   "orders.invoice.reviewHint": "The order stays as it is until the invoice is issued.",
   "orders.invoice.title": "Invoice order",
   "orders.invoice.unmatchedHint": "{n} lines could not be linked to a catalog product — add them by hand in the document.",

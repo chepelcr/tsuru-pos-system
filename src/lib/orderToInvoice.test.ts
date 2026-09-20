@@ -281,6 +281,26 @@ describe("isOrderInvoiced", () => {
     ).toBe(true);
   });
 
+  it("is false again once Hacienda rejects the document", () => {
+    // Nothing was legally billed, so a corrected document has to be issuable.
+    // The link stays on the order — it records which document was refused.
+    expect(
+      isOrderInvoiced(
+        order({ document_id: "s-1", document_info: { status: 3 } }),
+      ),
+    ).toBe(false);
+  });
+
+  it("stays true while the document is still in flight", () => {
+    // The whole point of claiming at emission: the second factura is blocked
+    // before Hacienda has answered, not after.
+    expect(
+      isOrderInvoiced(
+        order({ document_id: "s-1", document_info: { status: 0 } }),
+      ),
+    ).toBe(true);
+  });
+
   it("is false for an order that has not been billed", () => {
     expect(isOrderInvoiced(order())).toBe(false);
     expect(isOrderInvoiced(order({ document_id: null }))).toBe(false);

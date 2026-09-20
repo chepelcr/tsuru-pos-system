@@ -294,7 +294,7 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
 }
 
 /**
- * An order with a document against it must not be billed again.
+ * An order with a live document against it must not be billed again.
  *
  * True from the moment the document is EMITTED, not from the moment Hacienda
  * accepts it — sales-api claims the order at emission with status PROCESSING.
@@ -302,12 +302,19 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
  * wide, in which a real document existed, the order still looked billable, and
  * a second factura could be issued for the same delivery.
  *
- * So this covers both states the operator must be stopped in: in flight, and
- * accepted. Use `orderDocumentState` to tell them apart for display.
+ * False again once Hacienda REJECTS it: nothing was legally billed, so a
+ * corrected document has to be issuable. The link stays on the order — it
+ * records which document was refused — it just stops counting as billed.
+ *
+ * Mirrors `is_order_billed` in store-be's order_service.
  */
 export function isOrderInvoiced(order: Order): boolean {
-  return !!order.document_id || !!order.document_info?.consecutive_number;
+  const linked = !!order.document_id || !!order.document_info?.consecutive_number;
+  return linked && order.document_info?.status !== ATV_REJECTED;
 }
+
+/** Hacienda verdict 3 — refused, so the order was never billed. */
+const ATV_REJECTED = 3;
 
 /** How far along the document billing this order is. */
 export type OrderDocumentState =
@@ -326,7 +333,11 @@ export type OrderDocumentState =
  * they are treated as accepted, which is what they meant at the time.
  */
 export function orderDocumentState(order: Order): OrderDocumentState {
-  if (!isOrderInvoiced(order)) return "none";
+  // Checks the LINK, not `isOrderInvoiced` — a rejected document is not billed
+  // but it is still worth showing, so the operator knows why the order came
+  // back and what to correct.
+  const linked = !!order.document_id || !!order.document_info?.consecutive_number;
+  if (!linked) return "none";
   switch (order.document_info?.status) {
     case 0:
       return "processing";
