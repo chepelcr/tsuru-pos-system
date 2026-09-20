@@ -144,24 +144,34 @@ export function DiscountsSection({
                         </button>
                       </div>
 
-                      <div className="mt-1.5">
-                        <FormLabel required={isOtros}>{t("discount.reason.label")}</FormLabel>
-                        <input
-                          type="text"
-                          className="pp-input text-xs"
-                          placeholder={t("discount.reason.placeholder")}
-                          value={disc.reason ?? ""}
-                          onChange={(e) =>
-                            onUpdate(disc.id, { reason: e.target.value })
-                          }
-                          required={isOtros}
-                        />
-                        {reasonEmpty && (
-                          <div className="text-[11px] text-destructive mt-1">
-                            {t("discount.reason.required")}
-                          </div>
-                        )}
-                      </div>
+                      {/* Nature 99 only. Note 20 requires NaturalezaDescuento for
+                          "Otros" and for nothing else: `discount_service` emits
+                          <CodigoDescuentoOtros> only when the code is "99", so on
+                          any other nature this field asks the user to edit a
+                          catalog description that is then discarded. It used to
+                          render on every nature with only `required` gated —
+                          `DiscountsTab` in the POS drawer has always gated the
+                          whole block, and this now matches it. */}
+                      {isOtros && (
+                        <div className="mt-1.5">
+                          <FormLabel required>{t("discount.reason.label")}</FormLabel>
+                          <input
+                            type="text"
+                            className="pp-input text-xs"
+                            placeholder={t("discount.reason.placeholder")}
+                            value={disc.reason ?? ""}
+                            onChange={(e) =>
+                              onUpdate(disc.id, { reason: e.target.value })
+                            }
+                            required
+                          />
+                          {reasonEmpty && (
+                            <div className="text-[11px] text-destructive mt-1">
+                              {t("discount.reason.required")}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
