@@ -108,7 +108,12 @@ export function isManualOrderDocType(code: string | undefined): code is ManualOr
  */
 export const MANUAL_ORDER_DOCUMENT_TYPE = {
   code: MANUAL_ORDER_DOC_TYPE,
-  label: 'Pedido Manual',
+  // Capturing a pedido in the POS is the NORMAL path — the spreadsheet import is
+  // the special one — so the surfaces do not call it "manual". Rendered through
+  // `t('docTypes.PM')` everywhere (§10.5: persisted labels freeze in the language
+  // they were created in); this literal is the fallback for a caller that reads
+  // the catalog directly.
+  label: 'Pedido',
   short: 'PM',
   permSub: 'orders',
   color: 'text-doc-pm',

@@ -95,6 +95,20 @@ export default function DashboardPage() {
   // The scope the SERVER answered for, which is what the header should label.
   const answeredScope = summary.data?.scope ?? null;
 
+  // The source toggle has to change the HEADLINE, not just the panels below it.
+  //
+  // `session_sales` is orders-only by definition — a document has no delivery to
+  // still be pending — so with Documentos selected the hero was still showing the
+  // ORDERS session figure under an unchanged label, which read as the toggle
+  // having done nothing. For documents the honest headline is what was billed:
+  // the documents summary, which already excludes anything Hacienda rejected.
+  const isDocuments = source === "documents";
+  const heroLabel = isDocuments ? t("dash.documentsBilled") : t("dash.sessionSales");
+  const heroValue = isDocuments ? totalRevenue : openRevenue;
+  const heroCountLabel = isDocuments
+    ? t("dash.documentsCount", { n: String(totalSales) })
+    : t("dash.sessionOrders", { n: String(openOrderCount) });
+
   const changeSource = (next: DashboardSource) => {
     setSource(next);
     try {
@@ -199,9 +213,9 @@ export default function DashboardPage() {
         {isLoading ? <HeroStatSkeleton /> : (
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="t-label !text-primary mb-2">{t("dash.sessionSales")}</div>
+            <div className="t-label !text-primary mb-2">{heroLabel}</div>
             <div className="t-stat-xl !text-[44px] !text-primary !leading-none">
-              {fmt(openRevenue)}
+              {fmt(heroValue)}
             </div>
             <div className="flex items-center gap-2.5 mt-2.5 flex-wrap">
               <Badge variant="success" className="gap-[5px]">
@@ -209,21 +223,30 @@ export default function DashboardPage() {
                 {t("dash.live")}
               </Badge>
               <span className="t-xs text-muted-foreground">
-                {/* States its own rule. This figure counts open orders PLUS any
-                    delivered today (`session_sales`, the owner's definition), so
-                    it is legitimately higher than a list of open orders — and
-                    "5 órdenes" beside a Pedidos view showing 4 looked like a bug
-                    until the card said which question it was answering. */}
-                {t("dash.sessionOrders", { n: String(openOrderCount) })}
-                {/* The total the org has billed is a different figure, named as
-                    such rather than left to look like the session's. */}
-                {` · ${t("dash.orgTotal", { total: fmt(totalRevenue), n: String(totalSales) })}`}
+                {/* Each source states its own rule. For orders this counts open
+                    orders PLUS any delivered today (`session_sales`, the owner's
+                    definition), so it is legitimately higher than a list of open
+                    orders — "5 órdenes" beside a Pedidos view showing 4 looked
+                    like a bug until the card said which question it answered. */}
+                {heroCountLabel}
+                {/* Only for orders: with Documentos selected the hero IS the
+                    organization total, so repeating it here would state the same
+                    figure twice under two names. */}
+                {!isDocuments &&
+                  ` · ${t("dash.orgTotal", { total: fmt(totalRevenue), n: String(totalSales) })}`}
               </span>
             </div>
           </div>
           <div className="flex gap-3 flex-wrap">
             {[
-              { label: t("dash.orders"), value: String(totalSales), icon: "cart", color: "icon-pill-info" },
+              {
+                // "Órdenes" was hardcoded, so the summary tile kept that word
+                // while counting documents.
+                label: isDocuments ? t("dash.documents") : t("dash.orders"),
+                value: String(totalSales),
+                icon: isDocuments ? "fileText" : "cart",
+                color: "icon-pill-info",
+              },
               { label: t("dash.avgTicket"), value: fmt(avgTicket), icon: "chart", color: "icon-pill-success" },
               // In-flight orders, not open tills: it is the number an operator
               // actually acts on, and it no longer reads 0 just because nobody
