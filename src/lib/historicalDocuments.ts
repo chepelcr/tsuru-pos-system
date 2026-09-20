@@ -7,6 +7,28 @@ export const HISTORICAL_STATUS_KEYS = {
   3: 'historical.status.rejected',
 } as const;
 
+/**
+ * The SAME verdicts, keyed by the STRING labels the metrics endpoints emit.
+ *
+ * `/documents/status` buckets by name, not by ATV code — `not_sent`,
+ * `processing`, `accepted`, `accepted_partial`, `rejected` — and the dashboard
+ * panel was looking them up under `orderStatus.*`, a namespace that holds only
+ * ORDER statuses. Of the five only `processing` happened to exist there, so the
+ * panel printed the raw English `accepted` / `rejected` for the rest.
+ *
+ * Mapped onto the existing `historical.status.*` labels rather than a second set
+ * of strings: they name the same four Hacienda verdicts, and two translations of
+ * one verdict is how they drift. Note `accepted_partial` (backend) and
+ * `partial` (label) — the spellings differ and this is where they meet.
+ */
+export const DOCUMENT_STATUS_KEYS: Record<string, string> = {
+  not_sent: 'historical.status.notSent',
+  processing: 'historical.status.processing',
+  accepted: 'historical.status.accepted',
+  accepted_partial: 'historical.status.partial',
+  rejected: 'historical.status.rejected',
+};
+
 export function formatHistoricalAmount(value: HistoricalDocument['total_amount'], language: string): string {
   if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) return '—';
   const amount = Number(value);

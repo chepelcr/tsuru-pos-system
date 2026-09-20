@@ -52,6 +52,26 @@ function queryString(params: Record<string, string | number | undefined>): strin
 }
 
 /**
+ * The window as the DOCUMENTS endpoints take it — `DocumentSearchDTO` JSON.
+ *
+ * Same contract as `GET /sales`, so the chart's filter and the list's filter are
+ * the one thing. `useSales.toWireSearch` builds the same blob for the list.
+ *
+ * Returns undefined with no window, so `queryString` drops the parameter rather
+ * than sending `search={}`.
+ */
+function documentSearch(options: DashboardQueryOptions): string | undefined {
+  if (!options.dateFrom && !options.dateTo) return undefined;
+  const search: Record<string, string> = {};
+  if (options.dateFrom) search.start_date = options.dateFrom;
+  if (options.dateTo) search.end_date = options.dateTo;
+  // Encoded here and again by URLSearchParams; the backend's Query() decodes
+  // once. Same double-encode the documents list does — deliberately identical,
+  // because the two are read by the same parser.
+  return encodeURIComponent(JSON.stringify(search));
+}
+
+/**
  * Where a panel lives, per source. The two services expose the same shapes under
  * different paths, so this is the only place that has to know which is which.
  */
@@ -182,13 +202,23 @@ export function useSalesTrend(
     enabled: !!orgId,
     refetchInterval: SLOW_REFRESH_MS,
     queryFn: () => {
-      const query = queryString({
-        granularity,
-        date_from: options.dateFrom,
-        date_to: options.dateTo,
-        session_id: options.sessionId,
-        user_id: options.userId,
-      });
+      // The two sources take the window differently, and neither is wrong: the
+      // documents trend takes the DOCUMENTS-LIST filter (`search`, a URL-encoded
+      // JSON blob) so the chart and the documents list cannot disagree about the
+      // same filter; the orders trend has its own flat `date_from`/`date_to`.
+      const query =
+        source === "documents"
+          ? queryString({
+              granularity,
+              search: documentSearch(options),
+            })
+          : queryString({
+              granularity,
+              date_from: options.dateFrom,
+              date_to: options.dateTo,
+              session_id: options.sessionId,
+              user_id: options.userId,
+            });
       const { client, path } = endpoint(source, orgId!, "trend", query);
       return client.get<DashboardSalesTrend>(path);
     },

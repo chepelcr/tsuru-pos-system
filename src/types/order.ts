@@ -356,22 +356,58 @@ export interface Order {
   currency_code?: string | null;
   exchange_rate?: number | null;
   /**
-   * Set once the order has been billed. Present on ANY order, not just manual
-   * ones — a pedido is not always invoiced, and this is what records that it
-   * finally was. Written by the BE when the sale is linked back
-   * (`docs/MANUAL_ORDERS.md` §7).
+   * Identifier of the document that billed this order, once linked. Present on
+   * ANY order, not just manual ones — a pedido is not always invoiced, and this
+   * is what records that it finally was.
+   *
+   * Written asynchronously, when Hacienda accepts the document: there is a
+   * window after checkout in which the document exists and this is still empty.
    */
-  invoice?: OrderInvoiceLink | null;
+  document_id?: string | null;
+  /** That document, reduced to what the order needs to show. */
+  document_info?: OrderDocumentInfo | null;
 }
 
-/** The electronic document that billed an order. */
-export interface OrderInvoiceLink {
-  sale_id?: string;
-  /** Hacienda document type of the invoice ("01" FE, "04" TE, …). */
+/**
+ * The order a document is being issued for, as it travels ON the document.
+ *
+ * This is what lets the validator link the two records after Hacienda rules,
+ * and it is why the link no longer has to be a synchronous call from the
+ * checkout. It rides the document's coded free-text block under OUR codes
+ * (`TsuruNumeroPedido` / `TsuruOrigenPedido`) — see `orderOtherFields` in
+ * `hooks/useCartFlow`. A chain's `WMNumeroOrden` carries the same number for a
+ * chain order, but that code belongs to the chain and is not emitted for
+ * anyone else.
+ */
+export interface OrderReference {
+  /** The order's own document number — `PM-000123`, or the chain's PO number. */
+  document_number?: string;
+  /** `manual` | `import` | `storefront`. Tells a pedido from a chain order. */
+  source?: string;
+}
+
+/**
+ * The electronic document that billed an order, as the order carries it.
+ *
+ * Written by store-be when sales-be reports that Hacienda ACCEPTED the
+ * document — not at checkout time. So it is absent while a document is still
+ * being validated, and absent forever for one that was rejected, which is the
+ * point: an order billed by a rejected document is still billable.
+ */
+export interface OrderDocumentInfo {
+  /** The sale UUID — the id `/dashboard/documents/:saleId` takes. */
+  document_id?: string;
+  /** The internal document number (bigint). Display only. */
+  document_number?: number;
+  /** Hacienda document type ("01" FE, "04" TE, …). */
   document_type?: string;
   consecutive_number?: string;
   document_key?: string;
   issued_on?: string;
+  /** Hacienda verdict: 1 ACCEPTED, 2 PARTIAL, 3 REJECTED. */
+  status?: number;
+  total_amount?: number;
+  currency_code?: string;
 }
 
 // ─── Pagination + list envelope ──────────────────────────────────────────────
@@ -653,7 +689,9 @@ export const DELIVERY_DATE_EDITABLE_STATUSES: readonly OrderStatus[] = [
  * The backend enforces the same three conditions and answers 400 otherwise; this
  * exists so the action is not offered when it cannot succeed, not as the check.
  */
-export function canEditDeliveryDate(order: Pick<Order, 'order_status' | 'invoice'>): boolean {
-  if (order.invoice?.sale_id) return false;   // billed: the date is on the document
+export function canEditDeliveryDate(
+  order: Pick<Order, 'order_status' | 'document_id'>,
+): boolean {
+  if (order.document_id) return false;   // billed: the date is on the document
   return DELIVERY_DATE_EDITABLE_STATUSES.includes(order.order_status);
 }

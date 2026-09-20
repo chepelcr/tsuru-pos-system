@@ -1,18 +1,33 @@
 import { Badge, CardDescription, CardTitle, Icon } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { DOCUMENT_STATUS_KEYS } from "@/lib/historicalDocuments";
 import { PanelRowsSkeleton } from "./PanelSkeleton";
-import type { DashboardOrderStatus } from "@/types/dashboard";
+import type { DashboardOrderStatus, DashboardSource } from "@/types/dashboard";
 
 /**
- * Orders by status — the panel that answers "I have orders in process".
+ * Orders — or DOCUMENTS — by status. The panel that answers "what is in flight".
  *
  * The dashboard could not show this at all before: it reported one revenue
  * total, derived from open cashier sessions, so an order sitting in `processing`
  * was invisible whether or not anybody was on a till.
+ *
+ * It serves both sources, and they speak different vocabularies: orders are
+ * `pending`/`delivered`/`cancelled`, documents are Hacienda verdicts. The panel
+ * used to take no `source` at all, so with Documentos selected it was titled
+ * "Pedidos por estado" and printed the backend's raw English `accepted` /
+ * `rejected` — a rejection rendered identically to an acceptance, same grey cart
+ * icon and all.
  */
 
 /** Statuses get a colour by what they mean, not by position in the list. */
 const STATUS_TONE: Record<string, { pill: string; icon: string }> = {
+  // Documents — the Hacienda verdicts. A rejection has to LOOK different from an
+  // acceptance; it is the one row on this panel an operator has to act on.
+  accepted: { pill: "icon-pill-success", icon: "check" },
+  accepted_partial: { pill: "icon-pill-warning", icon: "check" },
+  rejected: { pill: "icon-pill-destructive", icon: "close" },
+  not_sent: { pill: "icon-pill-muted", icon: "clock" },
+  // Orders.
   delivered: { pill: "icon-pill-success", icon: "check" },
   invoiced: { pill: "icon-pill-success", icon: "receipt" },
   completed: { pill: "icon-pill-success", icon: "check" },
@@ -32,14 +47,18 @@ export function OrderStatusPanel({
   isError,
   onRetry,
   fmt,
+  source = "orders",
 }: {
   data: DashboardOrderStatus | undefined;
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
   fmt: (n: number) => string;
+  /** Which vocabulary the rows are in. Drives the title AND the labels. */
+  source?: DashboardSource;
 }) {
   const { t } = useLanguage();
+  const isDocuments = source === "documents";
 
   if (isLoading) return <PanelRowsSkeleton rows={3} />;
 
@@ -49,8 +68,12 @@ export function OrderStatusPanel({
     <>
       <div className="flex justify-between items-center mb-3.5">
         <div>
-          <CardTitle>{t("dash.orderStatus")}</CardTitle>
-          <CardDescription>{t("dash.orderStatusHint")}</CardDescription>
+          <CardTitle>
+            {t(isDocuments ? "dash.documentStatus" : "dash.orderStatus")}
+          </CardTitle>
+          <CardDescription>
+            {t(isDocuments ? "dash.documentStatusHint" : "dash.orderStatusHint")}
+          </CardDescription>
         </div>
         {(data?.open_orders ?? 0) > 0 && (
           <Badge variant="warning">
@@ -67,13 +90,18 @@ export function OrderStatusPanel({
           </button>
         </div>
       ) : statuses.length === 0 ? (
-        <div className="t-sm text-muted-foreground text-center py-6">{t("dash.noOrders")}</div>
+        <div className="t-sm text-muted-foreground text-center py-6">
+          {t(isDocuments ? "dash.noDocuments" : "dash.noOrders")}
+        </div>
       ) : (
         statuses.map((row, index) => {
           const tone = STATUS_TONE[row.status] ?? FALLBACK_TONE;
           // Fall back to the raw status rather than a blank: an unmapped status
           // from the backend should still be readable.
-          const label = t(`orderStatus.${row.status}`);
+          const key = isDocuments
+            ? DOCUMENT_STATUS_KEYS[row.status]
+            : `orderStatus.${row.status}`;
+          const label = key ? t(key) : row.status;
           return (
             <div
               key={row.status}
@@ -85,12 +113,14 @@ export function OrderStatusPanel({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13px] font-bold truncate">
-                    {label === `orderStatus.${row.status}` ? row.status : label}
+                    {!key || label === key ? row.status : label}
                   </span>
                   {row.is_open && <span className="status-dot status-dot-warning" />}
                 </div>
                 <div className="t-xs text-muted-foreground">
-                  {t("dash.stationOrders", { n: String(row.orders) })}
+                  {t(isDocuments ? "dash.documentsCount" : "dash.stationOrders", {
+                    n: String(row.orders),
+                  })}
                 </div>
               </div>
               <div className="t-num text-sm font-bold font-display flex-shrink-0">

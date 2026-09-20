@@ -38,6 +38,7 @@ import { useAllDiscountTypes, useAllTaxes } from "@/hooks/useDataApi";
 import { resolveReceiverName } from "@/lib/receiverResolution";
 import type {
   ManualOrderFields, ChainClientInfo, ManualOrderDeliveryLocation,
+  OrderReference,
   ManualOrderLineDiscountPayload,
   ManualOrderLinePayload,
   OrderLineCode,
@@ -174,6 +175,36 @@ export function chainOtherFields(info: ChainClientInfo | undefined) {
     ["WMNumeroVendedor", info.supplier_code],
     ["WMEnviarGLN", info.gln],
     ["WMNumeroOrden", info.purchase_order_number],
+  ];
+  return entries
+    .filter(([, value]) => !!value && String(value).trim())
+    .map(([code, value]) => ({ code, other_text: String(value).trim() }));
+}
+
+/**
+ * The order this document bills, as coded `OtroTexto` entries under OUR codes.
+ *
+ * `WMNumeroOrden` is **Walmart's** code and is emitted only for a chain client.
+ * It used to be the only place an order number reached the document, and
+ * `chainInfoFromOrder` set it for every order — so an ordinary customer's
+ * pedido shipped a Walmart field to Hacienda. These are the internal
+ * equivalents, emitted for every order including a chain's, which gives the
+ * document-validator one uniform key to read instead of having to guess which
+ * chain's spelling to look for:
+ *
+ *   TsuruNumeroPedido   the order's document number  (the link key)
+ *   TsuruOrigenPedido   manual | import | storefront (a pedido or a chain order)
+ *
+ * This is what makes the order↔document link an EVENT rather than a call from
+ * the checkout: sales-be reads these off the persisted sale when Hacienda
+ * accepts the document and publishes the link, so an offline sale replayed from
+ * the outbox links too, and a rejected document never does.
+ */
+export function orderOtherFields(ref: OrderReference | undefined) {
+  if (!ref) return [];
+  const entries: Array<[string, string | undefined]> = [
+    ["TsuruNumeroPedido", ref.document_number],
+    ["TsuruOrigenPedido", ref.source],
   ];
   return entries
     .filter(([, value]) => !!value && String(value).trim())
@@ -345,6 +376,8 @@ export interface InvoiceCheckoutData {
   manual_order?: ManualOrderFields;
   /** Retail-chain data when the client is one — see lib/chainClients. */
   chain_info?: ChainClientInfo;
+  /** The order being billed, when this checkout came from one. */
+  order_ref?: OrderReference;
 }
 
 interface ConfirmPaymentArgs {
@@ -924,7 +957,10 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       // the order: the chain reconciles against the comprobante, so a
       // purchase-order number that lives only in our own order record is
       // invisible to them.
-      other_fields: chainOtherFields(invoiceData.chain_info),
+      other_fields: [
+        ...chainOtherFields(invoiceData.chain_info),
+        ...orderOtherFields(invoiceData.order_ref),
+      ],
 
       // Cart lines → canonical DetailDTO[]. By the time a line lands here,
       // LineDetailDrawer + its sections have already resolved every catalog

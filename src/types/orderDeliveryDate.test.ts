@@ -17,9 +17,9 @@ import type { Order, OrderStatus } from '@/types/order';
  * The pairing is what needs guarding: if the two lists drift, either the button
  * appears and fails, or it hides an edit that would have worked.
  */
-const order = (over: Partial<Pick<Order, 'order_status' | 'invoice'>> = {}) => ({
+const order = (over: Partial<Pick<Order, 'order_status' | 'document_id'>> = {}) => ({
   order_status: 'pending' as OrderStatus,
-  invoice: null,
+  document_id: null,
   ...over,
 });
 
@@ -43,7 +43,7 @@ describe('canEditDeliveryDate', () => {
   it('hides it for a billed order whatever the status', () => {
     // The delivery date is on the fiscal document by then.
     expect(
-      canEditDeliveryDate(order({ invoice: { sale_id: 'sale-1' } })),
+      canEditDeliveryDate(order({ document_id: 'sale-1' })),
     ).toBe(false);
   });
 

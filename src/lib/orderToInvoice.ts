@@ -6,6 +6,7 @@ import type { LineDetail } from "@/types/lineDetail";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import { lineTaxesFromStored } from "@/services/storedTaxToLineTax";
 import { lineDiscountsFromStored } from "@/services/storedDiscountToLineDiscount";
+import { isChainClient } from "@/lib/chainClients";
 
 /**
  * Turn a delivered order into the inputs the checkout drawer needs.
@@ -201,9 +202,16 @@ export function checkoutClientFromOrder(order: Order): ClientSearchResult | null
  */
 export function checkoutDataFromOrder(order: Order): Partial<InvoiceFormData> {
   const data: Partial<InvoiceFormData> = {
-    // The order number is the audit trail until the BE links the two records
-    // (docs/MANUAL_ORDERS.md §7).
+    // Human-readable trace on the document itself. The machine-readable one is
+    // `order_ref` below, which is what the validator actually links on.
     notes: `Pedido #${order.document_number}`,
+    // Carried onto the document as `TsuruNumeroPedido` / `TsuruOrigenPedido`.
+    // The link between order and document is made from THIS, asynchronously,
+    // once Hacienda accepts — not by a call from the checkout.
+    order_ref: {
+      document_number: order.document_number || undefined,
+      source: order.source || undefined,
+    },
   };
 
   const chain = chainInfoFromOrder(order);
@@ -222,8 +230,26 @@ export function checkoutDataFromOrder(order: Order): Partial<InvoiceFormData> {
 /**
  * Retail-chain fields the order already captured.
  *
- * `undefined` when the order carries none, so an ordinary customer's document
- * gets no chain block at all rather than an object full of empty strings.
+ * `undefined` for an ordinary customer, so their document gets no chain block
+ * at all — which matters more than it looks: the chain block is what becomes
+ * the `WM*` `OtroTexto` entries on the signed XML, and those are **Walmart's**
+ * codes. Every order used to get one, because `purchase_order_number` was set
+ * from `document_number` unconditionally and the "does it carry anything?"
+ * check then always passed. A plain pedido `PM-000123` for a walk-in customer
+ * therefore shipped `WMNumeroOrden` to Hacienda. Our own order number now
+ * travels under our own codes instead — see `orderOtherFields` in
+ * `hooks/useCartFlow`.
+ *
+ * Whether this is a chain order is decided BEFORE the order number is added,
+ * from the fields only a chain produces. The registry (`lib/chainClients`)
+ * cannot be the only signal: an order imported from a chain's spreadsheet
+ * creates its client with no cédula — the file has no such column — so the
+ * cédula lookup misses precisely on the path where chains are commonest. The
+ * structural signals are the same ones `useChainClient` falls back to.
+ *
+ * `store_name` is deliberately NOT a signal: a manual pedido can carry a
+ * free-text delivery label for a point the client never registered, and that
+ * is not a chain.
  */
 function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
   // `department` is either the plain code the Excel import wrote or the
@@ -234,7 +260,7 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
       : order.department ?? undefined;
   const location = order.delivery_location;
 
-  const info: ChainClientInfo = {
+  const fields = {
     department_code: department?.department_code || undefined,
     // The vendor number the chain assigns to us. store-be resolves it from the
     // order's department (`department_rel.supplier_code`) and returns it on the
@@ -247,15 +273,35 @@ function chainInfoFromOrder(order: Order): ChainClientInfo | undefined {
     store_code: location?.code || undefined,
     store_name: location?.name || undefined,
     gln: location?.gln || undefined,
+  };
+
+  const isChain =
+    isChainClient(order.client?.identification?.number, order.client?.gln) ||
+    !!fields.supplier_code ||
+    !!fields.gln ||
+    !!fields.department_code ||
+    !!fields.store_code;
+
+  if (!isChain) return undefined;
+
+  return {
+    ...fields,
     // The chain's own order number is the order's document number: on a
     // supplier order that IS the chain's purchase order, which is why it is
     // what they reconcile against.
     purchase_order_number: order.document_number || undefined,
   };
-  return Object.values(info).some(Boolean) ? info : undefined;
 }
 
-/** An order already billed must not be billed twice. */
+/**
+ * An order already billed must not be billed twice.
+ *
+ * "Billed" means an ACCEPTED document is linked to it, which happens
+ * asynchronously — so there is a window after checkout in which this is still
+ * false and the document does exist. That window is deliberate: a document
+ * Hacienda goes on to REJECT never links, and the order has to stay billable so
+ * the cashier can re-issue it.
+ */
 export function isOrderInvoiced(order: Order): boolean {
-  return !!order.invoice?.sale_id || !!order.invoice?.consecutive_number;
+  return !!order.document_id || !!order.document_info?.consecutive_number;
 }

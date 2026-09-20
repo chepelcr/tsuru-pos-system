@@ -17,6 +17,16 @@ interface TopProductsPanelProps {
   fmt: (n: number) => string;
 }
 
+/**
+ * How many best-sellers the dashboard panel shows.
+ *
+ * Declared once because it was written twice — the slice and the divider maths
+ * each carried their own literal, so changing one silently left the last row
+ * with a border. The Reportes page shows its own, longer ranking and does not
+ * use this.
+ */
+const TOP_N = 3;
+
 export function TopProductsPanel({ ranking, isLoading, fmt }: TopProductsPanelProps) {
   const { t } = useLanguage();
 
@@ -33,10 +43,10 @@ export function TopProductsPanel({ ranking, isLoading, fmt }: TopProductsPanelPr
       ) : ranking.length === 0 ? (
         <div className="t-sm text-muted-foreground py-4">{t("dash.noSalesData")}</div>
       ) : (
-        ranking.slice(0, 5).map((item, i) => (
+        ranking.slice(0, TOP_N).map((item, i) => (
           <div
             key={item.product_id ?? item.name}
-            className={`flex items-center gap-3 py-3 ${i < Math.min(4, ranking.length - 1) ? "border-b border-border" : ""}`}
+            className={`flex items-center gap-3 py-3 ${i < Math.min(TOP_N - 1, ranking.length - 1) ? "border-b border-border" : ""}`}
           >
             <div
               className={`w-7 text-[15px] font-extrabold font-display flex-shrink-0 text-center ${

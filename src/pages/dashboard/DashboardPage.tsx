@@ -13,6 +13,8 @@ import { useDashboardScope } from "@/hooks/useDashboardScope";
 import type { DashboardGranularity, DashboardSource } from "@/types/dashboard";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
+import { trendWindow } from "@/lib/dashboardPeriod";
+import { readSourcePreference, writeSourcePreference } from "@/lib/dashboardSource";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { TopProductsPanel } from "@/components/dashboard/TopProductsPanel";
@@ -33,17 +35,6 @@ const QrShareModal = lazy(() =>
   })),
 );
 
-
-/** Remembered per browser: which population the operator prefers to count. */
-const SOURCE_KEY = "pos-dashboard-source";
-
-function readSourcePreference(): DashboardSource {
-  try {
-    return localStorage.getItem(SOURCE_KEY) === "documents" ? "documents" : "orders";
-  } catch {
-    return "orders";
-  }
-}
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
@@ -76,8 +67,18 @@ export default function DashboardPage() {
   // reason this used to read zero with 45 orders in the database.
   const summary = useSalesSummary(org?.id, queryOptions, !!user);
   const orderStatus = useOrderStatus(org?.id, queryOptions, !!user);
-  const products = useTopProducts(org?.id, 10, queryOptions);
-  const trend = useSalesTrend(org?.id, granularity, queryOptions);
+  // Ask for exactly what is shown. It used to fetch 10 and render 5.
+  const products = useTopProducts(org?.id, 3, queryOptions);
+  // The trend — and ONLY the trend — carries a date window. Without one the
+  // server aggregates the organization's whole history at every bucket size, so
+  // switching Hora ↔ Mes re-bucketed the same corpus and all four tabs read the
+  // same. The other panels stay unwindowed on purpose: the hero card answers
+  // "what has this business sold", and it must not change meaning because
+  // somebody clicked a tab on the chart below it.
+  const trend = useSalesTrend(org?.id, granularity, {
+    ...queryOptions,
+    ...trendWindow(granularity),
+  });
   // Orders only: a document has no delivery to still be pending.
   const sessionSales = useSessionSales(org?.id, queryOptions);
 
@@ -94,6 +95,11 @@ export default function DashboardPage() {
   const ranking = products.data?.products ?? [];
   // The scope the SERVER answered for, which is what the header should label.
   const answeredScope = summary.data?.scope ?? null;
+  // Revenue over the window the chart is actually plotting.
+  const trendRevenue = (trend.data?.points ?? []).reduce(
+    (total, point) => total + (point.revenue ?? 0),
+    0,
+  );
 
   // The source toggle has to change the HEADLINE, not just the panels below it.
   //
@@ -111,11 +117,7 @@ export default function DashboardPage() {
 
   const changeSource = (next: DashboardSource) => {
     setSource(next);
-    try {
-      localStorage.setItem(SOURCE_KEY, next);
-    } catch {
-      // Not worth surfacing — the choice simply does not persist.
-    }
+    writeSourcePreference(next);
   };
 
   // Only the headline figure gates the hero card. A slow product ranking should
@@ -288,7 +290,7 @@ export default function DashboardPage() {
                     </CardDescription>
                   </div>
                   <div className="tabs" role="tablist" aria-label={t("dash.granularity")}>
-                    {(["hour", "day", "week", "month"] as const).map((option) => (
+                    {(["hour", "day", "week", "month", "year"] as const).map((option) => (
                       <button
                         key={option}
                         type="button"
@@ -303,13 +305,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="mb-3.5">
-                  <div className="t-stat-xl !text-[38px]">{fmt(totalRevenue)}</div>
+                  {/* The CHART's total, not the organization's. This printed
+                      `summary.revenue` — an all-time figure no granularity
+                      affects — directly above a chart that was supposed to be
+                      showing a period, which is what made the tabs look inert.
+                      Summing the plotted points cannot disagree with the line. */}
+                  <div className="t-stat-xl !text-[38px]">{fmt(trendRevenue)}</div>
                   <div className="t-xs text-muted-foreground">
-                    {summary.data?.last_order_at
-                      ? t("dash.lastOrder", {
-                          d: new Date(summary.data.last_order_at).toLocaleDateString(),
-                        })
-                      : t("dash.noOrders")}
+                    {t(`dash.granularity.${granularity}.hint`)}
                   </div>
                 </div>
                 {/* Granularity from the response, so the axis cannot disagree
@@ -341,6 +344,10 @@ export default function DashboardPage() {
             isError={orderStatus.isError}
             onRetry={() => void orderStatus.refetch()}
             fmt={fmt}
+            // Without this the panel is order-shaped whatever the toggle says:
+            // titled "Pedidos por estado" over Hacienda verdicts, printing the
+            // backend's raw English.
+            source={source}
           />
         </Card>
       </div>

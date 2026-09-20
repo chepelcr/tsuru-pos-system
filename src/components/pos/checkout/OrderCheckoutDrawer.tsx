@@ -2,11 +2,10 @@ import { useMemo, useState } from 'react';
 import { useAssignment } from '@/hooks/useAssignment';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useSessionContext } from '@/store/sessionContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCartFlow, type InvoiceCheckoutData } from '@/hooks/useCartFlow';
 import { useClient } from '@/hooks/useClients';
-import { useLinkOrderInvoice } from '@/hooks/useOrders';
-import { useNotifications } from '@/contexts/NotificationsContext';
 import { DocumentCurrencyProvider } from '@/contexts/DocumentCurrencyContext';
 import { ClientDrawerForm } from '@/components/clients/ClientDrawerForm';
 import { CheckoutDrawer } from './CheckoutDrawer';
@@ -62,6 +61,7 @@ export function OrderCheckoutDrawer({
   const { t } = useLanguage();
   const { user } = useAuthContext();
   const { data: assignment } = useAssignment();
+  const queryClient = useQueryClient();
   const sessionCtx = useSessionContext();
 
   const [receiverDrawerOpen, setReceiverDrawerOpen] = useState(false);
@@ -95,8 +95,6 @@ export function OrderCheckoutDrawer({
     : undefined;
 
   const flow = useCartFlow({ items, currency });
-  const linkInvoice = useLinkOrderInvoice(orgId, order.document_number);
-  const { add: notify } = useNotifications();
 
   const handleConfirm = async (invoiceData: InvoiceCheckoutData) => {
     if (!assignment || !user) throw new Error(t('checkout.error.sessionIncomplete'));
@@ -117,39 +115,24 @@ export function OrderCheckoutDrawer({
       invoiceData,
     });
 
-    // Record on the ORDER which document billed it.
+    // The ORDER is NOT linked here.
     //
-    // Without this the order never learns it has an invoice: `isOrderInvoiced`
-    // keeps returning false, "Facturar pedido" stays enabled, and a second
-    // click emits a second real document and burns another consecutive for the
-    // same delivery. The endpoint has existed since TSR-152 and nothing was
-    // calling it.
+    // It used to be: this posted the link as soon as our own API answered
+    // `confirmed` — which is before Hacienda has ruled. That marked orders as
+    // billed by documents Hacienda went on to REJECT, never linked a sale the
+    // offline outbox had queued (no consecutive yet, and the replay did not
+    // link either), and lost the link altogether if the POST failed.
     //
-    // Only for a CONFIRMED sale: a queued one has no consecutive yet, and the
-    // outbox replay is what will eventually produce it. Linking a `queued`
-    // result would record an invoice that does not exist.
-    if (result.status === 'confirmed' && result.sale?.sale_id) {
-      try {
-        await linkInvoice.mutateAsync({
-          sale_id: result.sale.sale_id,
-          document_type: result.sale.document_type,
-          consecutive_number: result.sale.consecutive_number,
-          document_key: result.sale.document_key,
-          issued_on: result.sale.sale_date,
-        });
-      } catch (err) {
-        // Deliberately not fatal: the document IS issued and legally exists, so
-        // failing the checkout here would tell the cashier the sale did not
-        // happen when it did. The cost of the link failing is that the order
-        // still looks billable — which is why it is surfaced rather than
-        // swallowed silently.
-        notify({
-          source: 'fe',
-          level: 'destructive',
-          titleKey: 'orders.invoice.linkFailed',
-          bodyKey: err instanceof Error ? err.message : 'orders.invoice.linkFailed',
-        });
-      }
+    // sales-be now publishes LINK_ORDER_DOCUMENT when the verdict lands and
+    // store-be writes `document_id` / `document_info` from it. The order number
+    // travels to the document as `TsuruNumeroPedido` (see `orderOtherFields`),
+    // which is what the validator reads to know which order to link.
+    //
+    // The visible consequence: the "Facturado" badge appears seconds to minutes
+    // after checkout rather than instantly. The orders list is invalidated so it
+    // arrives without a manual refresh.
+    if (result.status === 'confirmed') {
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
     }
 
     return result;

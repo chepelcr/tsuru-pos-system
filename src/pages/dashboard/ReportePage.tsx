@@ -7,10 +7,21 @@ import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/compone
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
   useSalesSummary,
+  useSalesTrend,
   useStations,
   useTopProducts,
 } from "@/hooks/useDashboard";
+import { SalesChart } from "@/components/dashboard/SalesChart";
+import {
+  REPORT_GRANULARITY,
+  REPORT_PERIODS,
+  reportWindow,
+  type ReportPeriod,
+} from "@/lib/dashboardPeriod";
+import { readSourcePreference, writeSourcePreference } from "@/lib/dashboardSource";
+import type { DashboardSource } from "@/types/dashboard";
 import { formatMoney as fmt } from "@/lib/money";
+import { useState } from "react";
 
 const fmtNum = (n: number) => Math.round(Number(n) || 0).toLocaleString("es-CR");
 
@@ -37,10 +48,34 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   // Session mode scopes the summary to that session too, so the report's header
   // figure and its per-till list describe the same thing. The old endpoint scoped
   // only the stations, which is why a "session" report showed org-wide totals.
-  const scopeOptions = { sessionId };
+  // A report is about a PERIOD. The page had no period control at all: it
+  // reported over all of history under today's date, which read as "today's
+  // report" and was not.
+  const [period, setPeriod] = useState<ReportPeriod>("month");
+  // ...and about a POPULATION. It called the summary hook with no `source`, so
+  // it silently defaulted to Pedidos and never reported on electronic documents
+  // even though the dashboard beside it could. Shares the dashboard's stored
+  // preference, so the two pages agree about what the user is looking at.
+  const [source, setSource] = useState<DashboardSource>(readSourcePreference);
+
+  const scopeOptions = {
+    sessionId,
+    source,
+    ...reportWindow(period),
+  };
+  const granularity = REPORT_GRANULARITY[period];
+
   const summary = useSalesSummary(org?.id, scopeOptions, !!user);
+  // Tills are orders-only and live: a document has no till. Deliberately NOT
+  // windowed — "who is on a session right now" is not a question about a period.
   const stations = useStations(org?.id, sessionId);
   const products = useTopProducts(org?.id, 20, scopeOptions);
+  const trend = useSalesTrend(org?.id, granularity, scopeOptions);
+
+  const changeSource = (next: DashboardSource) => {
+    setSource(next);
+    writeSourcePreference(next);
+  };
 
   // Session mode sums the session's own tills; without a session it is the whole
   // organisation. The old `?session_id=` passed the filter only to its stations
@@ -76,8 +111,12 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
                 session-free report. The session drawer renders the other one. */}
             <h1 className="t-h1 mb-1.5">{org?.name ?? t("shell.reports")}</h1>
             <p className="t-body text-muted-foreground">
-              {new Date().toLocaleDateString(undefined, {
-                weekday: "long", day: "numeric", month: "long", year: "numeric",
+              {/* The window the figures actually cover. This used to print
+                  today's date beside all-time totals, which read as a daily
+                  report and was not one. */}
+              {t("report.covering", {
+                from: scopeOptions.dateFrom,
+                to: scopeOptions.dateTo,
               })}
             </p>
           </div>
@@ -99,6 +138,40 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
         </div>
       )}
 
+      {/* What the report is ABOUT: which period, and which population.
+          Both were missing — the page reported over all of history, on orders
+          only, under a heading showing today's date. */}
+      <div className="flex justify-between items-center mb-3.5 flex-wrap gap-2.5">
+        <div className="tabs" role="tablist" aria-label={t("report.period")}>
+          {REPORT_PERIODS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="tab"
+              className="tab"
+              aria-selected={period === option}
+              onClick={() => setPeriod(option)}
+            >
+              {t(`report.period.${option}`)}
+            </button>
+          ))}
+        </div>
+        <div className="tabs" role="tablist" aria-label={t("dash.source")}>
+          {(["orders", "documents"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="tab"
+              className="tab"
+              aria-selected={source === option}
+              onClick={() => changeSource(option)}
+            >
+              {t(option === "documents" ? "dash.documents" : "dash.orders")}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* The headline figure gets its own full-width row.
  
           It was one cell of a `minmax(220px, 1fr)` auto-fit grid, which leaves
@@ -114,6 +187,20 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
         <Badge variant={tills.length ? "success" : "secondary"} className="mt-2">
           {t("dash.active", { n: String(tills.length) })}
         </Badge>
+      </Card>
+
+      {/* How the period got to that figure. The trend endpoint already existed
+          and this page never used it, so a report said what the total was and
+          never where it came from. */}
+      <Card className="p-[22px] mb-3.5 min-w-0">
+        <div className="mb-[18px]">
+          <CardTitle>{t("dash.salesTrend")}</CardTitle>
+          <CardDescription>{t(`dash.granularity.${granularity}.hint`)}</CardDescription>
+        </div>
+        <SalesChart
+          points={trend.data?.points ?? []}
+          granularity={trend.data?.granularity ?? granularity}
+        />
       </Card>
 
       <div className="grid-auto-fit-220 gap-3.5 mb-5">

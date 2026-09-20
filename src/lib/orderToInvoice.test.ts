@@ -194,10 +194,49 @@ describe("checkoutClientFromOrder", () => {
 });
 
 describe("checkoutDataFromOrder", () => {
-  it("seeds the note and the chain's purchase-order number", () => {
-    const data = checkoutDataFromOrder(order({ document_number: "4500123456" }));
-    expect(data.notes).toBe("Pedido #4500123456");
+  it("seeds the note and the machine-readable order reference", () => {
+    const data = checkoutDataFromOrder(
+      order({ document_number: "PM-000123", source: "manual" }),
+    );
+    expect(data.notes).toBe("Pedido #PM-000123");
+    // What the document-validator reads to link the order once Hacienda rules.
+    expect(data.order_ref).toEqual({
+      document_number: "PM-000123",
+      source: "manual",
+    });
+  });
+
+  it("gives an ordinary customer's pedido NO chain block", () => {
+    // The regression this exists for. `purchase_order_number` used to be set
+    // from `document_number` unconditionally, and the "does it carry anything?"
+    // test then always passed — so every order produced a chain block, and a
+    // plain pedido for a walk-in customer shipped Walmart's `WMNumeroOrden` on
+    // its signed XML.
+    const data = checkoutDataFromOrder(order({ document_number: "PM-000123" }));
+    expect(data.chain_info).toBeUndefined();
+  });
+
+  it("keeps the purchase-order number for a real chain order", () => {
+    // An order imported from a chain's spreadsheet. Its client has no cédula —
+    // the file has no such column — so the registry cannot match it; the GLN on
+    // the delivery point is what identifies it as a chain order.
+    const data = checkoutDataFromOrder(
+      order({
+        document_number: "4500123456",
+        delivery_location: { code: "S-1", name: "CD Coyol", gln: "7441234567890" },
+      }),
+    );
     expect(data.chain_info?.purchase_order_number).toBe("4500123456");
+    expect(data.chain_info?.gln).toBe("7441234567890");
+  });
+
+  it("does not treat a free-text delivery label as a chain", () => {
+    // A manual pedido can name a delivery point the client never registered.
+    // That is not a chain, and must not produce WM* fields.
+    const data = checkoutDataFromOrder(
+      order({ delivery_location: { code: "", name: "Casa de doña Ana", gln: "" } }),
+    );
+    expect(data.chain_info).toBeUndefined();
   });
 
   it("reuses the order's currency rather than re-quoting at today's rate", () => {
@@ -234,15 +273,20 @@ describe("checkoutDataFromOrder", () => {
 
 describe("isOrderInvoiced", () => {
   it("is true once a sale is linked", () => {
-    expect(isOrderInvoiced(order({ invoice: { sale_id: "s-1" } }))).toBe(true);
+    expect(isOrderInvoiced(order({ document_id: "s-1" }))).toBe(true);
     expect(
-      isOrderInvoiced(order({ invoice: { consecutive_number: "00100001010000000001" } }))
+      isOrderInvoiced(
+        order({ document_info: { consecutive_number: "00100001010000000001" } })
+      )
     ).toBe(true);
   });
 
   it("is false for an order that has not been billed", () => {
     expect(isOrderInvoiced(order())).toBe(false);
-    expect(isOrderInvoiced(order({ invoice: null }))).toBe(false);
+    expect(isOrderInvoiced(order({ document_id: null }))).toBe(false);
+    // Issued, but Hacienda has not ruled yet: the link is written on the
+    // verdict, so the order is still billable until then.
+    expect(isOrderInvoiced(order({ document_info: null }))).toBe(false);
   });
 });
 

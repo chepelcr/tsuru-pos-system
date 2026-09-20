@@ -339,6 +339,12 @@ export interface InvoiceFormData {
    * living only in the order.
    */
   chain_info?: import('./order').ChainClientInfo;
+  /**
+   * The order this document is billing, when it is billing one. Travels onto
+   * the document as `other_fields` under our own codes, which is what lets the
+   * validator link the order once Hacienda accepts the document.
+   */
+  order_ref?: import('./order').OrderReference;
   document_type: EditorDocTypeCode;
   version?: string;
   activity_code: string;

@@ -12,7 +12,7 @@
 export type DashboardSource = "orders" | "documents";
 
 /** Buckets the trend endpoint accepts. */
-export type DashboardGranularity = "hour" | "day" | "week" | "month";
+export type DashboardGranularity = "hour" | "day" | "week" | "month" | "year";
 
 /**
  * What slice the SERVER answered for — not what the client asked.

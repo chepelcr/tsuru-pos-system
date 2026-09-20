@@ -69,6 +69,8 @@ export function SalesChart({
     switch (granularity) {
       case "hour":
         return at.toLocaleTimeString(undefined, { hour: "numeric" });
+      case "year":
+        return at.toLocaleDateString(undefined, { year: "numeric" });
       case "month":
         return at.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
       case "week":

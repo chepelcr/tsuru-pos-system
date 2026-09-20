@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { chainOtherFields } from './useCartFlow';
-import type { ChainClientInfo } from '@/types/order';
+import { chainOtherFields, orderOtherFields } from './useCartFlow';
+import type { ChainClientInfo, OrderReference } from '@/types/order';
 
 /**
  * The OtroTexto codes are a WIRE CONTRACT with the retail chain, not internal
@@ -85,5 +85,52 @@ describe("the three GLNs on an order are not interchangeable", () => {
     // rejection that names itself, a wrong one is a delivery to the wrong place.
     const fields = chainOtherFields({ supplier_code: "778899" });
     expect(fields.some((f) => f.code === "WMEnviarGLN")).toBe(false);
+  });
+});
+
+/**
+ * Our own codes, for the same fact under a name we control.
+ *
+ * `WMNumeroOrden` is Walmart's and is emitted only for a chain client. It used
+ * to be the ONLY place an order number reached a document, and every order
+ * produced one — so an ordinary pedido carried a Walmart field. These are the
+ * internal equivalents, and `TsuruNumeroPedido` is what sales-be's
+ * document-validator reads to know which order an accepted document billed.
+ */
+describe('orderOtherFields', () => {
+  const ref: OrderReference = { document_number: 'PM-000123', source: 'manual' };
+
+  it('emits the order number and its source under our codes', () => {
+    expect(orderOtherFields(ref)).toEqual([
+      { code: 'TsuruNumeroPedido', other_text: 'PM-000123' },
+      { code: 'TsuruOrigenPedido', other_text: 'manual' },
+    ]);
+  });
+
+  it('emits nothing for a sale that bills no order', () => {
+    // A walk-in sale rung up at the till. Most documents are this.
+    expect(orderOtherFields(undefined)).toEqual([]);
+    expect(orderOtherFields({})).toEqual([]);
+  });
+
+  it('omits an empty value rather than sending a blank OtroTexto', () => {
+    expect(orderOtherFields({ document_number: 'PM-000123', source: '   ' })).toEqual([
+      { code: 'TsuruNumeroPedido', other_text: 'PM-000123' },
+    ]);
+  });
+
+  it('trims, because the code is matched but the text is read', () => {
+    expect(orderOtherFields({ document_number: '  PM-000123  ' })[0].other_text)
+      .toBe('PM-000123');
+  });
+
+  it('is independent of the chain codes', () => {
+    // A chain order emits BOTH: WMNumeroOrden for Walmart's reconciliation and
+    // TsuruNumeroPedido as the one key the validator always looks for.
+    const chain = chainOtherFields({ purchase_order_number: '4500123456' });
+    const ours = orderOtherFields({ document_number: '4500123456', source: 'import' });
+    const codes = [...chain, ...ours].map((f) => f.code);
+    expect(codes).toContain('WMNumeroOrden');
+    expect(codes).toContain('TsuruNumeroPedido');
   });
 });

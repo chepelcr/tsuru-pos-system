@@ -543,9 +543,9 @@ export default function OrderDetailPage({ orderId }: Props) {
               {alreadyInvoiced && (
                 <Badge variant="success" className="inline-flex items-center gap-1">
                   <Icon name="fileText" size={11} />
-                  {order.invoice?.consecutive_number
+                  {order.document_info?.consecutive_number
                     ? t('orders.invoice.invoicedWith', {
-                        num: order.invoice.consecutive_number,
+                        num: order.document_info.consecutive_number,
                       })
                     : t('orders.invoice.invoiced')}
                 </Badge>
