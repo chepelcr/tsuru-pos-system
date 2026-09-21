@@ -5,7 +5,11 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { crossAppApi } from "@/lib/api";
 import { db } from "@/lib/db";
 import { useSessionContext } from "@/store/sessionContext";
+import type { Branch } from "@/types/branch";
+import type { SalePayment } from "@/types/invoice";
 import POSIntegratedPage from "./POSIntegratedPage";
+
+const state = vi.hoisted(() => ({ branches: [] as Branch[], confirmPayment: vi.fn() }));
 
 // Keep the real checkout, drawer, assignment query and branch selection so
 // mounting checkout exercises the shared query that used to hide the POS.
@@ -22,7 +26,7 @@ vi.mock("@/hooks/useOrganization", () => ({
   }),
 }));
 vi.mock("@/hooks/useBranches", () => ({
-  useBranches: () => ({ data: [], isLoading: false, isSuccess: true }),
+  useBranches: () => ({ data: state.branches, isLoading: false, isSuccess: true }),
   useCreateTerminal: () => ({}),
 }));
 vi.mock("@/hooks/useTables", () => ({ useTableMutations: () => ({}) }));
@@ -38,6 +42,7 @@ vi.mock("@/hooks/useCartFlow", () => ({
     cartTotal: 1000,
     subtotal: 1000,
     taxAmount: 0,
+    handleConfirmPayment: state.confirmPayment,
   }),
 }));
 vi.mock("@/components/pos/PosHeader", () => ({ PosHeader: () => null }));
@@ -51,9 +56,17 @@ vi.mock("@/components/clients/ClientDrawerForm", () => ({ ClientDrawerForm: () =
 vi.mock("@/components/pos/POSPageSkeleton", () => ({
   POSPageSkeleton: () => <div>POS loading</div>,
 }));
-vi.mock("@/components/pos/checkout/sections/PaymentSection", () => ({ PaymentSection: () => null }));
+vi.mock("@/components/pos/checkout/sections/PaymentSection", () => ({
+  PaymentSection: ({ onChange }: { onChange: (payments: SalePayment[]) => void }) => (
+    <button onClick={() => onChange([{ type: "01", amount: 1000 }])}>Pay exact</button>
+  ),
+}));
 vi.mock("@/components/pos/checkout/sections/ReceiverSection", () => ({ ReceiverSection: () => null }));
-vi.mock("@/components/pos/checkout/sections/DocumentSection", () => ({ DocumentSection: () => null }));
+vi.mock("@/components/pos/checkout/sections/DocumentSection", () => ({
+  DocumentSection: ({ onChange }: { onChange: (patch: { activity_code: string }) => void }) => (
+    <button onClick={() => onChange({ activity_code: "123456" })}>Set activity</button>
+  ),
+}));
 vi.mock("@/components/pos/checkout/sections/ReferencesSection", () => ({ ReferencesSection: () => null }));
 vi.mock("@/components/pos/checkout/sections/OrderInfoSection", () => ({ OrderInfoSection: () => null }));
 
@@ -66,6 +79,9 @@ beforeEach(async () => {
   useSessionContext.getState().clearSession();
   await db.assignments.clear();
   getAssignments.mockReset();
+  state.branches = [];
+  state.confirmPayment.mockReset();
+  state.confirmPayment.mockResolvedValue({ status: "confirmed", sale: { sale_id: "sale-1" } });
   client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: 5 * 60_000 } },
   });
@@ -90,6 +106,29 @@ async function openCheckout() {
 }
 
 describe("integrated POS checkout", () => {
+  it("confirms a completed checkout with a selected branch and terminal but no assignment", async () => {
+    state.branches = [{
+      branch_id: "branch-1", code: 1, name: "Branch",
+      terminals: [{ terminal_id: "terminal-1", code: 2, name: "Terminal" }],
+    }] as Branch[];
+    getAssignments.mockResolvedValue({ data: [] });
+    showPOS();
+    await waitFor(() => expect(client.getQueryState(assignmentKey)?.status).toBe("success"));
+
+    await openCheckout();
+    fireEvent.click(screen.getByRole("button", { name: "Pay exact" }));
+    fireEvent.click(screen.getByRole("button", { name: "Set activity" }));
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar/ }));
+
+    await waitFor(() => expect(state.confirmPayment).toHaveBeenCalledWith(expect.objectContaining({
+      assignmentId: undefined,
+      orgId: "org-1", userId: "user-1",
+      branchId: "branch-1", terminalId: "terminal-1",
+      branchNumber: 1, terminalNumber: 2,
+    })));
+    expect(screen.queryByText("Sesión incompleta.")).toBeNull();
+  });
+
   it("opens Cobrar without refetching a successful no-assignment result", async () => {
     getAssignments.mockResolvedValueOnce({ data: [] });
     getAssignments.mockImplementation(() => new Promise(() => {}));

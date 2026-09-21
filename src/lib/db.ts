@@ -19,7 +19,8 @@ export type OutboxTarget = "sales" | "orders";
 export interface SaleRecord {
   id?: number;
   localId: string;
-  assignmentId: string;
+  /** Optional for documents issued outside a cashier shift. */
+  assignmentId?: string;
   orgId: string;
   userId: string;
   items: Array<{ productId: number; name: string; price: number; qty: number }>;

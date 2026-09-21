@@ -97,14 +97,14 @@ export function OrderCheckoutDrawer({
   const flow = useCartFlow({ items, currency });
 
   const handleConfirm = async (invoiceData: InvoiceCheckoutData) => {
-    if (!assignment || !user) throw new Error(t('checkout.error.sessionIncomplete'));
+    if (!user || !orgId) throw new Error(t('checkout.error.sessionIncomplete'));
     const { branch_code, terminal_code, branch_id, terminal_id } = sessionCtx;
     if (!branch_code || !terminal_code || !branch_id || !terminal_id) {
       throw new Error(t('checkout.error.missingBranchTerminal'));
     }
 
     const result = await flow.handleConfirmPayment({
-      assignmentId: assignment.assignment_id,
+      assignmentId: assignment?.assignment_id,
       orgId,
       userId: user.userId,
       branchNumber: branch_code,

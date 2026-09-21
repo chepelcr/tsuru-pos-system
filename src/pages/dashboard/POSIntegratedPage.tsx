@@ -158,7 +158,7 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
 
   // Called by CheckoutModal — throws on error so the modal can show the error state
   const handleConfirm = async (invoiceData: any) => {
-    if (!assignment || !org || !user) throw new Error(t("checkout.error.sessionIncomplete"));
+    if (!org || !user) throw new Error(t("checkout.error.sessionIncomplete"));
     const branchNumber = sessionCtx.branch_code;
     const terminalNumber = sessionCtx.terminal_code;
     const branchId = sessionCtx.branch_id;
@@ -168,7 +168,7 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     }
 
     const result = await flow.handleConfirmPayment({
-      assignmentId: assignment.assignment_id,
+      assignmentId: assignment?.assignment_id,
       orgId: org.id,
       userId: user.userId,
       branchNumber,

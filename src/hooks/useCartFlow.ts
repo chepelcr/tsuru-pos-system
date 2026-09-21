@@ -381,7 +381,8 @@ export interface InvoiceCheckoutData {
 }
 
 interface ConfirmPaymentArgs {
-  assignmentId: string;
+  /** Present when billing as part of a cashier shift; optional outside one. */
+  assignmentId?: string;
   orgId: string;
   userId: string;
   branchNumber: number;
