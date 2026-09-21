@@ -38,7 +38,7 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
-  const { data: assignment, isLoading: assignmentLoading } = useAssignment();
+  const { data: assignment } = useAssignment();
   const sessionCtx = useSessionContext();
   // Resolves the shift's branch/terminal in the background (assignment first,
   // then whatever is already selected, then the first available). The POS no
@@ -187,7 +187,9 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     if (tabId) useDocumentStore.getState().removeDocumentTab(tabId);
   };
 
-  if (orgLoading || assignmentLoading) {
+  // Checkout also observes the assignment query. A retry when its sections
+  // mount must not replace the workspace and unmount the drawer again.
+  if (orgLoading) {
     return <POSPageSkeleton />;
   }
 

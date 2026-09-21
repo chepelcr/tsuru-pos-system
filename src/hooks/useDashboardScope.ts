@@ -52,9 +52,8 @@ export function useDashboardScope(): DashboardScopeResult {
   const assignment = useAssignment();
   const { is_admin: isAdmin, isLoading: permissionsLoading } = usePermissions();
 
-  // `useAssignment` THROWS when there is no active assignment, so "not attached"
-  // arrives as isError rather than as empty data. Both mean the same thing here
-  // and neither is an error worth showing: working outside a session is normal.
+  // No active assignment is a successful null result. A transport error without
+  // an offline assignment also leaves us without a session to scope to.
   //
   // BOTH ids are required. Checking only `session_id` was not enough: the hook
   // used to return the response envelope as an assignment when the list came
@@ -100,9 +99,8 @@ export function useDashboardScope(): DashboardScopeResult {
     // request says what it wants; the server would narrow it anyway.
     ownOnly: kind === "session" && !isAdmin,
     setKind,
-    // Only the permission check gates rendering. Waiting on the assignment query
-    // too would hold the dashboard behind a request that FAILS by design for
-    // anyone not on a till.
+    // Only the permission check gates rendering; assignment resolution runs
+    // in the background because working outside a session is normal.
     isLoading: permissionsLoading,
   };
 }

@@ -15,7 +15,7 @@ export function useAssignment() {
   return useQuery({
     queryKey: ["assignment", user?.userId, org?.id],
     enabled: !!user && !!org,
-    queryFn: async () => {
+    queryFn: async (): Promise<Assignment | null> => {
       let data: Assignment | undefined;
 
       try {
@@ -78,7 +78,9 @@ export function useAssignment() {
         await db.assignments
           .where({ userId: user!.userId, orgId: org!.id })
           .delete();
-        throw new Error("No hay asignación activa");
+        // No shift is a successful, cacheable answer. Throwing here made each
+        // checkout observer retry on mount and put the POS back into loading.
+        return null;
       }
 
       try {
