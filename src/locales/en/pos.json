@@ -40,6 +40,8 @@
   "checkout.error.notPaid": "Payment does not cover the total.",
   "checkout.error.otherTypeRequired": "Describe the payment type for \"Other\".",
   "checkout.error.processing": "Error processing the sale",
+  "checkout.error.title": "Could not complete the document",
+  "checkout.error.dismiss": "Dismiss error notification",
   "checkout.error.receiverRequired": "Receiver is required for this document type.",
   "checkout.error.referenceIncomplete": "A reference is incomplete: check its type, code, number, date and reason.",
   "checkout.error.referencesRequired": "At least one reference is required for this document type.",

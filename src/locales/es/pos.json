@@ -40,6 +40,8 @@
   "checkout.error.notPaid": "El pago no cubre el total.",
   "checkout.error.otherTypeRequired": "Describe el tipo de pago para \"Otros\".",
   "checkout.error.processing": "Error al procesar la venta",
+  "checkout.error.title": "No se pudo completar el documento",
+  "checkout.error.dismiss": "Cerrar aviso de error",
   "checkout.error.receiverRequired": "El receptor es requerido para este tipo de documento.",
   "checkout.error.referenceIncomplete": "Hay una referencia incompleta: revisa tipo, código, número, fecha y razón.",
   "checkout.error.referencesRequired": "Se requiere al menos una referencia para este tipo de documento.",

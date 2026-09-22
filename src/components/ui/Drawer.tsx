@@ -15,6 +15,7 @@ interface DrawerProps {
   iconColor?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  notification?: React.ReactNode;
   width?: number | string;
 }
 
@@ -30,6 +31,7 @@ export function Drawer({
   iconColor,
   children,
   footer,
+  notification,
   width = 440,
 }: DrawerProps) {
   const [isClosing, setIsClosing] = useState(false);
@@ -126,6 +128,11 @@ export function Drawer({
             </button>
           )}
         </div>
+
+        {/* Keep notifications above scrolling content and inside the focus trap. */}
+        {notification && (
+          <div className="absolute inset-x-4 top-20 z-10">{notification}</div>
+        )}
 
         {/* Body */}
         <div

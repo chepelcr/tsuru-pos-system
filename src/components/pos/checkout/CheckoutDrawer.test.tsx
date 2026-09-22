@@ -139,3 +139,42 @@ describe("Walmart order prefill", () => {
     })));
   });
 });
+
+describe("checkout error toast", () => {
+  it("shows validation errors above the form without submitting", async () => {
+    render(<BillingCheckout initialData={{ activity_code: "" }} />);
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar/ }));
+    const toast = await screen.findByRole("alert");
+    expect(toast.textContent).toContain("actividad fiscal");
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /Confirmar/ }).parentElement?.contains(toast)).toBe(false);
+    expect(screen.getByRole("dialog").contains(toast)).toBe(true);
+  });
+
+  it("shows the backend reason, preserves selections, dismisses and allows retry", async () => {
+    const reason = "HACIENDA_VALIDATION\ndetails[0].cabys: cabys must be exactly 13 digits";
+    confirm.mockRejectedValueOnce(new Error(reason));
+    render(<BillingCheckout />);
+    await waitFor(expectOrderSelections);
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar/ }));
+    expect((await screen.findByRole("alert")).textContent).toContain(reason);
+    expectOrderSelections();
+    expect((screen.getByLabelText("N.º de pedido") as HTMLInputElement).value).toBe(order.document_number);
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar aviso de error" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Confirmar/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar/ }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("clears the previous error on a new attempt without requiring dismissal", async () => {
+    confirm.mockRejectedValueOnce(new Error("HACIENDA_VALIDATION"));
+    render(<BillingCheckout />);
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar/ }));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: /Confirmar/ }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});

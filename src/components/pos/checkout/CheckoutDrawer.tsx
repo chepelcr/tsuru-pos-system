@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Drawer } from '@/components/ui/Drawer';
+import { ErrorToast } from '@/components/ui/ErrorToast';
 import { useAccordionSections } from '@/hooks/useAccordionSections';
 import { useCart } from '@/store/cart';
 import { useDocumentStore } from '@/store/documentStore';
@@ -157,6 +158,7 @@ export function CheckoutDrawer({
   const tabData = useDocumentStore((s) =>
     tabId ? s.open_documents.find((d) => d.id === tabId)?.data ?? null : null
   );
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const updateDocumentTab = useDocumentStore((s) => s.updateDocumentTab);
   const [localData, setLocalData] = useState<Partial<InvoiceFormData>>({});
   const data: Partial<InvoiceFormData> =
@@ -383,10 +385,8 @@ export function CheckoutDrawer({
   const footer =
     step === 'payment' ? (
       <div className="p-4 bg-card space-y-2">
-        {error && (
-          <div className="text-[12px] text-destructive text-center">{error}</div>
-        )}
         <button
+          ref={confirmButtonRef}
           onClick={handleConfirm}
           disabled={isManualOrder ? !hasLines : !isPaid}
           className="w-full h-12 rounded-md bg-primary text-primary-foreground font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm shadow-primary/30 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -411,6 +411,17 @@ export function CheckoutDrawer({
       icon={isManualOrder ? 'package' : 'cart'}
       width={520}
       footer={footer}
+      notification={error && step === 'payment' && (
+        <ErrorToast
+          title={t('checkout.error.title')}
+          message={error}
+          dismissLabel={t('checkout.error.dismiss')}
+          onDismiss={() => {
+            setError(null);
+            confirmButtonRef.current?.focus();
+          }}
+        />
+      )}
     >
       {step === 'payment' && (
         <div className="flex flex-col gap-3 px-4 py-4">

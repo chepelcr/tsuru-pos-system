@@ -10,44 +10,42 @@ export interface RequestOptions {
   headers?: Record<string, string>;
 }
 
-/**
- * The readable part of an error body, whichever shape the service used.
- *
- * Only `message` was read, and **FastAPI answers `detail`** — so every 4xx from
- * a Python backend surfaced to the user as the bare fallback "Request failed",
- * including validation errors that named the exact field at fault. That is how
- * a 422 on every customer save looked like a generic failure for as long as it
- * did.
- *
- * FastAPI's validation errors put a LIST in `detail`
- * (`[{loc, msg, type}, ...]`); those are flattened to `field: message` so the
- * field survives, because the field is the whole value of the message.
- */
+/** Read both the standard code/details envelope and legacy API error bodies. */
 export function apiErrorMessage(body: unknown): string | undefined {
   if (!body || typeof body !== "object") return undefined;
-  const { message, detail, error } = body as Record<string, unknown>;
+  const { message, details, detail, error } = body as Record<string, unknown>;
+  const nonempty = (value: unknown): value is string => typeof value === "string" && !!value.trim();
 
-  if (typeof message === "string" && message) return message;
-  if (typeof detail === "string" && detail) return detail;
-  if (typeof error === "string" && error) return error;
+  if (Array.isArray(details)) {
+    const parts = details.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const { path, message: explanation, type, code } = item as Record<string, unknown>;
+      const field = nonempty(path) ? path.replace(/^body\./, "") : "";
+      const reason = nonempty(explanation) ? explanation : nonempty(type) ? type : "";
+      const text = [field, reason].filter(Boolean).join(": ");
+      if (!text) return [];
+      return [nonempty(code) ? `${text} (${code})` : text];
+    });
+    if (parts.length) return [nonempty(message) ? message : undefined, ...parts].filter(Boolean).join("\n");
+  }
+
+  if (nonempty(message)) return message;
+  if (nonempty(detail)) return detail;
 
   if (Array.isArray(detail)) {
-    const parts = detail
-      .map((item) => {
-        if (!item || typeof item !== "object") return null;
-        const { loc, msg } = item as { loc?: unknown[]; msg?: unknown };
-        if (typeof msg !== "string") return null;
-        // `loc` is ["body", "field", ...]; the leading "body" says nothing.
-        const field = Array.isArray(loc)
-          ? loc.filter((p) => typeof p === "string" && p !== "body").join(".")
-          : "";
-        return field ? `${field}: ${msg}` : msg;
-      })
-      .filter(Boolean);
+    const parts = detail.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const { loc, msg } = item as { loc?: unknown[]; msg?: unknown };
+      if (!nonempty(msg)) return [];
+      const field = Array.isArray(loc)
+        ? loc.filter((p) => (typeof p === "string" && p !== "body") || typeof p === "number").join(".")
+        : "";
+      return [field ? `${field}: ${msg}` : msg];
+    });
     if (parts.length) return parts.join("; ");
   }
 
-  return undefined;
+  return nonempty(error) ? error : undefined;
 }
 
 export class ApiError extends Error {
