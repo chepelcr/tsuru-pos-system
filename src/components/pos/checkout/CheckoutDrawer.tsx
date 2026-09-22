@@ -350,6 +350,8 @@ export function CheckoutDrawer({
       discount_amount: 0,
       total_amount: cartTotal,
       manual_order: isManualOrder ? manualOrder : undefined,
+      chain_info: data.chain_info,
+      order_ref: data.order_ref,
     };
 
     try {

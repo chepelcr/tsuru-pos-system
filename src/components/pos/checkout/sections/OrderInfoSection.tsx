@@ -139,43 +139,43 @@ export function OrderInfoSection({
   // `supplier_code` is included for the department because the chain's own
   // paperwork calls it the *provider code*, and an order captured from that
   // paperwork carries that number rather than our internal department code.
+  // Resolve both selects in one patch: separate effects used the same form
+  // snapshot, so the store update overwrote the department when both lists
+  // were available in the same render (including cached lists on reopen).
   useEffect(() => {
-    if (data.department_id || departments.length === 0) return;
-    const code = data.department_code?.trim();
-    if (!code) return;
-    const match = departments.find(
-      (d) => d.department_code === code || d.supplier_code === code,
-    );
-    if (match) {
-      onChange({
-        department_id: match.department_id,
-        department_code: match.department_code,
-        supplier_code: match.supplier_code ?? undefined,
-      });
+    const patch: Partial<ChainClientInfo> = {};
+
+    if (!data.department_id) {
+      const code = data.department_code?.trim();
+      const match = code
+        ? departments.find((d) => d.department_code === code || d.supplier_code === code)
+        : undefined;
+      if (match) {
+        patch.department_id = match.department_id;
+        patch.department_code = match.department_code;
+        patch.supplier_code = match.supplier_code ?? undefined;
+      }
     }
+
+    if (!data.store_id) {
+      const gln = data.gln?.trim();
+      const code = data.store_code?.trim();
+      const match =
+        (gln ? stores.find((st) => st.gln === gln) : undefined) ??
+        (code ? stores.find((st) => st.store_code === code) : undefined);
+      if (match) {
+        patch.store_id = match.store_id;
+        patch.store_code = match.store_code;
+        patch.store_name = match.store_name ?? undefined;
+        patch.gln = match.gln ?? undefined;
+      }
+    }
+
+    if (Object.keys(patch).length > 0) onChange(patch);
     // `onChange` is a fresh closure on every render of the drawer; depending on
     // it would re-run this on every keystroke elsewhere in the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [departments, data.department_id, data.department_code]);
-
-  useEffect(() => {
-    if (data.store_id || stores.length === 0) return;
-    const gln = data.gln?.trim();
-    const code = data.store_code?.trim();
-    if (!gln && !code) return;
-    const match =
-      (gln ? stores.find((st) => st.gln === gln) : undefined) ??
-      (code ? stores.find((st) => st.store_code === code) : undefined);
-    if (match) {
-      onChange({
-        store_id: match.store_id,
-        store_code: match.store_code,
-        store_name: match.store_name ?? undefined,
-        gln: match.gln ?? undefined,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stores, data.store_id, data.store_code, data.gln]);
+  }, [departments, stores, data.department_id, data.department_code, data.store_id, data.store_code, data.gln]);
 
   const emptyLabel = (count: number) =>
     !clientId
