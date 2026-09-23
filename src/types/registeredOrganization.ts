@@ -31,6 +31,8 @@ export interface RegisteredOrgPhone {
   country_code: string | null;
   /** Dialing code (506), resolved by sales-be from the countries table. Read-only. */
   dial_code?: string | null;
+  /** Area code of a shared +1 country (+1-869 → 869). Read-only. */
+  dial_area?: string | null;
   area_code: string | null;
   number: string | null;
   description: string | null;

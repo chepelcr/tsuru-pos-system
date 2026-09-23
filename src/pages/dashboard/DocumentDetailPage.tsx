@@ -124,7 +124,7 @@ function PartyCard({ title, party, labels }: { title: string; party?: SaleReceiv
     )}
     {party.customer_type_code && <PairRow label={t('documents.detail.customerType')} value={labels.customerType(party.customer_type_code)} />}
     {party.email && <PairRow label={t('common.email')} value={party.email} />}
-    {party.phone?.number && <PairRow label={t('common.phone')} value={[party.phone.dial_code && `+${party.phone.dial_code}`, party.phone.number].filter(Boolean).join(' ')} />}
+    {party.phone?.number && <PairRow label={t('common.phone')} value={[party.phone.dial_code && `+${party.phone.dial_code}`, party.phone.dial_area, party.phone.number].filter(Boolean).join(' ')} />}
     {address && <PairRow label={t('common.address')} value={address} />}
   </SectionCard>;
 }

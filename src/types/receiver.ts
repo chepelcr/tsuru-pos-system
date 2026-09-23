@@ -16,6 +16,8 @@ export interface Phone {
   country_code?: string;
   /** Dialing code (506), resolved by sales-be from the countries table. Read-only. */
   dial_code?: string;
+  /** Area code of a shared +1 country (+1-869 → 869), resolved by sales-be. Read-only. */
+  dial_area?: string;
   area_code?: string;
   number?: string;
   description?: string;

@@ -44,7 +44,7 @@ export function FiscalInfoSummaryCard({ reg, onEdit }: FiscalInfoSummaryCardProp
 
   // `dial_code` comes resolved from the backend; `country_code` is the ISO key (188).
   const phoneDisplay = reg.phone?.number
-    ? `${reg.phone.dial_code ? `+${reg.phone.dial_code} ` : ""}${reg.phone.area_code ? `${reg.phone.area_code} ` : ""}· ${reg.phone.number}`
+    ? `${reg.phone.dial_code ? `+${reg.phone.dial_code} ` : ""}${reg.phone.dial_area ? `${reg.phone.dial_area} ` : ""}${reg.phone.area_code ? `${reg.phone.area_code} ` : ""}· ${reg.phone.number}`
     : "";
 
   const situationVariant: "success" | "warning" | "secondary" = reg.situation

@@ -10,6 +10,8 @@ export interface PhoneValue {
   country_code?: string | null;
   /** Dialing code (506), resolved by store-be from the countries table. Read-only. */
   dial_code?: string | null;
+  /** Area code of a shared +1 country (+1-869 → 869). Read-only. */
+  dial_area?: string | null;
   area_code?: string | null;
   number?: string | null;
   description?: string | null;
@@ -91,7 +93,8 @@ export function clientDisplayName(c: Client | null | undefined): string {
 export function formatPhone(phone: PhoneValue | null | undefined): string {
   if (!phone?.number) return "";
   const local = [phone.area_code, phone.number].filter(Boolean).join("-");
-  return phone.dial_code ? `+${phone.dial_code} ${local}` : local;
+  const prefix = [phone.dial_code && `+${phone.dial_code}`, phone.dial_area].filter(Boolean).join(" ");
+  return prefix ? `${prefix} ${local}` : local;
 }
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────
