@@ -1,3 +1,5 @@
+import { brandAssets } from "@/lib/brand-assets";
+
 interface LogoProps {
   size?: number;
   showWord?: boolean;
@@ -5,39 +7,26 @@ interface LogoProps {
 }
 
 export function Logo({ size = 32, showWord = true, orgName }: LogoProps) {
-  const initials = orgName
-    ? orgName
-        .split(" ")
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
-    : "JM";
-
-  const displayName = orgName ?? "Tsuru POS";
-
+  const wordmarkStyle = {
+    height: size * 1.5,
+    maxWidth: "none",
+    marginLeft: -size * 0.825,
+    marginTop: -size * 0.15,
+  };
   return (
-    <div className="inline-flex items-center gap-2.5">
-      <div
-        className="bg-primary text-primary-foreground flex items-center justify-center font-display font-extrabold flex-shrink-0 tracking-[0.5px]"
-        style={{
-          width: size,
-          height: size,
-          borderRadius: Math.round(size * 0.25),
-          fontSize: Math.round(size * 0.52),
-        }}
-      >
-        {initials}
-      </div>
-      {showWord && (
-        <div className="flex flex-col leading-none">
-          <span className="font-display font-extrabold text-[15px] tracking-wider uppercase text-foreground">
-            {displayName}
-          </span>
-          <span className="text-[10px] text-muted-foreground tracking-wider uppercase mt-0.5 font-display font-semibold">
-            Punto de venta
-          </span>
-        </div>
+    <div className="inline-flex min-w-0 flex-col leading-none">
+      {showWord ? <>
+        <span className="relative block shrink-0 overflow-hidden" style={{ width: size * 3, height: size }}>
+          <img src={brandAssets.logoLight} alt="Tsuru" style={wordmarkStyle} className="block w-auto dark:hidden" />
+          <img src={brandAssets.logoDark} alt="Tsuru" style={wordmarkStyle} className="hidden w-auto dark:block" />
+        </span>
+      </> : (
+        <img src={brandAssets.symbol} alt="Tsuru" style={{ width: size, height: size }} />
+      )}
+      {orgName && (
+        <span className="max-w-[180px] truncate text-[10px] font-display font-semibold text-muted-foreground" title={orgName}>
+          {orgName}
+        </span>
       )}
     </div>
   );

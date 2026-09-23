@@ -60,7 +60,16 @@ for (const [key, entry] of Object.entries(manifest)) {
 }
 
 // Static files that live in public/ and never appear in the Vite manifest.
-for (const name of ["icon-192.png", "icon-512.png"]) {
+for (const name of [
+  "brand/icon-192.png",
+  "brand/icon-512.png",
+  "brand/apple-touch-icon.png",
+  "brand/favicon-light.png",
+  "brand/favicon-dark.svg",
+  "brand/logo-light.png",
+  "brand/logo-dark.png",
+  "brand/symbol.png",
+]) {
   if (fs.existsSync(path.join(distDir, name))) precache.add(`/${name}`);
 }
 

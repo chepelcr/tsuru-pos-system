@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { applyBrandFavicon } from "@/lib/brand-assets";
 
 /**
  * Dark mode as a SHARED store (not per-component useState).
@@ -17,8 +18,9 @@ import { create } from "zustand";
 
 function applyDarkClass(dark: boolean): void {
   if (typeof document === "undefined") return;
+  document.documentElement.classList.toggle("dark", dark);
+  applyBrandFavicon(dark);
   try {
-    document.documentElement.classList.toggle("dark", dark);
     localStorage.setItem("theme", dark ? "dark" : "light");
   } catch {
     /* localStorage unavailable (privacy mode) — class still toggled */
