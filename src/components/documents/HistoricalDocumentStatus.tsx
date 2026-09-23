@@ -1,11 +1,17 @@
 import { Badge } from '@/components/ui';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { HISTORICAL_STATUS_KEYS } from '@/lib/historicalDocuments';
+import { ATV_STATUS, FOREIGN_ENVIRONMENT_STATUS } from '@/lib/documentStatus';
 import type { HistoricalDocument } from '@/types/historicalDocument';
 
-const VARIANTS = { 0: 'info', 1: 'success', 2: 'warning', 3: 'destructive' } as const;
-
-export function HistoricalDocumentStatus({ status }: { status: HistoricalDocument['atv_status'] }) {
+/** Same status map as every other document surface (lib/documentStatus). */
+export function HistoricalDocumentStatus({
+  status,
+  foreignEnvironment = false,
+}: {
+  status: HistoricalDocument['atv_status'];
+  foreignEnvironment?: boolean;
+}) {
   const { t } = useLanguage();
-  return <Badge variant={VARIANTS[status] ?? 'secondary'}>{t(HISTORICAL_STATUS_KEYS[status] ?? 'historical.status.unknown')}</Badge>;
+  const view = foreignEnvironment ? FOREIGN_ENVIRONMENT_STATUS : ATV_STATUS[status];
+  return <Badge variant={view?.variant ?? 'secondary'}>{t(view?.labelKey ?? 'historical.status.unknown')}</Badge>;
 }

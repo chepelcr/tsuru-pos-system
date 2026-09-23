@@ -50,3 +50,39 @@ export function asControlEvent(payload: unknown): RealtimeControlEvent | null {
   if (kind === PERMISSIONS_CHANGED_KIND) return payload as PermissionsChangedEvent;
   return null;
 }
+
+// ── XML import progress (TSR-335) ─────────────────────────────────────────────
+//
+// Import results arrive as ordinary bell notifications (`document.import.*`,
+// payload `import_id`). The bell's `receive` hands each one here too, so an
+// open upload dialog can settle that file's row the moment it lands — the same
+// single socket, no polling.
+
+export const IMPORT_EVENT_PREFIX = "document.import.";
+
+export interface DocumentImportEvent {
+  event_type: string;
+  import_id: string;
+  sale_id?: string | null;
+  atv_status?: number | null;
+  error_code?: string | null;
+  foreign_environment?: boolean;
+}
+
+type ImportListener = (event: DocumentImportEvent) => void;
+const importListeners = new Set<ImportListener>();
+
+export function onDocumentImportEvent(listener: ImportListener): () => void {
+  importListeners.add(listener);
+  return () => importListeners.delete(listener);
+}
+
+export function emitDocumentImportEvent(event: DocumentImportEvent): void {
+  for (const listener of Array.from(importListeners)) {
+    try {
+      listener(event);
+    } catch {
+      // One broken listener must not starve the others.
+    }
+  }
+}

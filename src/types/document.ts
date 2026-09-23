@@ -48,6 +48,12 @@ export interface DocumentListItem {
   xml_url?: string;
   json_url?: string;
   created_on?: string;
+  /** 'IMPORT' — uploaded as a signed XML (TSR-335). */
+  origin?: 'POS' | 'IMPORT';
+  /** Hacienda does not know this clave in this environment (TSR-336). */
+  foreign_environment?: boolean;
+  /** Final amount after validated credit/debit notes (TSR-341). */
+  adjusted_total?: number;
 }
 
 export interface DocumentListResponse {

@@ -22,7 +22,10 @@ export interface HistoricalDocument {
   atv_validation_date: string | null;
   atv_errors: unknown[] | null;
   parent_clave: string | null;
-  source: 'HISTORY' | 'POS';
+  /** IMPORT — uploaded as a signed XML (TSR-335). */
+  source: 'HISTORY' | 'POS' | 'IMPORT';
+  /** Hacienda does not know the clave in this environment (TSR-336). */
+  foreign_environment?: boolean;
   sale_id: string | null;
   status?: number;
   created_on?: string | null;

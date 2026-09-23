@@ -16,6 +16,7 @@ import {
   type DiscountTypeCodeValue,
 } from '@/lib/enums';
 import type { LineDiscount } from '@/types/lineDetail';
+import { roundMoney } from '@/lib/money';
 
 export type { LineDiscount };
 
@@ -94,7 +95,8 @@ export class DiscountCalculationService {
           ? d.amount
           : remainder * ((d.percentage ?? 0) / 100);
 
-      const clamped = Math.max(0, Math.min(amount, remainder));
+      // Each discount is money, rounded at line level like sales-be (TSR-343).
+      const clamped = roundMoney(Math.max(0, Math.min(amount, remainder)));
       remainder -= clamped;
       totalDiscountAmount += clamped;
 

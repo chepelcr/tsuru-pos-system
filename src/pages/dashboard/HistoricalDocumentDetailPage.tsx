@@ -45,7 +45,7 @@ export default function HistoricalDocumentDetailPage({ clave }: { clave: string 
         <>
           <div className="flex flex-wrap justify-between items-start gap-3 mb-5">
             <div><h1 className="t-h1 mb-2">{t(`docTypes.${doc.document_type}`)}</h1><p className="font-mono break-all">{doc.consecutive_key}</p></div>
-            <div className="flex flex-wrap items-center gap-3"><HistoricalDocumentStatus status={doc.atv_status} /><Button size="sm" variant="outline" disabled={query.isFetching} onClick={() => query.refetch()}>{t('common.refresh')}</Button></div>
+            <div className="flex flex-wrap items-center gap-3"><HistoricalDocumentStatus status={doc.atv_status} foreignEnvironment={doc.foreign_environment} /><Button size="sm" variant="outline" disabled={query.isFetching} onClick={() => query.refetch()}>{t('common.refresh')}</Button></div>
           </div>
           <Card className="p-5 mb-5">
             <dl className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">

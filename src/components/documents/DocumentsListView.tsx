@@ -13,6 +13,11 @@ import { useRefreshValidation } from '@/hooks/useRefreshValidation';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import { ListToolbar } from '@/components/common/ListToolbar';
 import type { DocumentListItem, ComplexSearchFilters } from '@/types/document';
+import { Icon } from '@/components/ui';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { usePermissions } from '@/hooks/useRbac';
+import { hasHaciendaActions } from '@/lib/documentStatus';
+import { useDocumentImportStore } from '@/hooks/useDocumentImport';
 
 const SKELETON_COUNT = 6;
 const PAGE_SIZE = 20;
@@ -70,6 +75,8 @@ function ValidationRefresher({
 
 export function DocumentsListView({ orgId }: DocumentsListViewProps) {
   const { is_received } = useDocumentStore();
+  const { t } = useLanguage();
+  const { can } = usePermissions();
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [search, setSearch] = useState<ComplexSearchFilters>({});
@@ -82,6 +89,10 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
   } | null>(null);
   // Set while a "check validation now" request is in flight for one document.
   const [refreshingDoc, setRefreshingDoc] = useState<DocumentListItem | null>(null);
+  const openImport = useDocumentImportStore((state) => state.openDrawer);
+  // The role catalog's own "upload or import files" action on emitted documents
+  // (owner/admin; not manager or staff) — see management-be rbac-seed.
+  const canImport = can('documents', 'upload', 'emitted');
 
   const { data, isLoading, error, refetch } = useSales({
     orgId,
@@ -129,10 +140,22 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
         searchPlaceholderKey="documents.searchPlaceholder"
         statusSlot={<IssuedReceivedToggle />}
         secondary={
-          <DocumentTypesFilter
-            selectedTypes={selectedTypes}
-            onChange={handleTypesChange}
-          />
+          <div className="flex items-center gap-2">
+            <DocumentTypesFilter
+              selectedTypes={selectedTypes}
+              onChange={handleTypesChange}
+            />
+            {canImport && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={openImport}
+              >
+                <Icon name="upload" size={14} />
+                <span>{t('documents.import.button')}</span>
+              </button>
+            )}
+          </div>
         }
         onAdvancedClick={() => setShowAdvanced(true)}
         hasAdvancedFilters={hasAdvancedFilters}
@@ -151,18 +174,18 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
           <div className="h-full flex items-center justify-center p-4">
             <EmptyState
               icon="alertCircle"
-              title="Error al cargar documentos"
+              title={t('documents.list.errorTitle')}
               description={
                 error instanceof Error
                   ? error.message
-                  : 'No se pudieron cargar los documentos. Por favor, intenta de nuevo.'
+                  : t('documents.list.errorDescription')
               }
               action={
                 <button
                   onClick={() => refetch()}
                   className="btn btn-primary btn-sm"
                 >
-                  <span>Reintentar</span>
+                  <span>{t('common.retry')}</span>
                 </button>
               }
             />
@@ -171,11 +194,11 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
           <div className="h-full flex items-center justify-center p-4">
             <EmptyState
               icon="fileText"
-              title="Sin documentos"
+              title={t('documents.list.emptyTitle')}
               description={
                 is_received
-                  ? 'No hay documentos recibidos que coincidan con los filtros.'
-                  : 'No hay documentos emitidos que coincidan con los filtros.'
+                  ? t('documents.list.emptyReceived')
+                  : t('documents.list.emptyIssued')
               }
             />
           </div>
@@ -193,6 +216,9 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
                       // modal on an empty result. Once there IS a result the
                       // modal opens and carries the re-check button itself.
                       const status = d.atv_validation?.validation_status;
+                      // Nothing Hacienda can be asked about a clave it does
+                      // not know in this environment (TSR-336).
+                      if (!hasHaciendaActions(d) && action !== 'pdf' && action !== 'download') return;
                       if (action === 'validation' && (status === undefined || status === 0)) {
                         setRefreshingDoc(d);
                         return;
@@ -244,6 +270,9 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
           onClose={() => setActionModal(null)}
         />
       ) : null}
+
+      {/* Mounted on first open and kept: closing only hides it, so uploads in
+          flight continue in the background instead of being aborted. */}
 
       {refreshingDoc && (
         <ValidationRefresher

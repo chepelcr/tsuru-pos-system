@@ -23,6 +23,7 @@ import type {
   EditorDocTypeCode,
   SaleDocument,
   SalePayment,
+  OtherCharge,
 } from "@/types/invoice";
 import { MANUAL_ORDER_SOURCE } from "@/types/order";
 import { DiscountTypeCode } from "@/lib/enums";
@@ -353,6 +354,9 @@ export interface InvoiceCheckoutData {
   discount_amount: number;
   tax_amount: number;
   total_amount: number;
+  /** OtrosCargos with amounts resolved (TSR-125); `total_amount` already includes them. */
+  other_charges?: OtherCharge[];
+  other_charges_total?: number;
   /** Present only on manual-order (`PM`) checkouts. */
   manual_order?: ManualOrderFields;
   /** Retail-chain data when the client is one — see lib/chainClients. */
@@ -929,6 +933,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       // rejects outright; only "Exacto" ever worked. Vuelto is a till concept
       // and never reaches the document.
       payments: paymentsForDocument(invoiceData.payments, invoiceData.total_amount),
+      other_charges: invoiceData.other_charges?.length ? invoiceData.other_charges : undefined,
 
       // Hint summary — BE recomputes authoritative values.
       summary: {
@@ -937,6 +942,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         discount_total: invoiceData.discount_amount,
         net_total: Math.max(0, invoiceData.subtotal - invoiceData.discount_amount),
         tax_total: invoiceData.tax_amount,
+        other_charges_total: invoiceData.other_charges_total || undefined,
         voucher_total: invoiceData.total_amount,
         payments_total: invoiceData.payments.reduce((s, p) => s + (p.amount || 0), 0),
       },

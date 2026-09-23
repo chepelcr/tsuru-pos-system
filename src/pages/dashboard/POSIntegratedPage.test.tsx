@@ -68,6 +68,7 @@ vi.mock("@/components/pos/checkout/sections/DocumentSection", () => ({
   ),
 }));
 vi.mock("@/components/pos/checkout/sections/ReferencesSection", () => ({ ReferencesSection: () => null }));
+vi.mock("@/components/pos/checkout/sections/OtherChargesSection", () => ({ OtherChargesSection: () => null }));
 vi.mock("@/components/pos/checkout/sections/OrderInfoSection", () => ({ OrderInfoSection: () => null }));
 
 let client: QueryClient;

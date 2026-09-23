@@ -174,13 +174,16 @@ describe("Factory-assumed IVA at 13% — matches the live document", () => {
     expect(r.total_amount_line).toBeCloseTo(4203.01, 4);
   });
 
-  it("02: customer pays 546.39130 on the discounted base, voucher 4749.40130", () => {
+  it("02: customer pays 546.39 on the discounted base, voucher 4749.40", () => {
     // The exact figure Hacienda named in -45 when the un-eroded base was used.
     const r = fixture(DiscountTypeCode.ROYALTY_BONUS_VAT_CUSTOMER);
     expect(r.subtotal).toBeCloseTo(4203.01, 4);
     expect(r.factory_assumed_tax).toBe(0);
-    expect(r.net_tax).toBeCloseTo(546.3913, 4);
-    expect(r.total_amount_line).toBeCloseTo(4749.4013, 4);
+    // 13% × 4203.01 = 546.3913 → 546.39 at line level (TSR-343); the live
+    // document of the -45 case carried 546.39130 before the platform moved to
+    // two decimals.
+    expect(r.net_tax).toBe(546.39);
+    expect(r.total_amount_line).toBeCloseTo(4749.4, 4);
   });
 
   it("the discount does not reduce the tax — both natures tax the full 4333", () => {

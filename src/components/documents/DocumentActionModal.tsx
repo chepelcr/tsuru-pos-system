@@ -8,6 +8,15 @@ import type { DocumentListItem } from '@/types/document';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { OverlayPortal } from '@/components/ui/OverlayPortal';
 import { useOverlayLayer } from '@/hooks/useOverlayLayer';
+import { ATV_STATUS, hasHaciendaActions, type StatusVariant } from '@/lib/documentStatus';
+
+const STATUS_TEXT_CLASSES: Record<StatusVariant, string> = {
+  info: 'text-info',
+  success: 'text-success',
+  warning: 'text-warning',
+  destructive: 'text-destructive',
+  secondary: 'text-muted-foreground',
+};
 
 type ActionView = 'download' | 'validation' | 'resend' | 'accept';
 
@@ -44,11 +53,14 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
   // No 'pdf' tab: `DocumentPdfDialog` is the PDF surface. Having both meant
   // opening Validación and then clicking the PDF tab produced a second,
   // different viewer for the same document.
+  // A clave Hacienda does not know in this environment offers only its files
+  // (TSR-336): nothing here can validate, resend or answer it.
+  const hacienda = hasHaciendaActions(doc);
   const VIEWS = [
     ...(canExport ? ['download'] : []),
-    'validation',
-    ...(canExport ? ['resend'] : []),
-    ...(isReceived && canConfirm ? ['accept'] : []),
+    ...(hacienda ? ['validation'] : []),
+    ...(canExport && hacienda ? ['resend'] : []),
+    ...(isReceived && canConfirm && hacienda ? ['accept'] : []),
   ] as ActionView[];
 
   const viewLabel = (value: ActionView) => t(`documents.action.${value}`);
@@ -263,8 +275,8 @@ function ValidationBlock({ label, data }: { label: string; data?: { validation_s
     </div>
   );
 
-  const STATUS = { 0: { label: t('documents.action.pending'), cls: 'text-warning' }, 1: { label: t('documents.action.accepted'), cls: 'text-success' }, 2: { label: t('documents.action.partial-accept'), cls: 'text-warning' }, 3: { label: t('documents.action.rejected'), cls: 'text-destructive' } } as const;
-  const st = (STATUS as any)[data.validation_status ?? 0];
+  const view = ATV_STATUS[data.validation_status ?? 0];
+  const st = view ? { label: t(view.labelKey), cls: STATUS_TEXT_CLASSES[view.variant] } : null;
 
   return (
     <div className="rounded-md border border-border p-4 space-y-2">

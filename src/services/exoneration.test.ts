@@ -43,7 +43,8 @@ function amountsFor(taxes: LineTax[], subtotal = 4333) {
 describe("exoneratedAmount — MontoExonerado", () => {
   it("is tax × percentage / 100", () => {
     expect(exoneratedAmount({ type: "08", percentage: 100 }, 563.29)).toBeCloseTo(563.29, 5);
-    expect(exoneratedAmount({ type: "08", percentage: 50 }, 563.29)).toBeCloseTo(281.645, 5);
+    // 281.645 rounds HALF UP to 281.65 — the backend's Decimal ROUND_HALF_UP (TSR-343).
+    expect(exoneratedAmount({ type: "08", percentage: 50 }, 563.29)).toBe(281.65);
     expect(exoneratedAmount({ type: "08", percentage: 13 }, 100)).toBeCloseTo(13, 5);
   });
 
@@ -88,9 +89,11 @@ describe("a fully exonerated IVA line", () => {
     const half = amountsFor([
       { ...IVA_13, exemption: { type: ExemptionCode.FREE_TRADE_ZONE, number: "AL-1", percentage: 50 } },
     ]);
-    expect(half.net_tax).toBeCloseTo(281.65, 2);
-    expect(half.exonerated_total).toBeCloseTo(281.65, 2);
-    expect(half.total_amount_line).toBeCloseTo(4333 + 281.65, 2);
+    // Two decimals at line level (TSR-343): MontoExonerado = 563.29 × 50% =
+    // 281.645 → 281.65 (half up); the customer pays the rest, 563.29 − 281.65.
+    expect(half.exonerated_total).toBe(281.65);
+    expect(half.net_tax).toBe(281.64);
+    expect(half.total_amount_line).toBeCloseTo(4333 + 281.64, 2);
   });
 
   it("leaves the taxable base at its full amount", () => {

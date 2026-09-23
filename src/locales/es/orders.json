@@ -263,5 +263,6 @@
   "salePoint.subtitle": "Capturá la distribución cuando no tenés el archivo de Excel",
   "salePoint.title": "Punto de venta",
   "salePoint.totals": "{boxes} bultos · {units} unidades",
-  "salePoint.totals.derived": "Los totales se calculan a partir de las líneas."
+  "salePoint.totals.derived": "Los totales se calculan a partir de las líneas.",
+  "orders.creditNotes.title": "Notas de crédito"
 }

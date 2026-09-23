@@ -18,6 +18,7 @@ vi.mock("./sections/PaymentSection", () => ({ PaymentSection: () => null }));
 vi.mock("./sections/ReceiverSection", () => ({ ReceiverSection: () => null }));
 vi.mock("./sections/DocumentSection", () => ({ DocumentSection: () => null }));
 vi.mock("./sections/ReferencesSection", () => ({ ReferencesSection: () => null }));
+vi.mock("./sections/OtherChargesSection", () => ({ OtherChargesSection: () => null }));
 vi.mock("./sections/BranchTerminalSection", () => ({ BranchTerminalSection: () => null }));
 
 const departments: Department[] = [

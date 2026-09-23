@@ -404,6 +404,11 @@ export function documentsOrgPath(orgId: string, suffix: string = '') {
   return `/api/organizations/${orgId}/documents${suffix}`;
 }
 
+/** /api/organizations/{org}/documents/imports[suffix] — XML document import (TSR-335). */
+export function documentImportsPath(orgId: string, suffix: string = '') {
+  return `/api/organizations/${orgId}/documents/imports${suffix}`;
+}
+
 /**
  * /api/organizations/{org}/tax-reports[suffix] — sales-api tax reporting.
  * Backs the IVA declaration support report (formulario D-150). Contract:

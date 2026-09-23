@@ -248,6 +248,29 @@ export interface OtherText {
   other_text?: string;
 }
 
+/**
+ * A document linked to this one by an InformacionReferencia (TSR-341).
+ * `references` — this document references it (an NC → its invoice);
+ * `referenced_by` — it references this one (an invoice → its NCs).
+ */
+export interface RelatedDocument {
+  sale_id: string;
+  relation: 'references' | 'referenced_by';
+  document_type?: DocTypeCode;
+  consecutive_number?: string;
+  document_key?: string;
+  reference_code?: string;
+  total_amount?: number;
+  currency_code?: string;
+  validation_status?: number | null;
+  sale_date?: string;
+  /** Hidden `TipoNota`, e.g. `NCprontopago` for the early-payment NC. */
+  tipo_nota?: string | null;
+}
+
+/** Where a document came from: emitted here, or imported as a signed XML. */
+export type DocumentOrigin = 'POS' | 'IMPORT';
+
 // ── Root document (DocumentDTO; both request & response) ───────────────────
 /**
  * Outbound POST /sales payload + inbound GET /sales/:id response.
@@ -321,6 +344,17 @@ export interface SaleDocument {
   uploaded?: boolean;
   notification_send_date?: string;
 
+  // Provenance + balance (response only — TSR-335/336/341)
+  origin?: DocumentOrigin;
+  /** Hacienda does not know the clave in this environment: every Hacienda action is off. */
+  foreign_environment?: boolean;
+  /** The FINAL amount after validated credit/debit notes; the summary keeps the XML's figures. */
+  adjusted_total?: number;
+  /** Σ validated credit notes − Σ validated debit notes against this document. */
+  credited_total?: number;
+  /** Detail response only. */
+  related_documents?: RelatedDocument[];
+
   // Audit
   created_by?: string;
   created_on?: string;
@@ -367,6 +401,8 @@ export interface InvoiceFormData {
   details: LineDetail[];
   payments: SalePayment[];
   references: SaleReference[];
+  /** OtrosCargos (TSR-125) — document-level charges on top of the lines. */
+  other_charges?: OtherCharge[];
   /**
    * Manual-order-only fields (delivery date, event, delivery point, comment).
    * Present exclusively on `PM` tabs; ignored by every Hacienda code path.

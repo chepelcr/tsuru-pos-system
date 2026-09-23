@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { ROUTES } from '@/routePaths';
+import { Link, useLocation } from 'wouter';
+import { ROUTES, documentDetailPath } from '@/routePaths';
+import { useSale } from '@/hooks/useSale';
+import { EarlyPaymentDiscountDrawer } from '@/components/documents/EarlyPaymentDiscountDrawer';
+import { canApplyEarlyPaymentDiscount } from '@/lib/earlyPaymentDiscount';
+import { ATV_STATUS } from '@/lib/documentStatus';
 import { useOrgContext } from '@/contexts/OrgContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -315,6 +319,13 @@ export default function OrderDetailPage({ orderId }: Props) {
   const [deliveryDateOpen, setDeliveryDateOpen] = useState(false);
   const [crossdockUploadOpen, setCrossdockUploadOpen] = useState(false);
   const [crossdockPreviewOpen, setCrossdockPreviewOpen] = useState(false);
+  const [earlyPaymentOpen, setEarlyPaymentOpen] = useState(false);
+  // The invoice that billed the order, once Hacienda accepted it — what an
+  // early-payment discount is emitted against (TSR-340).
+  const invoiceAccepted = order?.document_info?.status === 1;
+  const { data: invoiceSale } = useSale(orgId, invoiceAccepted ? order?.document_id ?? null : null);
+  const canEarlyPayment =
+    !!invoiceSale && canApplyEarlyPaymentDiscount(invoiceSale) && can('documents', 'create', 'nc');
 
   usePageTitle([t('orders.title'), order ? `#${order.document_number}` : undefined]);
 
@@ -479,6 +490,9 @@ export default function OrderDetailPage({ orderId }: Props) {
     (can('documents', 'create', 'fe'));
 
   const menuItems: MenuItem[] = [
+    canEarlyPayment
+      ? { label: t('documents.earlyPayment.action'), icon: 'dollar', action: () => setEarlyPaymentOpen(true) }
+      : null,
     canInvoice
       ? {
           label: t('orders.invoice.action'),
@@ -547,7 +561,8 @@ export default function OrderDetailPage({ orderId }: Props) {
                 {t(`orders.status.${order.order_status}`)}
               </Badge>
               {text(order.event) && <Badge variant="outline">{text(order.event)}</Badge>}
-              {documentState !== 'none' && (
+              {documentState !== 'none' && order.document_id && (
+                <Link href={documentDetailPath(order.document_id)} className="no-underline">
                 <Badge
                   variant={
                     documentState === 'processing'
@@ -573,6 +588,7 @@ export default function OrderDetailPage({ orderId }: Props) {
                         })
                       : t('orders.invoice.invoiced')}
                 </Badge>
+                </Link>
               )}
             </div>
           </div>
@@ -681,6 +697,42 @@ export default function OrderDetailPage({ orderId }: Props) {
         </div>
       </Card>
 
+      {!!order.credit_notes?.length && (
+        <Card className="p-6 mb-3.5">
+          <div className="flex items-center gap-2 mb-3">
+            <Icon name="layers" size={14} className="text-accent-rose" />
+            <span className="label-section">{t('orders.creditNotes.title')}</span>
+          </div>
+          {order.credit_notes.map((note) => {
+            const status = note.status != null ? ATV_STATUS[note.status] : null;
+            return (
+              <Link
+                key={note.document_id}
+                href={note.document_id ? documentDetailPath(note.document_id) : '#'}
+                className="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-b-0 no-underline"
+              >
+                <div className="min-w-0">
+                  <div className="t-body font-semibold text-foreground font-mono">#{note.consecutive_number ?? '—'}</div>
+                  <div className="t-xs text-muted-foreground">
+                    {note.tipo_nota === 'NCprontopago' ? t('documents.related.earlyPayment') : t('docTypes.03')}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="t-body font-semibold t-num">-{fmt(note.total_amount ?? 0)}</span>
+                  {status && <Badge variant={status.variant}>{t(status.labelKey)}</Badge>}
+                </div>
+              </Link>
+            );
+          })}
+          {invoiceSale && invoiceSale.adjusted_total != null && (
+            <div className="flex items-center justify-between pt-3 mt-1 border-t border-border">
+              <span className="t-sm text-muted-foreground">{t('documents.balance.final')}</span>
+              <span className="t-stat t-num">{fmt(invoiceSale.adjusted_total)}</span>
+            </div>
+          )}
+        </Card>
+      )}
+
       <div className="order-detail-grid">
         {/* Left: line items + timeline */}
         <div className="flex flex-col gap-3.5">
@@ -747,6 +799,18 @@ export default function OrderDetailPage({ orderId }: Props) {
         order={order}
         orgId={orgId}
       />
+
+      {earlyPaymentOpen && invoiceSale && orgId && (
+        <EarlyPaymentDiscountDrawer
+          open={earlyPaymentOpen}
+          onClose={() => {
+            setEarlyPaymentOpen(false);
+            void queryClient.invalidateQueries({ queryKey: ['order', orgId, orderId] });
+          }}
+          orgId={orgId}
+          original={invoiceSale}
+        />
+      )}
 
       {/* Billing the pedido: the POS checkout drawer over this order's own
           lines. No document tab and no editor — see `useInvoiceOrder`. */}

@@ -10,6 +10,7 @@
  * `CabysSpecialPrefix`, and related enums — never via string literals.
  */
 import { getTaxConfig } from '@/types/taxTypeConfig';
+import { roundMoney } from '@/lib/money';
 import {
   CabysSpecialPrefix,
   FACTORY_ASSUMED_DISCOUNT_NATURES,
@@ -189,7 +190,13 @@ export function exoneratedAmount(
   const pct = Number(exemption.percentage ?? 0);
   if (!Number.isFinite(pct) || pct <= 0) return 0;
   const clamped = Math.min(Math.max(pct, 0), 100);
-  return Math.min((taxAmount * clamped) / 100, taxAmount);
+  // Money is two decimals at line level (TSR-343), like sales-be — computed in
+  // integer cents so a half cent rounds UP exactly as Decimal ROUND_HALF_UP
+  // does: 50% of 563.29 is 281.645 → 281.65, where the float product
+  // (281.64499…) would round down to 281.64 and disagree with the document.
+  const cents = Math.round(taxAmount * 100);
+  const exoneratedCents = Math.round((cents * clamped) / 100);
+  return Math.min(exoneratedCents, cents) / 100;
 }
 
 export class TaxCalculationService {
@@ -452,7 +459,8 @@ export class TaxCalculationService {
       amount = (tax.factor || 0) * subtotal;
     }
 
-    return amount;
+    // Rounded per tax, at line level — the backend quantizes each Monto (TSR-343).
+    return roundMoney(amount);
   }
 
   static calculateTaxAmount(params: TaxCalculationParams): number {
@@ -508,6 +516,7 @@ export class TaxCalculationService {
       amount = (subtotal * (tax.rate || 0)) / 100;
     }
 
-    return amount;
+    // Rounded per tax, at line level — the backend quantizes each Monto (TSR-343).
+    return roundMoney(amount);
   }
 }

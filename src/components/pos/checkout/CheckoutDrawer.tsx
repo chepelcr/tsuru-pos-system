@@ -39,6 +39,9 @@ import { BranchTerminalSection } from './sections/BranchTerminalSection';
 import { useChainClient } from '@/hooks/useChainClient';
 import type { ChainClientInfo } from '@/types/order';
 import { CopiesSection } from './sections/CopiesSection';
+import { OtherChargesSection } from './sections/OtherChargesSection';
+import { otherChargesTotal, resolveOtherCharges, validateOtherCharges } from '@/lib/otherCharges';
+import { roundMoney } from '@/lib/money';
 import { Receipt } from './Receipt';
 import { useSessionContext } from '@/store/sessionContext';
 
@@ -49,6 +52,7 @@ type SectionId =
   | 'receiver'
   | 'document'
   | 'references'
+  | 'otherCharges'
   | 'copies'
   | 'chainClient'
   | 'branchTerminal';
@@ -225,13 +229,22 @@ export function CheckoutDrawer({
       (doc_type === '01' && hasLocalExemption));
   // A pedido is not a fiscal document and carries no Hacienda references.
   const referencesAvailable = !isManualOrder;
+  // OtrosCargos (TSR-125): not on a pedido (the POS issues no REP). The charges
+  // add to TotalComprobante, so the amount due — what the payments must EQUAL —
+  // is the cart plus the charges.
+  const otherChargesAvailable = !isManualOrder;
+  const otherCharges = otherChargesAvailable ? data.other_charges ?? [] : [];
+  const resolvedOtherCharges = resolveOtherCharges(otherCharges, subtotal);
+  const chargesTotal = otherChargesTotal(otherCharges, subtotal);
+  const documentTotal = roundMoney(cartTotal + chargesTotal);
+  const otherChargeErrors = validateOtherCharges(otherCharges, doc_type);
   const paidTotal = payments.reduce((s, p) => s + p.amount, 0);
   // Money is compared at céntimo precision rather than as raw floats: cart
   // totals carry fractional céntimos (a ₡4 749 cart is really 4749.4013…) while
   // a payment is whole colones, so a bare `>=` can read a fully-paid sale as
   // short by a rounding error.
   const toCentimos = (n: number) => Math.round(n * 100);
-  const isPaid = toCentimos(paidTotal) >= toCentimos(cartTotal);
+  const isPaid = toCentimos(paidTotal) >= toCentimos(documentTotal);
   // One resolver for every surface — the three call sites used to disagree
   // on precedence, so the same client showed a different name in each.
   const hasReceiver = resolveHasReceiver(receiver, selectedClient);
@@ -272,6 +285,7 @@ export function CheckoutDrawer({
     // drawer refuses to save without a delivery location.
     document: isManualOrder,
     references: referencesRequired && references.length === 0,
+    otherCharges: false,
     copies: false,
     // Opens by default: if a chain needs these, they are not optional.
     chainClient: chainState.show,
@@ -292,6 +306,7 @@ export function CheckoutDrawer({
       }
       return null;
     }
+    if (otherChargeErrors.length) return t(otherChargeErrors[0]);
     if (!isPaid) return t('checkout.error.notPaid');
     // sales-api validates the branch and terminal IDENTIFIERS against the
     // organization, so an unresolved pair — or one left over from another
@@ -333,7 +348,7 @@ export function CheckoutDrawer({
     const err = validate();
     if (err) { setError(err); return; }
     setError(null);
-    setReceiptSummary({ total: cartTotal, itemCount: cartItems.length });
+    setReceiptSummary({ total: documentTotal, itemCount: cartItems.length });
     setStep('processing');
 
     const invoiceData = {
@@ -350,7 +365,9 @@ export function CheckoutDrawer({
       subtotal,
       tax_amount: taxAmount,
       discount_amount: 0,
-      total_amount: cartTotal,
+      total_amount: documentTotal,
+      other_charges: resolvedOtherCharges,
+      other_charges_total: chargesTotal,
       manual_order: isManualOrder ? manualOrder : undefined,
       chain_info: data.chain_info,
       order_ref: data.order_ref,
@@ -394,8 +411,8 @@ export function CheckoutDrawer({
           {isManualOrder
             ? manualOrder.is_quote
               ? t('manualOrder.confirmQuote')
-              : t('manualOrder.confirmWith', { amount: fmt(cartTotal) })
-            : t('checkout.confirmWith', { amount: fmt(cartTotal) })}
+              : t('manualOrder.confirmWith', { amount: fmt(documentTotal) })
+            : t('checkout.confirmWith', { amount: fmt(documentTotal) })}
           <span>›</span>
         </button>
       </div>
@@ -431,7 +448,7 @@ export function CheckoutDrawer({
             <PaymentSection
               isExpanded={expanded.payment}
               onToggle={() => toggle('payment')}
-              cartTotal={cartTotal}
+              cartTotal={documentTotal}
               payments={payments}
               onChange={(next) => updateData({ payments: next })}
             />
@@ -521,6 +538,17 @@ export function CheckoutDrawer({
               onChange={(next) => updateData({ references: next })}
               documentType={isManualOrder ? undefined : doc_type}
               required={referencesRequired}
+            />
+          )}
+
+          {otherChargesAvailable && (
+            <OtherChargesSection
+              isExpanded={expanded.otherCharges}
+              onToggle={() => toggle('otherCharges')}
+              charges={otherCharges}
+              onChange={(next) => updateData({ other_charges: next })}
+              linesSubtotal={subtotal}
+              errors={otherChargeErrors}
             />
           )}
 

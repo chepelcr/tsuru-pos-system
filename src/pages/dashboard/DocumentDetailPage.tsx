@@ -18,17 +18,14 @@ import { downloadFromUrl } from '@/lib/downloadUtils';
 import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { DocumentActionModal } from '@/components/documents/DocumentActionModal';
 import { DocumentPdfDialog } from '@/components/documents/DocumentPdfDialog';
-
-/**
- * ATV validation status -> badge. Codes are Hacienda's:
- * 1 = aceptado, 2 = en proceso, 3 = rechazado.
- */
-const ATV_BADGE: Record<number, { variant: 'success' | 'warning' | 'destructive'; icon: string; labelKey: string }> = {
-  0: { variant: 'warning', icon: 'clock', labelKey: 'documents.action.pending' },
-  1: { variant: 'success', icon: 'checkCircle', labelKey: 'documents.action.accepted' },
-  2: { variant: 'warning', icon: 'checkCircle', labelKey: 'documents.action.partial-accept' },
-  3: { variant: 'destructive', icon: 'xCircle', labelKey: 'documents.action.rejected' },
-};
+import { EarlyPaymentDiscountDrawer } from '@/components/documents/EarlyPaymentDiscountDrawer';
+import { RelatedDocumentsCard } from '@/components/documents/RelatedDocumentsCard';
+import { useDocumentCatalogLabels, type DocumentCatalogLabels } from '@/hooks/useDocumentCatalogLabels';
+import { useDepartments } from '@/hooks/useDepartments';
+import { useStores } from '@/hooks/useStores';
+import { documentStatusView, hasHaciendaActions } from '@/lib/documentStatus';
+import { canApplyEarlyPaymentDiscount } from '@/lib/earlyPaymentDiscount';
+import type { OtherCharge, OtherText } from '@/types/invoice';
 
 type StepState = 'done' | 'current' | 'pending' | 'failed';
 
@@ -94,37 +91,41 @@ function SectionCard({ title, icon, children }: { title: string; icon: string; c
   );
 }
 
-function InfoRow({ icon, label, value }: { icon: string; label: string; value: React.ReactNode }) {
+/** One label/value pair laid out on a single row (label left, value right). */
+function PairRow({ label, value, strong }: { label: string; value: React.ReactNode; strong?: boolean }) {
   return (
-    <div className="flex items-center gap-3.5 py-3 border-b border-border last:border-b-0">
-      <div className="icon-pill-rose-soft w-[34px] h-[34px] flex-shrink-0">
-        <Icon name={icon} size={15} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="t-label mb-px">{label}</div>
-        <div className="t-body font-semibold text-foreground break-words">{value}</div>
-      </div>
+    <div className="grid grid-cols-2 gap-3 py-2.5 border-b border-border last:border-b-0 items-baseline">
+      <span className="t-sm text-muted-foreground">{label}</span>
+      <span className={`t-body text-right break-words ${strong ? 'font-semibold text-foreground' : 'text-foreground'}`}>{value}</span>
     </div>
   );
 }
 
-function PartyCard({ title, party }: { title: string; party?: SaleReceiver | null }) {
+function PartyCard({ title, party, labels }: { title: string; party?: SaleReceiver | null; labels: DocumentCatalogLabels }) {
   const { t } = useLanguage();
   if (!party) return null;
+  const residence = party.residence;
+  // The backend resolves province / canton / district to names; ids are only
+  // a last resort for documents whose catalog row is missing.
+  const address = residence
+    ? [
+        residence.address,
+        residence.neighborhood_name,
+        residence.district_name ?? residence.district_id,
+        residence.county_name ?? residence.county_id,
+        residence.state_name ?? residence.state_id,
+      ].filter(Boolean).join(', ')
+    : '';
   return <SectionCard title={title} icon="user">
-    <InfoRow icon="user" label={t('common.name')} value={party.name ?? '—'} />
-    {party.identification?.number && <InfoRow icon="copy" label={t('documents.detail.identification')} value={party.identification.number} />}
-    {party.trade_name && <InfoRow icon="user" label={t('documents.detail.tradeName')} value={party.trade_name} />}
-    {party.nationality && <InfoRow icon="globe" label={t('documents.detail.nationality')} value={party.nationality} />}
-    {party.customer_type_code && <InfoRow icon="user" label={t('documents.detail.customerType')} value={party.customer_type_code} />}
-    {party.email && <InfoRow icon="fileText" label={t('common.email')} value={party.email} />}
-    {party.phone?.number && <InfoRow icon="phone" label={t('common.phone')} value={[party.phone.country_code, party.phone.number].filter(Boolean).join(' ')} />}
-    {party.residence && <InfoRow icon="mapPin" label={t('common.address')} value={[
-      party.residence.address, party.residence.neighborhood_name,
-      party.residence.district_name ?? party.residence.district_id,
-      party.residence.county_name ?? party.residence.county_id,
-      party.residence.state_name ?? party.residence.state_id,
-    ].filter(Boolean).join(', ')} />}
+    <div className="t-h4 mb-2 break-words">{party.name ?? '—'}</div>
+    {party.trade_name && <PairRow label={t('documents.detail.tradeName')} value={party.trade_name} />}
+    {party.identification?.number && (
+      <PairRow label={labels.identificationType(party.identification.code)} value={<span className="font-mono">{party.identification.number}</span>} />
+    )}
+    {party.customer_type_code && <PairRow label={t('documents.detail.customerType')} value={labels.customerType(party.customer_type_code)} />}
+    {party.email && <PairRow label={t('common.email')} value={party.email} />}
+    {party.phone?.number && <PairRow label={t('common.phone')} value={[party.phone.country_code && `+${party.phone.country_code}`, party.phone.number].filter(Boolean).join(' ')} />}
+    {address && <PairRow label={t('common.address')} value={address} />}
   </SectionCard>;
 }
 
@@ -220,9 +221,10 @@ function Pipeline({ sale }: { sale: SaleDocument }) {
   );
 }
 
-function LineItems({ sale }: { sale: SaleDocument }) {
+function LineItems({ sale, labels }: { sale: SaleDocument; labels: DocumentCatalogLabels }) {
   const { t } = useLanguage();
   const lines: LineDetail[] = sale.details ?? [];
+  const charges: OtherCharge[] = sale.other_charges ?? [];
   const summary = sale.summary;
 
   return (
@@ -249,7 +251,7 @@ function LineItems({ sale }: { sale: SaleDocument }) {
                   )}
                 </td>
                 <td className="pp-td text-right text-muted-foreground">{fmtAmount(line.net_price)}</td>
-                <td className="pp-td text-center">{line.quantity}</td>
+                <td className="pp-td text-center t-num">{line.quantity}</td>
                 <td className="pp-td text-right font-semibold">
                   {fmtAmount(line.total_amount_line ?? line.total_amount ?? 0)}
                 </td>
@@ -258,6 +260,36 @@ function LineItems({ sale }: { sale: SaleDocument }) {
           </tbody>
         </table>
       </div>
+
+      {charges.length > 0 && (
+        <div className="mt-4">
+          <div className="label-section mb-2">{t('documents.detail.otherCharges')}</div>
+          <div className="rounded-md border border-border overflow-x-auto">
+            <table className="w-full border-collapse">
+              <tbody>
+                {charges.map((charge, index) => (
+                  <tr key={index} className="border-b border-border last:border-b-0">
+                    <td className="pp-td">
+                      <div className="font-semibold text-foreground">
+                        {charge.type === '99' && charge.other_charge_type ? charge.other_charge_type : labels.otherCharge(charge.type)}
+                      </div>
+                      {charge.description && <div className="t-xs text-muted-foreground">{charge.description}</div>}
+                      {charge.other_person?.name && (
+                        <div className="t-xs text-muted-foreground">
+                          {charge.other_person.name}
+                          {charge.other_person.identification?.number ? ` · ${charge.other_person.identification.number}` : ''}
+                        </div>
+                      )}
+                    </td>
+                    <td className="pp-td text-right text-muted-foreground">{charge.percentage ? `${charge.percentage}%` : ''}</td>
+                    <td className="pp-td text-right font-semibold">{fmtAmount(charge.amount ?? 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {summary && (
         <div className="flex flex-col gap-2 mt-4">
@@ -271,8 +303,126 @@ function LineItems({ sale }: { sale: SaleDocument }) {
             <TotalRow label={t('documents.detail.otherCharges')} value={summary.other_charges_total} />
           )}
           <TotalRow label={t('documents.detail.voucherTotal')} value={summary.voucher_total ?? 0} emphasis />
+          {sale.adjusted_total != null && sale.adjusted_total !== summary.voucher_total && (
+            <TotalRow label={t('documents.balance.final')} value={sale.adjusted_total} />
+          )}
         </div>
       )}
+    </SectionCard>
+  );
+}
+
+/** Sale condition + payments, one label/value pair per row. */
+function ConditionsCard({ sale, labels }: { sale: SaleDocument; labels: DocumentCatalogLabels }) {
+  const { t } = useLanguage();
+  const payments: SalePayment[] = sale.payments ?? [];
+  return (
+    <SectionCard title={t('documents.detail.payments')} icon="cash">
+      <PairRow
+        label={t('documents.detail.saleCondition')}
+        value={sale.sale_condition === '99' && sale.sale_condition_description
+          ? sale.sale_condition_description
+          : labels.saleCondition(sale.sale_condition)}
+        strong
+      />
+      {sale.credit_term && sale.credit_term !== '0' && (
+        <PairRow label={t('documents.detail.creditTerm')} value={t('documents.detail.creditTermDays', { n: sale.credit_term })} />
+      )}
+      {payments.map((payment, i) => (
+        <PairRow
+          key={i}
+          label={payment.type === '99' && payment.other_type ? payment.other_type : labels.payment(payment.type)}
+          value={<span className="font-semibold t-num">{fmtAmount(payment.amount)}</span>}
+        />
+      ))}
+    </SectionCard>
+  );
+}
+
+/** Our own order codes and a chain's coded OtroTexto fields, as the checkout labels them. */
+const ORDER_NUMBER_CODES = new Set(['TsuruNumeroPedido', 'WMNumeroOrden']);
+
+function OrderInfoCard({ sale, orgId }: { sale: SaleDocument; orgId: string }) {
+  const { t } = useLanguage();
+  const fields: OtherText[] = (sale.other_fields ?? []).filter((field) => field.other_text?.trim());
+  const clientId = sale.client_id ?? undefined;
+  const hasChainFields = fields.some((field) => field.code === 'WMNumeroVendedor' || field.code === 'WMEnviarGLN');
+  const { data: departmentsResp } = useDepartments(hasChainFields ? orgId : undefined, clientId, { page_size: 100 });
+  const { data: storesResp } = useStores(hasChainFields ? orgId : undefined, clientId, { page_size: 100 });
+  if (!fields.length) return null;
+
+  const value = (code: string) => fields.find((field) => field.code === code)?.other_text?.trim();
+  const vendor = value('WMNumeroVendedor');
+  const gln = value('WMEnviarGLN');
+  const department = vendor ? (departmentsResp?.data ?? []).find((d) => d.supplier_code === vendor) : undefined;
+  const store = gln ? (storesResp?.data ?? []).find((s) => s.gln === gln) : undefined;
+  // Two different numbers, as in the checkout: OURS (the pedido) and the
+  // chain's purchase order. Both open the order they name.
+  const orderNumber = value('TsuruNumeroPedido');
+  const purchaseOrder = value('WMNumeroOrden');
+  const orderLink = (number: string) => (
+    <Link
+      href={`${ROUTES.DASHBOARD_ORDERS}/${encodeURIComponent(number)}`}
+      className="text-primary underline font-mono"
+      title={t('documents.detail.openOrder', { number })}
+    >
+      {number}
+    </Link>
+  );
+  const known = new Set(['WMNumeroVendedor', 'WMEnviarGLN', 'TsuruOrigenPedido', ...ORDER_NUMBER_CODES]);
+  const rest = fields.filter((field) => !known.has(field.code ?? ''));
+
+  return (
+    <SectionCard title={t('orderInfo.title')} icon="package">
+      {orderNumber && <PairRow label={t('orderInfo.orderNumber')} value={orderLink(orderNumber)} strong />}
+      {purchaseOrder && <PairRow label={t('documents.detail.purchaseOrder')} value={orderLink(purchaseOrder)} strong />}
+      {vendor && (
+        <PairRow
+          label={t('manualOrder.department')}
+          value={
+            <span>
+              {department?.name ?? department?.department_code ?? '—'}
+              <span className="block t-xs text-muted-foreground">{t('chainClient.vendorNumber')}: <span className="font-mono">{vendor}</span></span>
+            </span>
+          }
+        />
+      )}
+      {gln && (
+        <PairRow
+          label={t('chainClient.deliveryPoint')}
+          value={
+            <span>
+              {store?.store_name ?? '—'}
+              <span className="block t-xs text-muted-foreground">{t('chainClient.gln')}: <span className="font-mono">{gln}</span></span>
+            </span>
+          }
+        />
+      )}
+      {rest.map((field, index) => (
+        <PairRow key={field.other_field_id ?? index} label={field.code ?? '—'} value={field.other_text} />
+      ))}
+    </SectionCard>
+  );
+}
+
+function ReferencesCard({ references, labels, locale }: { references: SaleReference[]; labels: DocumentCatalogLabels; locale: string }) {
+  const { t } = useLanguage();
+  if (!references.length) return null;
+  return (
+    <SectionCard title={t('documents.detail.references')} icon="layers">
+      {references.map((reference, i) => (
+        <div key={i} className="py-3 border-b border-border last:border-b-0">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="t-body font-semibold">{labels.referenceType(reference.type)}</span>
+            <span className="t-xs text-muted-foreground">{formatDateTime(reference.date, locale)}</span>
+          </div>
+          <div className="t-xs font-mono text-muted-foreground break-all mt-0.5">{reference.number}</div>
+          <div className="t-sm mt-1">
+            <span className="font-semibold">{labels.referenceCode(reference.code)}</span>
+            {reference.reason ? <span className="text-muted-foreground"> — {reference.reason}</span> : null}
+          </div>
+        </div>
+      ))}
     </SectionCard>
   );
 }
@@ -293,6 +443,8 @@ export default function DocumentDetailPage({ saleId }: Props) {
 
   const [actionModal, setActionModal] = useState<string | null>(null);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [earlyPaymentOpen, setEarlyPaymentOpen] = useState(false);
+  const labels = useDocumentCatalogLabels();
 
   // RBAC — mirrors DocumentCard: redistributing the document is an export,
   // receiver accept/reject is a confirmations update. Fail-open while the
@@ -302,6 +454,7 @@ export default function DocumentDetailPage({ saleId }: Props) {
   const canExport = can('documents', 'export', isReceived ? 'received' : 'emitted');
   const canConfirm = can('commercial', 'update', 'confirmations');
   const canRegenerate = can('documents', 'create', 'fe');
+  const canCreditNote = can('documents', 'create', 'nc');
 
   usePageTitle([t('documents.title'), sale?.consecutive_number ? `#${sale.consecutive_number}` : undefined]);
 
@@ -376,10 +529,13 @@ export default function DocumentDetailPage({ saleId }: Props) {
 
   const docType = DOCUMENT_TYPES.find((d) => d.code === sale.document_type);
   const atv = sale.atv_validation;
-  const atvBadge = atv?.validation_status != null ? ATV_BADGE[atv.validation_status] : null;
+  // One status map for every document surface; a clave from the other Hacienda
+  // environment shows that instead, and offers only its files (TSR-336).
+  const atvBadge = documentStatusView(sale);
+  const hacienda = hasHaciendaActions(sale);
+  const imported = sale.origin === 'IMPORT';
   const receiverValidation = sale.receiver_validation;
   const attachments = sale.attachments ?? {};
-  const payments: SalePayment[] = sale.payments ?? [];
   const references: SaleReference[] = sale.references ?? [];
 
   // The document carries its three artifact urls (signed XML, PDF, Hacienda
@@ -389,12 +545,17 @@ export default function DocumentDetailPage({ saleId }: Props) {
   const pdfUrl = attachments.pdf_url;
 
   const menuItems: MenuItem[] = [
-    { label: t('documents.action.validation'), icon: 'shield', action: () => setActionModal('validation') },
-    canExport ? { label: t('documents.action.resend'), icon: 'upload', action: () => setActionModal('resend') } : null,
-    isReceived && canConfirm
+    hacienda ? { label: t('documents.action.validation'), icon: 'shield', action: () => setActionModal('validation') } : null,
+    canExport && hacienda ? { label: t('documents.action.resend'), icon: 'upload', action: () => setActionModal('resend') } : null,
+    isReceived && canConfirm && hacienda
       ? { label: t('documents.action.accept'), icon: 'checkCircle', action: () => setActionModal('accept') }
       : null,
-    canRegenerate && !isReceived
+    // Financial NC (reference 09) against an accepted invoice — TSR-340.
+    canCreditNote && canApplyEarlyPaymentDiscount(sale)
+      ? { label: t('documents.earlyPayment.action'), icon: 'dollar', action: () => setEarlyPaymentOpen(true) }
+      : null,
+    // An imported document is Hacienda's copy: never regenerated here.
+    canRegenerate && !isReceived && !imported && hacienda
       ? {
           label: regenerate.isPending ? t('documents.detail.regenerating') : t('documents.detail.regenerateXml'),
           icon: 'refresh',
@@ -437,6 +598,7 @@ export default function DocumentDetailPage({ saleId }: Props) {
                   {t(atvBadge.labelKey)}
                 </Badge>
               )}
+              {imported && <span className="badge-mini badge-mini-rose">{t('documents.origin.imported')}</span>}
               <Badge variant={sale.notified ? 'success' : 'secondary'} className="inline-flex items-center gap-1">
                 <Icon name={sale.notified ? 'checkCircle' : 'clock'} size={11} />
                 {sale.notified ? t('documents.detail.notified') : t('documents.detail.notNotified')}
@@ -447,6 +609,11 @@ export default function DocumentDetailPage({ saleId }: Props) {
             <div className="flex flex-col items-end gap-1">
               <span className="t-label">{t('common.total')}</span>
               <span className="t-stat-xl">{fmtAmount(sale.summary?.voucher_total ?? 0)}</span>
+              {sale.adjusted_total != null && sale.adjusted_total !== sale.summary?.voucher_total && (
+                <span className="t-xs text-muted-foreground">
+                  {t('documents.balance.final')}: <span className="font-semibold text-success t-num">{fmtAmount(sale.adjusted_total)}</span>
+                </span>
+              )}
             </div>
             {menuItems.length > 0 && (
               <Menu
@@ -523,112 +690,92 @@ export default function DocumentDetailPage({ saleId }: Props) {
         </div>
       </Card>
 
-      <div className="order-detail-grid">
-        {/* Left: lines + pipeline */}
-        <div className="flex flex-col gap-3.5">
-          <LineItems sale={sale} />
-          <Pipeline sale={sale} />
+      {!hacienda && (
+        <Card className="p-4 mb-3.5 flex items-start gap-3 !border-warning/30 bg-warning/[0.06]">
+          <Icon name="alertTri" size={16} className="text-warning mt-0.5" />
+          <div>
+            <div className="t-body font-semibold">{t('documents.status.foreignEnvironment')}</div>
+            <div className="t-sm text-muted-foreground">{t('documents.status.foreignEnvironmentHint')}</div>
+          </div>
+        </Card>
+      )}
 
-
+      {/* Rows of columns: each row pairs cards of similar weight, so neither
+          side of the page runs long while the other sits empty. */}
+      <div className="flex flex-col gap-3.5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+          <PartyCard title={t('documents.detail.issuer')} party={sale.issuer} labels={labels} />
+          <PartyCard title={t('documents.detail.receiver')} party={sale.receiver} labels={labels} />
         </div>
 
-        {/* Right: parties, payments, notification */}
-        <div className="flex flex-col gap-3.5">
-          <PartyCard title={t('documents.detail.issuer')} party={sale.issuer} />
-          <PartyCard title={t('documents.detail.receiver')} party={sale.receiver} />
+        <LineItems sale={sale} labels={labels} />
 
-          {!!sale.other_fields?.length && (
-            <SectionCard title={t('documents.detail.otherFields')} icon="fileText">
-              {sale.other_fields.map((field, index) => (
-                <InfoRow key={field.other_field_id ?? index} icon="fileText" label={field.code ?? '—'} value={
-                  ['WMNumeroOrden', 'TsuruNumeroPedido'].includes(field.code ?? '') && field.other_text?.trim()
-                    ? <Link href={`${ROUTES.DASHBOARD_ORDERS}/${encodeURIComponent(field.other_text.trim())}`} className="text-primary underline" title={t('documents.detail.openOrder', { number: field.other_text.trim() })}>{field.other_text}</Link>
-                    : field.other_text
-                } />
-              ))}
-            </SectionCard>
-          )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">
+          <ConditionsCard sale={sale} labels={labels} />
+          <OrderInfoCard sale={sale} orgId={orgId} />
+        </div>
 
-          <SectionCard title={t('documents.detail.payments')} icon="cash">
-            <InfoRow
-              icon="cash"
-              label={t('documents.detail.saleCondition')}
-              value={sale.sale_condition_description ?? sale.sale_condition ?? '—'}
-            />
-            {sale.credit_term && sale.credit_term !== '0' && (
-              <InfoRow
-                icon="clock"
-                label={t('documents.detail.creditTerm')}
-                value={t('documents.detail.creditTermDays', { n: sale.credit_term })}
-              />
-            )}
-            {payments.map((payment, i) => (
-              <InfoRow
-                key={i}
-                icon="card"
-                label={`${t('documents.detail.paymentType')} ${payment.type}`}
-                value={fmtAmount(payment.amount)}
-              />
-            ))}
-          </SectionCard>
+        {(!!sale.related_documents?.length || references.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">
+            <RelatedDocumentsCard sale={sale} labels={labels} />
+            <ReferencesCard references={references} labels={labels} locale={locale} />
+          </div>
+        )}
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">
+          <Pipeline sale={sale} />
           <SectionCard title={t('documents.detail.notification')} icon="users">
-            <InfoRow
-              icon={sale.notified ? 'checkCircle' : 'clock'}
+            <PairRow
               label={t('common.status')}
               value={sale.notified ? t('documents.detail.notified') : t('documents.detail.notNotified')}
+              strong
             />
             {sale.notification_send_date && (
-              <InfoRow
-                icon="calendar"
-                label={t('documents.detail.notificationDate')}
-                value={formatDateTime(sale.notification_send_date, locale)}
-              />
+              <PairRow label={t('documents.detail.notificationDate')} value={formatDateTime(sale.notification_send_date, locale)} />
             )}
-            <InfoRow icon="refresh" label={t('documents.detail.sendAttempts')} value={sale.send_attempts ?? 0} />
+            <PairRow label={t('documents.detail.sendAttempts')} value={sale.send_attempts ?? 0} />
+            {!!sale.copy_emails?.length && (
+              <PairRow label={t('documents.detail.copyEmails')} value={sale.copy_emails.join(', ')} />
+            )}
             {sale.notifications?.map((notification) => <div key={notification.id} className="py-3 border-b border-border last:border-0">
               <p className={`t-body font-semibold ${notification.level === 'destructive' ? 'text-destructive' : ''}`}>{notification.title}</p>
               {notification.body && <p className="t-sm whitespace-pre-wrap">{notification.body}</p>}
               <p className="t-xs text-muted-foreground">{formatDateTime(notification.created_on ?? undefined, locale)}</p>
             </div>)}
-            {!!sale.copy_emails?.length && (
-              <InfoRow icon="users" label={t('documents.detail.copyEmails')} value={sale.copy_emails.join(', ')} />
-            )}
           </SectionCard>
-
-          {references.length > 0 && (
-            <SectionCard title={t('documents.detail.references')} icon="layers">
-              {references.map((reference, i) => (
-                <InfoRow
-                  key={i}
-                  icon="fileText"
-                  label={`${t('documents.detail.referenceNumber')} ${reference.number}`}
-                  value={reference.reason ?? formatDateTime(reference.date, locale)}
-                />
-              ))}
-            </SectionCard>
-          )}
-
-          {receiverValidation?.status && (
-            <SectionCard title={t('documents.validationReceiver')} icon="checkCircle">
-              <InfoRow
-                icon="shield"
-                label={t('common.status')}
-                value={t(`documents.action.${receiverValidation.status === 1 ? 'accepted' : receiverValidation.status === 3 ? 'rejected' : 'pending'}`)}
-              />
-              {receiverValidation.message && (
-                <InfoRow icon="fileText" label={t('common.description')} value={receiverValidation.message} />
-              )}
-            </SectionCard>
-          )}
-
-          {sale.notes && (
-            <SectionCard title={t('documents.detail.notes')} icon="fileText">
-              <p className="t-body text-muted-foreground">{sale.notes}</p>
-            </SectionCard>
-          )}
         </div>
+
+        {(receiverValidation?.status || sale.notes) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">
+            {receiverValidation?.status ? (
+              <SectionCard title={t('documents.validationReceiver')} icon="checkCircle">
+                <PairRow
+                  label={t('common.status')}
+                  value={t(`documents.action.${receiverValidation.status === 1 ? 'accepted' : receiverValidation.status === 3 ? 'rejected' : 'pending'}`)}
+                  strong
+                />
+                {receiverValidation.message && (
+                  <PairRow label={t('common.description')} value={receiverValidation.message} />
+                )}
+              </SectionCard>
+            ) : null}
+            {sale.notes && (
+              <SectionCard title={t('documents.detail.notes')} icon="fileText">
+                <p className="t-body text-muted-foreground">{sale.notes}</p>
+              </SectionCard>
+            )}
+          </div>
+        )}
       </div>
+
+      {earlyPaymentOpen && (
+        <EarlyPaymentDiscountDrawer
+          open={earlyPaymentOpen}
+          onClose={() => setEarlyPaymentOpen(false)}
+          orgId={orgId}
+          original={sale}
+        />
+      )}
 
       <DocumentPdfDialog
         open={pdfOpen}

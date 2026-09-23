@@ -9,6 +9,7 @@ import { CountryISO } from "@/lib/enums";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { useCatalogInvalidationFeed } from "@/hooks/useCatalogInvalidationFeed";
 import { usePermissionsLiveSync } from "@/hooks/usePermissionsLiveSync";
+import { DocumentImportTray } from "@/components/documents/DocumentImportTray";
 
 /**
  * Side-effect-only bridge: subscribes to silent `catalogs.updated` events on
@@ -123,6 +124,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             {children}
           </DashboardShell>
+          {/* The XML import queue lives here, not in a page: uploads keep going while the user navigates. */}
+          <DocumentImportTray orgId={org.id} />
         </ExchangeRateProvider>
       </OrgProvider>
     </>

@@ -7,21 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { documentDetailPath } from '@/routePaths';
 import type { DocumentListItem } from '@/types/document';
 import { formatMoney as fmt } from "@/lib/money";
-
-/**
- * ATV codes: 0 = recién enviado (aún sin respuesta), 1 = aceptado,
- * 2 = en proceso, 3 = rechazado.
- *
- * 0 has to be listed: a freshly emitted document sits there until the
- * validator gets an answer, and it is the state a cashier sees most often
- * right after charging.
- */
-const STATUS_LABELS: Record<number, { labelKey: string; className: string }> = {
-  0: { labelKey: 'documents.action.processing', className: 'bg-info/10 text-info border-info/20' },
-  1: { labelKey: 'documents.action.accepted', className: 'bg-success/10 text-success border-success/20' },
-  2: { labelKey: 'documents.action.pending', className: 'bg-warning/10 text-warning border-warning/20' },
-  3: { labelKey: 'documents.action.rejected', className: 'bg-destructive/10 text-destructive border-destructive/20' },
-};
+import { STATUS_PILL_CLASSES, documentStatusView, hasHaciendaActions } from '@/lib/documentStatus';
 
 interface DocumentCardProps {
   doc: DocumentListItem;
@@ -39,12 +25,14 @@ export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentC
   const canExport = can('documents', 'export', isReceived ? 'received' : 'emitted');
   const canConfirm = can('commercial', 'update', 'confirmations');
   const dt = DOCUMENT_TYPES.find((d) => d.code === doc.document_type);
-  const status = doc.atv_validation?.validation_status;
-  // `status` is 0 for a just-submitted document, so a truthiness test both
-  // hid the badge and — via `{status && <ActionBtn/>}` below — printed a
-  // literal "0" into the action row.
-  const hasStatus = status !== undefined && status !== null;
-  const statusInfo = hasStatus ? STATUS_LABELS[status] : null;
+  // One status map for every document surface (lib/documentStatus). A
+  // document Hacienda does not know in this environment shows that instead of
+  // an ATV verdict, and offers nothing that talks to Hacienda.
+  const statusInfo = documentStatusView(doc);
+  const hacienda = hasHaciendaActions(doc);
+  const hasStatus = !!statusInfo && hacienda;
+  const total = doc.summary?.voucher_total ?? 0;
+  const finalAmount = doc.adjusted_total ?? total;
   const dateStr = new Date(doc.sale_date ?? doc.created_on ?? '').toLocaleDateString('es-CR', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
@@ -77,18 +65,29 @@ export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentC
           </div>
           <div className="text-[11px] text-muted-foreground mt-1">{dateStr}</div>
         </div>
-        {statusInfo && (
-          <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', statusInfo.className)}>
-            {t(statusInfo.labelKey)}
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {statusInfo && (
+            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full border', STATUS_PILL_CLASSES[statusInfo.variant])}>
+              {t(statusInfo.labelKey)}
+            </span>
+          )}
+          {doc.origin === 'IMPORT' && (
+            <span className="badge-mini badge-mini-rose">{t('documents.origin.imported')}</span>
+          )}
+        </div>
       </button>
 
       {/* Total */}
       <div className="flex justify-between items-center">
         <span className="text-[12px] text-muted-foreground">{t('common.total')}</span>
-        <span className="font-mono font-bold t-num">{fmt(doc.summary?.voucher_total ?? 0)}</span>
+        <span className="font-mono font-bold t-num">{fmt(total)}</span>
       </div>
+      {finalAmount !== total && (
+        <div className="flex justify-between items-center">
+          <span className="text-[12px] text-muted-foreground">{t('documents.balance.final')}</span>
+          <span className="font-mono font-semibold t-num text-success">{fmt(finalAmount)}</span>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-1.5 pt-1 border-t border-border">
@@ -103,8 +102,8 @@ export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentC
           <ActionBtn label={t('documents.action.download')} onClick={() => onAction(doc, 'download')} />
         )}
         {hasStatus && <ActionBtn label={t('documents.action.validation')} onClick={() => onAction(doc, 'validation')} />}
-        {canExport && <ActionBtn label={t('documents.action.resend')} onClick={() => onAction(doc, 'resend')} />}
-        {isReceived && canConfirm && (
+        {canExport && hacienda && <ActionBtn label={t('documents.action.resend')} onClick={() => onAction(doc, 'resend')} />}
+        {isReceived && canConfirm && hacienda && (
           <ActionBtn label={t('documents.action.accept')} onClick={() => onAction(doc, 'accept')} />
         )}
       </div>

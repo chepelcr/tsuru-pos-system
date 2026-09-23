@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { salesApi, userNotificationsPath } from "@/lib/api";
 import type { ServerNotification, ServerNotificationPage } from "@/types/notification";
+import { IMPORT_EVENT_PREFIX, emitDocumentImportEvent } from "@/lib/realtimeBus";
 
 export const notificationsQueryKey = (userId?: string) => ["user-notifications", userId];
 
@@ -121,6 +122,25 @@ export function useNotificationMutations() {
     });
     const saleId = incoming.payload?.sale_id;
     const organizationId = incoming.organization_id;
+    if (incoming.event_type.startsWith(IMPORT_EVENT_PREFIX)) {
+      // An imported XML landed (or failed): the documents list and the
+      // historical catalog both gained a row, and an open upload dialog is
+      // waiting on this import id (TSR-335).
+      void qc.invalidateQueries({ queryKey: ['sales', organizationId] });
+      void qc.invalidateQueries({ queryKey: ['historical-documents', organizationId] });
+      void qc.invalidateQueries({ queryKey: ['historical-summary', organizationId] });
+      const importId = incoming.payload?.import_id;
+      if (typeof importId === 'string') {
+        emitDocumentImportEvent({
+          event_type: incoming.event_type,
+          import_id: importId,
+          sale_id: typeof saleId === 'string' ? saleId : null,
+          atv_status: typeof incoming.payload?.atv_status === 'number' ? incoming.payload.atv_status : null,
+          error_code: typeof incoming.payload?.error_code === 'string' ? incoming.payload.error_code : null,
+          foreign_environment: incoming.payload?.foreign_environment === true,
+        });
+      }
+    }
     if (typeof saleId === 'string' && incoming.event_type.startsWith('document.')) {
       void qc.invalidateQueries({ queryKey: ['sale', organizationId, saleId] });
       void qc.invalidateQueries({ queryKey: ['sales', organizationId] });

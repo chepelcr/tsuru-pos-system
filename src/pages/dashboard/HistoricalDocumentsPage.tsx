@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { Button, EmptyState, Pagination, Spinner } from '@/components/ui';
 import { HistoricalDocumentsToolbar } from '@/components/documents/HistoricalDocumentsToolbar';
+import { useDocumentImportStore } from '@/hooks/useDocumentImport';
 import { HistoricalDocumentStatus } from '@/components/documents/HistoricalDocumentStatus';
 import { useOrgContext } from '@/contexts/OrgContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -38,6 +39,10 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
   );
   const query = useHistoricalDocuments(orgId, queryFilters, page, size, canRead && validRange);
   const sync = useSyncHistoricalDocuments(orgId);
+  // Importing XMLs fills the same ledger a sweep does (TSR-335).
+  const openImport = useDocumentImportStore((state) => state.openDrawer);
+  // Same gate as the documents list: importing files documents into the org.
+  const canImport = can('documents', 'upload', 'emitted');
   const documents = query.data?.data ?? [];
   const pagination = query.data?.pagination;
   usePageTitle([t('historical.title')]);
@@ -66,6 +71,9 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
         <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="outline" disabled={query.isFetching || !validRange} onClick={() => query.refetch()}>{t('common.refresh')}</Button>
           {can('reports', 'export', 'historical') && <Button size="sm" variant="outline" icon="download" disabled={!documents.length || query.isFetching || !validRange || query.isError} onClick={exportPage}>{t('historical.exportPage')}</Button>}
+          {canImport && (
+            <Button size="sm" variant="outline" icon="upload" onClick={openImport}>{t('documents.import.button')}</Button>
+          )}
           {syncButton}
         </div>
       </div>
@@ -89,12 +97,14 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
               <td className="pp-td">{doc.issuer_name || '—'}<div className="t-xs text-muted-foreground">{doc.issuer_id_number}</div></td>
               <td className="pp-td">{doc.receiver_name || t('documents.detail.noReceiver')}<div className="t-xs text-muted-foreground">{doc.receiver_id_number}</div></td>
               <td className="pp-td t-num whitespace-nowrap">{formatHistoricalAmount(doc.total_amount, language)}</td>
-              <td className="pp-td"><HistoricalDocumentStatus status={doc.atv_status} /></td>
+              <td className="pp-td"><HistoricalDocumentStatus status={doc.atv_status} foreignEnvironment={doc.foreign_environment} /></td>
             </tr>)}</tbody>
           </table>
         </div>
       )}
       {validRange && !query.isError && pagination && <Pagination page={pagination.page + 1} totalPages={pagination.total_pages} totalElements={pagination.total_elements} pageSize={pagination.page_size} onPageChange={(next) => setPage(next - 1)} onPageSizeChange={(next) => { setSize(next); setPage(0); }} pageSizeOptions={[20, 50, 100, 250]} itemName={t('historical.items')} />}
+      {/* Mounted on first open and kept: closing only hides it, so uploads in
+          flight continue in the background instead of being aborted. */}
     </div>
   );
 }

@@ -366,6 +366,26 @@ export interface Order {
   document_id?: string | null;
   /** That document, reduced to what the order needs to show. */
   document_info?: OrderDocumentInfo | null;
+  /**
+   * Credit notes issued against that invoice — e.g. the early-payment
+   * financial NC (TSR-340). They never replace `document_id`.
+   */
+  credit_notes?: OrderCreditNote[] | null;
+}
+
+/** A credit note recorded on an order by store-be (TSR-340). */
+export interface OrderCreditNote {
+  document_id?: string;
+  document_type?: string;
+  consecutive_number?: string;
+  document_key?: string;
+  issued_on?: string;
+  /** Hacienda verdict: 0 in process, 1 accepted, 2 partial, 3 rejected. */
+  status?: number;
+  total_amount?: number;
+  currency_code?: string;
+  /** e.g. `NCprontopago`. */
+  tipo_nota?: string;
 }
 
 /**
