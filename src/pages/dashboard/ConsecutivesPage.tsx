@@ -122,7 +122,7 @@ export default function ConsecutivesPage() {
             <option value="">{t("common.all")}</option>
             {branches.map((b) => (
               <option key={b.branch_id} value={b.branch_id}>
-                {String(b.code).padStart(3, "0")} · {b.name}
+                {b.code} · {b.name}
               </option>
             ))}
           </Select>
@@ -137,7 +137,7 @@ export default function ConsecutivesPage() {
             <option value="">{selectedBranch ? t("common.all") : t("consecutives.pickBranchFirst")}</option>
             {terminalOptions.map((tm) => (
               <option key={tm.terminal_id} value={tm.terminal_id}>
-                {String(tm.code).padStart(5, "0")} · {tm.name}
+                {tm.code} · {tm.name}
               </option>
             ))}
           </Select>
@@ -209,12 +209,12 @@ export default function ConsecutivesPage() {
                 return (
                   <tr key={c.consecutive_id} className="border-t border-border/50">
                     <td className="px-4 py-2.5 whitespace-nowrap">
-                      {c.branch ? `${String(c.branch.code).padStart(3, "0")} · ${c.branch.name}` : "—"}
+                      {c.branch ? `${c.branch.code} · ${c.branch.name}` : "—"}
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       {c.branch && c.terminal ? (
                         <Link href={terminalDetailPath(c.branch.code, c.terminal.code)} className="text-primary no-underline hover:underline">
-                          {String(c.terminal.code).padStart(5, "0")} · {c.terminal.name}
+                          {c.terminal.code} · {c.terminal.name}
                         </Link>
                       ) : "—"}
                     </td>

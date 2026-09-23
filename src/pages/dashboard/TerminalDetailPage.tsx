@@ -150,11 +150,11 @@ export default function TerminalDetailPage() {
             <h1 className="t-h1 mb-1 flex items-center gap-2 flex-wrap">
               {terminal.name}
               <span className="font-mono text-[12px] font-semibold bg-muted px-2 py-0.5 rounded tracking-[0.05em]">
-                {String(terminal.code).padStart(5, "0")}
+                {terminal.code}
               </span>
             </h1>
             <p className="t-body text-muted-foreground">
-              {branch ? `${branch.name} · ${String(branch.code).padStart(3, "0")}` : t("terminal.branchCode", { code: String(branchCode) })}
+              {branch ? `${branch.name} · ${branch.code}` : t("terminal.branchCode", { code: String(branchCode) })}
             </p>
           </div>
           <Badge variant={STATUS_VARIANT[terminal.status]}>{statusLabel[terminal.status]}</Badge>
