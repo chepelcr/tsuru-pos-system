@@ -29,6 +29,18 @@ export type BranchStatus = 1 | 2 | 3; // 1=Active, 2=Inactive, 3=Deleted
 
 export type BranchLocation = LocationData;
 
+/**
+ * A branch phone, shaped like a client phone: `country_code` is the ISO numeric
+ * code (188) from the countries catalog; `dial_code` (506) and `dial_area`
+ * (869 for +1-869) come resolved from store-be. Read-only on the wire back.
+ */
+export interface BranchPhone {
+  country_code: string;
+  dial_code?: string | null;
+  dial_area?: string | null;
+  number: string;
+}
+
 export interface Branch {
   branch_id: string;
   organization_id: string;
@@ -37,7 +49,7 @@ export interface Branch {
   type: BranchType;
   status: BranchStatus;
   location?: BranchLocation | null;
-  phone?: string;
+  phone?: BranchPhone | null;
   created_at?: string;
   updated_at?: string;
   created_by: string;
@@ -63,7 +75,7 @@ export interface CreateBranchRequest {
   code: number;
   type: BranchType;
   location?: BranchLocation;
-  phone?: string;
+  phone?: Pick<BranchPhone, 'country_code' | 'number'>;
 }
 
 export interface CreateTerminalRequest {

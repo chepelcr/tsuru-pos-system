@@ -4,9 +4,10 @@ import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAccordionSections } from "@/hooks/useAccordionSections";
 import { BranchGeneralSection } from "./sections/BranchGeneralSection";
-import { BranchContactSection } from "./sections/BranchContactSection";
+import { BranchContactSection, type BranchPhoneValue } from "./sections/BranchContactSection";
 import { BranchLocationSection } from "./sections/BranchLocationSection";
 import type { Branch, CreateBranchRequest, BranchType, BranchStatus, LocationData } from "@/types";
+import { CountryISO } from "@/lib/enums";
 
 interface BranchFormProps {
   editing: Branch | null;
@@ -27,7 +28,10 @@ export function BranchForm({ editing, onSave, isSaving, onClose, renderButtons }
   const [name, setName] = useState(editing?.name ?? "");
   const [code, setCode] = useState<number | "">(editing?.code ?? "");
   const [type, setType] = useState<BranchType>(editing?.type ?? "stand");
-  const [phone, setPhone] = useState(editing?.phone ?? "");
+  const [phone, setPhone] = useState<BranchPhoneValue>({
+    country_code: editing?.phone?.country_code ?? CountryISO.COSTA_RICA,
+    number: editing?.phone?.number ?? "",
+  });
   const [location, setLocation] = useState<LocationData>({
     state_id: editing?.location?.state_id ?? null,
     county_id: editing?.location?.county_id ?? null,
@@ -51,7 +55,7 @@ export function BranchForm({ editing, onSave, isSaving, onClose, renderButtons }
       name: name.trim(),
       code: Number(code),
       type,
-      phone: phone.trim() || undefined,
+      phone: phone.number.trim() ? { country_code: phone.country_code, number: phone.number.trim() } : undefined,
       location: hasLocation ? {
         state_id: location.state_id,
         county_id: location.county_id,

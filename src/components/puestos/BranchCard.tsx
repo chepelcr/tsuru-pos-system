@@ -6,6 +6,7 @@ import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
 import { usePermissions } from "@/hooks/useRbac";
+import { formatPhone } from "@/hooks/useClients";
 import { TerminalRow } from "./TerminalRow";
 import type { Branch, TerminalListResponse, BranchStatus } from "@/types";
 
@@ -91,10 +92,10 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
               <Icon name={typeIcon} size={12} />
               {typeLabel}
             </div>
-            {branch.phone && (
+            {branch.phone?.number && (
               <div className="t-xs flex items-center gap-[5px] text-muted-foreground">
                 <Icon name="smartphone" size={12} />
-                {branch.phone}
+                {formatPhone(branch.phone)}
               </div>
             )}
           </div>
