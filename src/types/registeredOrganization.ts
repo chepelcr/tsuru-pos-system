@@ -27,7 +27,10 @@ export interface RegisteredOrgSituation {
 }
 
 export interface RegisteredOrgPhone {
+  /** ISO numeric country code (188) — what the form's country select holds. */
   country_code: string | null;
+  /** Dialing code (506), resolved by sales-be from the countries table. Read-only. */
+  dial_code?: string | null;
   area_code: string | null;
   number: string | null;
   description: string | null;

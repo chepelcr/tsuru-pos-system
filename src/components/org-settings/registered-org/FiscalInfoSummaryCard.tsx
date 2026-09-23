@@ -42,8 +42,9 @@ export function FiscalInfoSummaryCard({ reg, onEdit }: FiscalInfoSummaryCardProp
     neighborhoodId: reg.residence?.neighborhood_id ?? null,
   });
 
+  // `dial_code` comes resolved from the backend; `country_code` is the ISO key (188).
   const phoneDisplay = reg.phone?.number
-    ? `+${reg.phone.country_code || "506"}${reg.phone.area_code ? ` ${reg.phone.area_code}` : ""} · ${reg.phone.number}`
+    ? `${reg.phone.dial_code ? `+${reg.phone.dial_code} ` : ""}${reg.phone.area_code ? `${reg.phone.area_code} ` : ""}· ${reg.phone.number}`
     : "";
 
   const situationVariant: "success" | "warning" | "secondary" = reg.situation

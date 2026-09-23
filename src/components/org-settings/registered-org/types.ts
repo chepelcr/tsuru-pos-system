@@ -1,3 +1,4 @@
+import { CountryISO } from "@/lib/enums";
 import type {
   RegisteredOrganization,
   RegisteredOrganizationPayload,
@@ -111,7 +112,8 @@ export function fromRegisteredOrganization(reg: RegisteredOrganization): FiscalI
     taxAdministration: reg.situation?.tax_administration ?? "",
 
     email: reg.email ?? "",
-    phoneCountryCode: reg.phone?.country_code ?? "506",
+    // The ISO key (188) the country select holds — not the dialing code.
+    phoneCountryCode: reg.phone?.country_code ?? CountryISO.COSTA_RICA,
     phoneAreaCode: reg.phone?.area_code ?? "",
     phoneNumber: reg.phone?.number ?? "",
     phoneDescription: reg.phone?.description ?? "",

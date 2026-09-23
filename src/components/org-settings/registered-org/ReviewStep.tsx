@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Badge, Icon } from "@/components/ui";
+import { useAllCountries } from "@/hooks/useDataApi";
 import { formatIdentification } from "@/lib/identification";
 import { useLocationNames } from "./useLocationNames";
 import type { FiscalInfoFormState } from "./types";
@@ -39,8 +40,13 @@ export function ReviewStep({ form }: ReviewStepProps) {
     neighborhoodId: form.neighborhoodId,
   });
 
+  // A preview of what is not saved yet: the form holds the ISO code (188), so the
+  // dialing code comes from the countries catalog the country select on the
+  // previous step already loaded (same query, served from cache).
+  const { data: countries = [] } = useAllCountries({ status: "1" });
+  const dialCode = countries.find((c) => c.iso_code === form.phoneCountryCode)?.phone_code;
   const phoneDisplay = form.phoneNumber
-    ? `+${form.phoneCountryCode || "506"}${form.phoneAreaCode ? ` ${form.phoneAreaCode}` : ""} · ${form.phoneNumber}`
+    ? `${dialCode ? `${dialCode} ` : ""}${form.phoneAreaCode ? `${form.phoneAreaCode} ` : ""}· ${form.phoneNumber}`
     : "";
 
   const residenceParts = [names.state, names.county, names.district, names.neighborhood]

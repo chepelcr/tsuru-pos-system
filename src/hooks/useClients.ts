@@ -6,7 +6,10 @@ import { cacheClients, readCachedClients } from "@/services/offlineCatalog";
 // ─── Sub-types matching backend DTOs ──────────────────────────────────────
 
 export interface PhoneValue {
+  /** ISO numeric country code (188) — the key the country select uses. */
   country_code?: string | null;
+  /** Dialing code (506), resolved by store-be from the countries table. Read-only. */
+  dial_code?: string | null;
   area_code?: string | null;
   number?: string | null;
   description?: string | null;
@@ -79,11 +82,16 @@ export function clientDisplayName(c: Client | null | undefined): string {
   return c?.client_name || c?.business_name || c?.client_gln || "Sin nombre";
 }
 
-/** Formats a phone object (or undefined/null) to a display string. */
+/**
+ * Formats a phone for display: `+506 8888-8888`.
+ *
+ * The prefix is the backend's `dial_code` (countries catalog) — never
+ * `country_code`, which is the ISO code (188) and rendered as "+188".
+ */
 export function formatPhone(phone: PhoneValue | null | undefined): string {
-  if (!phone) return "";
-  const parts = [phone.area_code, phone.number].filter(Boolean);
-  return parts.join("-") || "";
+  if (!phone?.number) return "";
+  const local = [phone.area_code, phone.number].filter(Boolean).join("-");
+  return phone.dial_code ? `+${phone.dial_code} ${local}` : local;
 }
 
 // ─── Hooks ─────────────────────────────────────────────────────────────────
