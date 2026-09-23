@@ -37,8 +37,8 @@ export function BaseSectionEditor({
 }: BaseSectionEditorProps) {
   const { t } = useLanguage();
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canEdit = !permsReady || can("storefront", "update", "content");
+  const { can } = usePermissions();
+  const canEdit = can("storefront", "update", "content");
   const [localContent, setLocalContent] = useState<ContentSection>(content);
   const [hasChanges, setHasChanges] = useState(false);
 

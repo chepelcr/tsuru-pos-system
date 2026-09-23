@@ -10,6 +10,8 @@
 import type { PaginationResponse } from './pagination';
 import type {
   AtvValidation,
+  DocumentAttachments,
+  DocumentNotification,
   DocTypeCode,
   DocumentSummary,
   ReceiverValidation,
@@ -31,10 +33,14 @@ export interface DocumentListItem {
   organization_id: string;
   /** Hacienda document type code as string (was numeric). */
   document_type: DocTypeCode;
-  sale_date: string;
+  sale_date?: string;
   consecutive_number?: string;
   document_key?: string;
-  is_received: boolean;
+  is_received?: boolean;
+  /** Signed XML, PDF and Hacienda response urls — nothing else. */
+  attachments?: DocumentAttachments;
+  /** In-app notifications raised about this document (verdicts, rejections). */
+  notifications?: DocumentNotification[];
   summary?: DocumentSummary;
   atv_validation?: AtvValidation;
   receiver_validation?: ReceiverValidation;
@@ -70,6 +76,9 @@ export interface ComplexSearchFilters {
    */
   searchTerm?: string;
   status?: 'validated' | 'pending' | 'rejected';
+  /** Scope to documents issued at one terminal / branch (UUIDs; TSR-328). */
+  terminal_id?: string;
+  branch_id?: string;
 
   // ── Date filter (single value with operator OR range) ────────────────────
   dateMode?: DateMode;

@@ -306,10 +306,10 @@ export default function OrderDetailPage({ orderId }: Props) {
   const queryClient = useQueryClient();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can('commercial', 'update', 'orders');
-  const canCancelPerm = !permsReady || can('commercial', 'cancel', 'orders');
-  const canExport = !permsReady || can('commercial', 'export', 'orders');
+  const { can } = usePermissions();
+  const canUpdate = can('commercial', 'update', 'orders');
+  const canCancelPerm = can('commercial', 'cancel', 'orders');
+  const canExport = can('commercial', 'export', 'orders');
 
   const [reprocessOpen, setReprocessOpen] = useState(false);
   const [deliveryDateOpen, setDeliveryDateOpen] = useState(false);
@@ -476,7 +476,7 @@ export default function OrderDetailPage({ orderId }: Props) {
     fiscal.isElectronic &&
     order.order_status === 'delivered' &&
     !alreadyInvoiced &&
-    (!permsReady || can('documents', 'create', 'fe'));
+    (can('documents', 'create', 'fe'));
 
   const menuItems: MenuItem[] = [
     canInvoice

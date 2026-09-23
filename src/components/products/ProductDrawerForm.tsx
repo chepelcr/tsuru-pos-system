@@ -92,9 +92,9 @@ export function ProductDrawerForm({
   const isNew = drawerProduct === "new";
 
   // RBAC defense-in-depth on the footer actions — fail-open while loading (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canSubmit = !permsReady || can("commercial", isNew ? "create" : "update", "products");
-  const canDelete = !permsReady || can("commercial", "delete", "products");
+  const { can } = usePermissions();
+  const canSubmit = can("commercial", isNew ? "create" : "update", "products");
+  const canDelete = can("commercial", "delete", "products");
 
   // Preload data — React Query deduplicates with section-level calls
   const productTypes = useAllProductTypes();

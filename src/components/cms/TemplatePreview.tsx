@@ -50,8 +50,8 @@ export function TemplatePreview({
   const titleId = useId();
   const { isTopLayer } = useOverlayLayer({ active: open && !!template, panelRef, dismissible: true, onClose });
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canApply = !permsReady || can("storefront", "update", "templates");
+  const { can } = usePermissions();
+  const canApply = can("storefront", "update", "templates");
 
   if (!open || !template) return null;
 

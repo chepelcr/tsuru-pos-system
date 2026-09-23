@@ -4,15 +4,15 @@ import { OverlayPortal } from '@/components/ui/OverlayPortal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useOverlayLayer } from '@/hooks/useOverlayLayer';
 import { usePermissions } from '@/hooks/useRbac';
-import { useXmlFiles } from '@/hooks/useXmlFiles';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import { DOCUMENT_TYPES } from '@/types/invoice';
 import type { DocumentAttachments } from '@/types/invoice';
 
 /** ATV codes: 1 = aceptado, 2 = en proceso, 3 = rechazado. */
 const ATV_BADGE: Record<number, { variant: 'success' | 'warning' | 'destructive'; icon: string; labelKey: string }> = {
+  0: { variant: 'warning', icon: 'clock', labelKey: 'documents.action.pending' },
   1: { variant: 'success', icon: 'checkCircle', labelKey: 'documents.action.accepted' },
-  2: { variant: 'warning', icon: 'clock', labelKey: 'documents.action.pending' },
+  2: { variant: 'warning', icon: 'checkCircle', labelKey: 'documents.action.partial-accept' },
   3: { variant: 'destructive', icon: 'xCircle', labelKey: 'documents.action.rejected' },
 };
 
@@ -33,12 +33,8 @@ interface DocumentPdfDialogProps {
  * Full-height PDF viewer for an electronic document — same modal shell as
  * `CrossdockingDetailsDialog`.
  *
- * The voucher is shown for ACCEPTED and REJECTED documents alike: a rejection
- * is exactly when someone needs to read what was sent, so the ATV status is a
- * badge in the header rather than a gate on the content. The list card used to
- * disable "Ver PDF" whenever the sale row carried no `pdf_url`, which is every
- * row — the artifact urls come from `GET /sales/{id}/xml/files`, not from the
- * row — so the button was permanently dead.
+ * Recorded artifact URLs come from the document response. Opening the viewer
+ * does not ask the backend to reconstruct them.
  *
  * Rendering uses an <iframe>, not `fetch`: the artifact bucket does not send
  * CORS headers for these objects, so a fetch-based preview fails where a frame
@@ -48,7 +44,6 @@ interface DocumentPdfDialogProps {
 export function DocumentPdfDialog({
   open,
   onClose,
-  orgId,
   saleId,
   documentType,
   consecutiveNumber,
@@ -62,22 +57,22 @@ export function DocumentPdfDialog({
   const { isTopLayer } = useOverlayLayer({ active: open, panelRef, dismissible: true, onClose });
   const [frameFailed, setFrameFailed] = useState(false);
 
-  const { data: files } = useXmlFiles(orgId, open ? saleId : null);
+  const files = attachments;
 
   // A fresh document id gets a fresh chance to render.
   useEffect(() => setFrameFailed(false), [saleId, open]);
 
-  const { can, isReady: permsReady } = usePermissions();
-  const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
+  const { can } = usePermissions();
+  const canExport = can('documents', 'export', isReceived ? 'received' : 'emitted');
 
   if (!open) return null;
 
   const docType = DOCUMENT_TYPES.find((d) => d.code === documentType);
-  const badge = atvStatus ? ATV_BADGE[atvStatus] : null;
+  const badge = atvStatus != null ? ATV_BADGE[atvStatus] : null;
   const pdfUrl = files?.pdf_url;
   // Prefer the path the pipeline actually recorded; `xml/files` synthesizes.
-  const xmlUrl = attachments?.xml_document?.file_url ?? files?.xml_url;
-  const responseUrl = attachments?.atv_validation_document?.file_url;
+  const xmlUrl = attachments?.xml_url;
+  const responseUrl = attachments?.hacienda_response_url;
 
   return (
     <OverlayPortal>

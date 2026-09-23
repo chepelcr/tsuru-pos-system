@@ -30,8 +30,8 @@ export default function OrgBrandingPage() {
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
 
   // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "branding");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "branding");
 
   const updateMutation = useUpdateThemeBrandingSettings(user?.userId, org?.id);
 

@@ -199,5 +199,13 @@
   "quickDoc.subtitle": "Start an electronic invoice, a ticket, or browse your documents.",
   "quickDoc.subtitleOrders": "Record an order or browse your documents.",
   "quickDoc.title": "Create document",
-  "quickDoc.viewDocuments": "View documents"
+  "quickDoc.viewDocuments": "View documents",
+  "documents.validation.errorPosition": "Row {row}, column {column}",
+  "documents.detail.otherFields": "Other fields",
+  "documents.detail.issuer": "Issuer",
+  "documents.detail.openOrder": "Open order {number}",
+  "documents.detail.tradeName": "Trade name",
+  "documents.detail.nationality": "Nationality",
+  "documents.detail.customerType": "Customer type",
+  "documents.detail.openDocument": "Open document"
 }

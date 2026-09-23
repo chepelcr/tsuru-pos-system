@@ -1,5 +1,6 @@
+import type { SaleReceiver } from '@/types/receiver';
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { ROUTES } from '@/routePaths';
 import { useOrgContext } from '@/contexts/OrgContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,8 +8,6 @@ import { useNotifications } from '@/contexts/NotificationsContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { usePermissions } from '@/hooks/useRbac';
 import { useSale } from '@/hooks/useSale';
-import { useXmlFiles } from '@/hooks/useXmlFiles';
-import { useInvoiceValidation } from '@/hooks/useInvoiceValidation';
 import { useGenerateXml } from '@/hooks/useGenerateXml';
 import { DOCUMENT_TYPES } from '@/types/invoice';
 import type { SaleDocument, SalePayment } from '@/types/invoice';
@@ -25,8 +24,9 @@ import { DocumentPdfDialog } from '@/components/documents/DocumentPdfDialog';
  * 1 = aceptado, 2 = en proceso, 3 = rechazado.
  */
 const ATV_BADGE: Record<number, { variant: 'success' | 'warning' | 'destructive'; icon: string; labelKey: string }> = {
+  0: { variant: 'warning', icon: 'clock', labelKey: 'documents.action.pending' },
   1: { variant: 'success', icon: 'checkCircle', labelKey: 'documents.action.accepted' },
-  2: { variant: 'warning', icon: 'clock', labelKey: 'documents.action.pending' },
+  2: { variant: 'warning', icon: 'checkCircle', labelKey: 'documents.action.partial-accept' },
   3: { variant: 'destructive', icon: 'xCircle', labelKey: 'documents.action.rejected' },
 };
 
@@ -44,19 +44,18 @@ interface PipelineStep {
  *
  * Each stage is read from the field the backend writes when that stage
  * completes, so a document stuck mid-flight shows exactly where it stopped —
- * which is the whole point of this view. In particular `pdf` keys off the
- * PDF url persisted ON THE SALE, not the one `GET /sales/{id}/xml/files`
- * returns: that endpoint synthesizes urls from the S3 key convention and will
- * hand back a link whether or not the object was ever written.
+ * which is the whole point of this view. `pdf` keys off the PDF url persisted
+ * on the document (`attachments.pdf_url`), so it is only done once the object
+ * was actually written.
  */
 function buildPipeline(sale: SaleDocument): PipelineStep[] {
   const atv = sale.atv_validation;
   const signed = !!sale.document_key && !!sale.consecutive_number;
   const submitted = !!atv?.send_date;
   const rejected = atv?.validation_status === 3;
-  const validated = atv?.validation_status === 1;
+  const validated = atv?.validation_status === 1 || atv?.validation_status === 2;
   const answered = !!atv?.validation_date;
-  const pdfReady = !!sale.pdf_url;
+  const pdfReady = !!sale.attachments?.pdf_url;
   const notified = !!sale.notified;
 
   // The first stage that has not completed is the one in flight; everything
@@ -68,14 +67,18 @@ function buildPipeline(sale: SaleDocument): PipelineStep[] {
     state: done ? 'done' : reachable ? 'current' : 'pending',
   });
 
+  // doc → PDF → validation → notification. Signing and the Hacienda
+  // submission both happen at emission ("doc"); the PDF is generated right
+  // after, so it can be opened while Hacienda is still answering; the verdict
+  // then triggers the notification, which carries that PDF.
   return [
     step('signed', 'fileText', signed, true, sale.sale_date),
     step('submitted', 'upload', submitted, signed, atv?.send_date),
+    step('pdf', 'print', pdfReady, signed, undefined),
     answered && rejected
       ? { id: 'validated', icon: 'xCircle', state: 'failed', at: atv?.validation_date }
       : step('validated', 'shield', validated, submitted, atv?.validation_date),
-    step('pdf', 'print', pdfReady, validated, undefined),
-    step('notified', 'users', notified, pdfReady, sale.notification_send_date),
+    step('notified', 'users', notified, answered && pdfReady, sale.notification_send_date),
   ];
 }
 
@@ -103,6 +106,26 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: R
       </div>
     </div>
   );
+}
+
+function PartyCard({ title, party }: { title: string; party?: SaleReceiver | null }) {
+  const { t } = useLanguage();
+  if (!party) return null;
+  return <SectionCard title={title} icon="user">
+    <InfoRow icon="user" label={t('common.name')} value={party.name ?? '—'} />
+    {party.identification?.number && <InfoRow icon="copy" label={t('documents.detail.identification')} value={party.identification.number} />}
+    {party.trade_name && <InfoRow icon="user" label={t('documents.detail.tradeName')} value={party.trade_name} />}
+    {party.nationality && <InfoRow icon="globe" label={t('documents.detail.nationality')} value={party.nationality} />}
+    {party.customer_type_code && <InfoRow icon="user" label={t('documents.detail.customerType')} value={party.customer_type_code} />}
+    {party.email && <InfoRow icon="fileText" label={t('common.email')} value={party.email} />}
+    {party.phone?.number && <InfoRow icon="phone" label={t('common.phone')} value={[party.phone.country_code, party.phone.number].filter(Boolean).join(' ')} />}
+    {party.residence && <InfoRow icon="mapPin" label={t('common.address')} value={[
+      party.residence.address, party.residence.neighborhood_name,
+      party.residence.district_name ?? party.residence.district_id,
+      party.residence.county_name ?? party.residence.county_id,
+      party.residence.state_name ?? party.residence.state_id,
+    ].filter(Boolean).join(', ')} />}
+  </SectionCard>;
 }
 
 function TotalRow({
@@ -266,8 +289,6 @@ export default function DocumentDetailPage({ saleId }: Props) {
   const locale = language === 'es' ? 'es-CR' : 'en-US';
 
   const { data: sale, isLoading, error } = useSale(orgId, saleId);
-  const { data: files } = useXmlFiles(orgId, saleId);
-  const { data: validation } = useInvoiceValidation(orgId, saleId);
   const regenerate = useGenerateXml(orgId);
 
   const [actionModal, setActionModal] = useState<string | null>(null);
@@ -276,11 +297,11 @@ export default function DocumentDetailPage({ saleId }: Props) {
   // RBAC — mirrors DocumentCard: redistributing the document is an export,
   // receiver accept/reject is a confirmations update. Fail-open while the
   // permission payload resolves (§5.1 rollout).
-  const { can, isReady: permsReady } = usePermissions();
+  const { can } = usePermissions();
   const isReceived = !!sale?.is_received;
-  const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
-  const canConfirm = !permsReady || can('commercial', 'update', 'confirmations');
-  const canRegenerate = !permsReady || can('documents', 'create', 'fe');
+  const canExport = can('documents', 'export', isReceived ? 'received' : 'emitted');
+  const canConfirm = can('commercial', 'update', 'confirmations');
+  const canRegenerate = can('documents', 'create', 'fe');
 
   usePageTitle([t('documents.title'), sale?.consecutive_number ? `#${sale.consecutive_number}` : undefined]);
 
@@ -354,21 +375,20 @@ export default function DocumentDetailPage({ saleId }: Props) {
   }
 
   const docType = DOCUMENT_TYPES.find((d) => d.code === sale.document_type);
-  const atv = validation?.atv_validation ?? sale.atv_validation;
-  const atvBadge = atv?.validation_status ? ATV_BADGE[atv.validation_status] : null;
-  const receiverValidation = validation?.receiver_validation ?? sale.receiver_validation;
+  const atv = sale.atv_validation;
+  const atvBadge = atv?.validation_status != null ? ATV_BADGE[atv.validation_status] : null;
+  const receiverValidation = sale.receiver_validation;
   const attachments = sale.attachments ?? {};
   const payments: SalePayment[] = sale.payments ?? [];
   const references: SaleReference[] = sale.references ?? [];
 
-  // `xml/files` synthesizes urls from the S3 key convention, so prefer the
-  // paths the pipeline actually recorded on the document and fall back to it.
-  const signedXmlUrl = attachments.xml_document?.file_url ?? files?.xml_url;
-  const responseXmlUrl = attachments.atv_validation_document?.file_url;
-  const pdfUrl = sale.pdf_url ?? files?.pdf_url;
+  // The document carries its three artifact urls (signed XML, PDF, Hacienda
+  // response) — no separate files request.
+  const signedXmlUrl = attachments.xml_url;
+  const responseXmlUrl = attachments.hacienda_response_url;
+  const pdfUrl = attachments.pdf_url;
 
   const menuItems: MenuItem[] = [
-    { label: t('documents.action.pdf'), icon: 'eye', action: () => setPdfOpen(true) },
     { label: t('documents.action.validation'), icon: 'shield', action: () => setActionModal('validation') },
     canExport ? { label: t('documents.action.resend'), icon: 'upload', action: () => setActionModal('resend') } : null,
     isReceived && canConfirm
@@ -509,41 +529,25 @@ export default function DocumentDetailPage({ saleId }: Props) {
           <LineItems sale={sale} />
           <Pipeline sale={sale} />
 
-          {!!atv?.errors?.length && (
-            <SectionCard title={t('documents.detail.haciendaErrors')} icon="alertTri">
-              <ul className="flex flex-col gap-2">
-                {atv.errors.map((err, i) => (
-                  <li key={err.id ?? i} className="p-3 rounded-md bg-destructive/[0.08] border border-destructive/20">
-                    <div className="t-body font-semibold text-destructive">{err.code ?? '—'}</div>
-                    {err.message && <div className="t-sm text-muted-foreground">{err.message}</div>}
-                  </li>
-                ))}
-              </ul>
-            </SectionCard>
-          )}
+
         </div>
 
         {/* Right: parties, payments, notification */}
         <div className="flex flex-col gap-3.5">
-          <SectionCard title={t('documents.detail.receiver')} icon="user">
-            {sale.receiver ? (
-              <>
-                <InfoRow icon="user" label={t('common.name')} value={sale.receiver.name ?? '—'} />
-                {sale.receiver.identification?.number && (
-                  <InfoRow
-                    icon="copy"
-                    label={t('documents.detail.identification')}
-                    value={sale.receiver.identification.number}
-                  />
-                )}
-                {sale.receiver.email && (
-                  <InfoRow icon="fileText" label={t('common.email')} value={sale.receiver.email} />
-                )}
-              </>
-            ) : (
-              <p className="t-sm text-muted-foreground">{t('documents.detail.noReceiver')}</p>
-            )}
-          </SectionCard>
+          <PartyCard title={t('documents.detail.issuer')} party={sale.issuer} />
+          <PartyCard title={t('documents.detail.receiver')} party={sale.receiver} />
+
+          {!!sale.other_fields?.length && (
+            <SectionCard title={t('documents.detail.otherFields')} icon="fileText">
+              {sale.other_fields.map((field, index) => (
+                <InfoRow key={field.other_field_id ?? index} icon="fileText" label={field.code ?? '—'} value={
+                  ['WMNumeroOrden', 'TsuruNumeroPedido'].includes(field.code ?? '') && field.other_text?.trim()
+                    ? <Link href={`${ROUTES.DASHBOARD_ORDERS}/${encodeURIComponent(field.other_text.trim())}`} className="text-primary underline" title={t('documents.detail.openOrder', { number: field.other_text.trim() })}>{field.other_text}</Link>
+                    : field.other_text
+                } />
+              ))}
+            </SectionCard>
+          )}
 
           <SectionCard title={t('documents.detail.payments')} icon="cash">
             <InfoRow
@@ -582,6 +586,11 @@ export default function DocumentDetailPage({ saleId }: Props) {
               />
             )}
             <InfoRow icon="refresh" label={t('documents.detail.sendAttempts')} value={sale.send_attempts ?? 0} />
+            {sale.notifications?.map((notification) => <div key={notification.id} className="py-3 border-b border-border last:border-0">
+              <p className={`t-body font-semibold ${notification.level === 'destructive' ? 'text-destructive' : ''}`}>{notification.title}</p>
+              {notification.body && <p className="t-sm whitespace-pre-wrap">{notification.body}</p>}
+              <p className="t-xs text-muted-foreground">{formatDateTime(notification.created_on ?? undefined, locale)}</p>
+            </div>)}
             {!!sale.copy_emails?.length && (
               <InfoRow icon="users" label={t('documents.detail.copyEmails')} value={sale.copy_emails.join(', ')} />
             )}
@@ -636,7 +645,7 @@ export default function DocumentDetailPage({ saleId }: Props) {
       {actionModal && (
         <DocumentActionModal
           orgId={orgId}
-          doc={sale as never}
+          doc={{ ...sale, sale_id: saleId, organization_id: orgId }}
           initialAction={actionModal}
           isReceived={isReceived}
           onClose={() => setActionModal(null)}

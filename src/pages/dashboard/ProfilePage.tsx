@@ -11,6 +11,7 @@ import { useUpdateProfile } from "@/hooks/useProfile";
 import { usePermissions } from "@/hooks/useRbac";
 import { roleLabel as orgRoleLabel } from "@/lib/rbacI18n";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
+import { RoleSwitcherCard } from "@/components/roles/RoleSwitcherCard";
 import {
   Card,
   CardBody,
@@ -227,6 +228,9 @@ export default function ProfilePage() {
           <p className="t-body text-muted-foreground">{t("profile.security")}</p>
         </div>
       </div>
+
+      {/* Multi-role members switch their active role here (TSR-330). */}
+      <RoleSwitcherCard />
 
       {/* Even split. The personal card no longer needs extra track: its fields
           sit two-up with role on its own row, so the email keeps half the card

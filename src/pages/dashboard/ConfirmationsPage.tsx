@@ -41,8 +41,8 @@ export default function ConfirmationsPage() {
   // RBAC action gating — confirmations only grant read/update, so update is
   // the grantable tuple for the create flow. Fail-open while my-permissions
   // resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can('commercial', 'update', 'confirmations');
+  const { can } = usePermissions();
+  const canUpdate = can('commercial', 'update', 'confirmations');
 
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);

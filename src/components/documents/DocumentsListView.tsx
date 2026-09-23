@@ -228,6 +228,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
           open
           orgId={orgId}
           saleId={actionModal.doc.sale_id}
+          attachments={actionModal.doc.attachments}
           documentType={actionModal.doc.document_type}
           consecutiveNumber={actionModal.doc.consecutive_number}
           atvStatus={actionModal.doc.atv_validation?.validation_status}

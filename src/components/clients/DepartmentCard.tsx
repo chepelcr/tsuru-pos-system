@@ -15,9 +15,9 @@ export function DepartmentCard({ department, onEdit, onDelete, delay = 0 }: Depa
   const { t } = useLanguage();
 
   // RBAC action gating — departments inherit commercial/clients tuples (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("commercial", "update", "clients");
-  const canDelete = !permsReady || can("commercial", "delete", "clients");
+  const { can } = usePermissions();
+  const canUpdate = can("commercial", "update", "clients");
+  const canDelete = can("commercial", "delete", "clients");
 
   const menuItems: MenuItem[] = [
     { label: t("common.edit"), icon: "edit", action: () => onEdit(department), hidden: !canUpdate },

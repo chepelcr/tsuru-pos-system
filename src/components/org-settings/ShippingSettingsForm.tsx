@@ -33,7 +33,7 @@ export function ShippingSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
-  canSave = true,
+  canSave = false,
 }: ShippingSettingsFormProps) {
   const { t } = useLanguage();
 

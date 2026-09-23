@@ -124,13 +124,13 @@ describe('orderOtherFields', () => {
       .toBe('PM-000123');
   });
 
-  it('is independent of the chain codes', () => {
-    // A chain order emits BOTH: WMNumeroOrden for Walmart's reconciliation and
-    // TsuruNumeroPedido as the one key the validator always looks for.
+  it('uses only the chain number when Walmart fields are present', () => {
+    // A chain order emits one reference and keeps its origin.
     const chain = chainOtherFields({ purchase_order_number: '4500123456' });
-    const ours = orderOtherFields({ document_number: '4500123456', source: 'import' });
+    const ours = orderOtherFields({ document_number: '4500123456', source: 'import' }, { purchase_order_number: '4500123456' });
     const codes = [...chain, ...ours].map((f) => f.code);
     expect(codes).toContain('WMNumeroOrden');
-    expect(codes).toContain('TsuruNumeroPedido');
+    expect(codes).not.toContain('TsuruNumeroPedido');
+    expect(codes).toContain('TsuruOrigenPedido');
   });
 });

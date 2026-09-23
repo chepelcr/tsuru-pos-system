@@ -203,11 +203,18 @@ export interface XmlFile {
 }
 
 export interface DocumentAttachments {
-  xml_document?: XmlFile;
-  receiver_validation_document?: XmlFile;
-  atv_validation_document?: XmlFile;
-  html_document_url?: string;
-  footer_document_url?: string;
+  xml_url?: string | null;
+  pdf_url?: string | null;
+  hacienda_response_url?: string | null;
+}
+
+export interface DocumentNotification {
+  id: string;
+  event_type: string;
+  level: string;
+  title: string;
+  body?: string | null;
+  created_on?: string | null;
 }
 
 export interface UserAttachment {
@@ -281,6 +288,7 @@ export interface SaleDocument {
   taxpayer_id?: string;
 
   // Parties + content
+  issuer?: SaleReceiver | null;
   receiver?: SaleReceiver | null;
   copy_emails?: string[];
   details: LineDetail[];
@@ -307,6 +315,7 @@ export interface SaleDocument {
   atv_validation?: AtvValidation;
 
   // Notification tracking
+  notifications?: DocumentNotification[];
   notified?: boolean;
   send_attempts?: number;
   uploaded?: boolean;

@@ -26,6 +26,8 @@ const AcceptInvitation = lazy(() => import("@/pages/AcceptInvitation"));
 const DashboardHome = lazy(() => import("@/pages/dashboard/DashboardPage"));
 const SessionsPage = lazy(() => import("@/pages/dashboard/SessionsPage"));
 const PuestosPage = lazy(() => import("@/pages/dashboard/PuestosPage"));
+const TerminalDetailPage = lazy(() => import("@/pages/dashboard/TerminalDetailPage"));
+const ConsecutivesPage = lazy(() => import("@/pages/dashboard/ConsecutivesPage"));
 const ProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
 const ReportePage = lazy(() => import("@/pages/dashboard/ReportePage"));
 const IvaReportPage = lazy(() => import("@/pages/dashboard/IvaReportPage"));
@@ -67,6 +69,7 @@ const ROUTE_PERMISSIONS = {
   dashboard: [["panel", "read", "overview"]],
   sessions: [["admin", "read", "sessions"]],
   stations: [["admin", "read", "stations"]],
+  consecutives: [["admin", "read", "consecutives"]],
   products: [["commercial", "read", "products"]],
   categories: [["commercial", "read", "categories"]],
   reports: [["reports", "read", "general"]],
@@ -328,9 +331,18 @@ export default function Routes() {
         path={ROUTES.DASHBOARD_SESSIONS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.sessions}><SessionsPage /></DashboardPage>}
       />
+      {/* Terminal detail before the stations list so its params match first */}
+      <Route
+        path={ROUTES.DASHBOARD_TERMINAL_DETAIL}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.stations}><TerminalDetailPage /></DashboardPage>}
+      />
       <Route
         path={ROUTES.DASHBOARD_STATIONS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.stations}><PuestosPage /></DashboardPage>}
+      />
+      <Route
+        path={ROUTES.DASHBOARD_CONSECUTIVES}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.consecutives}><ConsecutivesPage /></DashboardPage>}
       />
       
       {/* Products — detail before list so :productId is matched first */}

@@ -54,3 +54,27 @@ export function useCreateTerminal(orgId?: string) {
     },
   });
 }
+
+/**
+ * One terminal, addressed like every store-be terminal route: by its branch's
+ * integer code and its own integer code (terminal codes are unique per branch).
+ */
+export function useTerminal(orgId?: string, branchCode?: number, terminalCode?: number) {
+  return useQuery({
+    queryKey: ["terminal", orgId, branchCode, terminalCode],
+    enabled: !!orgId && Number.isFinite(branchCode) && Number.isFinite(terminalCode),
+    queryFn: () =>
+      crossAppApi.get<Terminal>(
+        crossAppOrgPath(orgId!, `/branches/${branchCode}/terminals/${terminalCode}`),
+      ),
+  });
+}
+
+/** One branch by its integer code (header of the terminal detail page). */
+export function useBranch(orgId?: string, branchCode?: number) {
+  return useQuery({
+    queryKey: ["branch", orgId, branchCode],
+    enabled: !!orgId && Number.isFinite(branchCode),
+    queryFn: () => crossAppApi.get<Branch>(crossAppOrgPath(orgId!, `/branches/${branchCode}`)),
+  });
+}

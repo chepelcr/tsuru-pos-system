@@ -40,8 +40,8 @@ export default function IvaReportPage() {
   const [period, setPeriod] = useState(() => lastClosedIvaPeriod());
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canExport = !permsReady || can("reports", "export", "iva");
+  const { can } = usePermissions();
+  const canExport = can("reports", "export", "iva");
 
   const fiscal = useFiscalMode(orgId);
   const { data: report, isLoading, isError, refetch } = useIvaReport(orgId, period);

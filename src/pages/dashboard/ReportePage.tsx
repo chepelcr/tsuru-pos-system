@@ -37,8 +37,8 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   usePageTitle([t("shell.reports")]);
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canExport = !permsReady || can("reports", "export", "general");
+  const { can } = usePermissions();
+  const canExport = can("reports", "export", "general");
 
   // This page used to declare its own `ReportData` with camelCase/Spanish keys
   // (`totals.ventas`, `topProducts`) and fetch the deprecated `/dashboard`,

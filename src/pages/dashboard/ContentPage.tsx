@@ -63,8 +63,8 @@ export default function ContentPage() {
   usePageTitle([t("content.title")]);
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canEditContent = !permsReady || can("storefront", "update", "content");
+  const { can } = usePermissions();
+  const canEditContent = can("storefront", "update", "content");
 
   const { pagesQuery, saveContent } = useCmsContent(user?.userId, org?.id);
   const pages = useMemo<Page[]>(() => pagesQuery.data ?? [], [pagesQuery.data]);

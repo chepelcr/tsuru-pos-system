@@ -46,8 +46,8 @@ export default function TemplatesPage() {
   const { confirm, ConfirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canApplyTemplate = !permsReady || can("storefront", "update", "templates");
+  const { can } = usePermissions();
+  const canApplyTemplate = can("storefront", "update", "templates");
 
   usePageTitle([t("storefront.title")]);
 

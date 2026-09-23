@@ -35,8 +35,8 @@ export function DeploymentPendingCard({
 }: DeploymentPendingCardProps) {
   const { t } = useLanguage();
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canPublish = !permsReady || can("storefront", "create", "deployments");
+  const { can } = usePermissions();
+  const canPublish = can("storefront", "create", "deployments");
 
   return (
     <div className="card p-5 flex flex-col gap-4">

@@ -77,7 +77,6 @@ function isReceiverTouched(r: SaleReceiver | undefined): boolean {
 
   if (r.name?.trim() || r.trade_name?.trim() || r.email?.trim()) return true;
   if (r.identification?.number?.trim()) return true;
-  if (r.foreign_id_number?.trim() || r.foreign_address?.trim()) return true;
   if (r.phone?.number?.trim()) return true;
 
   const residence = r.residence;
@@ -199,8 +198,6 @@ function formToReceiver(
     },
     fax: carryOver?.fax,
     economic_activity: carryOver?.economic_activity,
-    foreign_id_number: carryOver?.foreign_id_number,
-    foreign_address: carryOver?.foreign_address,
     phone: f.phone?.number
       ? {
           country_code: f.phone.country_code || CountryISO.COSTA_RICA,
@@ -257,9 +254,9 @@ export function ClientDrawerForm({
 
   // RBAC action gating — receiver mode performs no API write, so it is never
   // gated on clients perms. Fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
+  const { can } = usePermissions();
   const canSubmit =
-    isReceiver || !permsReady || can("commercial", isEdit ? "update" : "create", "clients");
+    isReceiver || can("commercial", isEdit ? "update" : "create", "clients");
   const { data: idTypes = [], isLoading: idTypesLoading } = useAllIdentifications({
     iso_code: CountryISO.COSTA_RICA,
   });

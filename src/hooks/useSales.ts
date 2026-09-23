@@ -52,6 +52,8 @@ function toWireSearch(s: ComplexSearchFilters | undefined): Record<string, unkno
   }
   if (s.status) out.status = s.status;
   if (s.sort)   out.sort = s.sort;
+  if (s.terminal_id) out.terminal_id = s.terminal_id;
+  if (s.branch_id)   out.branch_id = s.branch_id;
 
   // sale_date
   let saleDate: string | undefined;

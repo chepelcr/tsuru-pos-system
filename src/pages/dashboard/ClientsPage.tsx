@@ -32,8 +32,8 @@ export default function ClientsPage() {
   const statusMutation = useUpdateClientStatus(orgId);
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can("commercial", "create", "clients");
+  const { can } = usePermissions();
+  const canCreate = can("commercial", "create", "clients");
 
   const [term, setTerm] = useState("");
   // Default to status:1 (Active) on first load — matches the products page.

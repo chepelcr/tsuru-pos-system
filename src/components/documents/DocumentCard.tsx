@@ -33,11 +33,11 @@ interface DocumentCardProps {
 export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentCardProps) {
   const { t } = useLanguage();
   const [, navigate] = useLocation();
-  const { can, isReady: permsReady } = usePermissions();
+  const { can } = usePermissions();
   // Download/resend re-distribute the document → documents/export/{sub};
   // receiver accept/reject mirrors ConfirmationsPage → commercial/update/confirmations.
-  const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
-  const canConfirm = !permsReady || can('commercial', 'update', 'confirmations');
+  const canExport = can('documents', 'export', isReceived ? 'received' : 'emitted');
+  const canConfirm = can('commercial', 'update', 'confirmations');
   const dt = DOCUMENT_TYPES.find((d) => d.code === doc.document_type);
   const status = doc.atv_validation?.validation_status;
   // `status` is 0 for a just-submitted document, so a truthiness test both
@@ -45,7 +45,7 @@ export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentC
   // literal "0" into the action row.
   const hasStatus = status !== undefined && status !== null;
   const statusInfo = hasStatus ? STATUS_LABELS[status] : null;
-  const dateStr = new Date(doc.sale_date).toLocaleDateString('es-CR', {
+  const dateStr = new Date(doc.sale_date ?? doc.created_on ?? '').toLocaleDateString('es-CR', {
     day: '2-digit', month: 'short', year: 'numeric',
   });
 

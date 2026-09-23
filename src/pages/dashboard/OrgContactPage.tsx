@@ -26,8 +26,8 @@ export default function OrgContactPage() {
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
 
   // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "contact");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "contact");
 
   const updateMutation = useUpdateContactSettings(user?.userId, org?.id);
 

@@ -1,3 +1,4 @@
+import { buildDocumentReceiver } from '@/lib/documentReceiver';
 import { useMemo } from "react";
 import { useCart, type CartItem as CartLineItem } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
@@ -14,8 +15,6 @@ import type { ClientSearchResult } from "@/hooks/useClientSearch";
 import type {
   SaleReceiver,
   SaleReceiverDraft,
-  Residence,
-  ResidenceLocalState,
 } from "@/types/receiver";
 import type { SaleReference } from "@/types/reference";
 import { isManualOrderDocType } from "@/types/invoice";
@@ -177,37 +176,19 @@ export function chainOtherFields(info: ChainClientInfo | undefined) {
     ["WMNumeroOrden", info.purchase_order_number],
   ];
   return entries
-    .filter(([, value]) => !!value && String(value).trim())
+    .filter(([code, value]) => !!code && !!value && String(value).trim())
     .map(([code, value]) => ({ code, other_text: String(value).trim() }));
 }
 
-/**
- * The order this document bills, as coded `OtroTexto` entries under OUR codes.
- *
- * `WMNumeroOrden` is **Walmart's** code and is emitted only for a chain client.
- * It used to be the only place an order number reached the document, and
- * `chainInfoFromOrder` set it for every order — so an ordinary customer's
- * pedido shipped a Walmart field to Hacienda. These are the internal
- * equivalents, emitted for every order including a chain's, which gives the
- * document-validator one uniform key to read instead of having to guess which
- * chain's spelling to look for:
- *
- *   TsuruNumeroPedido   the order's document number  (the link key)
- *   TsuruOrigenPedido   manual | import | storefront (a pedido or a chain order)
- *
- * This is what makes the order↔document link an EVENT rather than a call from
- * the checkout: sales-be reads these off the persisted sale when Hacienda
- * accepts the document and publishes the link, so an offline sale replayed from
- * the outbox links too, and a rejected document never does.
- */
-export function orderOtherFields(ref: OrderReference | undefined) {
+/** The order number uses exactly one code: Walmart's or the manual-order code. */
+export function orderOtherFields(ref: OrderReference | undefined, chainInfo?: ChainClientInfo) {
   if (!ref) return [];
   const entries: Array<[string, string | undefined]> = [
-    ["TsuruNumeroPedido", ref.document_number],
+    [chainInfo?.purchase_order_number?.trim() ? "" : "TsuruNumeroPedido", ref.document_number],
     ["TsuruOrigenPedido", ref.source],
   ];
   return entries
-    .filter(([, value]) => !!value && String(value).trim())
+    .filter(([code, value]) => !!code && !!value && String(value).trim())
     .map(([code, value]) => ({ code, other_text: String(value).trim() }));
 }
 
@@ -613,92 +594,6 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
    * caller is responsible for resolving the name (the checkout form does so via
    * the loaded useNeighborhoods cache when the user picks a neighborhood).
    */
-  const buildReceiver = (
-    inbound: SaleReceiverDraft | SaleReceiver | null | undefined,
-    fallback: ClientSearchResult | null
-  ): SaleReceiver | null => {
-    // Hacienda wants the cédula as digits only. Clients are stored (and shown)
-    // in the readable form — "1-1664-0506" — and that string used to go
-    // straight onto the document, which sales-api rejects with
-    // "Identification.number must be all digits". Normalising here keeps the
-    // display format intact everywhere else in the app.
-    const digitsOnly = (value: string | undefined | null) => {
-      if (!value) return undefined;
-      const digits = value.replace(/\D/g, "");
-      return digits || undefined;
-    };
-
-    // An untouched checkout carries `receiver: {}`, which is truthy — so this
-    // used to "use" an object with no fields in it and never consult the
-    // client the cashier actually picked. sales-api then rejected the document
-    // with "Receiver is required for document type '01'" while the UI showed a
-    // selected receptor. Only treat the form's receiver as authoritative once
-    // it identifies somebody.
-    const inboundIdentifies = !!(
-      inbound &&
-      (inbound.name ||
-        inbound.email ||
-        inbound.foreign_id_number ||
-        inbound.identification?.number)
-    );
-
-    if (inbound && inboundIdentifies) {
-      const residence = (inbound.residence ?? undefined) as
-        | ResidenceLocalState
-        | Residence
-        | undefined;
-      const canonicalResidence: Residence | undefined = residence
-        ? {
-            state_id: residence.state_id,
-            state_name: residence.state_name,
-            county_id: residence.county_id,
-            county_name: residence.county_name,
-            district_id: residence.district_id,
-            district_name: residence.district_name,
-            // `neighborhood_name` wins over `neighborhood_id` (id is local-state only).
-            neighborhood_name:
-              (residence as Residence).neighborhood_name ?? undefined,
-            country_code: residence.country_code,
-            country_name: residence.country_name,
-            address: residence.address,
-          }
-        : undefined;
-      return {
-        ...inbound,
-        identification: inbound.identification
-          ? {
-              ...inbound.identification,
-              number: digitsOnly(inbound.identification.number),
-            }
-          : undefined,
-        residence: canonicalResidence,
-      };
-    }
-
-    if (!fallback) return null;
-    return {
-      name: fallback.business_name || fallback.client_name || undefined,
-      email: fallback.email ?? undefined,
-      identification: fallback.identification
-        ? {
-            code: fallback.identification.code ?? undefined,
-            number: digitsOnly(fallback.identification.number),
-          }
-        : undefined,
-      residence: fallback.residence
-        ? {
-            state_id: fallback.residence.state_id ?? undefined,
-            county_id: fallback.residence.county_id ?? undefined,
-            district_id: fallback.residence.district_id ?? undefined,
-            // Note: ClientSearchResult only has neighborhood_id — caller can
-            // re-edit the receiver in the checkout form to populate the name
-            // before submitting (Hacienda needs the name, not the id).
-            address: fallback.residence.address ?? undefined,
-          }
-        : undefined,
-    };
-  };
-
   const handleConfirmPayment = async ({
     assignmentId,
     orgId,
@@ -712,7 +607,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
   }: ConfirmPaymentArgs): Promise<SaleSubmissionResult> => {
     const localId = `sale-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-    const receiver = buildReceiver(invoiceData.receiver, selectedClient);
+    const receiver = buildDocumentReceiver(invoiceData.receiver, selectedClient);
 
     // ── Manual order (`PM`) ────────────────────────────────────────────────
     // Same cart, same line details, different destination: the orders API.
@@ -960,7 +855,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
       // invisible to them.
       other_fields: [
         ...chainOtherFields(invoiceData.chain_info),
-        ...orderOtherFields(invoiceData.order_ref),
+        ...orderOtherFields(invoiceData.order_ref, invoiceData.chain_info),
       ],
 
       // Cart lines → canonical DetailDTO[]. By the time a line lands here,

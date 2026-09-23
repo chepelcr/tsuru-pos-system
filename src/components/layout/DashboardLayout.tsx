@@ -8,6 +8,7 @@ import { ExchangeRateProvider } from "@/contexts/ExchangeRateContext";
 import { CountryISO } from "@/lib/enums";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { useCatalogInvalidationFeed } from "@/hooks/useCatalogInvalidationFeed";
+import { usePermissionsLiveSync } from "@/hooks/usePermissionsLiveSync";
 
 /**
  * Side-effect-only bridge: subscribes to silent `catalogs.updated` events on
@@ -15,8 +16,10 @@ import { useCatalogInvalidationFeed } from "@/hooks/useCatalogInvalidationFeed";
  * keys. Mounted inside `NotificationsProvider` so the hook can read the
  * context. Renders nothing.
  */
-function NotificationsBridge() {
+function NotificationsBridge({ orgId }: { orgId?: string }) {
   useCatalogInvalidationFeed();
+  // Role / grant changes pushed over AppSync re-resolve permissions (TSR-331).
+  usePermissionsLiveSync(orgId);
   return null;
 }
 
@@ -24,7 +27,9 @@ import type { NavId } from "./navIds";
 
 function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
+  // Includes /stations/:branch/terminals/:terminal (terminal detail).
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
+  if (location.startsWith(ROUTES.DASHBOARD_CONSECUTIVES)) return "consecutives";
   if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
   if (location.startsWith(ROUTES.DASHBOARD_PRODUCTS)) return "productos";
   if (location.startsWith(ROUTES.DASHBOARD_REPORTS_IVA)) return "ivaReport";
@@ -55,6 +60,7 @@ const NAV_PATHS: Record<NavId, string> = {
   dashboard: ROUTES.DASHBOARD,
   config:    ROUTES.DASHBOARD_SESSIONS,
   puestos:   ROUTES.DASHBOARD_STATIONS,
+  consecutives: ROUTES.DASHBOARD_CONSECUTIVES,
   productos: ROUTES.DASHBOARD_PRODUCTS,
   categories: ROUTES.DASHBOARD_CATEGORIES,
   reporte:   ROUTES.DASHBOARD_REPORTS,
@@ -108,7 +114,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <>
-      <NotificationsBridge />
+      <NotificationsBridge orgId={org.id} />
       <OrgProvider orgId={org.id} orgName={org.name ?? ""}>
         <ExchangeRateProvider orgId={org.id} isoCode={CountryISO.COSTA_RICA}>
           <DashboardShell

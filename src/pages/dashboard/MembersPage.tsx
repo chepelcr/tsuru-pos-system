@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { useOrganization, type Invitation, type OrgMember } from "@/hooks/useOrganization";
-import { useAssignMemberRole, useOrgRoles, usePermissions } from "@/hooks/useRbac";
+import { useAddMemberRole, useOrgRoles, usePermissions, useRemoveMemberRole } from "@/hooks/useRbac";
 import { api, orgPath } from "@/lib/api";
 import {
   Icon,
@@ -28,17 +28,6 @@ function memberFullName(m: {
 }): string {
   const name = [m.user?.first_name, m.user?.last_name].filter(Boolean).join(" ");
   return name || m.user?.email || "";
-}
-
-function roleBadgeVariant(roleName?: string) {
-  switch (roleName) {
-    case "owner":
-      return "destructive" as const;
-    case "admin":
-      return "primary-soft" as const;
-    default:
-      return "secondary" as const;
-  }
 }
 
 export default function MembersPage() {
@@ -66,7 +55,8 @@ export default function MembersPage() {
   // Org roles + system templates (O4) — drives both the invite Select and the
   // per-member role assignment dropdown.
   const { data: allRoles = [] } = useOrgRoles(userId, orgId);
-  const assignMemberRole = useAssignMemberRole();
+  const addMemberRole = useAddMemberRole();
+  const removeMemberRole = useRemoveMemberRole();
   const { can } = usePermissions();
   const canUpdateMembers = can("admin", "update", "members");
   const canInviteMembers = can("admin", "invite", "members");
@@ -199,46 +189,69 @@ export default function MembersPage() {
     });
   };
 
-  const roleLabel = (member: {
-    role?: { display_name?: string; name?: string };
-  }) =>
-    member.role?.name
-      ? rbacRoleLabel(t, member.role.name, member.role.display_name ?? member.role.name)
-      : member.role?.display_name || t("members.roleMember");
+  // Assigned roles, active one first. Older payloads without `roles` fall back
+  // to the single active role.
+  const memberRoles = (m: OrgMember) =>
+    m.roles?.length
+      ? [...m.roles].sort((a, b) => Number(b.id === m.role_id) - Number(a.id === m.role_id))
+      : m.role
+        ? [{ ...m.role, is_system: false, is_active: true }]
+        : [];
 
-  // O11 — assign a role to a member (server enforces same-org rule V3 +
-  // last-owner protection). Controlled <Select> snaps back on cancel because
-  // its value always derives from the members query.
-  const handleChangeRole = (member: OrgMember, roleId: string) => {
-    if (!userId || !orgId || roleId === member.role_id) return;
+  const roleErrorMessage = (err: unknown) =>
+    err instanceof Error && err.message !== "Request failed"
+      ? err.message
+      : t("roles.members.changeRoleFailed");
+
+  // O17 — grant an extra role. The member's active role is unchanged; they
+  // switch to it themselves from their profile.
+  const handleAddRole = (member: OrgMember, roleId: string) => {
+    if (!userId || !orgId || !roleId) return;
     const role = roles.find((r) => r.id === roleId);
     if (!role) return;
     const name = memberFullName(member) || member.user?.email || "";
     confirm({
-      title: t("roles.members.changeRoleTitle"),
-      message: t("roles.members.changeRoleConfirm", {
+      title: t("roles.members.addRoleTitle"),
+      message: t("roles.members.addRoleConfirm", {
         role: rbacRoleLabel(t, role.name, role.display_name),
         name,
       }),
       variant: "default",
       icon: "shield",
-      confirmLabel: t("roles.members.changeRole"),
+      confirmLabel: t("roles.members.addRole"),
       cancelLabel: t("common.cancel"),
       onConfirm: async () => {
         setRoleChangeError(null);
         try {
-          await assignMemberRole.mutateAsync({
-            userId,
-            orgId,
-            memberId: member.id,
-            roleId,
-          });
+          await addMemberRole.mutateAsync({ userId, orgId, memberId: member.id, roleId });
         } catch (err) {
-          setRoleChangeError(
-            err instanceof Error && err.message !== "Request failed"
-              ? err.message
-              : t("roles.members.changeRoleFailed")
-          );
+          setRoleChangeError(roleErrorMessage(err));
+        }
+      },
+    });
+  };
+
+  // O18 — take a role away. The server keeps at least one role per member and
+  // the last owner's owner role, and moves the active role when needed.
+  const handleRemoveRole = (member: OrgMember, role: { id: string; name: string; display_name: string }) => {
+    if (!userId || !orgId) return;
+    const name = memberFullName(member) || member.user?.email || "";
+    confirm({
+      title: t("roles.members.removeRoleTitle"),
+      message: t("roles.members.removeRoleConfirm", {
+        role: rbacRoleLabel(t, role.name, role.display_name),
+        name,
+      }),
+      variant: "destructive",
+      icon: "shield",
+      confirmLabel: t("roles.members.removeRole"),
+      cancelLabel: t("common.cancel"),
+      onConfirm: async () => {
+        setRoleChangeError(null);
+        try {
+          await removeMemberRole.mutateAsync({ userId, orgId, memberId: member.id, roleId: role.id });
+        } catch (err) {
+          setRoleChangeError(roleErrorMessage(err));
         }
       },
     });
@@ -320,7 +333,9 @@ export default function MembersPage() {
           {pagedMembers.map((m) => {
             const name = memberFullName(m);
             const isCurrentUser = m.user_id === userId;
-            const isOwner = m.role?.name === "owner";
+            // Holding owner at all (not only as the active role) protects the
+            // member from removal — same rule the server applies.
+            const isOwner = memberRoles(m).some((r) => r.name === "owner");
             return (
               <div
                 key={m.id}
@@ -342,32 +357,57 @@ export default function MembersPage() {
                     {m.user?.email}
                   </div>
                 </div>
-                {canUpdateMembers && !isCurrentUser ? (
-                  <div className="w-44 flex-shrink-0">
-                    <Select
-                      inputSize="sm"
-                      value={m.role_id}
-                      aria-label={t("roles.members.changeRoleTitle")}
-                      onChange={(e) => handleChangeRole(m, e.target.value)}
-                    >
-                      {/* Keep the current role visible even when it's no longer assignable (inactive role) */}
-                      {!roles.some((r) => r.id === m.role_id) && (
-                        <option value={m.role_id} disabled>
-                          {roleLabel(m)}
+                {/* Roles — chips; editable only with admin:update:members and
+                    never on yourself (you could remove your own access). */}
+                <div className="flex items-center gap-1.5 flex-wrap justify-end max-w-[55%]">
+                  {memberRoles(m).map((r) => {
+                    const isActiveRole = r.id === m.role_id;
+                    const editable = canUpdateMembers && !isCurrentUser && (m.roles?.length ?? 1) > 1;
+                    return (
+                      <span
+                        key={r.id}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+                          isActiveRole ? "border-primary text-primary bg-primary/[0.06]" : "border-border text-muted-foreground"
+                        }`}
+                        title={isActiveRole ? t("roles.members.activeRole") : undefined}
+                      >
+                        {isActiveRole && <Icon name="check" size={11} />}
+                        {rbacRoleLabel(t, r.name, r.display_name)}
+                        {editable && (
+                          <button
+                            type="button"
+                            className="ml-0.5 bg-transparent border-0 p-0 cursor-pointer text-current opacity-70 hover:opacity-100"
+                            aria-label={t("roles.members.removeRoleAria", { role: rbacRoleLabel(t, r.name, r.display_name) })}
+                            onClick={() => handleRemoveRole(m, r)}
+                          >
+                            <Icon name="close" size={11} />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })}
+                  {canUpdateMembers && !isCurrentUser && roles.some((r) => !memberRoles(m).some((mr) => mr.id === r.id)) && (
+                    <div className="w-36">
+                      <Select
+                        inputSize="sm"
+                        value=""
+                        aria-label={t("roles.members.addRole")}
+                        onChange={(e) => handleAddRole(m, e.target.value)}
+                      >
+                        <option value="" disabled>
+                          {t("roles.members.addRolePlaceholder")}
                         </option>
-                      )}
-                      {roles.map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {rbacRoleLabel(t, role.name, role.display_name)}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                ) : (
-                  <Badge variant={roleBadgeVariant(m.role?.name)}>
-                    {roleLabel(m)}
-                  </Badge>
-                )}
+                        {roles
+                          .filter((r) => !memberRoles(m).some((mr) => mr.id === r.id))
+                          .map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {rbacRoleLabel(t, role.name, role.display_name)}
+                            </option>
+                          ))}
+                      </Select>
+                    </div>
+                  )}
+                </div>
                 {!isCurrentUser && !isOwner && canRemoveMembers && (
                   <Button
                     variant="ghost"

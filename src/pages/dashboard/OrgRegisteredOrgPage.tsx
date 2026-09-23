@@ -29,8 +29,8 @@ export default function OrgRegisteredOrgPage() {
   // Stepper, edit trigger and drawer all write the registered org; gate on
   // organization/update/fiscal-info. Fail-open while my-permissions resolves
   // (RBAC_ENFORCEMENT=log rollout).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "fiscal-info");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "fiscal-info");
 
   return (
     <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">

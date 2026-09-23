@@ -17,6 +17,8 @@ export const ROUTES = {
   DASHBOARD_ORG_THEME: "/dashboard/organization/theme",
   DASHBOARD_SESSIONS: "/dashboard/sessions",
   DASHBOARD_STATIONS: "/dashboard/stations",
+  DASHBOARD_TERMINAL_DETAIL: "/dashboard/stations/:branchCode/terminals/:terminalCode",
+  DASHBOARD_CONSECUTIVES: "/dashboard/consecutives",
   DASHBOARD_PRODUCTS: "/dashboard/products",
   DASHBOARD_REPORTS: "/dashboard/reports",
   DASHBOARD_REPORTS_IVA: "/dashboard/reports/iva",
@@ -53,6 +55,11 @@ export function documentDetailPath(saleId: string) {
 
 export function historicalDocumentDetailPath(clave: string) {
   return `${ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS}/${encodeURIComponent(clave)}`;
+}
+
+/** Build the terminal-detail URL. Branches and terminals are addressed by their integer codes. */
+export function terminalDetailPath(branchCode: number | string, terminalCode: number | string) {
+  return `/dashboard/stations/${branchCode}/terminals/${terminalCode}`;
 }
 
 /** Build the confirmation-detail URL for a specific confirmation number */

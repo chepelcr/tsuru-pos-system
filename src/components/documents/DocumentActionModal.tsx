@@ -1,7 +1,5 @@
 import { useId, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useXmlFiles } from '@/hooks/useXmlFiles';
-import { useInvoiceValidation } from '@/hooks/useInvoiceValidation';
 import { useValidationAction } from '@/hooks/useValidationAction';
 import { useRefreshValidation } from '@/hooks/useRefreshValidation';
 import { useResendNotification } from '@/hooks/useResendNotification';
@@ -32,16 +30,16 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
   const [refreshed, setRefreshed] = useState(false);
   const refreshValidation = useRefreshValidation(orgId, doc.sale_id);
 
-  const { data: xmlFiles } = useXmlFiles(orgId, doc.sale_id);
-  const { data: validation } = useInvoiceValidation(orgId, doc.sale_id);
+  const xmlFiles = doc.attachments;
+  const validation = doc;
   const validationAction = useValidationAction(orgId, doc.sale_id);
   const resend = useResendNotification(orgId, doc.sale_id);
 
   // RBAC: download/resend re-distribute the document → documents/export/{sub};
   // receiver accept/reject mirrors ConfirmationsPage → commercial/update/confirmations.
-  const { can, isReady: permsReady } = usePermissions();
-  const canExport = !permsReady || can('documents', 'export', isReceived ? 'received' : 'emitted');
-  const canConfirm = !permsReady || can('commercial', 'update', 'confirmations');
+  const { can } = usePermissions();
+  const canExport = can('documents', 'export', isReceived ? 'received' : 'emitted');
+  const canConfirm = can('commercial', 'update', 'confirmations');
 
   // No 'pdf' tab: `DocumentPdfDialog` is the PDF surface. Having both meant
   // opening Validación and then clicking the PDF tab produced a second,
@@ -86,12 +84,12 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
           {/* Download links */}
           {view === 'download' && canExport && (
             <div className="space-y-3">
-              {xmlFiles?.pdf_url ? (
+              {(xmlFiles?.pdf_url || xmlFiles?.xml_url || xmlFiles?.hacienda_response_url) ? (
                 <>
                   {[
                     { url: xmlFiles.pdf_url, label: 'PDF', ext: '.pdf' },
                     { url: xmlFiles.xml_url, label: 'XML', ext: '.xml' },
-                    { url: xmlFiles.json_url, label: 'JSON', ext: '.json' },
+                    { url: xmlFiles.hacienda_response_url, label: t('documents.detail.haciendaResponse'), ext: '.xml' },
                   ].filter((f) => f.url).map((f) => (
                     <a
                       key={f.label}
@@ -116,7 +114,22 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
           {view === 'validation' && (
             <div className="space-y-4">
               <ValidationBlock label={t('documents.action.taxValidation')} data={validation?.atv_validation} />
-              {isReceived && <ValidationBlock label={t('documents.action.receiverValidation')} data={validation?.receiver_validation} />}
+              {isReceived && <ValidationBlock label={t('documents.action.receiverValidation')} data={validation.receiver_validation ? { validation_status: validation.receiver_validation.status, validation_message: validation.receiver_validation.message, validation_date: validation.receiver_validation.validation_date } : undefined} />}
+
+              {!!validation.atv_validation?.errors?.length && (
+                <section aria-label={t('documents.detail.haciendaErrors')}>
+                  <h3 className="t-body font-semibold mb-2">{t('documents.detail.haciendaErrors')}</h3>
+                  <ul className="space-y-2">
+                    {validation.atv_validation.errors.map((error, i) => (
+                      <li key={error.id ?? i} className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                        <div className="t-body font-semibold text-destructive">{error.code}</div>
+                        <p className="t-sm whitespace-pre-wrap break-words">{error.message}</p>
+                        {(error.row != null || error.column != null) && <p className="t-xs text-muted-foreground">{t('documents.validation.errorPosition', { row: error.row ?? '—', column: error.column ?? '—' })}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
               {/* Re-check. A document can be answered and still change — and a
                   PROCESSING one reaching this modal (from the detail page, say)
@@ -143,6 +156,7 @@ export function DocumentActionModal({ orgId, doc, initialAction, isReceived, onC
                     ? t('documents.validation.refreshing')
                     : t('documents.validation.refresh')}
                 </button>
+                {refreshValidation.isError && <p role="alert" className="t-sm text-destructive mt-2">{refreshValidation.error.message}</p>}
                 {refreshed && (
                   <span className="t-xs text-success ml-2">
                     {t('documents.validation.refreshQueued')}
@@ -249,7 +263,7 @@ function ValidationBlock({ label, data }: { label: string; data?: { validation_s
     </div>
   );
 
-  const STATUS = { 1: { label: t('documents.action.accepted'), cls: 'text-success' }, 2: { label: t('documents.action.pending'), cls: 'text-warning' }, 3: { label: t('documents.action.rejected'), cls: 'text-destructive' } } as const;
+  const STATUS = { 0: { label: t('documents.action.pending'), cls: 'text-warning' }, 1: { label: t('documents.action.accepted'), cls: 'text-success' }, 2: { label: t('documents.action.partial-accept'), cls: 'text-warning' }, 3: { label: t('documents.action.rejected'), cls: 'text-destructive' } } as const;
   const st = (STATUS as any)[data.validation_status ?? 0];
 
   return (

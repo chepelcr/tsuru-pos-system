@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions, useCanOpenCreateMenu, useCreatableDocTypes } from "@/hooks/useRbac";
-import { useProgramsEnabled } from "@/hooks/useProgramsEnabled";
 import { useActiveSession } from "@/hooks/useActiveSession";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
@@ -31,6 +30,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   confirmations: { icon: "checkCircle", labelKey: "shell.confirmations" },
   organization:  { icon: "settings",    labelKey: "shell.orgSettings" },
   puestos:       { icon: "store",       labelKey: "shell.stations" },
+  consecutives:  { icon: "hash",        labelKey: "shell.consecutives" },
   members:       { icon: "users",       labelKey: "shell.members" },
   roles:         { icon: "shield",      labelKey: "shell.roles" },
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
@@ -50,8 +50,13 @@ type SectionId = "commercial" | "admin" | "storefront" | "reports";
 /**
  * RBAC map — the catalog mirrors this sidebar 1:1 (modules = sections /
  * standalone items, submodules = section items; see rbac-seed.ts in
- * management-be). Every NavId maps to its [module, submodule]; items
- * hide when the org/role lacks read on that pair (legacy validar_permiso).
+ * management-be). Every NavId maps to its [module, submodule].
+ *
+ * This is display metadata only; WHAT renders is decided by the caller's
+ * resolved permissions (TSR-332): an item exists only when my-permissions
+ * lists its module as available to the caller AND grants `read` on the pair.
+ * An item with no entry here never renders. Nothing renders before
+ * my-permissions resolves — the nav shows a skeleton instead.
  */
 const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   dashboard:     ["panel", "overview"],
@@ -62,6 +67,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   confirmations: ["commercial", "confirmations"],
   organization:  ["admin", "organization"],
   puestos:       ["admin", "stations"],
+  consecutives:  ["admin", "consecutives"],
   members:       ["admin", "members"],
   roles:         ["admin", "roles"],
   config:        ["admin", "sessions"],
@@ -79,7 +85,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
-  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "members", "roles", "config"] },
+  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "consecutives", "members", "roles", "config"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
   { id: "reports",    labelKey: "shell.reports",           icon: "trending", items: ["reporte", "ivaReport", "historicalDocuments"] },
 ];
@@ -93,16 +99,17 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
-  // RBAC nav gating (my-permissions, O1). Fail-open while unresolved — the
-  // backend rollout starts with RBAC_ENFORCEMENT=log, so the item only hides
-  // once an authoritative permission set says the caller can't read roles.
-  const { can, isReady: permsReady, role: orgRole } = usePermissions();
+  // RBAC nav gating (my-permissions, O1). Fail-closed (TSR-332): the nav is
+  // built from the caller's available modules + read grants only.
+  const {
+    can,
+    hasModule,
+    isReady: permsReady,
+    isError: permsError,
+    refetch: refetchPerms,
+    role: orgRole,
+  } = usePermissions();
   const activeSession = useActiveSession();
-  // Template-gated visibility (W12): the Programs item shows only when the
-  // org's selected template includes a `programs` section (detected from the
-  // org's cloned CMS content). Combined with the RBAC read check below — mirror
-  // of the storefront conditional pattern. FAIL-CLOSED (off until confirmed).
-  const { enabled: programsEnabled } = useProgramsEnabled();
   // Per-doc-type create gating (documents/<permSub>): the "+" menu only lists
   // the types this role may create — e.g. cashiers see FE/TE, never NC/ND.
   const creatableDocTypes = useCreatableDocTypes();
@@ -155,15 +162,13 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   const display_name =
     user?.username || user?.first_name || fullName || user?.email || "Usuario";
 
-  // Legacy-style nav gating: an item shows only when the role can read its
-  // module/submodule (fail-open until my-permissions resolves).
+  // An item shows only when the org makes its module available to the caller
+  // AND the caller's active role can read the pair. Fail-closed: unknown
+  // permissions, or an item with no RBAC pair, render nothing.
   const itemVisible = (id: NavId): boolean => {
-    // Programs is template-gated: hidden unless the org's template ships a
-    // programs section (fail-closed), regardless of the RBAC grant.
-    if (id === "programs" && !programsEnabled) return false;
     const perm = NAV_PERMISSION[id];
-    if (!perm || !permsReady) return true;
-    return can(perm[0], "read", perm[1]);
+    if (!perm || !permsReady) return false;
+    return hasModule(perm[0]) && can(perm[0], "read", perm[1]);
   };
 
   const renderItem = (id: NavId) => {
@@ -199,6 +204,21 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
       {/* ── SCROLLABLE NAV (only this region scrolls) ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-0.5">
         <div className="t-label px-2.5 pb-1.5">{t("shell.navigation")}</div>
+
+        {/* Permissions unresolved: nothing is offered until the server says so. */}
+        {!permsReady && !permsError && (
+          <div className="flex flex-col gap-1.5 px-2.5 py-1" aria-busy="true" aria-label={t("routes.loadingPermissions")}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-7 rounded-md bg-muted animate-pulse" />
+            ))}
+          </div>
+        )}
+        {!permsReady && permsError && (
+          <button type="button" className="sidebar-item" onClick={refetchPerms}>
+            <Icon name="refresh" size={16} />
+            {t("common.retry")}
+          </button>
+        )}
 
         {/* Panel — standalone, primary view */}
         {renderItem("dashboard")}

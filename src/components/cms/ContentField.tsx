@@ -67,13 +67,12 @@ export function ContentField({
 }: ContentFieldProps) {
   const { t } = useLanguage();
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canEditContent = !permsReady || can("storefront", "update", "content");
+  const { can } = usePermissions();
+  const canEditContent = can("storefront", "update", "content");
   // MediaPicker hosts upload (storefront/upload/gallery) + add-by-URL
   // (storefront/create/gallery); it's a shared primitive, so it's rendered
   // read-only here when the user can do neither.
   const canAddMedia =
-    !permsReady ||
     can("storefront", "upload", "gallery") ||
     can("storefront", "create", "gallery");
 

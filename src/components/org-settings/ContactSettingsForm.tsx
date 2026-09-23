@@ -43,7 +43,7 @@ export function ContactSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
-  canSave = true,
+  canSave = false,
 }: ContactSettingsFormProps) {
   const { t } = useLanguage();
 

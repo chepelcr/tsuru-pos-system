@@ -74,8 +74,6 @@ export interface SaleReceiver {
   phone?: Phone;
   fax?: Phone;
   economic_activity?: EconomicActivity;
-  foreign_id_number?: string;
-  foreign_address?: string;
   /** Hacienda customer type code "01"-"05". */
   customer_type_code?: string;
 }

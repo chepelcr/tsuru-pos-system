@@ -85,8 +85,12 @@ export function NotificationsBell() {
   // ─── Server-backed notifications: hydrate once, then pure push ──────────
   const { data: page } = useUserNotifications();
   const { markRead, markAllRead, receive, rehydrate } = useNotificationMutations();
+  const [rejection, setRejection] = useState<ServerNotification | null>(null);
   useRealtimeNotifications({
-    onNotification: receive,
+    onNotification: (notification) => {
+      receive(notification);
+      if (notification.event_type === 'document.rejected') setRejection(notification);
+    },
     // Channels do not buffer, so a reconnect means a gap. One re-read closes
     // it; `receive` dedupes by id so the overlap costs nothing.
     onReconnect: rehydrate,
@@ -165,6 +169,18 @@ export function NotificationsBell() {
 
   return (
     <div ref={containerRef} className="relative shrink-0">
+      {rejection && <div role="alert" className="fixed right-4 top-16 z-overlay w-96 max-w-[calc(100vw-2rem)] rounded-lg border border-destructive bg-card p-4 shadow-dropdown">
+        <div className="flex items-start justify-between gap-3">
+          <p className="t-body font-semibold text-destructive">{rejection.title}</p>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setRejection(null)} aria-label={t('common.close')}>×</button>
+        </div>
+        {rejection.body && <p className="t-sm mt-2 whitespace-pre-wrap">{rejection.body}</p>}
+        {rejection.action_href && <button type="button" className="btn btn-outline btn-sm mt-3" onClick={() => {
+          markRead.mutate(rejection.id);
+          setLocation(rejection.action_href!);
+          setRejection(null);
+        }}>{t('documents.detail.openDocument')}</button>}
+      </div>}
       <button
         type="button"
         className="btn btn-ghost btn-sm btn-icon relative"

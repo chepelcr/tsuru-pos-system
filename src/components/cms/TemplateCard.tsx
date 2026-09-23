@@ -30,8 +30,8 @@ export function TemplateCard({
 }: TemplateCardProps) {
   const { t } = useLanguage();
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canApply = !permsReady || can("storefront", "update", "templates");
+  const { can } = usePermissions();
+  const canApply = can("storefront", "update", "templates");
 
   return (
     <div

@@ -66,8 +66,8 @@ export default function OrgGeneralPage() {
   }, [org?.business_type, org?.is_retail_supplier, org?.is_pyme, org]);
 
   // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "general");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "general");
 
   const updateMutation = useUpdateGeneralSettings(user?.userId, org?.id);
 

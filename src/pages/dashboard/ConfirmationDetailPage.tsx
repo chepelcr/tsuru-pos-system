@@ -51,8 +51,8 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
 
   // RBAC action gating — all confirmation mutations map to update (no
   // cancel/delete in the catalog). Fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can('commercial', 'update', 'confirmations');
+  const { can } = usePermissions();
+  const canUpdate = can('commercial', 'update', 'confirmations');
 
   const [addOpen, setAddOpen] = useState(false);
 

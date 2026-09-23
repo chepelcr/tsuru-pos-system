@@ -111,18 +111,25 @@ export function useNotificationMutations() {
    */
   const receive = (incoming: ServerNotification) => {
     qc.setQueryData<ServerNotificationPage>(notificationsQueryKey(userId), (prev) => {
-      if (!prev) return prev;
-      if (prev.data.some((n) => n.id === incoming.id)) return prev;
+      if (prev?.data.some((n) => n.id === incoming.id)) return prev;
+      const total = (prev?.pagination.total_elements ?? 0) + 1;
       return {
-        ...prev,
-        data: [incoming, ...prev.data],
-        unread_count: prev.unread_count + (incoming.is_read ? 0 : 1),
-        pagination: {
-          ...prev.pagination,
-          total_elements: prev.pagination.total_elements + 1,
-        },
+        data: [incoming, ...(prev?.data ?? [])],
+        unread_count: (prev?.unread_count ?? 0) + (incoming.is_read ? 0 : 1),
+        pagination: { page: 1, page_size: 50, total_pages: Math.ceil(total / 50), ...prev?.pagination, total_elements: total },
       };
     });
+    const saleId = incoming.payload?.sale_id;
+    const organizationId = incoming.organization_id;
+    if (typeof saleId === 'string' && incoming.event_type.startsWith('document.')) {
+      void qc.invalidateQueries({ queryKey: ['sale', organizationId, saleId] });
+      void qc.invalidateQueries({ queryKey: ['sales', organizationId] });
+      const orderNumber = incoming.payload?.order_document_number;
+      if (typeof orderNumber === 'string') {
+        void qc.invalidateQueries({ queryKey: ['order', organizationId, orderNumber] });
+        void qc.invalidateQueries({ queryKey: ['orders', organizationId] });
+      }
+    }
   };
 
   const rehydrate = () => qc.invalidateQueries({ queryKey: notificationsQueryKey(userId) });

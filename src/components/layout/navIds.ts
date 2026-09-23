@@ -14,6 +14,7 @@ export type NavId =
   | "dashboard"
   | "config"
   | "puestos"
+  | "consecutives"
   | "productos"
   | "categories"
   | "reporte"

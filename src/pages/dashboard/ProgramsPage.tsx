@@ -45,10 +45,10 @@ export default function ProgramsPage() {
   }, [gateReady, programsEnabled, navigate]);
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can("programs", "create", "programs");
-  const canUpdate = !permsReady || can("programs", "update", "programs");
-  const canDelete = !permsReady || can("programs", "delete", "programs");
+  const { can } = usePermissions();
+  const canCreate = can("programs", "create", "programs");
+  const canUpdate = can("programs", "update", "programs");
+  const canDelete = can("programs", "delete", "programs");
 
   usePageTitle([t("shell.programs")]);
 

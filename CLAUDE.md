@@ -336,7 +336,7 @@ The RBAC catalog in `be/management-be/src/seeds/rbac-seed.ts` **mirrors this sid
 2. Map it in `be/management-be/src/seeds/rbac-seed.ts`: the module, its submodules, **all its grantable actions** (`submoduleActionMatrix`), and the system-role grants (`rolePermissionMatrix`).
 3. Apply the idempotent catalog seed in management-be (`npm run db:seed`); `src/scripts/run-rbac-reseed.ts` is the re-run path when rows already exist.
 
-Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. the manual order (`PM`) is always offered, gated on `commercial/create/orders`, while the electronic types need `registered-organization` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`; **historical** — the Hacienda ledger, `read`/`export`/`update`).
+Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. the manual order (`PM`) is always offered, gated on `commercial/create/orders`, while the electronic types need `registered-organization` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, **consecutives** — read/update only; update is the audited raise-only counter correction, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`; **historical** — the Hacienda ledger, `read`/`export`/`update`).
 
 `historicalDocuments` is an item of the **Reportes** section, mapped to
 `reports/historical` (read/export/update) — not a standalone item and not a new
@@ -352,8 +352,8 @@ ledger. Owner/admin/manager inherit read+export from the module-wide `reports`
 grant; `update` (the sweep trigger) is granted to admin per-submodule; staff is
 excluded by holding only `reports/general` + `reports/iva`. The two historical
 routes precede `/dashboard/documents/:saleId` and use the existing route
-permission boundary; page actions keep `usePermissions().can(...)` fail-open
-semantics. The history hooks use `salesApi` with `historicalDocumentsPath`,
+permission boundary; page actions use the same fail-closed
+`usePermissions().can(...)` as everywhere else (TSR-332). The history hooks use `salesApi` with `historicalDocumentsPath`,
 snake_case response types, and 0-indexed API pages adapted to the shared
 1-indexed Pagination. `historical_requested` distinguishes an empty ledger from a
 never-requested sweep; Sync sends `force: true` after an earlier request. CSV
@@ -362,7 +362,13 @@ displayed without an assumed currency because the history response has none.
 
 **Fine-grained twin exception:** a sidebar item whose page hosts multiple config sections can get its own module mirroring those sections. `organization` is the canonical case: the sidebar item stays gated by `admin/organization`, while each org-settings CARD (`OrgSettingsPage.tsx` card ids) is a submodule of the `organization` module (read/update only) — cards are filtered with `can("organization","read",cardId)`. If you add/rename an org-settings card, update the `organization` submodules in `rbac-seed.ts` in the same change (card id = submodule name) and reseed.
 
-Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesPage gates on `admin/…/roles`, MembersPage on `admin/update/members`, the sidebar "+" document button on `documents/create/emitted`. Existing action controls remain fail-open while `my-permissions` loads (RBAC_ENFORCEMENT=log rollout). Route loading is deliberately stricter: `PermissionBoundary` waits for permission data and fails closed on loading/error/denial before its lazy child can render.
+Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesPage gates on `admin/…/roles`, MembersPage on `admin/update/members`, the sidebar "+" document button on `documents/create/emitted`.
+
+**Everything fails CLOSED (TSR-332).** `can()` / `hasModule()` answer `false` until `my-permissions` resolves; never write `!isReady || can(...)`. The sidebar is built only from the caller's available modules (`hasModule`) + `read` grants — skeleton while loading, retry row on error, and an item without a `NAV_PERMISSION` pair never renders. Permission props on shared components default to `false`, never `true`. `PermissionBoundary` waits for permission data and fails closed on loading/error/denial before its lazy child can render.
+
+**Action mapping (one rule for every page):** add → `create`; edit → `update`; **change status (activate/deactivate) AND delete → `delete`**. A control the role may not use is **not rendered** — never merely disabled. `useActionPermissions(module, submodule)` returns `{canRead, canCreate, canUpdate, canDelete}` for this.
+
+**Multiple roles + live changes (TSR-330/331).** A member can hold several roles (`my-permissions.assigned_roles`); only the ACTIVE `role` grants anything. Members switch it on the profile page (`RoleSwitcherCard`, `PUT /rbac/my-active-role`); admins assign/unassign roles as chips on MembersPage. management-be pushes `rbac.permissions_changed` on the user's `/notifications/{sub}` AppSync channel on any role/grant/member-role change; `useRealtimeNotifications` routes it to `lib/realtimeBus.ts` and `usePermissionsLiveSync` (mounted in `DashboardLayout`) drops every `["rbac"]` query so the whole UI re-resolves without a reload.
 
 ### 5.2 Route bundles and permission-aware loading
 
@@ -756,7 +762,8 @@ If you write a helper component or render function that produces user-visible te
 | Gate a feature by business type | **Don't** (TSR-240). Every org holds every vertical module; the business type only decides what the app *promotes* (`useBusinessType().emphasises`). If a surface is too noisy for some orgs, add it to `HIDEABLE_MODULES` in `store/orgFeatureVisibility.ts` so the org can hide it itself from org settings → General. `hooks/useBusinessType.ts` + `components/org-settings/{BusinessIdentityFields,FeatureVisibilityFields}.tsx` + `management-be` `seeds/rbac-seed.ts` `BUSINESS_TYPE_EMPHASIS` / `ALL_ORG_MODULE_NAMES` |
 | Change which branch/terminal a document is issued from | `hooks/useSessionSelection.ts` + `components/pos/checkout/sections/BranchTerminalSection.tsx` + `hooks/useBranches.ts` |
 | Touch notifications (the bell) | `hooks/useUserNotifications.ts` (hydrate + mark-read), `hooks/useRealtimeNotifications.ts` (AppSync Events subscribe), `components/layout/NotificationsBell.tsx`, `contexts/NotificationsContext.tsx` (ephemeral app toasts only). **Never add a `refetchInterval`** — the feed is server-pushed; see below |
-| Touch mesas / cuentas abiertas | `hooks/useTables.ts` + `components/pos/TablesPanel.tsx` + store-be `tables_controller.py` (branch **code**, not UUID) |
+| Touch mesas / cuentas abiertas | `hooks/useTables.ts` + `components/pos/TablesPanel.tsx` + store-be `tables_controller.py` (branch **code**, not UUID). **Currently OFF in the integrated POS** — `POS_TABLES_ENABLED` in `src/config/features.ts` (TSR-333); flip it to bring the tab back |
+| Touch terminal consecutives | `pages/dashboard/TerminalDetailPage.tsx` + `ConsecutivesPage.tsx` + `components/consecutives/ConsecutiveEditDrawer.tsx` + `hooks/useConsecutives.ts` + `lib/consecutiveSearchBuilder.ts` (enum mirrors store-be `consecutive_search_filters.py`). Edits are raise-only + audited server-side (TSR-327) |
 | Touch combos / servicio 10% / cuenta dividida | `lib/comboExplosion.ts`, `lib/serviceCharge.ts`, `lib/splitBill.ts` (all have tests — the tax reasoning lives in their doc comments) |
 | Add a scanner / scale-barcode behaviour | `hooks/useProductByCode.ts` + `lib/scaleBarcode.ts` + `services/offlineCatalog.ts` `readCachedProductByCode` — **ungated**, every org has it |
 | Touch a vertical's data (lots, units, agenda, assets) | `hooks/useVerticals.ts` + store-be `verticals_controller.py` / `services/{lot,commission,product_unit,price_schedule,recurring_invoice}_service.py` |

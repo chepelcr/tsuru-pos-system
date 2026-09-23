@@ -40,13 +40,10 @@ export default function OrgSettingsPage() {
 
   // Per-section RBAC gating: each card id doubles as a submodule of the
   // `organization` module (see rbac-seed.ts in tsuru-platform-api). Cards hide
-  // when the role lacks read on the section; fail-open until permissions
-  // resolve (same convention as the sidebar's NAV_PERMISSION gating).
-  const { can, isReady: permsReady } = usePermissions();
-  const sectionVisible = (sectionId: string): boolean => {
-    if (!permsReady) return true;
-    return can("organization", "read", sectionId);
-  };
+  // when the role lacks read on the section; fail-closed like every other
+  // gate (TSR-332) — the route boundary already waited for permissions.
+  const { can } = usePermissions();
+  const sectionVisible = (sectionId: string): boolean => can("organization", "read", sectionId);
 
   // Whether the user has dismissed the welcome ghost and is now inside the
   // inline stepper. Resets back to welcome on every page mount.

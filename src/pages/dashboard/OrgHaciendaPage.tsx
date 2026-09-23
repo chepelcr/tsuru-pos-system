@@ -29,8 +29,8 @@ export default function OrgHaciendaPage() {
   // The stepper, edit triggers and drawer are all write surfaces; gate them on
   // organization/update/hacienda. Fail-open while my-permissions resolves
   // (RBAC_ENFORCEMENT=log rollout).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "hacienda");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "hacienda");
 
   // First-time setup branch: render the stepper. Once a config exists we swap
   // to the existing summary tab + edit drawer, unchanged.

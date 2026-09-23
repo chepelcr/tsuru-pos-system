@@ -69,9 +69,9 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
   const isEditing = !!category;
 
   // RBAC defense-in-depth on the footer submit — fail-open while loading (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
+  const { can } = usePermissions();
   const canSubmit =
-    !permsReady || can("commercial", isEditing ? "update" : "create", "categories");
+    can("commercial", isEditing ? "update" : "create", "categories");
 
   const createMutation = useCreateCategory(orgId);
   const updateMutation = useUpdateCategory(orgId);

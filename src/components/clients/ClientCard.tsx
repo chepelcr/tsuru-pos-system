@@ -18,9 +18,9 @@ export function ClientCard({ client, orgId, onNavigate, onEdit, onToggleActive, 
   const statusMutation = useUpdateClientStatus(orgId);
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("commercial", "update", "clients");
-  const canDelete = !permsReady || can("commercial", "delete", "clients");
+  const { can } = usePermissions();
+  const canUpdate = can("commercial", "update", "clients");
+  const canDelete = can("commercial", "delete", "clients");
 
   const displayName = clientDisplayName(client);
   const [bg, fg] = avatarColor(displayName);

@@ -16,7 +16,8 @@ type IconName =
   | "home" | "store" | "mapPin" | "fileText" | "layers" | "mail"
   | "sun" | "moon" | "sliders" | "sparkles"
   | "graduationCap"
-  | "burger" | "drink";
+  | "burger" | "drink"
+  | "hash";
 
 interface IconProps {
   name: IconName | string;
@@ -100,6 +101,7 @@ const paths: Record<string, React.ReactNode> = {
   graduationCap: <><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1 2.5 2.5 6 2.5s6-1.5 6-2.5v-5"/><line x1="22" y1="10" x2="22" y2="15"/></>,
   burger: <><circle cx="12" cy="12" r="10"/><path d="M7 11h10M7 13h10M7 15h10"/></>,
   drink: <><path d="M6 4h12l-1 16a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z"/><line x1="6" y1="9" x2="18" y2="9"/></>,
+  hash: <><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></>,
 };
 
 export function Icon({ name, size = 18, strokeWidth = 2, className, style }: IconProps) {

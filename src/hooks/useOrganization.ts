@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { api, salesApi, userPath, orgPath, orgContentPath, authOrgPath } from '@/lib/api';
 import type { Organization } from '../types';
 import type { BusinessType } from '@/types/organization';
+import type { RoleSummaryDto } from "@/types/rbac";
 
 export type { Organization } from '../types';
 
@@ -28,7 +29,10 @@ export interface OrgMember {
   role_id: string;
   status?: string;
   user?: { id: string; email: string; first_name?: string; last_name?: string };
+  /** The ACTIVE role — the one whose grants apply right now. */
   role?: { id: string; name: string; display_name: string };
+  /** Every role assigned to the member, the active one included (TSR-330). */
+  roles?: RoleSummaryDto[];
 }
 
 interface CreateOrganizationData {

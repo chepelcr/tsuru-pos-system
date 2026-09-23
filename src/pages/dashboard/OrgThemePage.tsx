@@ -36,8 +36,8 @@ export default function OrgThemePage() {
   // Each swatch persists the theme on click, so the grid is a write surface.
   // Without update permission the swatches stay visible (read view) but
   // non-interactive. Fail-open while my-permissions resolves.
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "theme");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "theme");
 
   if (orgLoading || !org) {
     return (

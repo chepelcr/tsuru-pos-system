@@ -3,6 +3,7 @@ import { useAssignment } from "@/hooks/useAssignment";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useSessionContext } from "@/store/sessionContext";
 import { useTableMutations } from "@/hooks/useTables";
+import { POS_TABLES_ENABLED } from "@/config/features";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useCartFlow } from "@/hooks/useCartFlow";
@@ -240,13 +241,13 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
       }}
       branchCode={sessionCtx.branch_code}
       activeDocumentId={tabId}
-      onSelectTable={(table) => {
+      onSelectTable={POS_TABLES_ENABLED ? (table) => {
         // Binding is one-way on purpose: the table records WHICH document tab
         // it holds, while the cart itself stays in documentStore. Two stores
         // owning the same cart is how carts get lost on a device swap.
         if (tabId) holdDocument(table.table_id, table.held_document_id === tabId ? null : tabId);
         setLeftTab("products");
-      }}
+      } : undefined}
     />
   );
 

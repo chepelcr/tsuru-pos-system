@@ -24,9 +24,9 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
     useStoreListStore();
 
   // RBAC action gating — stores inherit commercial/clients tuples (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can("commercial", "create", "clients");
-  const canUpload = !permsReady || can("commercial", "upload", "clients");
+  const { can } = usePermissions();
+  const canCreate = can("commercial", "create", "clients");
+  const canUpload = can("commercial", "upload", "clients");
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Store | null>(null);

@@ -47,8 +47,8 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
 
   const menuItems = [
     { label: t("common.edit"),        icon: "edit",        action: () => onEdit(branch),            hidden: branch.status === 3 || !canUpdateStations },
-    { label: t("common.activate"),    icon: "checkCircle", action: () => onStatusChange(branch, 1), hidden: branch.status !== 2 || !canUpdateStations, color: "hsl(var(--success))" },
-    { label: t("common.deactivate"),  icon: "xCircle",     action: () => onStatusChange(branch, 2), hidden: branch.status !== 1 || !canUpdateStations },
+    { label: t("common.activate"),    icon: "checkCircle", action: () => onStatusChange(branch, 1), hidden: branch.status !== 2 || !canDeleteStations, color: "hsl(var(--success))" },
+    { label: t("common.deactivate"),  icon: "xCircle",     action: () => onStatusChange(branch, 2), hidden: branch.status !== 1 || !canDeleteStations },
     { label: t("common.delete"),      icon: "trash",       action: () => onStatusChange(branch, 3), hidden: branch.status === 3 || !canDeleteStations, color: "hsl(var(--destructive))" },
   ];
   const hasMenuItems = menuItems.some((item) => !item.hidden);
@@ -111,7 +111,7 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
           <div className="flex items-center gap-2">
             <Icon name="sliders" size={13} className="text-muted-foreground" />
             <span className="t-xs font-semibold">
-              Terminales
+              {t("puestos.terminals")}
               {branch.terminals?.length != null && (
                 <span className="ml-1.5 bg-muted rounded-full px-[7px] py-px text-[11px] font-bold">
                   {branch.terminals.length}
@@ -129,7 +129,7 @@ export function BranchCard({ branch, orgId, onEdit, onStatusChange, onAddTermina
                 <span className="t-xs text-muted-foreground">{t("puestos.terminals")} — 0</span>
               </div>
             ) : (
-              terminals.map((term, i) => <TerminalRow key={term.terminal_id} terminal={term} isLast={i === terminals.length - 1} />)
+              terminals.map((term, i) => <TerminalRow key={term.terminal_id} terminal={term} branchCode={branch.code} isLast={i === terminals.length - 1} />)
             )}
             {isActive && canCreateStations && (
               <div className="px-5 py-2.5">

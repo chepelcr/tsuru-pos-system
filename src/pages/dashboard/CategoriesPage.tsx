@@ -19,10 +19,10 @@ export default function CategoriesPage() {
   const { confirm, ConfirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can("commercial", "create", "categories");
-  const canUpdate = !permsReady || can("commercial", "update", "categories");
-  const canDelete = !permsReady || can("commercial", "delete", "categories");
+  const { can } = usePermissions();
+  const canCreate = can("commercial", "create", "categories");
+  const canUpdate = can("commercial", "update", "categories");
+  const canDelete = can("commercial", "delete", "categories");
 
   usePageTitle([t("shell.categories")]);
 

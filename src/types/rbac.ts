@@ -65,6 +65,22 @@ export interface MyPermissionsDto {
    * Module-wide grants are EXPANDED per available submodule.
    */
   permissions: string[];
+  /**
+   * Every role assigned to the caller in this org (TSR-330), the active one
+   * (`role`) included. Only the active role grants anything; the others are
+   * what the caller may switch to (`PUT /rbac/my-active-role`). Optional so
+   * an older backend without multi-role still type-checks at runtime.
+   */
+  assigned_roles?: RoleSummaryDto[];
+}
+
+/** A role as listed on a member: assigned or active. */
+export interface RoleSummaryDto {
+  id: string;
+  name: string;
+  display_name: string;
+  is_system: boolean;
+  is_active: boolean;
 }
 
 /** Role row (= Role $inferSelect on the markets-api). */

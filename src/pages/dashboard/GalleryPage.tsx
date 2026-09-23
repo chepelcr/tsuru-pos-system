@@ -32,10 +32,10 @@ export default function GalleryPage() {
   const { confirm, ConfirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can("storefront", "create", "gallery");
-  const canUpload = !permsReady || can("storefront", "upload", "gallery");
-  const canDelete = !permsReady || can("storefront", "delete", "gallery");
+  const { can } = usePermissions();
+  const canCreate = can("storefront", "create", "gallery");
+  const canUpload = can("storefront", "upload", "gallery");
+  const canDelete = can("storefront", "delete", "gallery");
   // The Add modal hosts both the upload dropzone and add-by-URL.
   const canAdd = canCreate || canUpload;
 

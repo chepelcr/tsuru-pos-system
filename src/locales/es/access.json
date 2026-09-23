@@ -167,5 +167,17 @@
   "roles.members.changeRoleTitle": "Cambiar rol",
   "roles.members.changeRole": "Cambiar rol",
   "roles.members.changeRoleConfirm": "¿Asignar el rol \"{role}\" a {name}?",
-  "roles.members.changeRoleFailed": "No se pudo cambiar el rol del miembro."
+  "roles.members.changeRoleFailed": "No se pudo cambiar el rol del miembro.",
+  "rbac.sub.admin.consecutives": "Consecutivos",
+  "rbac.live.changedTitle": "Tus permisos cambiaron",
+  "rbac.live.changedBody": "Un administrador actualizó tu rol o sus permisos. El menú y las acciones ya reflejan el cambio.",
+  "roles.members.activeRole": "Rol activo",
+  "roles.members.addRole": "Agregar rol",
+  "roles.members.addRolePlaceholder": "+ Rol",
+  "roles.members.addRoleTitle": "Agregar rol",
+  "roles.members.addRoleConfirm": "¿Asignar también el rol \"{role}\" a {name}? Podrá cambiar a él desde su perfil.",
+  "roles.members.removeRole": "Quitar rol",
+  "roles.members.removeRoleTitle": "Quitar rol",
+  "roles.members.removeRoleConfirm": "¿Quitar el rol \"{role}\" a {name}? Si era su rol activo, pasará a otro de sus roles.",
+  "roles.members.removeRoleAria": "Quitar el rol {role}"
 }

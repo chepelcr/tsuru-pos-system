@@ -5,9 +5,10 @@ interface ProductBulkBarProps {
   count: number;
   /** True when every product on the current page is selected. */
   allSelected: boolean;
-  /** RBAC: show activate/deactivate (commercial/products update). */
-  canUpdate?: boolean;
-  /** RBAC: show delete (commercial/products delete). */
+  /**
+   * RBAC: activate/deactivate AND delete both need commercial/products
+   * `delete` — a status change takes the product out of use (TSR-332).
+   */
   canDelete?: boolean;
   onToggleSelectAll: () => void;
   onActivate: () => void;
@@ -18,8 +19,7 @@ interface ProductBulkBarProps {
 export function ProductBulkBar({
   count,
   allSelected,
-  canUpdate = true,
-  canDelete = true,
+  canDelete = false,
   onToggleSelectAll,
   onActivate,
   onDeactivate,
@@ -40,12 +40,12 @@ export function ProductBulkBar({
         {allSelected ? t("products.deselectAll") : t("products.selectAll")}
       </Button>
       <div className="flex-1" />
-      {canUpdate && (
+      {canDelete && (
         <Button variant="outline" size="xs" icon="eye" onClick={onActivate}>
           {t("common.activate")}
         </Button>
       )}
-      {canUpdate && (
+      {canDelete && (
         <Button variant="outline" size="xs" icon="eyeOff" onClick={onDeactivate}>
           {t("common.deactivate")}
         </Button>

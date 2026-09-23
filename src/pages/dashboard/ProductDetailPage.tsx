@@ -55,9 +55,9 @@ export default function ProductDetailPage({ productId }: Props) {
   const { confirm, ConfirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("commercial", "update", "products");
-  const canDelete = !permsReady || can("commercial", "delete", "products");
+  const { can } = usePermissions();
+  const canUpdate = can("commercial", "update", "products");
+  const canDelete = can("commercial", "delete", "products");
 
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState<ProductFormState>({ ...EMPTY_FORM });

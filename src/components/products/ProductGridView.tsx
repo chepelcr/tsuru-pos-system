@@ -10,8 +10,10 @@ interface ProductGridViewProps {
   selected: string[];
   editingPrice: string | null;
   priceInput: string;
-  /** RBAC: show edit / activate-deactivate / inline price edit (commercial/products update). */
+  /** RBAC: show edit + inline price edit (commercial/products update). */
   canUpdate?: boolean;
+  /** RBAC: show activate/deactivate (commercial/products delete — TSR-332 mapping). */
+  canChangeStatus?: boolean;
   onToggleSelect: (id: string) => void;
   onEdit: (p: Product) => void;
   onToggleActive: (id: string, status: number) => void;
@@ -29,7 +31,8 @@ export function ProductGridView({
   selected,
   editingPrice,
   priceInput,
-  canUpdate = true,
+  canUpdate = false,
+  canChangeStatus = false,
   onToggleSelect,
   onEdit,
   onToggleActive,
@@ -91,15 +94,17 @@ export function ProductGridView({
                   onSave={onSavePrice}
                   onCancel={onCancelEditPrice}
                 />
-                {canUpdate && (
+                {(canUpdate || canChangeStatus) && (
                   <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="xs" icon="edit" onClick={() => onEdit(p)} />
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      icon={p.status === 1 ? "eye" : "eyeOff"}
-                      onClick={() => onToggleActive(p.product_id, p.status === 1 ? 2 : 1)}
-                    />
+                    {canUpdate && <Button variant="ghost" size="xs" icon="edit" onClick={() => onEdit(p)} />}
+                    {canChangeStatus && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        icon={p.status === 1 ? "eye" : "eyeOff"}
+                        onClick={() => onToggleActive(p.product_id, p.status === 1 ? 2 : 1)}
+                      />
+                    )}
                   </div>
                 )}
               </div>

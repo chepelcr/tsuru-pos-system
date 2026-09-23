@@ -36,7 +36,7 @@ export function PaymentSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
-  canSave = true,
+  canSave = false,
 }: PaymentSettingsFormProps) {
   const { t } = useLanguage();
 

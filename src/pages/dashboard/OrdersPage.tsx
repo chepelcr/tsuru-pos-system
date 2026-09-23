@@ -117,8 +117,8 @@ export default function OrdersPage() {
 
   // RBAC action gating — Excel import creates orders. Fail-open while
   // my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can('commercial', 'create', 'orders');
+  const { can } = usePermissions();
+  const canCreate = can('commercial', 'create', 'orders');
 
   // Manual orders are available to every org: a pedido is not a fiscal
   // document and is not always billed. The button opens a `PM` tab in the

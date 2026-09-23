@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { ProductsPanel } from './ProductsPanel';
 import { CustomerPanel } from './CustomerPanel';
 import { TablesPanel } from './TablesPanel';
+import { POS_TABLES_ENABLED } from '@/config/features';
 import { useBusinessType } from '@/hooks/useBusinessType';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Product } from '@/types';
@@ -46,13 +47,14 @@ export function PosLeftPane({
   onSelectTable,
 }: PosLeftPaneProps) {
   const { t } = useLanguage();
-  // Fail-closed: the Mesas tab only exists for an org whose business type
-  // granted the restaurant module.
+  // Mesas is off product-wide for now (POS_TABLES_ENABLED); when it returns
+  // it still respects the org's own "hide restaurant" preference.
   const { isRestaurant } = useBusinessType();
+  const showTables = POS_TABLES_ENABLED && isRestaurant;
   const TABS: { id: LeftTab; label: string }[] = [
     { id: 'products', label: t('tabs.products') },
     { id: 'clients', label: t('tabs.clients') },
-    ...(isRestaurant ? [{ id: 'tables' as LeftTab, label: t('tables.tab') }] : []),
+    ...(showTables ? [{ id: 'tables' as LeftTab, label: t('tables.tab') }] : []),
   ];
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -76,7 +78,7 @@ export function PosLeftPane({
 
       {/* Tab content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'tables' ? (
+        {showTables && activeTab === 'tables' ? (
           <TablesPanel
             orgId={orgId}
             branchCode={branchCode}

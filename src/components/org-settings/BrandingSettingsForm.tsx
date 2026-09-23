@@ -72,7 +72,7 @@ export function BrandingSettingsForm({
   initialValues,
   onSubmit,
   isSaving = false,
-  canSave = true,
+  canSave = false,
 }: BrandingSettingsFormProps) {
   const { t } = useLanguage();
 

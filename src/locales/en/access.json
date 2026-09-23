@@ -167,5 +167,17 @@
   "roles.members.changeRoleTitle": "Change role",
   "roles.members.changeRole": "Change role",
   "roles.members.changeRoleConfirm": "Assign the role \"{role}\" to {name}?",
-  "roles.members.changeRoleFailed": "Could not change the member's role."
+  "roles.members.changeRoleFailed": "Could not change the member's role.",
+  "rbac.sub.admin.consecutives": "Consecutives",
+  "rbac.live.changedTitle": "Your permissions changed",
+  "rbac.live.changedBody": "An administrator updated your role or its permissions. The menu and actions already reflect the change.",
+  "roles.members.activeRole": "Active role",
+  "roles.members.addRole": "Add role",
+  "roles.members.addRolePlaceholder": "+ Role",
+  "roles.members.addRoleTitle": "Add role",
+  "roles.members.addRoleConfirm": "Also assign the \"{role}\" role to {name}? They can switch to it from their profile.",
+  "roles.members.removeRole": "Remove role",
+  "roles.members.removeRoleTitle": "Remove role",
+  "roles.members.removeRoleConfirm": "Remove the \"{role}\" role from {name}? If it was their active role, they move to another of their roles.",
+  "roles.members.removeRoleAria": "Remove the {role} role"
 }

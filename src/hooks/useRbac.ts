@@ -15,6 +15,7 @@ import type {
   MyPermissionsDto,
   PermissionGrantDto,
   RoleDto,
+  RoleSummaryDto,
 } from "@/types/rbac";
 
 /**
@@ -210,6 +211,84 @@ export function useAssignMemberRole() {
   });
 }
 
+// ─── Multiple roles per member (O16–O19, TSR-330) ───────────────────────────
+
+/** Roles assigned to a member (the active one included). */
+export function useMemberRoles(
+  userId: string | undefined,
+  orgId: string | undefined,
+  memberId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: ["rbac", "member-roles", orgId, memberId],
+    queryFn: () =>
+      api.get<RoleSummaryDto[]>(orgRbacPath(userId!, orgId!, `/members/${memberId}/roles`)),
+    enabled: !!userId && !!orgId && !!memberId && (options?.enabled ?? true),
+  });
+}
+
+interface MemberRoleMutationInput {
+  userId: string;
+  orgId: string;
+  memberId: string;
+  roleId: string;
+}
+
+function invalidateMemberRoleQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  v: { userId: string; orgId: string; memberId?: string }
+) {
+  queryClient.invalidateQueries({ queryKey: ["org-members", v.userId, v.orgId] });
+  queryClient.invalidateQueries({ queryKey: ["rbac", "member-roles", v.orgId] });
+  queryClient.invalidateQueries({ queryKey: ["rbac", "my-permissions", v.orgId] });
+}
+
+/** Grant an extra role to a member. Their active role is unchanged. */
+export function useAddMemberRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, orgId, memberId, roleId }: MemberRoleMutationInput) =>
+      api.post<RoleSummaryDto[]>(orgRbacPath(userId, orgId, `/members/${memberId}/roles`), {
+        role_id: roleId,
+      }),
+    onSuccess: (_, v) => invalidateMemberRoleQueries(queryClient, v),
+  });
+}
+
+/**
+ * Take a role away from a member. The server refuses the member's last role
+ * and the last owner's owner role (400), and moves the active role when the
+ * one removed was active.
+ */
+export function useRemoveMemberRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, orgId, memberId, roleId }: MemberRoleMutationInput) =>
+      api.delete<RoleSummaryDto[]>(
+        orgRbacPath(userId, orgId, `/members/${memberId}/roles/${roleId}`)
+      ),
+    onSuccess: (_, v) => invalidateMemberRoleQueries(queryClient, v),
+  });
+}
+
+/**
+ * Switch the caller's ACTIVE role to another role assigned to them. Every
+ * rbac query is dropped so the sidebar, route boundaries and action buttons
+ * re-resolve against the new role's grants.
+ */
+export function useSwitchActiveRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, orgId, roleId }: { userId: string; orgId: string; roleId: string }) =>
+      api.put(orgRbacPath(userId, orgId, "/my-active-role"), { role_id: roleId }),
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({ queryKey: ["rbac"] });
+      queryClient.invalidateQueries({ queryKey: ["org-members", v.userId, v.orgId] });
+    },
+  });
+}
+
 // ─── Permission gating helper ───────────────────────────────────────────────
 
 export interface UsePermissionsResult {
@@ -222,6 +301,8 @@ export interface UsePermissionsResult {
   can: (module: string, action: string, submodule?: string) => boolean;
   /** Module-level nav gating (MyPermissionsDto.modules). */
   hasModule: (module: string) => boolean;
+  /** Roles assigned to the caller in this org (active included). */
+  assignedRoles: RoleSummaryDto[];
   modules: string[];
   is_owner: boolean;
   is_admin: boolean;
@@ -242,10 +323,13 @@ export interface UsePermissionsResult {
  * default-organization query (works both inside and outside `OrgProvider`,
  * e.g. in `DashboardSidebar` while the org is still loading).
  *
- * FAIL-OPEN while the permission set is unknown (loading or request failed):
- * the backend ships with RBAC_ENFORCEMENT=log (contract §3.0.4), so the UI
- * must not lock users out before the endpoint is live. Once data arrives,
- * gating is enforced.
+ * FAIL-CLOSED (TSR-332): while the permission set is unknown — loading, or the
+ * request failed — `can` and `hasModule` answer false. Nothing is offered
+ * until the server has said it is allowed: the sidebar renders a skeleton,
+ * route boundaries a spinner/retry, and action buttons simply do not render.
+ * (This used to fail open for the `RBAC_ENFORCEMENT=log` rollout; the
+ * endpoint is live everywhere, and a button that appears and then vanishes is
+ * worse than one that appears a moment late.)
  */
 export function usePermissions(): UsePermissionsResult {
   const { user } = useAuthContext();
@@ -257,7 +341,7 @@ export function usePermissions(): UsePermissionsResult {
 
   const can = useCallback(
     (module: string, action: string, submodule?: string): boolean => {
-      if (!data) return true; // fail-open until permissions resolve
+      if (!data) return false; // fail-closed until permissions resolve
       if (data.is_owner) return true;
       if (submodule) {
         return data.permissions.includes(`${module}:${submodule}:${action}`);
@@ -272,7 +356,7 @@ export function usePermissions(): UsePermissionsResult {
 
   const hasModule = useCallback(
     (module: string): boolean => {
-      if (!data) return true; // fail-open until permissions resolve
+      if (!data) return false; // fail-closed until permissions resolve
       if (data.is_owner) return true;
       return data.modules.includes(module);
     },
@@ -282,6 +366,7 @@ export function usePermissions(): UsePermissionsResult {
   return {
     can,
     hasModule,
+    assignedRoles: data?.assigned_roles ?? (data ? [{ ...data.role }] : []),
     modules: data?.modules ?? [],
     is_owner: data?.is_owner ?? false,
     is_admin: data?.is_admin ?? false,
@@ -291,6 +376,40 @@ export function usePermissions(): UsePermissionsResult {
     refetch: () => { void query.refetch(); },
     role: data?.role ?? null,
   };
+}
+
+export interface ActionPermissions {
+  canRead: boolean;
+  /** "Add" buttons. */
+  canCreate: boolean;
+  /** "Edit" buttons and forms. */
+  canUpdate: boolean;
+  /**
+   * "Delete" AND "change status" (activate / deactivate) — both remove the
+   * record from normal use, so both need `delete` (TSR-332 action mapping).
+   */
+  canDelete: boolean;
+  /** Any of the above resolved — false while permissions are loading. */
+  isReady: boolean;
+}
+
+/**
+ * The standard verb set for one `module/submodule` pair. Pages render a
+ * control only when its flag is true; an unauthorised control is not
+ * rendered at all (never merely disabled). Fail-closed like `can`.
+ */
+export function useActionPermissions(module: string, submodule: string): ActionPermissions {
+  const { can, isReady } = usePermissions();
+  return useMemo(
+    () => ({
+      canRead: can(module, "read", submodule),
+      canCreate: can(module, "create", submodule),
+      canUpdate: can(module, "update", submodule),
+      canDelete: can(module, "delete", submodule),
+      isReady,
+    }),
+    [can, isReady, module, submodule]
+  );
 }
 
 /**
@@ -310,13 +429,12 @@ export function usePermissions(): UsePermissionsResult {
  *     order page (`docs/MANUAL_ORDERS.md` §7); an `orders-only` org simply
  *     never does.
  *
- * RBAC fails open until my-permissions resolves, as everywhere else. The
- * fiscal mode fails CLOSED for the Hacienda half: while it is unknown those
- * types stay hidden rather than offering a document the org may not be able
- * to build.
+ * Both gates fail CLOSED: until my-permissions resolves nothing is offered,
+ * and while the fiscal mode is unknown the Hacienda types stay hidden rather
+ * than offering a document the org may not be able to build.
  */
 export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
-  const { can, isReady } = usePermissions();
+  const { can } = usePermissions();
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
@@ -324,15 +442,15 @@ export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
 
   return useMemo(() => {
     const types: EditorDocumentTypeInfo[] = fiscal.isElectronic
-      ? DOCUMENT_TYPES.filter((dt) => !isReady || can("documents", "create", dt.permSub))
+      ? DOCUMENT_TYPES.filter((dt) => can("documents", "create", dt.permSub))
       : [];
 
-    if (!isReady || can("commercial", "create", "orders")) {
+    if (can("commercial", "create", "orders")) {
       types.push(MANUAL_ORDER_DOCUMENT_TYPE);
     }
 
     return types;
-  }, [can, isReady, fiscal.isElectronic]);
+  }, [can, fiscal.isElectronic]);
 }
 
 /**
@@ -345,10 +463,10 @@ export function useCreatableDocTypes(): readonly EditorDocumentTypeInfo[] {
  * an emitted document or that manual order.
  */
 export function useCanOpenCreateMenu(): boolean {
-  const { can, isReady } = usePermissions();
+  const { can } = usePermissions();
   const creatable = useCreatableDocTypes();
 
   const hasManualOrder = creatable.some((dt) => dt.code === MANUAL_ORDER_DOC_TYPE);
   if (creatable.length === 0) return false;
-  return !isReady || can("documents", "create", "emitted") || hasManualOrder;
+  return can("documents", "create", "emitted") || hasManualOrder;
 }

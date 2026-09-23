@@ -123,6 +123,7 @@
   "shell.categories": "Categorías",
   "shell.clients": "Clientes",
   "shell.confirmations": "Confirmaciones",
+  "shell.consecutives": "Consecutivos",
   "shell.content": "Contenido",
   "shell.createDocument": "Crear documento",
   "shell.deployments": "Publicaciones",

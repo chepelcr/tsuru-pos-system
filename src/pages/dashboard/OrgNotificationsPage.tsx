@@ -26,8 +26,8 @@ export default function OrgNotificationsPage() {
 
   // Edit triggers + save drawer gate on organization/update/notifications.
   // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("organization", "update", "notifications");
+  const { can } = usePermissions();
+  const canUpdate = can("organization", "update", "notifications");
 
   return (
     <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">

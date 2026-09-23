@@ -29,9 +29,9 @@ export function StoreCard({ store, onEdit, onStatusChange, delay = 0 }: StoreCar
   const isDeleted = store.status === 3;
 
   // RBAC action gating — stores inherit commercial/clients tuples (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("commercial", "update", "clients");
-  const canDelete = !permsReady || can("commercial", "delete", "clients");
+  const { can } = usePermissions();
+  const canUpdate = can("commercial", "update", "clients");
+  const canDelete = can("commercial", "delete", "clients");
 
   const menuItems: MenuItem[] = [
     { label: t("common.edit"), icon: "edit", action: () => onEdit(store), hidden: !canUpdate },
@@ -39,13 +39,13 @@ export function StoreCard({ store, onEdit, onStatusChange, delay = 0 }: StoreCar
       label: t("common.activate"),
       icon: "checkCircle",
       action: () => onStatusChange(store.store_id, 1),
-      hidden: store.status !== 2 || !canUpdate,
+      hidden: store.status !== 2 || !canDelete,
     },
     {
       label: t("common.deactivate"),
       icon: "xCircle",
       action: () => onStatusChange(store.store_id, 2),
-      hidden: store.status !== 1 || !canUpdate,
+      hidden: store.status !== 1 || !canDelete,
     },
     {
       label: t("common.delete"),

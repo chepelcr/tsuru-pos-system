@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { events } from "aws-amplify/api";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { EVENTS_ENDPOINT } from "@/lib/amplify";
+import { asControlEvent, emitRealtimeControlEvent } from "@/lib/realtimeBus";
 import type { ServerNotification } from "@/types/notification";
 
 type Cleanup = () => void;
@@ -77,7 +78,10 @@ export function useRealtimeNotifications({
         // A successful connect that is not the first one means we were away.
         // Re-read once to pick up whatever was published in the gap; the
         // dedupe-by-id in the cache writer makes the overlap harmless.
-        if (hasConnectedBefore) onReconnectRef.current?.();
+        if (hasConnectedBefore) {
+          onReconnectRef.current?.();
+          emitRealtimeControlEvent({ kind: "reconnected" });
+        }
         hasConnectedBefore = true;
         attempt = 0;
 
@@ -86,9 +90,15 @@ export function useRealtimeNotifications({
             const payload = message?.event;
             if (!payload) return;
             try {
-              const notification = (
-                typeof payload === "string" ? JSON.parse(payload) : payload
-              ) as ServerNotification;
+              const parsed: unknown = typeof payload === "string" ? JSON.parse(payload) : payload;
+              // Control events (e.g. "your permissions changed") share the
+              // channel but are not bell notifications — route them to the bus.
+              const control = asControlEvent(parsed);
+              if (control) {
+                emitRealtimeControlEvent(control);
+                return;
+              }
+              const notification = parsed as ServerNotification;
               if (notification?.id) onNotificationRef.current(notification);
             } catch {
               // A frame we cannot parse is not worth tearing the socket down

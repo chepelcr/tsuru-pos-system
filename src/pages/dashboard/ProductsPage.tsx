@@ -41,11 +41,11 @@ export default function ProductsPage() {
   const [, navigate] = useLocation();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canCreate = !permsReady || can("commercial", "create", "products");
-  const canUpdate = !permsReady || can("commercial", "update", "products");
-  const canDelete = !permsReady || can("commercial", "delete", "products");
-  const canUpload = !permsReady || can("commercial", "upload", "products");
+  const { can } = usePermissions();
+  const canCreate = can("commercial", "create", "products");
+  const canUpdate = can("commercial", "update", "products");
+  const canDelete = can("commercial", "delete", "products");
+  const canUpload = can("commercial", "upload", "products");
 
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -315,12 +315,11 @@ export default function ProductsPage() {
       />
 
       {/* Bulk actions bar */}
-      {selected.length > 0 && (canUpdate || canDelete) && (
+      {selected.length > 0 && canDelete && (
         <ProductBulkBar
           count={selected.length}
           allSelected={allSelected}
           onToggleSelectAll={handleToggleSelectAll}
-          canUpdate={canUpdate}
           canDelete={canDelete}
           onActivate={() => bulkSetStatus(1)}
           onDeactivate={() => bulkSetStatus(2)}
@@ -339,6 +338,7 @@ export default function ProductsPage() {
           products={products}
           selected={selected}
           canUpdate={canUpdate}
+          canChangeStatus={canDelete}
           onToggleSelect={toggleSelect}
           onEdit={openEdit}
           onToggleActive={handleToggleActive}

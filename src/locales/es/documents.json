@@ -199,5 +199,13 @@
   "quickDoc.subtitle": "Empezá una factura electrónica, un tiquete o consultá tus documentos.",
   "quickDoc.subtitleOrders": "Registrá un pedido o consultá tus documentos.",
   "quickDoc.title": "Crear documento",
-  "quickDoc.viewDocuments": "Ver documentos"
+  "quickDoc.viewDocuments": "Ver documentos",
+  "documents.validation.errorPosition": "Fila {row}, columna {column}",
+  "documents.detail.otherFields": "Otros campos",
+  "documents.detail.issuer": "Emisor",
+  "documents.detail.openOrder": "Abrir pedido {number}",
+  "documents.detail.tradeName": "Nombre comercial",
+  "documents.detail.nationality": "Nacionalidad",
+  "documents.detail.customerType": "Tipo de cliente",
+  "documents.detail.openDocument": "Abrir documento"
 }

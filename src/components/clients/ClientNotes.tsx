@@ -13,8 +13,8 @@ export function ClientNotes({ notes, onSave, isSaving }: ClientNotesProps) {
   const { t } = useLanguage();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
-  const { can, isReady: permsReady } = usePermissions();
-  const canUpdate = !permsReady || can("commercial", "update", "clients");
+  const { can } = usePermissions();
+  const canUpdate = can("commercial", "update", "clients");
 
   const initial = notes ?? "";
   const [localNotes, setLocalNotes] = useState(initial);

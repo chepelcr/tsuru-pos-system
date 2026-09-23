@@ -21,8 +21,8 @@ export function CrossdockingDetailsDialog({ open, onClose, order }: Crossdocking
   const titleId = useId();
   const { isTopLayer } = useOverlayLayer({ active: open, panelRef, dismissible: true, onClose });
 
-  const { can, isReady: permsReady } = usePermissions();
-  const canExport = !permsReady || can('commercial', 'export', 'orders');
+  const { can } = usePermissions();
+  const canExport = can('commercial', 'export', 'orders');
 
   if (!open) return null;
 
