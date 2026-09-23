@@ -1,7 +1,8 @@
 /**
  * Upload queue for the XML document import (TSR-335).
  *
- * Per file:  waiting → uploading (bytes) → processing → one final state.
+ * Per file:  selected → (user clicks Subir) waiting → uploading (bytes) →
+ *            processing → one final state.
  *
  *   1. POST /documents/imports {file_name, size}   → import_id + presigned PUT
  *   2. PUT the file to S3 with progress            → the LAST call; S3 notifies
@@ -33,6 +34,7 @@ import type { DocumentImport, DocumentImportList, DocumentImportUpload } from '@
 export const MAX_PARALLEL_UPLOADS = 3;
 
 export type ImportPhase =
+  | 'selected'
   | 'waiting'
   | 'uploading'
   | 'processing'
@@ -64,6 +66,7 @@ export interface ImportRow {
 
 export type ImportAction =
   | { type: 'add'; files: File[]; orgId?: string }
+  | { type: 'start' }
   | { type: 'remove'; key: string }
   | { type: 'clear' }
   | { type: 'started'; key: string; importId: string }
@@ -115,9 +118,11 @@ export function importReducer(rows: ImportRow[], action: ImportAction): ImportRo
           fileName: file.name,
           size: file.size,
           loaded: 0,
-          phase: 'waiting' as const,
+          phase: 'selected' as const,
         })),
       ];
+    case 'start':
+      return rows.map((row) => (row.phase === 'selected' ? { ...row, phase: 'waiting' as const } : row));
     case 'remove':
       return rows.filter((row) => row.key !== action.key || row.phase === 'uploading');
     case 'clear':
@@ -165,12 +170,31 @@ export function importReducer(rows: ImportRow[], action: ImportAction): ImportRo
   }
 }
 
-/** Bytes sent over bytes selected, 0–100. */
+/** The files the user already sent off — everything but the ones still only selected. */
+export function startedRows(rows: ImportRow[]): ImportRow[] {
+  return rows.filter((row) => row.phase !== 'selected');
+}
+
+/**
+ * Overall progress, 0–100, over the started files. Each file is half upload
+ * (its bytes) and half result (Hacienda's verdict, a refusal or a failure), so
+ * the bar only fills once every file has settled — not the moment the last
+ * byte leaves the browser while the import worker is still busy.
+ */
 export function overallPercent(rows: ImportRow[]): number {
-  const total = rows.reduce((sum, row) => sum + row.size, 0);
-  if (!total) return rows.length ? 100 : 0;
-  const sent = rows.reduce((sum, row) => sum + (row.phase === 'waiting' ? 0 : Math.min(row.loaded, row.size)), 0);
-  return Math.round((sent / total) * 100);
+  const started = startedRows(rows);
+  if (!started.length) return 0;
+  const share = started.reduce((sum, row) => {
+    if (FINAL_PHASES.has(row.phase)) return sum + 1;
+    const sent = row.phase === 'waiting' || !row.size ? 0 : Math.min(row.loaded, row.size) / row.size;
+    return sum + sent / 2;
+  }, 0);
+  return Math.floor((share / started.length) * 100);
+}
+
+/** Files whose bytes are already in S3 (processing or settled). */
+export function uploadedCount(rows: ImportRow[]): number {
+  return rows.filter((row) => row.phase === 'processing' || (FINAL_PHASES.has(row.phase) && row.importId)).length;
 }
 
 interface DocumentImportState {
@@ -178,6 +202,7 @@ interface DocumentImportState {
   drawer_open: boolean;
   dispatch: (action: ImportAction) => void;
   addFiles: (orgId: string, files: File[]) => void;
+  startSelected: () => void;
   remove: (key: string) => void;
   retry: (key: string) => void;
   clearFinished: () => void;
@@ -199,6 +224,7 @@ export const useDocumentImportStore = create<DocumentImportState>((set, get) => 
     subscribeOnce();
     get().dispatch({ type: 'add', files, orgId });
   },
+  startSelected: () => get().dispatch({ type: 'start' }),
   remove: (key) => get().dispatch({ type: 'remove', key }),
   retry: (key) => get().dispatch({ type: 'retry', key }),
   clearFinished: () => get().dispatch({ type: 'clear' }),
@@ -282,8 +308,12 @@ export function useDocumentImport() {
     rows,
     percent: overallPercent(rows),
     settled: rows.filter((row) => FINAL_PHASES.has(row.phase)).length,
+    uploaded: uploadedCount(rows),
+    started: startedRows(rows).length,
+    selected: rows.filter((row) => row.phase === 'selected').length,
     busy: isUploading(rows),
     addFiles: actions.addFiles,
+    startSelected: actions.startSelected,
     remove: actions.remove,
     retry: actions.retry,
     clearFinished: actions.clearFinished,

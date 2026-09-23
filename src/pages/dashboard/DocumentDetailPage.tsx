@@ -358,8 +358,11 @@ function OrderInfoCard({ sale, orgId }: { sale: SaleDocument; orgId: string }) {
   const store = gln ? (storesResp?.data ?? []).find((s) => s.gln === gln) : undefined;
   // Two different numbers, as in the checkout: OURS (the pedido) and the
   // chain's purchase order. Both open the order they name.
+  // A crossdocking order is numbered with the chain's purchase order, so the two
+  // fields often carry the same value — then it is one number, shown once.
   const orderNumber = value('TsuruNumeroPedido');
-  const purchaseOrder = value('WMNumeroOrden');
+  const chainOrder = value('WMNumeroOrden');
+  const purchaseOrder = chainOrder && chainOrder !== orderNumber ? chainOrder : undefined;
   const orderLink = (number: string) => (
     <Link
       href={`${ROUTES.DASHBOARD_ORDERS}/${encodeURIComponent(number)}`}

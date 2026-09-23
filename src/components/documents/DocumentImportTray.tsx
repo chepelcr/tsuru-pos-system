@@ -18,7 +18,7 @@ export function DocumentImportTray({ orgId }: { orgId: string }) {
   const { t } = useLanguage();
   const drawerOpen = useDocumentImportStore((state) => state.drawer_open);
   const openDrawer = useDocumentImportStore((state) => state.openDrawer);
-  const { rows, percent, settled, busy, clearFinished } = useDocumentImport();
+  const { percent, settled, started, busy, clearFinished } = useDocumentImport();
 
   useEffect(() => {
     if (!busy) return undefined;
@@ -30,12 +30,13 @@ export function DocumentImportTray({ orgId }: { orgId: string }) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [busy]);
 
-  const finished = rows.length > 0 && settled === rows.length;
+  // Only files the user already sent count: selected-but-not-uploaded ones wait in the drawer.
+  const finished = started > 0 && settled === started;
 
   return (
     <>
       <ImportXmlDocumentsDrawer orgId={orgId} />
-      {!drawerOpen && rows.length > 0 && (
+      {!drawerOpen && started > 0 && (
         <div className="fixed bottom-4 right-4 z-40 card shadow-lg flex items-center gap-3 px-4 py-3 w-[300px] max-w-[calc(100vw-32px)]">
           <button
             type="button"
@@ -48,7 +49,7 @@ export function DocumentImportTray({ orgId }: { orgId: string }) {
               <div className="t-sm font-semibold truncate">
                 {t(finished ? 'documents.import.tray.done' : 'documents.import.tray.active', {
                   done: settled,
-                  total: rows.length,
+                  total: started,
                 })}
               </div>
               {!finished && (

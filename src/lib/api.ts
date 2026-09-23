@@ -79,9 +79,12 @@ async function request<T>(
   };
   
   // Add x-user-id for the APIs that read the caller from a header rather than
-  // from the path (cross-app-be, and support-api since its URLs name only the
-  // organization). The markets API takes the user id in the path instead.
-  if ((baseUrl === CROSS_APP_API_BASE || baseUrl === SUPPORT_API_BASE) && token) {
+  // from the path (cross-app-be, support-api and sales-api, whose URLs name only
+  // the organization). The markets API takes the user id in the path instead.
+  // sales-api stamps it as `created_by`, which is also who the bell notifies —
+  // without it every sale and XML import was filed as "anonymous" and its
+  // notifications went to nobody.
+  if ((baseUrl === CROSS_APP_API_BASE || baseUrl === SUPPORT_API_BASE || baseUrl === SALES_API_BASE) && token) {
     try {
       const [, payloadB64] = token.split('.');
       const { sub } = JSON.parse(atob(payloadB64));

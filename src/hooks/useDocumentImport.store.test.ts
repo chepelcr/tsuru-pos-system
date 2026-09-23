@@ -42,6 +42,9 @@ describe('app-wide import queue', () => {
   it('uploads with no component mounted, three at a time, and refills the slots', async () => {
     useDocumentImportStore.getState().addFiles('org-1', ['a', 'b', 'c', 'd'].map((n) => file(`${n}.xml`)));
     await flush();
+    expect(pending).toHaveLength(0); // selected, not sent
+    useDocumentImportStore.getState().startSelected();
+    await flush();
     expect(pending).toHaveLength(MAX_PARALLEL_UPLOADS);
     expect(phases()).toEqual(['uploading', 'uploading', 'uploading', 'waiting']);
 
@@ -56,6 +59,7 @@ describe('app-wide import queue', () => {
     const store = useDocumentImportStore.getState();
     store.openDrawer();
     store.addFiles('org-1', [file('a.xml')]);
+    store.startSelected();
     store.closeDrawer();
     await flush();
     expect(phases()).toEqual(['uploading']);

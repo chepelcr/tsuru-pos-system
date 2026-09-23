@@ -10,8 +10,9 @@ import {
 
 const file = (name: string, size: number) => new File(['x'.repeat(size)], name, { type: 'application/xml' });
 
+/** Selected AND sent — what "Subir" does. */
 function added(...files: File[]): ImportRow[] {
-  return importReducer([], { type: 'add', files });
+  return importReducer(importReducer([], { type: 'add', files }), { type: 'start' });
 }
 
 describe('phases', () => {
@@ -35,6 +36,13 @@ describe('phases', () => {
 });
 
 describe('queue', () => {
+  it('selecting files only lists them; Subir queues them', () => {
+    const rows = importReducer([], { type: 'add', files: [file('a.xml', 1)] });
+    expect(rows[0].phase).toBe('selected');
+    expect(overallPercent(rows)).toBe(0);
+    expect(importReducer(rows, { type: 'start' })[0].phase).toBe('waiting');
+  });
+
   it('a file goes waiting → uploading → processing → settled by its event', () => {
     let rows = added(file('a.xml', 100));
     const key = rows[0].key;
@@ -79,14 +87,20 @@ describe('queue', () => {
     expect(rows.map((row) => row.phase)).toEqual(['foreign', 'duplicate']);
   });
 
-  it('the overall percentage is bytes sent over bytes selected', () => {
+  it('the bar is half upload, half result — full only once every file settled', () => {
     let rows = added(file('a.xml', 300), file('b.xml', 100));
     expect(overallPercent(rows)).toBe(0);
     rows = importReducer(rows, { type: 'started', key: rows[0].key, importId: 'a' });
     rows = importReducer(rows, { type: 'progress', key: rows[0].key, loaded: 150 });
-    expect(overallPercent(rows)).toBe(38); // 150 / 400 = 37.5 → 38
+    expect(overallPercent(rows)).toBe(12); // a: 0.5 sent × ½ = 0.25 of 2 files
     rows = importReducer(rows, { type: 'uploaded', key: rows[0].key });
+    rows = importReducer(rows, { type: 'started', key: rows[1].key, importId: 'b' });
+    rows = importReducer(rows, { type: 'uploaded', key: rows[1].key });
+    expect(overallPercent(rows)).toBe(50); // both uploaded, none processed
+    rows = importReducer(rows, { type: 'event', event: { event_type: 'document.import.completed', import_id: 'a', atv_status: 1 } });
     expect(overallPercent(rows)).toBe(75);
+    rows = importReducer(rows, { type: 'event', event: { event_type: 'document.import.duplicate', import_id: 'b' } });
+    expect(overallPercent(rows)).toBe(100);
   });
 
   it('clear keeps what is still in flight', () => {

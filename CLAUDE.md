@@ -131,8 +131,11 @@ missing.
 Each falls back to a `*.tsuru.jcampos.dev` literal when its variable is unset, so a local `pnpm
 dev` with no `.env` still talks to dev rather than to nothing.
 
-**Important quirk**: `crossAppApi` requests automatically include an `x-user-id` header extracted
-from the Cognito JWT `sub` claim. The platform api does not.
+**Important quirk**: `crossAppApi`, `salesApi` and the support API automatically include an
+`x-user-id` header extracted from the Cognito JWT `sub` claim. The platform api does not.
+sales-api stamps that header as `created_by` and the bell notifies that user, so a sales call
+without it files everything as `anonymous` and its notifications reach nobody (it was missing for
+`salesApi` until 2026-09-23).
 
 **Data API** — its own gateway (`VITE_DATA_API_URL`, client in `src/services/data-api/client.ts`),
 **not** a path under `crossAppApi`, which this section claimed for a while. Serves the Hacienda

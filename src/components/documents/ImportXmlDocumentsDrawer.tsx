@@ -28,6 +28,7 @@ import {
 import type { StatusVariant } from '@/lib/documentStatus';
 
 const PHASE_VARIANT: Record<ImportPhase, StatusVariant> = {
+  selected: 'secondary',
   waiting: 'secondary',
   uploading: 'info',
   processing: 'info',
@@ -41,6 +42,7 @@ const PHASE_VARIANT: Record<ImportPhase, StatusVariant> = {
 };
 
 const PHASE_ICON: Record<ImportPhase, string> = {
+  selected: 'fileText',
   waiting: 'clock',
   uploading: 'upload',
   processing: 'refresh',
@@ -91,13 +93,13 @@ function ImportRowItem({ row, onRemove, onRetry }: { row: ImportRow; onRemove: (
             <Icon name="refresh" size={14} />
           </button>
         )}
-        {(row.phase === 'waiting' || final) && (
+        {(row.phase === 'selected' || row.phase === 'waiting' || final) && (
           <button type="button" className="btn-icon-ghost-sm" onClick={onRemove} aria-label={t('common.remove')}>
             <Icon name="close" size={14} />
           </button>
         )}
       </div>
-      {!final && (
+      {!final && row.phase !== 'selected' && (
         <div className="progress progress-thin mt-2" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
           <div className="progress-bar" style={{ width: `${percent}%` }} />
         </div>
@@ -119,7 +121,8 @@ export function ImportXmlDocumentsDrawer({ orgId }: { orgId: string }) {
   const [rejected, setRejected] = useState<string[]>([]);
   const open = useDocumentImportStore((state) => state.drawer_open);
   const onClose = useDocumentImportStore((state) => state.closeDrawer);
-  const { rows, percent, busy, addFiles, remove, retry, clearFinished } = useDocumentImport();
+  const { rows, percent, busy, settled, uploaded, started, selected, addFiles, startSelected, remove, retry, clearFinished } =
+    useDocumentImport();
 
   const accept = (list: FileList | null) => {
     const files = Array.from(list ?? []);
@@ -130,7 +133,7 @@ export function ImportXmlDocumentsDrawer({ orgId }: { orgId: string }) {
   };
 
   const refused = rows.filter((row) => REFUSED.has(row.phase));
-  const done = rows.filter((row) => FINAL_PHASES.has(row.phase)).length;
+  const done = settled;
 
   return (
     <Drawer
@@ -146,9 +149,16 @@ export function ImportXmlDocumentsDrawer({ orgId }: { orgId: string }) {
           <Button variant="ghost" size="sm" onClick={clearFinished} disabled={!done}>
             {t('documents.import.clearFinished')}
           </Button>
-          <Button variant="primary" size="sm" onClick={onClose}>
-            {busy ? t('documents.import.keepInBackground') : t('common.close')}
-          </Button>
+          <div className="flex gap-2.5">
+            <Button variant={selected ? 'ghost' : 'primary'} size="sm" onClick={onClose}>
+              {busy ? t('documents.import.keepInBackground') : t('common.close')}
+            </Button>
+            {!!selected && (
+              <Button variant="primary" size="sm" icon="upload" onClick={startSelected}>
+                {t('documents.import.upload', { n: selected })}
+              </Button>
+            )}
+          </div>
         </div>
       }
     >
@@ -180,7 +190,7 @@ export function ImportXmlDocumentsDrawer({ orgId }: { orgId: string }) {
           <p className="t-xs text-destructive">{t('documents.import.notXml', { files: rejected.join(', ') })}</p>
         )}
 
-        {!!rows.length && (
+        {!!started && (
           <div className="card p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="label-section">{t('documents.import.overall')}</span>
@@ -190,7 +200,7 @@ export function ImportXmlDocumentsDrawer({ orgId }: { orgId: string }) {
               <div className="progress-bar" style={{ width: `${percent}%` }} />
             </div>
             <div className="t-xs text-muted-foreground mt-2">
-              {t('documents.import.counts', { done, total: rows.length })}
+              {t('documents.import.counts', { uploaded, done, total: started })}
             </div>
           </div>
         )}
