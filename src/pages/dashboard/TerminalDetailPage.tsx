@@ -5,7 +5,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { usePermissions } from "@/hooks/useRbac";
-import { useBranch, useTerminal } from "@/hooks/useBranches";
+import { useBranch } from "@/hooks/useBranches";
 import { useConsecutives } from "@/hooks/useConsecutives";
 import { useSales } from "@/hooks/useSales";
 import { useAllDocumentTypes } from "@/hooks/useDataApi";
@@ -53,10 +53,10 @@ export default function TerminalDetailPage() {
   const canEditConsecutives = can("admin", "update", "consecutives");
   const canReadDocuments = can("documents", "read", "emitted");
 
-  const terminalQuery = useTerminal(orgId, branchCode, terminalCode);
+  // The branch response carries its terminals — no separate terminal request.
   const branchQuery = useBranch(orgId, branchCode);
-  const terminal = terminalQuery.data;
   const branch = branchQuery.data;
+  const terminal = branch?.terminals?.find((item) => item.code === terminalCode);
 
   usePageTitle([t("shell.stations"), terminal?.name]);
 
@@ -95,7 +95,9 @@ export default function TerminalDetailPage() {
   const salesQuery = useSales({
     orgId: orgId ?? "",
     issued: true,
-    search: terminal ? { terminal_id: terminal.terminal_id } : undefined,
+    // By CODE: every document carries its branch/terminal numbers, imports
+    // included even when no terminal row matched their clave.
+    search: terminal ? { branch_number: branchCode, terminal_number: terminalCode } : undefined,
     page: docsPage,
     size: DOCS_PAGE_SIZE,
     enabled: !!terminal && canReadDocuments,
@@ -107,7 +109,7 @@ export default function TerminalDetailPage() {
   const dateFmt = (iso?: string | null) =>
     iso ? new Date(iso).toLocaleString(locale, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
-  if (terminalQuery.isLoading) {
+  if (branchQuery.isLoading) {
     return (
       <div className="min-h-[45vh] flex items-center justify-center">
         <Spinner size={32} label={t("common.loading")} />

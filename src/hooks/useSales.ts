@@ -52,8 +52,10 @@ function toWireSearch(s: ComplexSearchFilters | undefined): Record<string, unkno
   }
   if (s.status) out.status = s.status;
   if (s.sort)   out.sort = s.sort;
-  if (s.terminal_id) out.terminal_id = s.terminal_id;
-  if (s.branch_id)   out.branch_id = s.branch_id;
+  // A terminal code only means something inside its branch: both travel together.
+  if (s.branch_number != null)   out.branch_number = s.branch_number;
+  if (s.branch_number != null && s.terminal_number != null) out.terminal_number = s.terminal_number;
+  if (s.origin) out.origin = s.origin;
 
   // sale_date
   let saleDate: string | undefined;
@@ -101,7 +103,9 @@ export function useSales({
   if (document_types?.length) params.set('document_types', document_types.join(','));
   if (issued !== undefined) params.set('issued', String(issued));
   if (wireSearch) {
-    params.set('search', encodeURIComponent(JSON.stringify(wireSearch)));
+    // URLSearchParams encodes; encoding here too sent "%7B%22…" and sales-api
+    // answered 400 to every filtered list.
+    params.set('search', JSON.stringify(wireSearch));
   }
   params.set('page', String(page));
   params.set('size', String(size));

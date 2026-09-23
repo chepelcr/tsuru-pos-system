@@ -119,6 +119,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
 
   const hasAdvancedFilters = !!(
     search.status ||
+    search.origin ||
     search.start_date ||
     search.end_date ||
     search.dateValue ||

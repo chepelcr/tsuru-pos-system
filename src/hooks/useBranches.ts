@@ -56,25 +56,19 @@ export function useCreateTerminal(orgId?: string) {
 }
 
 /**
- * One terminal, addressed like every store-be terminal route: by its branch's
- * integer code and its own integer code (terminal codes are unique per branch).
+ * One branch by its integer code, WITH its terminals (store-be embeds them in
+ * both the list and the single-branch response).
+ *
+ * Seeded from the branches list already in cache, so opening a terminal from
+ * the stations page costs no request; a deep link fetches the one branch.
  */
-export function useTerminal(orgId?: string, branchCode?: number, terminalCode?: number) {
-  return useQuery({
-    queryKey: ["terminal", orgId, branchCode, terminalCode],
-    enabled: !!orgId && Number.isFinite(branchCode) && Number.isFinite(terminalCode),
-    queryFn: () =>
-      crossAppApi.get<Terminal>(
-        crossAppOrgPath(orgId!, `/branches/${branchCode}/terminals/${terminalCode}`),
-      ),
-  });
-}
-
-/** One branch by its integer code (header of the terminal detail page). */
 export function useBranch(orgId?: string, branchCode?: number) {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: ["branch", orgId, branchCode],
     enabled: !!orgId && Number.isFinite(branchCode),
     queryFn: () => crossAppApi.get<Branch>(crossAppOrgPath(orgId!, `/branches/${branchCode}`)),
+    initialData: () => qc.getQueryData<Branch[]>(["branches", orgId])?.find((b) => b.code === branchCode),
+    initialDataUpdatedAt: () => qc.getQueryState(["branches", orgId])?.dataUpdatedAt,
   });
 }

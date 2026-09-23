@@ -10,6 +10,7 @@ import type {
 } from '@/types/document';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Select } from "@/components/ui";
+import type { DocumentOrigin } from '@/types/invoice';
 
 // Sales-api doesn't expose a totals bounds endpoint yet (WIP) — use a sensible
 // fallback range so the slider is usable today. Swap to a fetched min/max when
@@ -111,6 +112,7 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
   const clear = () =>
     patch({
       status: undefined,
+      origin: undefined,
       dateMode: undefined,
       dateOp: undefined,
       dateValue: undefined,
@@ -144,6 +146,22 @@ export function ComplexSearchModal({ open, filters, onApply, onClose }: ComplexS
           <option value="validated">Aceptados</option>
           <option value="pending">Pendientes</option>
           <option value="rejected">Rechazados</option>
+        </Select>
+      </div>
+
+      {/* Origin — issued in the platform, or imported from Hacienda XML (TSR-335). */}
+      <div className="space-y-1">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+          {t('documents.filters.origin')}
+        </label>
+        <Select
+          value={local.origin ?? ''}
+          onChange={(e) => patch({ origin: (e.target.value || undefined) as DocumentOrigin | undefined })}
+          className="pp-input w-full"
+        >
+          <option value="">{t('common.all')}</option>
+          <option value="POS">{t('documents.filters.origin.POS')}</option>
+          <option value="IMPORT">{t('documents.filters.origin.IMPORT')}</option>
         </Select>
       </div>
 

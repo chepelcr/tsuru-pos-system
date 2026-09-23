@@ -7,6 +7,7 @@
  * ComplexSearchFilters, etc.) used by the documents page.
  */
 
+import type { DocumentOrigin } from './invoice';
 import type { PaginationResponse } from './pagination';
 import type {
   AtvValidation,
@@ -49,7 +50,7 @@ export interface DocumentListItem {
   json_url?: string;
   created_on?: string;
   /** 'IMPORT' — uploaded as a signed XML (TSR-335). */
-  origin?: 'POS' | 'IMPORT';
+  origin?: DocumentOrigin;
   /** Hacienda does not know this clave in this environment (TSR-336). */
   foreign_environment?: boolean;
   /** Final amount after validated credit/debit notes (TSR-341). */
@@ -82,9 +83,15 @@ export interface ComplexSearchFilters {
    */
   searchTerm?: string;
   status?: 'validated' | 'pending' | 'rejected';
-  /** Scope to documents issued at one terminal / branch (UUIDs; TSR-328). */
-  terminal_id?: string;
-  branch_id?: string;
+  /**
+   * Scope to one branch, or one terminal OF that branch, by the codes stamped on
+   * every document (imports included). A terminal code is unique only within its
+   * branch, so `terminal_number` is ignored without `branch_number`.
+   */
+  branch_number?: number;
+  terminal_number?: number;
+  /** Issued in the platform (POS) or uploaded Hacienda XML (IMPORT) — TSR-335. */
+  origin?: DocumentOrigin;
 
   // ── Date filter (single value with operator OR range) ────────────────────
   dateMode?: DateMode;
