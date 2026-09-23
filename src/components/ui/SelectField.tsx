@@ -331,14 +331,18 @@ export function SelectField({
         onKeyDown={handleKeyDown}
         className={cn(
           sizeClass,
-          "w-full flex items-center justify-between gap-2 text-left",
+          // min-w-0 all the way down: a flex item defaults to min-width:auto (its
+          // content width), so a long label ("USD — Dólar estadounidense") would
+          // refuse to shrink, overflow its grid column and spill out of the drawer
+          // instead of truncating.
+          "w-full min-w-0 flex items-center justify-between gap-2 text-left",
           !selected && "text-muted-foreground",
           className,
         )}
       >
-        <span className="flex items-center gap-2 min-w-0">
+        <span className="flex items-center gap-2 min-w-0 overflow-hidden">
           {selected?.icon && <Icon name={selected.icon} size={15} className="flex-shrink-0" />}
-          <span className="truncate">
+          <span className="truncate min-w-0">
             {selected?.label ?? placeholder ?? t("placeholder.selectOption")}
           </span>
         </span>

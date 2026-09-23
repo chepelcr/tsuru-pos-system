@@ -12,7 +12,10 @@
  */
 
 export interface Phone {
+  /** ISO numeric country code (188) — a key into the countries catalog. */
   country_code?: string;
+  /** Dialing code (506), resolved by sales-be from the countries table. Read-only. */
+  dial_code?: string;
   area_code?: string;
   number?: string;
   description?: string;
