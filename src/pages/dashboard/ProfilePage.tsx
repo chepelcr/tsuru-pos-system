@@ -7,7 +7,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useUpdateProfile } from "@/hooks/useProfile";
+import { useUpdateOnboardingTour, useUpdateProfile } from "@/hooks/useProfile";
 import { usePermissions } from "@/hooks/useRbac";
 import { roleLabel as orgRoleLabel } from "@/lib/rbacI18n";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
@@ -70,6 +70,27 @@ export default function ProfilePage() {
   const { add } = useNotifications();
   const [, navigate] = useLocation();
   const updateProfile = useUpdateProfile();
+  const updateTour = useUpdateOnboardingTour();
+
+  // Clearing the flag is all it takes: the dashboard shell starts the tour
+  // whenever the profile says it is not done.
+  const handleReplayTour = async () => {
+    if (!user?.userId) return;
+    try {
+      await updateTour.mutateAsync({
+        userId: user.userId,
+        data: { onboarding_tour_completed: false },
+      });
+      applyProfileUpdate({ onboarding_tour_completed_at: null });
+      navigate(ROUTES.DASHBOARD);
+    } catch {
+      add({
+        source: "fe",
+        level: "destructive",
+        titleKey: "onboarding.restart.error",
+      });
+    }
+  };
 
   usePageTitle([t("profile.title")]);
 
@@ -536,6 +557,28 @@ export default function ProfilePage() {
           </CardBody>
         </Card>
       </div>
+
+      {/* ── First-login tutorial ───────────────────────────────────────── */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Icon name="sparkles" size={18} className="text-primary" />
+            <CardTitle>{t("onboarding.restart.title")}</CardTitle>
+          </div>
+          <CardDescription>{t("onboarding.restart.description")}</CardDescription>
+        </CardHeader>
+        <CardBody>
+          <Button
+            variant="outline"
+            size="sm"
+            icon="sparkles"
+            onClick={() => void handleReplayTour()}
+            disabled={updateTour.isPending}
+          >
+            {t("onboarding.restart.button")}
+          </Button>
+        </CardBody>
+      </Card>
     </div>
   );
 }

@@ -284,7 +284,7 @@ export default function ProductsPage() {
             </Button>
           )}
           {canCreate && (
-            <Button variant="primary" size="sm" icon="plus" onClick={openNew}>{t("products.newProduct")}</Button>
+            <Button variant="primary" size="sm" icon="plus" onClick={openNew} data-tour="new-product">{t("products.newProduct")}</Button>
           )}
         </div>
       </div>

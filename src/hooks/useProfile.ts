@@ -25,6 +25,24 @@ export interface UpdateProfileData {
  * accepts exactly `{ first_name, last_name, username }` and returns the full updated
  * profile. If a PATCH alias is later added, switch the verb here.
  */
+/** PUT /profile body for the first-login tour (the server stamps the time). */
+export interface UpdateOnboardingTourData {
+  /** true = finished or skipped; false = restart it on the next dashboard visit. */
+  onboarding_tour_completed: boolean;
+}
+
+/** The profile fields the tour reads back (subset of the profile response). */
+export interface OnboardingTourProfile {
+  onboarding_tour_completed_at: string | null;
+}
+
+export function useUpdateOnboardingTour() {
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: UpdateOnboardingTourData }) =>
+      api.put<OnboardingTourProfile>(userPath(userId, "/profile"), data),
+  });
+}
+
 export function useUpdateProfile() {
   return useMutation({
     mutationFn: ({ userId, data }: { userId: string; data: UpdateProfileData }) =>

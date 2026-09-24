@@ -1,0 +1,16 @@
+{
+  "onboarding.tour.next": "Next",
+  "onboarding.tour.prev": "Back",
+  "onboarding.tour.done": "Done",
+  "onboarding.tour.progress": "Step {current} of {total}",
+  "onboarding.tour.content.title": "Your store's content",
+  "onboarding.tour.content.body": "Your name, logo and phone are already on your store. Here you edit what makes it yours: the cover, your values, your story. Open a page to change its sections.",
+  "onboarding.tour.product.title": "Add your first product",
+  "onboarding.tour.product.body": "Your store shows what you add here. Create your first product with a name, price and photo.",
+  "onboarding.tour.store.title": "See your online store",
+  "onboarding.tour.store.body": "Open your store or share its link and QR code with your customers. You can replay this tutorial from your profile.",
+  "onboarding.restart.title": "Welcome tutorial",
+  "onboarding.restart.description": "Walk through the first steps again: your store's content, your first product and how to share it.",
+  "onboarding.restart.button": "Replay the tutorial",
+  "onboarding.restart.error": "Couldn't restart the tutorial. Try again."
+}

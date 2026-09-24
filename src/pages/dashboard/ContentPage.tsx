@@ -209,7 +209,7 @@ export default function ContentPage() {
 
       {/* Page cards — each opens a drawer with that page's sections */}
       <FadeIn>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2" data-tour="content-pages">
           {pages.map((page) => {
             const count = page.sections?.length ?? 0;
             return (

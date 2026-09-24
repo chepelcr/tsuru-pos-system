@@ -35,6 +35,12 @@ interface AuthUser {
   last_name?: string;
   username?: string;
   role: UserRole;
+  /**
+   * First-login tour state from GET /profile: null = not finished/skipped yet
+   * (the dashboard runs it), an ISO timestamp once done. Absent until the
+   * profile is loaded, which never triggers the tour.
+   */
+  onboarding_tour_completed_at?: string | null;
 }
 
 interface SignUpArgs {

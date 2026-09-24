@@ -1,0 +1,16 @@
+{
+  "onboarding.tour.next": "Siguiente",
+  "onboarding.tour.prev": "Atrás",
+  "onboarding.tour.done": "Listo",
+  "onboarding.tour.progress": "Paso {current} de {total}",
+  "onboarding.tour.content.title": "El contenido de tu tienda",
+  "onboarding.tour.content.body": "Tu nombre, logo y teléfono ya están en tu tienda. Aquí editás lo que la hace tuya: la portada, tus valores, tu historia. Abrí una página para cambiar sus secciones.",
+  "onboarding.tour.product.title": "Agregá tu primer producto",
+  "onboarding.tour.product.body": "Tu tienda muestra lo que cargués aquí. Creá tu primer producto con nombre, precio y foto.",
+  "onboarding.tour.store.title": "Mirá tu tienda en línea",
+  "onboarding.tour.store.body": "Abrí tu tienda o compartí su enlace y código QR con tus clientes. Podés volver a ver este tutorial desde tu perfil.",
+  "onboarding.restart.title": "Tutorial de bienvenida",
+  "onboarding.restart.description": "Volvé a recorrer los primeros pasos: el contenido de tu tienda, tu primer producto y cómo compartirla.",
+  "onboarding.restart.button": "Volver a ver el tutorial",
+  "onboarding.restart.error": "No se pudo reiniciar el tutorial. Intentá de nuevo."
+}

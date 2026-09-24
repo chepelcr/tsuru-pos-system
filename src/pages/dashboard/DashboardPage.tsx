@@ -190,7 +190,7 @@ export default function DashboardPage() {
               {t(scope.kind === "session" ? "dash.scope.viewOrg" : "dash.scope.viewSession")}
             </Button>
           )}
-          <Button variant="outline" size="sm" icon="store" onClick={() => setQrOpen(true)}>
+          <Button variant="outline" size="sm" icon="store" onClick={() => setQrOpen(true)} data-tour="view-store">
             {t("qr.shareStore")}
           </Button>
           <Button variant="outline" size="sm" icon="refresh" onClick={() => void refetch()} disabled={isRefetching}>

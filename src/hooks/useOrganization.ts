@@ -50,7 +50,10 @@ interface CompleteStep2Data {
   organizationId: string;
   userId: string;
   email?: string;
+  /** ISO numeric country of the phone (188), never a dial code. */
+  phone_country_code?: string;
   phone?: string;
+  whatsapp_number?: string;
   address?: string;
   state_id?: number;
   county_id?: number;

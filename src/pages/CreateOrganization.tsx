@@ -10,7 +10,8 @@ import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { ROUTES } from "@/routePaths";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
-import { Card, CardBody, Icon, Input, LocationSelect, Spinner } from "@/components/ui";
+import { Card, CardBody, Icon, Input, LocationSelect, PhoneField, Spinner } from "@/components/ui";
+import { CountryISO } from "@/lib/enums";
 import { OrganizationLogoPicker } from "@/components/org-settings/OrganizationLogoPicker";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { FormField } from "@/components/forms/FormField";
@@ -92,10 +93,17 @@ export default function CreateOrganization() {
   const identityRevealed = name.trim().length > 0;
 
   // Step 2
-  const [email, setEmail] = useState("");
+  // The store's contact email starts as the email the owner registered with.
+  const [email, setEmail] = useState(user?.email ?? "");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
+  const [phoneCountryCode, setPhoneCountryCode] = useState<string>(CountryISO.COSTA_RICA);
   const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  // The session may resolve after mount; fill the email once, never over an edit.
+  useEffect(() => {
+    if (user?.email) setEmail((prev) => prev || user.email);
+  }, [user?.email]);
   const [address, setAddress] = useState("");
   const [state_id, setStateId] = useState<number | null>(null);
   const [county_id, setCountyId] = useState<number | null>(null);
@@ -129,9 +137,11 @@ export default function CreateOrganization() {
     setSubdomainTouched(true);
     // email/phone/address now live in the embedded contact section (de-dup
     // rule — the flat org-row fields are deprecated).
-    setEmail(org.contact?.email ?? "");
+    setEmail(org.contact?.email ?? user?.email ?? "");
     setLogoUrl(org.logo_url ?? "");
+    setPhoneCountryCode(org.contact?.phone_country_code ?? CountryISO.COSTA_RICA);
     setPhone(org.contact?.phone ?? "");
+    setWhatsapp(org.contact?.whatsapp_number ?? "");
     setAddress(org.contact?.address ?? "");
     setStateId(org.contact?.state_id ?? null);
     setCountyId(org.contact?.county_id ?? null);
@@ -247,7 +257,9 @@ export default function CreateOrganization() {
           organizationId: createdOrgId,
           userId,
           email: email || undefined,
+          phone_country_code: phone || whatsapp ? phoneCountryCode : undefined,
           phone: phone || undefined,
+          whatsapp_number: whatsapp || undefined,
           address: address || undefined,
           state_id: state_id || undefined,
           county_id: county_id || undefined,
@@ -457,11 +469,27 @@ export default function CreateOrganization() {
                     />
                   </FormField>
                   <FormField label={t("common.phone")}>
-                    <Input
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder={t("orgs.create.fields.phonePlaceholder")}
+                    <PhoneField
+                      countryCode={phoneCountryCode}
+                      number={phone}
+                      onChange={({ countryCode, number }) => {
+                        setPhoneCountryCode(countryCode);
+                        setPhone(number);
+                      }}
                     />
+                  </FormField>
+                  <FormField label={t("orgSettings.contact.whatsapp")}>
+                    {/* Shares the phone's country; the store sends orders here. */}
+                    <Input
+                      type="tel"
+                      inputMode="numeric"
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value.replace(/\D+/g, "").slice(0, 20))}
+                      placeholder={t("orgSettings.contact.whatsappPlaceholder")}
+                    />
+                    <span className="block t-xs text-muted-foreground mt-1">
+                      {t("orgs.create.fields.whatsappHint")}
+                    </span>
                   </FormField>
                   <div className="flex flex-col gap-2">
                     <h3 className="t-h4 !mb-0">{t("orgs.create.fields.location")}</h3>
