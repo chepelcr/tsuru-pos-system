@@ -259,7 +259,6 @@
   "orgSettings.general.logo": "Logo de la organización",
   "orgSettings.general.logoDesc": "Se mostrará en facturas y pedidos. Podés dejarlo vacío.",
   "orgSettings.general.logoUpload": "Subir logo",
-  "orgSettings.general.logoRemove": "Quitar",
   "orgSettings.general.logoInvalid": "Elegí un PNG o JPG de hasta 5 MB.",
   "orgSettings.general.logoUploadError": "No se pudo subir el logo. Intentá de nuevo.",
   "orgSettings.general.phonePlaceholder": "Número de teléfono",

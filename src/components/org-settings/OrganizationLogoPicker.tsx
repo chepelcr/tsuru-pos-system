@@ -102,7 +102,7 @@ export function OrganizationLogoPicker({
               disabled={disabled || uploading}
               onClick={() => onChange("")}
             >
-              {t("orgSettings.general.logoRemove")}
+              {t("common.remove")}
             </button>
           )}
         </div>

@@ -259,7 +259,6 @@
   "orgSettings.general.logo": "Organization logo",
   "orgSettings.general.logoDesc": "Shown on invoices and orders. You can leave it empty.",
   "orgSettings.general.logoUpload": "Upload logo",
-  "orgSettings.general.logoRemove": "Remove",
   "orgSettings.general.logoInvalid": "Choose a PNG or JPG up to 5 MB.",
   "orgSettings.general.logoUploadError": "Could not upload the logo. Try again.",
   "orgSettings.general.phonePlaceholder": "Phone number",

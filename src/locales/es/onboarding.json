@@ -1,6 +1,4 @@
 {
-  "onboarding.tour.next": "Siguiente",
-  "onboarding.tour.prev": "Atrás",
   "onboarding.tour.done": "Listo",
   "onboarding.tour.progress": "Paso {current} de {total}",
   "onboarding.tour.content.title": "El contenido de tu tienda",

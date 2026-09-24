@@ -1,6 +1,4 @@
 {
-  "onboarding.tour.next": "Next",
-  "onboarding.tour.prev": "Back",
   "onboarding.tour.done": "Done",
   "onboarding.tour.progress": "Step {current} of {total}",
   "onboarding.tour.content.title": "Your store's content",

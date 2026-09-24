@@ -116,8 +116,8 @@ export function OnboardingTour() {
         overlayClickBehavior: () => {},
         popoverClass: "tsuru-tour",
         showButtons: index > 0 ? ["previous", "next", "close"] : ["next", "close"],
-        nextBtnText: isLast ? t("onboarding.tour.done") : t("onboarding.tour.next"),
-        prevBtnText: t("onboarding.tour.prev"),
+        nextBtnText: isLast ? t("onboarding.tour.done") : t("common.next"),
+        prevBtnText: t("common.back"),
         onNextClick: () => {
           advancing = true;
           active?.destroy();
