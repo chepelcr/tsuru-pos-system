@@ -6,10 +6,12 @@ import { useTemplates } from "@/hooks/useTemplates";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { ROUTES } from "@/routePaths";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { Card, CardBody, Icon, Input, LocationSelect, Spinner } from "@/components/ui";
+import { OrganizationLogoPicker } from "@/components/org-settings/OrganizationLogoPicker";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { FormField } from "@/components/forms/FormField";
 import {
@@ -66,6 +68,7 @@ export default function CreateOrganization() {
   const [stepIndex, setStepIndex] = useState(0);
   const [createdOrgId, setCreatedOrgId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const updateGeneral = useUpdateGeneralSettings(userId, createdOrgId ?? undefined);
 
   // Step 1
   const [name, setName] = useState("");
@@ -90,6 +93,8 @@ export default function CreateOrganization() {
 
   // Step 2
   const [email, setEmail] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [state_id, setStateId] = useState<number | null>(null);
@@ -125,6 +130,7 @@ export default function CreateOrganization() {
     // email/phone/address now live in the embedded contact section (de-dup
     // rule — the flat org-row fields are deprecated).
     setEmail(org.contact?.email ?? "");
+    setLogoUrl(org.logo_url ?? "");
     setPhone(org.contact?.phone ?? "");
     setAddress(org.contact?.address ?? "");
     setStateId(org.contact?.state_id ?? null);
@@ -185,13 +191,15 @@ export default function CreateOrganization() {
     stepIndex === 0
       ? step1Valid
       : stepIndex === 1
-        ? true
+        ? !logoUploading
         : selectedTemplateId !== null && !templatesLoading;
 
   const isSaving =
     createOrganization.isPending ||
     completeOnboardingStep2.isPending ||
     completeOnboardingStep3.isPending ||
+    logoUploading ||
+    updateGeneral.isPending ||
     updateTheme.isPending;
 
   // ─── Step handlers ────────────────────────────────────────────────────────
@@ -231,6 +239,10 @@ export default function CreateOrganization() {
         return;
       }
       try {
+        await updateGeneral.mutateAsync({
+          name: name.trim(),
+          logo_url: logoUrl || null,
+        });
         await completeOnboardingStep2.mutateAsync({
           organizationId: createdOrgId,
           userId,
@@ -423,6 +435,19 @@ export default function CreateOrganization() {
                   <p className="t-sm text-muted-foreground -mt-1">
                     {t("orgs.create.contactHint")}
                   </p>
+                  <FormField label={t("orgSettings.general.logo")}>
+                    <OrganizationLogoPicker
+                      userId={userId!}
+                      orgId={createdOrgId!}
+                      value={logoUrl}
+                      onChange={setLogoUrl}
+                      onUploadingChange={setLogoUploading}
+                      disabled={!createdOrgId || !userId}
+                    />
+                    <span className="block t-xs text-muted-foreground mt-1">
+                      {t("orgSettings.general.logoDesc")}
+                    </span>
+                  </FormField>
                   <FormField label={t("orgs.create.fields.email")}>
                     <Input
                       type="email"

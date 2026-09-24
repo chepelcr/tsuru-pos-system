@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
 import { Icon, Spinner } from "@/components/ui";
+import { OrganizationLogoPicker } from "@/components/org-settings/OrganizationLogoPicker";
 import type { BusinessType } from "@/types/organization";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { FormField } from "@/components/forms/FormField";
@@ -24,6 +25,7 @@ const buildSchema = (t: (k: string) => string) =>
   z.object({
     name: z.string().min(1, t("orgSettings.general.nameRequired")),
     description: z.string().optional(),
+    logo_url: z.string().url().or(z.literal("")),
   });
 
 type GeneralValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -46,6 +48,7 @@ export default function OrgGeneralPage() {
   const [, navigate] = useLocation();
 
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   // Business identity is three controlled widgets, not text inputs, so it sits
   // in plain state rather than react-hook-form.
@@ -74,12 +77,14 @@ export default function OrgGeneralPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<GeneralValues>({
     resolver: zodResolver(buildSchema(t)),
     values: {
       name: org?.name ?? "",
       description: org?.description ?? "",
+      logo_url: org?.logo_url ?? "",
     },
   });
 
@@ -89,6 +94,7 @@ export default function OrgGeneralPage() {
       await updateMutation.mutateAsync({
         name: data.name,
         description: data.description,
+        logo_url: data.logo_url,
         ...identity,
       });
       setSavedNoticeVisible(true);
@@ -176,6 +182,26 @@ export default function OrgGeneralPage() {
             />
           </FormField>
 
+          <FormField label={t("orgSettings.general.logo")} error={errors.logo_url?.message}>
+            <Controller
+              control={control}
+              name="logo_url"
+              render={({ field }) => (
+                <OrganizationLogoPicker
+                  userId={user!.userId}
+                  orgId={org.id}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onUploadingChange={setLogoUploading}
+                  disabled={!canUpdate}
+                />
+              )}
+            />
+            <span className="block t-xs text-muted-foreground mt-1">
+              {t("orgSettings.general.logoDesc")}
+            </span>
+          </FormField>
+
           <div className="pt-1 border-t border-border" />
 
           <BusinessIdentityFields
@@ -196,7 +222,7 @@ export default function OrgGeneralPage() {
               <button
                 type="submit"
                 className="btn btn-primary btn-sm"
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || logoUploading}
               >
                 {updateMutation.isPending ? (
                   <>

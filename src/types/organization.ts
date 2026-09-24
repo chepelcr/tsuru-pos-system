@@ -118,6 +118,7 @@ export type BusinessType = (typeof BUSINESS_TYPES)[number];
 export interface OrgGeneralSettings {
   name: string;
   description?: string;
+  logo_url?: string | null;
   /** One exclusive choice — see BUSINESS_TYPES. */
   business_type?: BusinessType;
   /** "Proveedor de cadena" — a sales channel, not a type. Grants b2b-supply. */
@@ -135,6 +136,7 @@ export interface Organization {
   owner_id?: string;
   onboarding_step?: number;
   description?: string;
+  logo_url?: string | null;
   created_at?: string;
   updated_at?: string;
   template_id?: string;
