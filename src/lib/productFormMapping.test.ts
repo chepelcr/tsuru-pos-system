@@ -54,6 +54,11 @@ describe("productFormFromProduct", () => {
     expect(form.taxes[0].specialFields?.proportion).toBe(0.01598);
   });
 
+  it("treats 1 unit per box as no packaging, so the toggle stays off", () => {
+    expect(productFormFromProduct({ ...FULLY_CONFIGURED, units_per_box: 1 }).has_package_info).toBe(false);
+    expect(productFormFromProduct({ ...FULLY_CONFIGURED, units_per_box: 24 }).has_package_info).toBe(true);
+  });
+
   it("reads the Hacienda rate code", () => {
     const form = productFormFromProduct(FULLY_CONFIGURED);
     expect(form.taxes[0].taxRateCode).toBe("08");
@@ -149,6 +154,18 @@ describe("productSavePayload", () => {
     expect(body.taxes).toEqual(FULLY_CONFIGURED.taxes);
     expect(body.codes).toEqual(FULLY_CONFIGURED.codes);
     expect(body.discounts).toEqual(FULLY_CONFIGURED.discounts);
+  });
+
+  it("sends 1 unit per box when packaging is off, whatever the field holds", () => {
+    const form = { ...productFormFromProduct(FULLY_CONFIGURED), has_package_info: false };
+    expect(productSavePayload(form).units_per_box).toBe(1);
+    expect(productSavePayload(form, { unitsPerBox: "24" }).units_per_box).toBe(1);
+  });
+
+  it("sends 1 when packaging is on but the count is empty or below 1", () => {
+    const form = { ...productFormFromProduct(FULLY_CONFIGURED), has_package_info: true };
+    expect(productSavePayload(form, { unitsPerBox: "" }).units_per_box).toBe(1);
+    expect(productSavePayload(form, { unitsPerBox: "0" }).units_per_box).toBe(1);
   });
 
   it("maps an empty image to null so it clears, rather than omitting it", () => {

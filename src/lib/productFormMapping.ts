@@ -37,6 +37,19 @@ function numberOrUndefined(value: unknown): number | undefined {
 }
 
 /**
+ * Units per box to save: the entered count when packaging is on, else 1.
+ *
+ * Never omitted and never 0. An omitted value lands as the column default, 0,
+ * and every order line built from that product then fails the order response's
+ * `units_per_box >= 1` check — which takes down the org's whole orders list.
+ * A product that is not sold by the box is one unit per box.
+ */
+export function packUnits(hasPackageInfo: boolean, unitsPerBox?: string): number {
+  const units = Math.trunc(Number(unitsPerBox));
+  return hasPackageInfo && units >= 1 ? units : 1;
+}
+
+/**
  * Build the request body for a product create or update.
  *
  * `imageUrl` is passed separately because the MediaPicker has already uploaded
@@ -62,7 +75,7 @@ export function productSavePayload(
         : undefined,
 
     // ── Packaging ───────────────────────────────────────────────────────────
-    units_per_box: unitsPerBox ? Number(unitsPerBox) : undefined,
+    units_per_box: packUnits(form.has_package_info, unitsPerBox),
 
     // ── CABYS — a UUID referencing an existing data-services cabys row ───────
     cabys_id: form.cabysId || undefined,
@@ -169,7 +182,8 @@ export function productFormFromProduct(p: any): ProductFormState {
     category_id: p.category_id ?? "",
     track_inventory: p.track_inventory ?? false,
     has_fiscal_info: hasCabys || hasTaxes,
-    has_package_info: !!(p.units_per_box && p.units_per_box > 0),
+    // 1 is what an unpackaged product is saved with (see `packUnits`), not a box.
+    has_package_info: !!(p.units_per_box && p.units_per_box > 1),
     low_stock_threshold: p.low_stock_threshold ? String(p.low_stock_threshold) : "",
     cabysId: p.cabys?.id ?? "",
     cabys: p.cabys?.code ?? "",
