@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { buildProductSearch } from "@/lib/search";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
@@ -61,15 +62,8 @@ export default function ProgramsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
 
-  // Programs are the product subset of type='program' (store-be W10). The BE
-  // search grammar is `field:value,...` (see ProductSearchFilters); we always
-  // pin `type:program` plus an optional name/code term.
-  const searchFilter = (() => {
-    const segs: string[] = ["type:program", "status:1"];
-    const q = term.trim();
-    if (q) segs.push(`(name:*${q}*,code:${q})`);
-    return segs.join(",");
-  })();
+  // Programs are the product subset of type='program' (store-be W10).
+  const searchFilter = buildProductSearch({ term, type: "program", status: 1 });
 
   const { data: productsResponse, isLoading } = useQuery({
     queryKey: ["programs", org?.id, searchFilter, page, pageSize],

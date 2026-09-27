@@ -11,7 +11,7 @@ import { useDocumentStore, newDocTabId } from '@/store/documentStore';
 import { MANUAL_ORDER_DOC_TYPE } from '@/types/invoice';
 import type { Order } from '@/types/order';
 import { fmt } from '@/lib/utils';
-import type { OrderSearchFilters } from '@/lib/orderSearchBuilder';
+import type { OrderSearchFilters } from "@/lib/search";
 import { ListToolbar } from '@/components/common/ListToolbar';
 import { Card, Icon, Badge, Pagination, EmptyState, FadeIn, Button } from '@/components/ui';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';

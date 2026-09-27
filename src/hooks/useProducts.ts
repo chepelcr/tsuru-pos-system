@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { buildProductSearch } from "@/lib/search";
 import { ordersApi, ordersOrgPath } from "../lib/api";
 import { isOfflineError } from "../lib/offline";
 import { cacheProducts, readCachedProducts } from "../services/offlineCatalog";
@@ -44,10 +45,9 @@ export function useProducts(options: UseProductsOptions = {}) {
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
 
-  const searchParts: string[] = ["status:1"];
-  if (search?.trim()) searchParts.push(`name:*${search.trim()}*`);
-  if (category_id) searchParts.push(`category_id:${category_id}`);
-  const searchParam = searchParts.join(",");
+  // Same filter as the Products page: partial name OR exact code, so a
+  // scanned or typed barcode finds its product in the POS grid too.
+  const searchParam = buildProductSearch({ term: search, status: 1, categoryId: category_id });
 
   return useQuery({
     queryKey: ["products", org?.id, searchParam, page, page_size],

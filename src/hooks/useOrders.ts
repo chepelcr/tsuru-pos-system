@@ -12,7 +12,7 @@ import {
 import {
   buildOrderSearchString,
   type OrderSearchFilters,
-} from '@/lib/orderSearchBuilder';
+} from "@/lib/search";
 import { fileToBase64, XLSX_MIME } from '@/lib/downloadUtils';
 
 /**

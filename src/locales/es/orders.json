@@ -219,8 +219,6 @@
   "orders.searchPlaceholder": "Buscar pedidos…",
   "orders.sort.createdAtAsc": "Más antiguos primero",
   "orders.sort.createdAtDesc": "Más recientes primero",
-  "orders.sort.customerNameAsc": "Cliente (A–Z)",
-  "orders.sort.customerNameDesc": "Cliente (Z–A)",
   "orders.sort.deliveryDateAsc": "Entrega (más cercana)",
   "orders.sort.deliveryDateDesc": "Entrega (más lejana)",
   "orders.sort.label": "Ordenar",

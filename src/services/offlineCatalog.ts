@@ -1,4 +1,5 @@
 import { ordersApi, ordersOrgPath, crossAppApi, crossAppOrgPath } from "@/lib/api";
+import { ACTIVE_ONLY } from "@/lib/search";
 import {
   db,
   type CachedCategoryRecord,
@@ -253,7 +254,7 @@ async function syncProducts(orgId: string): Promise<number> {
 
   for (; page <= MAX_SYNC_PAGES; page += 1) {
     const params = new URLSearchParams({
-      search: "status:1",
+      search: ACTIVE_ONLY,
       page: String(page),
       page_size: String(SYNC_PAGE_SIZE),
     });
@@ -292,7 +293,7 @@ async function syncClients(orgId: string): Promise<number> {
 
   for (; page <= MAX_SYNC_PAGES; page += 1) {
     const res = await crossAppApi.get<ClientListResponse>(
-      crossAppOrgPath(orgId, `/clients?search=status:1&page=${page}&page_size=${SYNC_PAGE_SIZE}`),
+      crossAppOrgPath(orgId, `/clients?search=${ACTIVE_ONLY}&page=${page}&page_size=${SYNC_PAGE_SIZE}`),
     );
     const batch = res.data ?? [];
     if (batch.length === 0) break;

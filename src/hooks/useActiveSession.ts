@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ACTIVE_ONLY } from "@/lib/search";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
@@ -30,7 +31,7 @@ export function useActiveSession() {
     refetchOnWindowFocus: false,
     queryFn: () =>
       crossAppApi.get<{ data: Session[] }>(
-        crossAppOrgPath(org!.id, "/sessions?page_size=1&search=status:1"),
+        crossAppOrgPath(org!.id, `/sessions?page_size=1&search=${ACTIVE_ONLY}`),
       ),
   });
 

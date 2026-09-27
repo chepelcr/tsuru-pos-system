@@ -4,7 +4,7 @@ import { Button, Icon, Select } from "@/components/ui";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useOrders } from '@/hooks/useOrders';
-import { buildFutureOrdersSearch } from '@/lib/orderSearchBuilder';
+import { buildFutureOrdersSearch } from "@/lib/search";
 
 /**
  * Shared multi-order picker used by Create + Add confirmation dialogs. A search

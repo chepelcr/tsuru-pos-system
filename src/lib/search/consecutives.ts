@@ -20,7 +20,7 @@ export enum ConsecutiveSearchFilter {
 }
 
 export type ConsecutiveSortField = "current_number" | "updated_on";
-export type SortDirection = "asc" | "desc";
+import type { SortDirection } from "./dsl";
 
 export interface ConsecutiveSearchFilters {
   [ConsecutiveSearchFilter.BranchId]?: string;

@@ -4,7 +4,7 @@ import {
   buildConsecutiveSearchString,
   hasActiveConsecutiveFilters,
   parseConsecutiveSearchString,
-} from "./consecutiveSearchBuilder";
+} from "./consecutives";
 
 describe("consecutiveSearchBuilder", () => {
   it("builds the platform search DSL in enum order", () => {

@@ -6,7 +6,7 @@ import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { usePermissions } from "@/hooks/useRbac";
 import { useDepartments, useDepartmentMutations } from "@/hooks/useDepartments";
 import { useDepartmentListStore } from "@/store/department-list-store";
-import { buildDepartmentSearchString } from "@/lib/departmentSearchBuilder";
+import { buildDepartmentSearchString } from "@/lib/search";
 import { DepartmentCard } from "./DepartmentCard";
 import { DepartmentDrawerForm } from "./DepartmentDrawerForm";
 import type { Department, DepartmentRequestDto } from "@/types";

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ACTIVE_ONLY } from "@/lib/search";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import type { Branch, CreateTerminalRequest, Terminal } from "@/types/branch";
 
@@ -17,7 +18,7 @@ export function useBranches(orgId?: string) {
     staleTime: 5 * 60_000,
     queryFn: async () => {
       const res = await crossAppApi.get<{ data: Branch[] }>(
-        crossAppOrgPath(orgId!, "/branches?search=status:1"),
+        crossAppOrgPath(orgId!, `/branches?search=${ACTIVE_ONLY}`),
       );
       return res.data ?? [];
     },

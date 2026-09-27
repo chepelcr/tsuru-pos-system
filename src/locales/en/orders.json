@@ -219,8 +219,6 @@
   "orders.searchPlaceholder": "Search orders…",
   "orders.sort.createdAtAsc": "Oldest first",
   "orders.sort.createdAtDesc": "Newest first",
-  "orders.sort.customerNameAsc": "Customer (A–Z)",
-  "orders.sort.customerNameDesc": "Customer (Z–A)",
   "orders.sort.deliveryDateAsc": "Delivery (soonest)",
   "orders.sort.deliveryDateDesc": "Delivery (latest)",
   "orders.sort.label": "Sort by",

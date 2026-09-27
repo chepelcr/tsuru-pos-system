@@ -10,7 +10,7 @@ export interface OrdersAdvancedFilters {
   endDate?: string;
   creationStartDate?: string; // creation date range
   creationEndDate?: string;
-  sortBy: string; // createdAt | customerName | deliveryDate
+  sortBy: string; // createdAt | deliveryDate | documentNumber
   sortOrder: 'asc' | 'desc';
 }
 
@@ -157,8 +157,6 @@ export function OrdersFiltersModal({ open, filters, onApply, onClose }: OrdersFi
         >
           <option value="createdAt,desc">{t('orders.sort.createdAtDesc')}</option>
           <option value="createdAt,asc">{t('orders.sort.createdAtAsc')}</option>
-          <option value="customerName,asc">{t('orders.sort.customerNameAsc')}</option>
-          <option value="customerName,desc">{t('orders.sort.customerNameDesc')}</option>
           <option value="deliveryDate,asc">{t('orders.sort.deliveryDateAsc')}</option>
           <option value="deliveryDate,desc">{t('orders.sort.deliveryDateDesc')}</option>
         </Select>

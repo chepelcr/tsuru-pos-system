@@ -1,4 +1,5 @@
 import { productFormFromProduct, productSavePayload } from "@/lib/productFormMapping";
+import { buildProductSearch } from "@/lib/search";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -82,41 +83,17 @@ export default function ProductsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Compose the BE search filter string (see ProductSearchFilters in
-  // cross-app-be: `status:`, `category_id:`, `name:*term*`, `price:`,
-  // `orderBy>field`). Filters are joined with commas; only non-empty
-  // segments are included.
-  const searchFilter = (() => {
-    const segs: string[] = [];
-    if (statusFilter !== "all") segs.push(`status:${statusFilter}`);
-    if (categoryId) segs.push(`category_id:${categoryId}`);
-    const t = term.trim();
-    if (t) {
-      // OR match: partial name OR exact code. BE supports `(...)` groups —
-      // the term is wildcard-wrapped for `name` (LIKE) and passed bare to
-      // `code` so JSONB containment matches the full barcode/internal code.
-      segs.push(`(name:*${t}*,code:${t})`);
-    }
-    // Price filter — two shapes:
-    //   • Single mode: operator + value → `price:X` / `price>X` / `price<X`.
-    //   • Range mode:  both bounds → `price:X~Y`; one bound only falls back
-    //     to `>` / `<` so the user can still e.g. type only a min.
-    if (advanced.priceMode === "single") {
-      if (advanced.priceValue !== undefined) {
-        const op = advanced.priceOp ?? "=";
-        const beOp = op === "=" ? ":" : op; // ":" is the BE equality operator.
-        segs.push(`price${beOp}${advanced.priceValue}`);
-      }
-    } else if (advanced.priceMin !== undefined && advanced.priceMax !== undefined) {
-      segs.push(`price:${advanced.priceMin}~${advanced.priceMax}`);
-    } else if (advanced.priceMin !== undefined) {
-      segs.push(`price>${advanced.priceMin}`);
-    } else if (advanced.priceMax !== undefined) {
-      segs.push(`price<${advanced.priceMax}`);
-    }
-    if (advanced.sort) segs.push(`orderBy${advanced.sort}`);
-    return segs.join(",");
-  })();
+  // Partial name OR exact code (a scanned barcode finds its product).
+  const searchFilter = buildProductSearch({
+    term,
+    status: statusFilter,
+    categoryId: categoryId || undefined,
+    price:
+      advanced.priceMode === "single"
+        ? { mode: "single", op: advanced.priceOp, value: advanced.priceValue }
+        : { mode: "range", min: advanced.priceMin, max: advanced.priceMax },
+    sort: advanced.sort,
+  });
 
   const { data: productsResponse, isLoading } = useQuery({
     queryKey: ["products", org?.id, searchFilter, page, pageSize],

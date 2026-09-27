@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ACTIVE_ONLY } from "@/lib/search";
 import { crossAppApi, crossAppUserOrgPath } from "../lib/api";
 import { db } from "../lib/db";
 import { useAuthContext } from "../contexts/AuthContext";
@@ -21,7 +22,7 @@ export function useAssignment() {
       try {
         // Get active assignments for the current user
         const response = await crossAppApi.get<{ data: Assignment[] }>(
-          crossAppUserOrgPath(user!.userId, org!.id, `/assignments?search=status:1`)
+          crossAppUserOrgPath(user!.userId, org!.id, `/assignments?search=${ACTIVE_ONLY}`)
         );
 
         // The first active assignment, or nothing.

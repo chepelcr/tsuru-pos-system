@@ -18,7 +18,7 @@ import {
   hasActiveConsecutiveFilters,
   parseConsecutiveSearchString,
   type ConsecutiveSearchFilters,
-} from "@/lib/consecutiveSearchBuilder";
+} from "@/lib/search";
 import { cn } from "@/lib/utils";
 import { terminalDetailPath } from "@/routePaths";
 import { DOCUMENT_TYPES } from "@/types/invoice";

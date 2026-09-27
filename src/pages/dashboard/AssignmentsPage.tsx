@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ACTIVE_ONLY } from "@/lib/search";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, orgPath, crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -87,7 +88,7 @@ export default function AssignmentsPage() {
       const params = new URLSearchParams({
         page: String(page),
         page_size: String(pageSize),
-        search: "status:1",
+        search: ACTIVE_ONLY,
       });
       return crossAppApi.get<{ data: Assignment[]; pagination: any }>(crossAppOrgPath(org!.id, `/assignments?${params}`));
     },
@@ -102,7 +103,7 @@ export default function AssignmentsPage() {
     queryFn: () => {
       const params = new URLSearchParams({
         page_size: "1000",
-        search: "status:1",
+        search: ACTIVE_ONLY,
       });
       return crossAppApi.get<{ data: Session[] }>(crossAppOrgPath(org!.id, `/sessions?${params}`)).then(res => res.data);
     },
@@ -114,7 +115,7 @@ export default function AssignmentsPage() {
     queryFn: () => {
       const params = new URLSearchParams({
         page_size: "1000",
-        search: "status:1",
+        search: ACTIVE_ONLY,
       });
       return crossAppApi.get<BranchListResponse>(crossAppOrgPath(org!.id, `/branches?${params}`));
     },

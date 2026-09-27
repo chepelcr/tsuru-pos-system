@@ -248,8 +248,17 @@ src/components/
 │                     DrawerHeader
 ├── analytics/      ← Analytics page bits (AnalyticsTable, charts)
 ├── assignments/    ← AssignmentSkeletonCard
-├── clients/        ← ClientCard, ClientSkeletonCard, ClientFormBody, ClientDrawerForm,
+├── clients/        ← ClientCard, ClientSkeletonCard, ClientFormBody, ClientDrawerForm
+│                     (mode client | receiver — the ONE client/receiver form),
+│                     ClientPicker (variant panel | inline — the ONE client picker:
+│                     POS left pane + checkout receiver),
 │                     sections/{IdentitySection, ContactSection, AddressSection}
+├── fiscal/         ← The fiscal sections SHARED by the product drawer and the POS
+│                     line-detail drawer, each with `mode: "product" | "line"`:
+│                     FiscalSection (CABYS), IvaTaxSection, OtherTaxSection,
+│                     DiscountsSection, CommercialValueSection. They edit the
+│                     canonical LineTax/LineDiscount; the product form adapts
+│                     through `lib/fiscalForm.ts`. Never re-add a per-module copy.
 ├── dashboard/      ← Dashboard widgets: SalesChart, LiveStationsPanel, TopProductsPanel,
 │                     QuickDocActionsCard, ChartSkeleton, DashboardStatSkeleton
 ├── documents/      ← Electronic invoice list/editor: DocumentsListView, DocumentsToolbar,
@@ -257,19 +266,18 @@ src/components/
 │                     DocumentActionModal, ComplexSearchModal, NewDocumentButton,
 │                     IssuedReceivedToggle
 ├── pos/            ← POS checkout UI: ProductGrid, ProductsPanel, ProductGridSkeleton,
-│                     CartBar, CartRow, CartLineEditor, CartSidebar, ClientSelector,
+│                     CartBar, CartRow, CartLineEditor, CartSidebar,
 │                     ClientListSkeleton, PaymentFlow, PayTab, ClosingFlow, POSPageSkeleton,
 │                     SaleSuccessOverlay,
-│                     line-detail/ ← (LineDetailDrawer, GeneralTab, DiscountsTab,
-│                                    IvaTaxSection, OtherTaxSection, FiscalInfoSection,
-│                                    CommercialValueSection, TaxesTab)
+│                     line-detail/ ← (LineDetailDrawer, GeneralTab, ExemptionSection —
+│                                    the rest are components/fiscal/*)
 │                     checkout/    ← (DocumentTab, ReceiverTab, ReferencesTab, etc.)
 ├── products/       ← ProductTableView, ProductGridView, ProductSkeletonCard,
 │                     ProductPriceEditor, ProductBulkBar, ProductDrawerForm,
-│                     sections/{GeneralInfoSection, CommercialValueSection, CodesSection,
-│                               InventorySection, FiscalInformationSection, IvaTaxSection,
-│                               OtherTaxSection, DiscountsSection, ImageUploadSection,
-│                               PackagingSection}
+│                     sections/{GeneralInfoSection, CodesSection, InventorySection,
+│                               ImageUploadSection, PackagingSection} — fiscal
+│                               sections are components/fiscal/*; a product has no
+│                               Exemption section (exonerations are per line)
 ├── reports/        ← IVA declaration report (D-150): IvaPeriodPicker, IvaSummaryCards,
 │                     IvaSalesSection, IvaPurchasesSection, IvaProportionalitySection,
 │                     IvaSettlementSection, IvaWarnings, IvaReportSkeleton
@@ -415,7 +423,7 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 | `useProducts(params?)` | paginated products |
 | `useCategories(orgId)` | categories list |
 | `useClients(orgId, params)` / `useClient(orgId, id)` / `useCreateClient` / `useUpdateClient` / `useUpdateClientStatus` | client CRUD |
-| `useClientSearch(query)` | client autocomplete |
+| `ClientSearchResult` / `clientToSearchResult` (`hooks/useClientSearch.ts`) | the client shape the cart/checkout carry (the old autocomplete hook is gone — use `ClientPicker`) |
 | `useSales(params)` / `useSale(saleId)` / `useDeleteSale` / `useUpdateSale` | document/invoice list+detail |
 | `useGenerateXml` / `useXmlFiles` / `useInvoiceValidation` / `useResendNotification` / `useValidationAction` | electronic invoice operations (Hacienda) |
 | `useDataApi.ts` | **all** catalog hooks: `useAllCountries`, `useAllIdentifications`, `useAllCustomerTypes`, `useAllTaxes`, `useAllTaxRates`, `useAllTaxFactors`, `useAllFactoryTaxCharges`, `useAllDiscountTypes`, `useAllCodes`, `useAllMeasurementUnits`, `useAllProductTypes`, `useAllTaxAmounts`, `useStates`, `useCounties`, `useDistricts`, `useNeighborhoods`, `useCabysSearch` |
@@ -482,7 +490,7 @@ not exonerated on top. `MontoExonerado` is an output — never edit it, never se
 
 Special-amount codes (`03/04/05/06`) need `tax_amount_id` + `quantity` + sometimes `percentage`/`volume_consumption` in `special_fields`. Tax amounts come from `useAllTaxAmounts({ iso_code, tax_id })`; `LineDetailDrawer` flattens the selected `tax_unit_amount` into a `TaxAmountsById` lookup before calling the tax service.
 
-CABYS-driven IVA: `useCabysSearch` returns items with `tax_rate.percentage` — auto-applied to IVA on selection. See `FiscalInformationSection` (products) and `FiscalInfoSection` (line-detail) for the search UX. Offline (and on demand online) both sections fall back to `<CabysManualEntry/>` — a 13-digit code typed by hand, which does NOT carry a rate; helpers in `src/lib/cabys.ts`.
+CABYS-driven IVA: `useCabysSearch` returns items with `tax_rate.percentage` — applied through `applyCabysIva` (`lib/fiscalForm.ts`) on selection, the same rule in both drawers. See `components/fiscal/FiscalSection.tsx` for the search UX. Offline (and on demand online) both sections fall back to `<CabysManualEntry/>` — a 13-digit code typed by hand, which does NOT carry a rate; helpers in `src/lib/cabys.ts`.
 
 ISEBEC variants by CABYS prefix: `3401*` (alcoholic) auto-picks rate by alcohol %; `2202*` (non-alcoholic) requires manual amount select.
 
@@ -766,7 +774,7 @@ If you write a helper component or render function that produces user-visible te
 | Change which branch/terminal a document is issued from | `hooks/useSessionSelection.ts` + `components/pos/checkout/sections/BranchTerminalSection.tsx` + `hooks/useBranches.ts` |
 | Touch notifications (the bell) | `hooks/useUserNotifications.ts` (hydrate + mark-read), `hooks/useRealtimeNotifications.ts` (AppSync Events subscribe), `components/layout/NotificationsBell.tsx`, `contexts/NotificationsContext.tsx` (ephemeral app toasts only). **Never add a `refetchInterval`** — the feed is server-pushed; see below |
 | Touch mesas / cuentas abiertas | `hooks/useTables.ts` + `components/pos/TablesPanel.tsx` + store-be `tables_controller.py` (branch **code**, not UUID). **Currently OFF in the integrated POS** — `POS_TABLES_ENABLED` in `src/config/features.ts` (TSR-333); flip it to bring the tab back |
-| Touch terminal consecutives | `pages/dashboard/TerminalDetailPage.tsx` + `ConsecutivesPage.tsx` + `components/consecutives/ConsecutiveEditDrawer.tsx` + `hooks/useConsecutives.ts` + `lib/consecutiveSearchBuilder.ts` (enum mirrors store-be `consecutive_search_filters.py`). Edits are raise-only + audited server-side (TSR-327) |
+| Touch terminal consecutives | `pages/dashboard/TerminalDetailPage.tsx` + `ConsecutivesPage.tsx` + `components/consecutives/ConsecutiveEditDrawer.tsx` + `hooks/useConsecutives.ts` + `lib/search/consecutives.ts` (enum mirrors store-be `consecutive_search_filters.py`). Edits are raise-only + audited server-side (TSR-327) |
 | Touch combos / servicio 10% / cuenta dividida | `lib/comboExplosion.ts`, `lib/serviceCharge.ts`, `lib/splitBill.ts` (all have tests — the tax reasoning lives in their doc comments) |
 | Add a scanner / scale-barcode behaviour | `hooks/useProductByCode.ts` + `lib/scaleBarcode.ts` + `services/offlineCatalog.ts` `readCachedProductByCode` — **ungated**, every org has it |
 | Touch a vertical's data (lots, units, agenda, assets) | `hooks/useVerticals.ts` + store-be `verticals_controller.py` / `services/{lot,commission,product_unit,price_schedule,recurring_invoice}_service.py` |
@@ -774,6 +782,8 @@ If you write a helper component or render function that produces user-visible te
 | Change anything offline / PWA | `services/offlineCatalog.ts` + `services/offlineBootstrap.ts` + `lib/db.ts` + `lib/queryClient.ts` + `scripts/sw-template.js` + `docs/OFFLINE.md` |
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |
+| Filter / search a store-be list | **`lib/search/`** — the DSL core (`dsl.ts`) and one builder per list (`builders.ts`: clients, products, branches, stores, departments, orders; `consecutives.ts`). Fields are **snake_case only** and must be in `SEARCH_FIELDS`: store-be DROPS a clause it cannot resolve, silently, and returns the list unfiltered. Never hand-write a `search=` string. |
+| Filter the documents list (sales-api) | `hooks/useSales.ts` `toWireSearch` → `DocumentSearchDTO` (`search_term`, `start_date`/`end_date`, `total_min`/`total_max`, `sort: {field: dir}`). That DTO ignores unknown keys the same way. |
 
 ---
 

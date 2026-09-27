@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DepartmentSortField } from '@/lib/departmentSearchBuilder';
+import type { DepartmentSortField } from "@/lib/search";
 
 interface DepartmentListState {
   searchQuery: string;

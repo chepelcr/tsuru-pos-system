@@ -6,7 +6,7 @@ import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { usePermissions } from "@/hooks/useRbac";
 import { useStores, useStoreMutations } from "@/hooks/useStores";
 import { useStoreListStore } from "@/store/store-list-store";
-import { buildStoreSearchString } from "@/lib/storeSearchBuilder";
+import { buildStoreSearchString } from "@/lib/search";
 import { StoreCard } from "./StoreCard";
 import { StoreDrawerForm } from "./StoreDrawerForm";
 import { StoreUploadModal } from "./StoreUploadModal";

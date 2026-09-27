@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ACTIVE_ONLY } from "@/lib/search";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, orgPath, crossAppApi, crossAppOrgPath, ordersApi, ordersOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -99,7 +100,7 @@ export default function SessionConfig({ onDone, onSuccess, initialSession }: Ses
     queryKey: ["branches", org?.id],
     enabled: !!user && !!org,
     queryFn: () =>
-      crossAppApi.get<BranchListResponse>(crossAppOrgPath(org!.id, "/branches?page_size=100&search=status:1")),
+      crossAppApi.get<BranchListResponse>(crossAppOrgPath(org!.id, `/branches?page_size=100&search=${ACTIVE_ONLY}`)),
   });
 
   const allBranches: Branch[] = branchesResponse?.data ?? [];

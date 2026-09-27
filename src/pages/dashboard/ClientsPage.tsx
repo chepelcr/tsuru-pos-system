@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { buildClientSearch } from "@/lib/clientSearch";
+import { buildClientSearch } from "@/lib/search";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { useOrgContext } from "@/contexts/OrgContext";

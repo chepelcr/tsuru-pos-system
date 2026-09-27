@@ -5,7 +5,8 @@ import { ClientListSkeleton } from "@/components/pos/ClientListSkeleton";
 import { useClients, clientDisplayName } from "@/hooks/useClients";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { buildClientSearch, clientToSearchResult } from "@/lib/clientSearch";
+import { buildClientSearch } from "@/lib/search";
+import { clientToSearchResult } from "@/hooks/useClientSearch";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 
 interface ClientPickerProps {

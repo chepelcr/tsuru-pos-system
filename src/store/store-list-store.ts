@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { StoreSortField } from '@/lib/storeSearchBuilder';
+import type { StoreSortField } from "@/lib/search";
 
 interface StoreListState {
   searchQuery: string;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { buildBranchSearch } from "@/lib/search";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -59,19 +60,13 @@ export default function PuestosPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Compose BE filter — see BranchSearchFilters in cross-app-be:
-  // `status:`, `type:`, `name:` (always_like off but allows_like on so
-  // we wildcard explicitly), `code:` (same). Free-text matches name OR
-  // code via the BE's (a,b) OR group.
-  const searchFilter = (() => {
-    const segs: string[] = [];
-    if (statusFilter !== "all") segs.push(`status:${statusFilter}`);
-    if (advanced.type) segs.push(`type:${advanced.type}`);
-    const tt = term.trim();
-    if (tt) segs.push(`(name:*${tt}*,code:*${tt}*)`);
-    if (advanced.sort) segs.push(`orderBy${advanced.sort}`);
-    return segs.join(",");
-  })();
+  // Name OR code, both partial.
+  const searchFilter = buildBranchSearch({
+    term,
+    status: statusFilter,
+    type: advanced.type || undefined,
+    sort: advanced.sort,
+  });
 
   const { data: branchesData, isLoading } = useQuery({
     queryKey: ["branches", org?.id, searchFilter, page, pageSize],

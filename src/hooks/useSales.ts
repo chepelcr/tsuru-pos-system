@@ -15,75 +15,50 @@ interface UseSalesParams {
 }
 
 /**
- * Fields the toolbar free-text term should match against (OR). Listed here so
- * the BE — once sales-api's filter parser lands — can opt-in to multi-field
- * matching without the FE needing another release.
- */
-const TERM_OR_FIELDS = ['consecutive_number', 'document_key', 'receiver_name'] as const;
-
-/**
- * Convert the modal's local filter shape into the sales-api wire format.
+ * The modal's filters in sales-api's `search` contract (`DocumentSearchDTO`):
+ * `search_term`, `status`, `start_date` / `end_date` (ISO; a bare date end is
+ * the whole day), `total_min` / `total_max`, `sort: {field: "asc"|"desc"}`,
+ * `branch_number` / `terminal_number`, `origin`.
  *
- * Date and total filters collapse to a single field using the between (`~`)
- * pattern — matching the cross-app-be convention (`price:50~150`).
- * Open-ended sides are sent as `X~` / `~Y` so the BE can treat each bound
- * independently when sales-api lands its filter parser.
- *   • Single `=`  X  → `sale_date: "X"`        / `total_amount: "X"`
- *   • Single `>=` X  → `sale_date: "X~"`       / `total_amount: "X~"` (`>` for numeric)
- *   • Single `<=` Y  → `sale_date: "~Y"`       / `total_amount: "~Y"` (`<` for numeric)
- *   • Range  X..Y    → `sale_date: "X~Y"`      / `total_amount: "X~Y"`
- *
- * The free-text term emits a single `search_term` plus an explicit `search_fields`
- * array so the BE knows to OR-match across consecutive number, document key,
- * and receiver name.
+ * That DTO IGNORES unknown keys, so a misnamed filter is not an error — it is
+ * no filter. The date used to travel as `sale_date: "a~b"` and the total as
+ * `total_amount`, and the sort as the string `"sale_date,asc"` (a 400): none of
+ * the three ever reached the query. Everything here is snake_case.
  */
-function toWireSearch(s: ComplexSearchFilters | undefined): Record<string, unknown> | undefined {
+export function toWireSearch(s: ComplexSearchFilters | undefined): Record<string, unknown> | undefined {
   if (!s) return undefined;
 
   const out: Record<string, unknown> = {};
 
-  if (s.searchTerm) {
-    // snake_case on the wire, like `search_fields` beside it. The UI type is
-    // camelCase because it is a UI type; this function is the seam where that
-    // stops. sales-api reads either spelling, so the two were mixed in one
-    // payload for no reason a reader could infer.
-    out.search_term = s.searchTerm;
-    out.search_fields = [...TERM_OR_FIELDS];
-  }
+  // Matched server-side against consecutive, key and the receiver's name,
+  // business name, email and id.
+  if (s.searchTerm?.trim()) out.search_term = s.searchTerm.trim();
   if (s.status) out.status = s.status;
-  if (s.sort)   out.sort = s.sort;
+  // Sort options are `field,direction`.
+  if (s.sort) {
+    const [field, direction] = s.sort.split(",");
+    if (field) out.sort = { [field]: direction === "asc" ? "asc" : "desc" };
+  }
   // A terminal code only means something inside its branch: both travel together.
-  if (s.branch_number != null)   out.branch_number = s.branch_number;
+  if (s.branch_number != null) out.branch_number = s.branch_number;
   if (s.branch_number != null && s.terminal_number != null) out.terminal_number = s.terminal_number;
   if (s.origin) out.origin = s.origin;
 
-  // sale_date
-  let saleDate: string | undefined;
-  if (s.dateMode === 'single' && s.dateValue) {
-    const v = s.dateValue;
-    saleDate = s.dateOp === '>=' ? `${v}~` : s.dateOp === '<=' ? `~${v}` : v;
+  if (s.dateMode === "single" && s.dateValue) {
+    if (s.dateOp !== "<=") out.start_date = s.dateValue;
+    if (s.dateOp !== ">=") out.end_date = s.dateValue;
   } else {
-    const lo = s.start_date;
-    const hi = s.end_date;
-    if (lo && hi) saleDate = `${lo}~${hi}`;
-    else if (lo)  saleDate = `${lo}~`;
-    else if (hi)  saleDate = `~${hi}`;
+    if (s.start_date) out.start_date = s.start_date;
+    if (s.end_date) out.end_date = s.end_date;
   }
-  if (saleDate) out.sale_date = saleDate;
 
-  // total_amount
-  let totalAmount: string | undefined;
-  if (s.totalMode === 'single' && s.totalValue !== undefined) {
-    const v = String(s.totalValue);
-    totalAmount = s.totalOp === '>' ? `${v}~` : s.totalOp === '<' ? `~${v}` : v;
+  if (s.totalMode === "single" && s.totalValue !== undefined) {
+    if (s.totalOp !== "<") out.total_min = s.totalValue;
+    if (s.totalOp !== ">") out.total_max = s.totalValue;
   } else {
-    const lo = s.totalMin;
-    const hi = s.totalMax;
-    if (lo !== undefined && hi !== undefined) totalAmount = `${lo}~${hi}`;
-    else if (lo !== undefined) totalAmount = `${lo}~`;
-    else if (hi !== undefined) totalAmount = `~${hi}`;
+    if (s.totalMin !== undefined) out.total_min = s.totalMin;
+    if (s.totalMax !== undefined) out.total_max = s.totalMax;
   }
-  if (totalAmount) out.total_amount = totalAmount;
 
   return Object.keys(out).length ? out : undefined;
 }

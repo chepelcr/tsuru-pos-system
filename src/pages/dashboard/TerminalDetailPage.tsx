@@ -14,7 +14,7 @@ import {
   ConsecutiveEditDrawer,
   type ConsecutiveEditTarget,
 } from "@/components/consecutives/ConsecutiveEditDrawer";
-import { ConsecutiveSearchFilter, buildConsecutiveSearchString } from "@/lib/consecutiveSearchBuilder";
+import { ConsecutiveSearchFilter, buildConsecutiveSearchString } from "@/lib/search";
 import { CountryISO } from "@/lib/enums";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
