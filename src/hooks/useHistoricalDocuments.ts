@@ -6,7 +6,10 @@ import type {
   HistoricalDocumentSummaryResponse, HistoricalSyncResponse,
 } from '@/types/historicalDocument';
 
-/** The history API accepts date bounds directly, unlike sales' sale_date ranges. */
+/**
+ * `emission_date` is a range in the platform syntax (`a~b`, open `a~` / `~b`),
+ * like `sale_date` on the sales list. snake_case only.
+ */
 export function historicalDocumentsQuery(filters: HistoricalDocumentFilters = {}, page = 0, size = 20): string {
   const params = new URLSearchParams({ page: String(page), size: String(size) });
   if (filters.document_types?.length) params.set('document_types', filters.document_types.join(','));
@@ -15,8 +18,9 @@ export function historicalDocumentsQuery(filters: HistoricalDocumentFilters = {}
   }
   const search = {
     ...(filters.search_term?.trim() ? { search_term: filters.search_term.trim() } : {}),
-    ...(filters.start_date ? { start_date: filters.start_date } : {}),
-    ...(filters.end_date ? { end_date: filters.end_date } : {}),
+    ...(filters.start_date || filters.end_date
+      ? { emission_date: `${filters.start_date ?? ''}~${filters.end_date ?? ''}` }
+      : {}),
     sort: { emission_date: filters.sort_direction ?? 'desc' },
   };
   // URLSearchParams performs the URL encoding once; FastAPI receives JSON.

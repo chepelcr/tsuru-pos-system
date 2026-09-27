@@ -36,7 +36,7 @@ describe('historical document query contract', () => {
     const params = new URLSearchParams(historicalDocumentsQuery({ document_types: ['01', '03'], branch_number: 1, terminal_number: 7, atv_status: 0, search_term: '  José & hijos  ', start_date: '2026-01-01', end_date: '2026-09-12' }, 0, 250));
     expect(Object.fromEntries(params)).toEqual({
       page: '0', size: '250', document_types: '01,03', branch_number: '1', terminal_number: '7', atv_status: '0',
-      search: JSON.stringify({ search_term: 'José & hijos', start_date: '2026-01-01', end_date: '2026-09-12', sort: { emission_date: 'desc' } }),
+      search: JSON.stringify({ search_term: 'José & hijos', emission_date: '2026-01-01~2026-09-12', sort: { emission_date: 'desc' } }),
     });
   });
   it('omits unset scalar filters, supports one-sided dates and ascending sort', () => {
@@ -44,7 +44,7 @@ describe('historical document query contract', () => {
     expect(params.get('page')).toBe('2');
     expect(params.has('document_types')).toBe(false);
     expect(params.has('atv_status')).toBe(false);
-    expect(JSON.parse(params.get('search')!)).toEqual({ start_date: '2026-09-01', sort: { emission_date: 'asc' } });
+    expect(JSON.parse(params.get('search')!)).toEqual({ emission_date: '2026-09-01~', sort: { emission_date: 'asc' } });
   });
 });
 
