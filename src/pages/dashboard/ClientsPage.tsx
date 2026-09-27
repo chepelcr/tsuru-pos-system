@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { buildClientSearch } from "@/lib/clientSearch";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { useOrgContext } from "@/contexts/OrgContext";
@@ -54,25 +55,12 @@ export default function ClientsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [page]);
 
-  // Compose the BE search filter string. See ClientSearchFilters in
-  // cross-app-be: `status:`, `client_name:`, `business_name:`, `id_number:`,
-  // `orderBy>field`. The free-text term searches name OR business_name OR
-  // identification number via a parenthesised OR group (handled by
-  // SearchUtils._split_tokens). client_name and business_name are
-  // always_like on the BE so the term doesn't need wildcard wrapping.
-  const searchFilter = (() => {
-    const segs: string[] = [];
-    if (statusFilter !== "all") segs.push(`status:${statusFilter}`);
-    if (advanced.customerType !== undefined) {
-      segs.push(`customer_type:${advanced.customerType}`);
-    }
-    const tt = term.trim();
-    if (tt) {
-      segs.push(`(client_name:${tt},business_name:${tt},id_number:${tt})`);
-    }
-    if (advanced.sort) segs.push(`orderBy${advanced.sort}`);
-    return segs.join(",");
-  })();
+  const searchFilter = buildClientSearch({
+    term,
+    status: statusFilter,
+    customerType: advanced.customerType,
+    sort: advanced.sort,
+  });
 
   const { data: listData, isLoading } = useClients(orgId, {
     search: searchFilter || undefined,

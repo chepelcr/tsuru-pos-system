@@ -7,7 +7,6 @@ import { POS_TABLES_ENABLED } from "@/config/features";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { useCartFlow } from "@/hooks/useCartFlow";
-import { useClientSearch } from "@/hooks/useClientSearch";
 import { useSync } from "@/hooks/useSync";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -148,10 +147,6 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     useDocumentStore.getState().updateDocumentTab(tabId, { cart_items: freshItems });
   }, [cartItems, tabId]);
 
-  const clientsEnabled = leftTab === "clients";
-  const { query: clientQuery, setQuery: setClientQuery, clients, isLoading: clientsLoading } =
-    useClientSearch(org?.id, clientsEnabled);
-
   // Document currency lives in the active tab's form data (DocumentSection
   // writes it). Conversion of line totals happens inside useCartFlow.
   const currency: CurrencyCode | undefined = (activeTab?.data as Partial<InvoiceFormData> | undefined)?.currency;
@@ -224,17 +219,10 @@ export default function POSIntegratedPage({ docType, tabId }: POSIntegratedPageP
     <PosLeftPane
       orgId={org.id}
       activeTab={leftTab}
-      onTabChange={(tab) => {
-        setLeftTab(tab);
-        if (tab === "clients") setClientQuery("");
-      }}
+      onTabChange={setLeftTab}
       cartItems={flow.cartItems}
       onAddProduct={flow.add}
-      clients={clients}
-      clientsLoading={clientsLoading}
-      clientQuery={clientQuery}
       selectedClient={selectedClient}
-      onClientQueryChange={setClientQuery}
       onSelectClient={(c) => {
         setSelectedClient(c);
         setLeftTab("products");

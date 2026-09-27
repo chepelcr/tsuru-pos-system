@@ -2,7 +2,7 @@ import { User } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import { Icon } from '@/components/ui';
-import { ReceiverPicker } from '../ReceiverPicker';
+import { ClientPicker } from '@/components/clients/ClientPicker';
 import type { SaleReceiver } from '@/types/receiver';
 import type { ClientSearchResult } from '@/hooks/useClientSearch';
 import { resolveReceiverId, resolveReceiverName } from '@/lib/receiverResolution';
@@ -86,7 +86,8 @@ export function ReceiverSection({
         {/* Picker — slides down in when no receiver, slides up out when one is picked */}
         <div className="collapse-grid" data-open={!hasReceiver} aria-hidden={hasReceiver}>
           <div className="min-h-0 overflow-hidden">
-            <ReceiverPicker
+            <ClientPicker
+              variant="inline"
               orgId={orgId}
               selectedClientId={selectedClient?.client_id ?? null}
               onSelect={(c) => onSelectClient(c)}

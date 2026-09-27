@@ -33,7 +33,6 @@ vi.mock("@/hooks/useTables", () => ({ useTableMutations: () => ({}) }));
 vi.mock("@/hooks/useIsDesktop", () => ({ useIsDesktop: () => true }));
 vi.mock("@/hooks/useSync", () => ({ useSync: () => "online" }));
 vi.mock("@/hooks/usePageTitle", () => ({ usePageTitle: () => undefined }));
-vi.mock("@/hooks/useClientSearch", () => ({ useClientSearch: () => ({ clients: [] }) }));
 vi.mock("@/hooks/useDataApi", () => ({ useAllCurrencies: () => ({ data: [] }) }));
 vi.mock("@/hooks/useChainClient", () => ({ useChainClient: () => ({ show: false }) }));
 vi.mock("@/hooks/useCartFlow", () => ({

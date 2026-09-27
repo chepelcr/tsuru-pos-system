@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { ProductsPanel } from './ProductsPanel';
-import { CustomerPanel } from './CustomerPanel';
+import { ClientPicker } from '@/components/clients/ClientPicker';
 import { TablesPanel } from './TablesPanel';
 import { POS_TABLES_ENABLED } from '@/config/features';
 import { useBusinessType } from '@/hooks/useBusinessType';
@@ -18,11 +18,7 @@ interface PosLeftPaneProps {
   onTabChange: (tab: LeftTab) => void;
   cartItems: CartItem[];
   onAddProduct: (product: Product) => void;
-  clients: ClientSearchResult[];
-  clientsLoading: boolean;
-  clientQuery: string;
   selectedClient: ClientSearchResult | null;
-  onClientQueryChange: (v: string) => void;
   onSelectClient: (c: ClientSearchResult) => void;
   /** Session branch code — tables are per branch (TSR-149). */
   branchCode?: number | null;
@@ -36,11 +32,7 @@ export function PosLeftPane({
   onTabChange,
   cartItems,
   onAddProduct,
-  clients,
-  clientsLoading,
-  clientQuery,
   selectedClient,
-  onClientQueryChange,
   onSelectClient,
   branchCode,
   activeDocumentId,
@@ -86,12 +78,10 @@ export function PosLeftPane({
             onSelectTable={(tb) => onSelectTable?.(tb)}
           />
         ) : activeTab === 'clients' ? (
-          <CustomerPanel
-            clients={clients}
-            isLoading={clientsLoading}
-            query={clientQuery}
-            selected={selectedClient}
-            onQueryChange={onClientQueryChange}
+          <ClientPicker
+            variant="panel"
+            orgId={orgId}
+            selectedClientId={selectedClient?.client_id ?? null}
             onSelect={onSelectClient}
           />
         ) : (
