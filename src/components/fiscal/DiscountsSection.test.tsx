@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { DiscountTypeCode } from "@/lib/enums";
-import type { DiscountFormEntry } from "@/types/productForm";
+import type { FiscalMode } from "@/lib/fiscalForm";
+import type { LineDiscount } from "@/types/lineDetail";
 import { DiscountsSection } from "./DiscountsSection";
 
 /**
@@ -15,11 +16,12 @@ import { DiscountsSection } from "./DiscountsSection";
  *
  * It used to render on every nature with only `required` gated on the code,
  * which is a one-character regression away — hence a test rather than a comment.
- * The POS line-detail drawer (`pos/line-detail/DiscountsTab.tsx`) has always
- * gated the whole block; this pins the product form to the same rule.
+ * The section is shared by the product drawer and the POS line-detail drawer,
+ * so both modes are pinned.
  *
  * Presence is asserted by ROLE, not by copy: the rate input is `type="number"`
- * (role `spinbutton`), so the Razón field is the section's only `textbox`. That
+ * (role `spinbutton`) and the type pickers are `combobox`es, so the Razón field
+ * is the section's only `textbox`. That
  * keeps the test from breaking on a reworded label — and `LanguageProvider`
  * resolves to English here, which is why the one copy assertion below uses the
  * English string.
@@ -36,20 +38,20 @@ vi.mock("@/hooks/useDataApi", () => ({
 
 const REQUIRED_MESSAGE = /Required for 'Other' discounts/i;
 
-function entry(discountCode: string, overrides: Partial<DiscountFormEntry> = {}): DiscountFormEntry {
-  return { id: `d-${discountCode}`, discountCode, rate: 10, ...overrides };
+function entry(discountType: string, overrides: Partial<LineDiscount> = {}): LineDiscount {
+  return { discount_type: discountType, percentage: 10, ...overrides };
 }
 
-function renderSection(discounts: DiscountFormEntry[]) {
+function renderSection(discounts: LineDiscount[], mode: FiscalMode = "product") {
   return render(
     <LanguageProvider>
       <DiscountsSection
+        mode={mode}
         discounts={discounts}
+        onChange={() => {}}
+        basePrice={1000}
         isExpanded
         onToggle={() => {}}
-        onAdd={() => {}}
-        onRemove={() => {}}
-        onUpdate={() => {}}
       />
     </LanguageProvider>,
   );
@@ -78,9 +80,9 @@ describe("DiscountsSection — the Razón field", () => {
     expect(reasonInputs()).toHaveLength(1);
   });
 
-  it("appears only on the 99 group when both natures are present", () => {
-    // The section groups by code, so a mixed product is the case that actually
-    // regressed: the field rendered inside every group.
+  it("appears only on the 99 row when both natures are present", () => {
+    // A mixed list is the case that actually regressed: the field rendered on
+    // every row.
     renderSection([
       entry("01", { reason: "Descuento por Regalía" }),
       entry(DiscountTypeCode.OTHER, { reason: "" }),
@@ -96,6 +98,14 @@ describe("DiscountsSection — the Razón field", () => {
   it("does not flag anything once nature 99 has a reason", () => {
     renderSection([entry(DiscountTypeCode.OTHER, { reason: "Ajuste comercial" })]);
     expect(screen.queryByText(REQUIRED_MESSAGE)).toBeNull();
+  });
+
+  it("follows the same rule in the POS line-detail drawer", () => {
+    renderSection(
+      [entry("01", { reason: "Descuento por Regalía" }), entry(DiscountTypeCode.OTHER, { reason: "" })],
+      "line",
+    );
+    expect(reasonInputs()).toHaveLength(1);
   });
 
   it("never flags a known nature, even with no reason at all", () => {

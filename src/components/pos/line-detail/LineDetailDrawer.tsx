@@ -28,12 +28,13 @@ import {
   DiscountValidationError,
 } from '@/services/discountCalculationService';
 import { GeneralTab } from './GeneralTab';
-import { IvaTaxSection } from './IvaTaxSection';
-import { OtherTaxSection } from './OtherTaxSection';
-import { DiscountsTab } from './DiscountsTab';
 import { ExemptionSection } from './ExemptionSection';
-import { FiscalInfoSection } from './FiscalInfoSection';
-import { CommercialValueSection } from './CommercialValueSection';
+import { FiscalSection } from '@/components/fiscal/FiscalSection';
+import { IvaTaxSection } from '@/components/fiscal/IvaTaxSection';
+import { OtherTaxSection } from '@/components/fiscal/OtherTaxSection';
+import { DiscountsSection } from '@/components/fiscal/DiscountsSection';
+import { CommercialValueSection } from '@/components/fiscal/CommercialValueSection';
+import { applyCabysIva } from '@/lib/fiscalForm';
 import type { LineDetail } from '@/types/lineDetail';
 import type { Product } from '@/types';
 import { formatMoney as fmt } from "@/lib/money";
@@ -476,25 +477,35 @@ export function LineDetailDrawer({
             />
 
             {/* 2. Fiscal Info */}
-            <FiscalInfoSection
-              detail={detail}
+            <FiscalSection
+              mode="line"
+              productTypeId={detail.product_type}
+              cabys={detail.cabys}
               isExpanded={expanded.fiscal}
               onToggle={() => toggle('fiscal')}
-              onChange={patch}
+              onProductTypeChange={(id, clearCabys) =>
+                patch(clearCabys ? { product_type: id, cabys: undefined } : { product_type: id })
+              }
+              onCabysSelect={(item) =>
+                patch({ cabys: item.code, taxes: applyCabysIva(detail.taxes, item, taxRates ?? []) })
+              }
+              onCabysManual={(code) => patch({ cabys: code })}
+              onCabysClear={() => patch({ cabys: undefined })}
             />
 
             {/* 3. Discounts */}
-            <DiscountsTab
+            <DiscountsSection
+              mode="line"
               discounts={detail.discounts}
-              netPrice={detail.net_price}
-              quantity={detail.quantity}
               onChange={(discounts) => patch({ discounts })}
+              basePrice={detail.net_price * detail.quantity}
               isExpanded={expanded.discounts}
               onToggle={() => toggle('discounts')}
             />
 
             {/* 4. Other Taxes */}
             <OtherTaxSection
+              mode="line"
               taxes={detail.taxes}
               onChange={(taxes) => patch({ taxes })}
               basePrice={detail.net_price * detail.quantity}
@@ -507,18 +518,19 @@ export function LineDetailDrawer({
 
             {/* 5. IVA Tax */}
             <IvaTaxSection
+              mode="line"
               taxes={detail.taxes}
               onChange={(taxes) => patch({ taxes })}
-              factoryTaxChargeCode={detail.factory_tax}
-              onFactoryTaxChargeChange={(code) => patch({ factory_tax: code })}
               baseAmount={lineAmounts.base_amount}
               subtotalAfterDiscount={subtotalAfterDiscount}
+              factoryChargeCode={detail.factory_tax}
+              onFactoryChargeChange={(code) => patch({ factory_tax: code })}
               factoryAssumedTax={lineAmounts.factory_assumed_tax}
+              manualBase={detail.base_amount}
+              onManualBaseChange={(base_amount) => patch({ base_amount })}
+              documentType={typeof documentType === 'string' ? documentType : undefined}
               isExpanded={expanded.ivaTax}
               onToggle={() => toggle('ivaTax')}
-              detail={detail}
-              onDetailChange={patch}
-              documentType={typeof documentType === 'string' ? documentType : undefined}
               onValidationChange={setRateCodeErrors}
             />
 
@@ -535,9 +547,13 @@ export function LineDetailDrawer({
 
             {/* 7. Commercial Value */}
             <CommercialValueSection
-              detail={detail}
+              mode="line"
+              basePrice={detail.net_price * detail.quantity}
+              discounts={detail.discounts}
+              discountAmounts={discountResult.result.perDiscount.map((d) => d.amount)}
               subtotalAfterDiscount={subtotalAfterDiscount}
-              lineAmounts={lineAmounts}
+              taxes={detail.taxes}
+              amounts={lineAmounts}
               isExpanded={expanded.commercial}
               onToggle={() => toggle('commercial')}
             />

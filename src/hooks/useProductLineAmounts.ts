@@ -11,6 +11,7 @@ import {
   type TaxAmountsById,
 } from "@/services/taxCalculationService";
 import { IvaCollectedFactory } from "@/lib/enums";
+import { taxEntriesToLineTaxes } from "@/lib/fiscalForm";
 import type { DiscountFormEntry, TaxFormEntry } from "@/types/productForm";
 
 interface UseProductLineAmountsArgs {
@@ -67,25 +68,7 @@ export function useProductLineAmounts({
   baseAmountOverride,
   taxTypes,
 }: UseProductLineAmountsArgs): ProductLineAmounts {
-  const taxEntries: LineTax[] = useMemo(
-    () =>
-      taxes.map((tx) => ({
-        code: tx.taxCode,
-        rate: tx.rate,
-        rate_code: tx.taxRateCode,
-        factor: tx.taxFactor,
-        special_fields: tx.specialFields
-          ? {
-              quantity: tx.specialFields.quantity,
-              percentage: tx.specialFields.percentage,
-              volume_consumption: tx.specialFields.volumeConsumption,
-              tax_amount_id: tx.specialFields.taxAmountId,
-              tax_unit_amount: tx.specialFields.taxAmount,
-            }
-          : undefined,
-      })),
-    [taxes],
-  );
+  const taxEntries: LineTax[] = useMemo(() => taxEntriesToLineTaxes(taxes), [taxes]);
 
   const discountEntries: LineDiscount[] = useMemo(
     () =>

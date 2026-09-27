@@ -1,37 +1,47 @@
-import { useState, useEffect } from "react";
-import { Drawer, Button, Spinner } from "@/components/ui";
+import { useState, useEffect, useMemo } from "react";
+import { Drawer, Button, Spinner, FormLabel, MoneyInput } from "@/components/ui";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
-import { useAllProductTypes, useAllMeasurementUnits, useAllTaxes, useAllTaxRates } from "@/hooks/useDataApi";
+import {
+  useAllProductTypes,
+  useAllMeasurementUnits,
+  useAllTaxes,
+  useAllTaxRates,
+  useAllTaxFactors,
+  useAllFactoryTaxCharges,
+} from "@/hooks/useDataApi";
 import { useAccordionSections } from "@/hooks/useAccordionSections";
 import { useProductLineAmounts } from "@/hooks/useProductLineAmounts";
-import { CountryISO, TaxTypeCode } from "@/lib/enums";
+import { CountryISO, IvaCollectedFactory } from "@/lib/enums";
+import {
+  applyCabysIva,
+  discountEntriesToLine,
+  isIvaCode,
+  lineDiscountsToEntries,
+  lineTaxesToTaxEntries,
+  taxEntriesToLineTaxes,
+} from "@/lib/fiscalForm";
 import type { Product, Category } from "@/types";
 import type { CabysItem } from "@/services/data-api";
+import type { GetAllFactoryTaxChargesParams } from "@/services/data-api/dtos";
+import type { LineDiscount, LineTax } from "@/types/lineDetail";
 
 import { GeneralInfoSection } from "./sections/GeneralInfoSection";
 import { ImageUploadSection } from "./sections/ImageUploadSection";
 import { PackagingSection } from "./sections/PackagingSection";
 import { InventorySection } from "./sections/InventorySection";
-import { FiscalInformationSection } from "./sections/FiscalInformationSection";
-import { IvaTaxSection } from "./sections/IvaTaxSection";
-import { OtherTaxSection } from "./sections/OtherTaxSection";
-import { DiscountsSection } from "./sections/DiscountsSection";
-import { ExemptionSection } from "./sections/ExemptionSection";
-import { CommercialValueSection } from "./sections/CommercialValueSection";
+import { FiscalSection } from "@/components/fiscal/FiscalSection";
+import { IvaTaxSection } from "@/components/fiscal/IvaTaxSection";
+import { OtherTaxSection } from "@/components/fiscal/OtherTaxSection";
+import { DiscountsSection } from "@/components/fiscal/DiscountsSection";
+import { CommercialValueSection } from "@/components/fiscal/CommercialValueSection";
 import { CodesSection } from "./sections/CodesSection";
 
 import { EMPTY_PRODUCT_FORM } from "@/types/productForm";
 import type { ProductFormState, TaxFormEntry, DiscountFormEntry, CodeFormEntry } from "@/types/productForm";
 export type { ProductFormState, TaxFormEntry, DiscountFormEntry, CodeFormEntry };
-
-const IVA_CODES: readonly string[] = [
-  TaxTypeCode.IVA,
-  TaxTypeCode.IVACE,
-  TaxTypeCode.IVARBU,
-];
 
 /**
  * Re-exported so existing call sites keep working. The definition lives in
@@ -68,7 +78,6 @@ interface SectionExpanded {
   fiscal: boolean;
   ivaTax: boolean;
   otherTax: boolean;
-  exemption: boolean;
   discounts: boolean;
   commercial: boolean;
 }
@@ -144,7 +153,6 @@ export function ProductDrawerForm({
     fiscal: false,
     ivaTax: false,
     otherTax: false,
-    exemption: false,
     discounts: false,
     commercial: false,
   });
@@ -160,11 +168,8 @@ export function ProductDrawerForm({
       inventory: editing && !!(drawerProduct as Product).track_inventory,
       codes: false,
       fiscal: editing && !!((drawerProduct as Product).cabys || ((drawerProduct as Product).taxes ?? []).length > 0),
-      ivaTax: editing && ((drawerProduct as Product).taxes ?? []).some(t => IVA_CODES.includes(t.tax_code ?? "")),
-      otherTax: editing && ((drawerProduct as Product).taxes ?? []).some(t => !IVA_CODES.includes(t.tax_code ?? "")),
-      // Open only when the article actually carries an exoneration, so an
-      // ordinary product does not grow a section nobody needs.
-      exemption: editing && !!(drawerProduct as Product).exemption_authorization_code,
+      ivaTax: editing && ((drawerProduct as Product).taxes ?? []).some(t => isIvaCode(t.tax_code)),
+      otherTax: editing && ((drawerProduct as Product).taxes ?? []).some(t => !isIvaCode(t.tax_code)),
       discounts: editing && ((drawerProduct as Product).discounts ?? []).length > 0,
       commercial: editing,
     });
@@ -197,58 +202,58 @@ export function ProductDrawerForm({
     if (generalStarted) setExpanded((p) => ({ ...p, commercial: true, discounts: true }));
   }, [generalStarted]);
 
-  // Tax management — keyed by Hacienda tax code
-  const addTax = (entry: TaxFormEntry) => {
-    const already = form.taxes.some((t) => t.taxCode === entry.taxCode);
-    if (already) return;
-    onFormChange({ taxes: [...form.taxes, entry] });
-  };
+  // The shared fiscal sections edit the canonical line shapes; the product
+  // form keeps its own entries (they carry catalog ids the product API stores).
+  // `lib/fiscalForm` is the only place the two meet.
+  const { data: factorsData } = useAllTaxFactors({ iso_code: ISO });
+  const { data: factoryChargesData } = useAllFactoryTaxCharges(
+    { iso_code: ISO } as GetAllFactoryTaxChargesParams,
+  );
+  const lineTaxes = useMemo(() => taxEntriesToLineTaxes(form.taxes), [form.taxes]);
+  const lineDiscounts = useMemo(() => discountEntriesToLine(form.discounts), [form.discounts]);
+  const setTaxes = (taxes: LineTax[]) =>
+    onFormChange({ taxes: lineTaxesToTaxEntries(taxes, factorsData ?? []) });
+  const setDiscounts = (discounts: LineDiscount[]) =>
+    onFormChange({ discounts: lineDiscountsToEntries(discounts, form.discounts) });
 
-  const removeTax = (taxCode: string) => {
-    onFormChange({ taxes: form.taxes.filter((t) => t.taxCode !== taxCode) });
-  };
-
-  const updateTax = (taxCode: string, patch: Partial<TaxFormEntry>) => {
+  // The product stores the factory charge by catalog id; the section speaks its
+  // Hacienda code.
+  const factoryCharges = factoryChargesData ?? [];
+  const factoryChargeCode = factoryCharges.find((c) => c.id === form.factoryTaxChargeId)?.code;
+  const handleFactoryChargeChange = (code: string | undefined) => {
+    const charge = factoryCharges.find((c) => c.code === code);
     onFormChange({
-      taxes: form.taxes.map((t) =>
-        t.taxCode === taxCode ? { ...t, ...patch } : t
-      ),
+      factoryTaxChargeId: charge?.id,
+      hasFactoryTax: code === IvaCollectedFactory.PRE_DETERMINED,
     });
   };
 
-  // Auto-IVA when CABYS is selected: use the suggested tax rate from CABYS result
   const handleCabysSelect = (item: CabysItem) => {
-    const allTaxes = taxesData ?? [];
-    const allRates = ratesData ?? [];
-    const suggestedPct = item.tax_rate?.percentage ?? 13;
-
-    const ivaTaxType = allTaxes.find((t: { code?: string }) => t.code === TaxTypeCode.IVA);
-    if (!ivaTaxType) return;
-
-    // The CABYS row names the rate directly, so prefer its id and its CODE over
-    // matching the catalog on percentage. The percentage is not a key: exento
-    // (10), no sujeto (11) and crédito pleno (01) are all 0%, so a match by
-    // rate picks one of three treatments arbitrarily. Falling back to the
-    // percentage match keeps a CABYS row that carries no rate working.
-    const matchingRate =
-      allRates.find((r: { id: number }) => r.id === item.tax_rate?.id) ??
-      allRates.find((r: { percentage: number }) => r.percentage === suggestedPct) ??
-      allRates[0];
-
-    const ivaEntry: TaxFormEntry = {
-      taxCode: ivaTaxType.code ?? TaxTypeCode.IVA,
-      rate: (matchingRate as { percentage: number })?.percentage ?? suggestedPct,
-      // Persisted so nothing downstream has to infer it back from the rate.
-      taxRateCode: item.tax_rate?.code ?? (matchingRate as { code?: string })?.code,
-    };
-
-    const existingIva = form.taxes.find((t) => IVA_CODES.includes(t.taxCode));
-    const nextTaxes = existingIva
-      ? form.taxes.map((t) => (IVA_CODES.includes(t.taxCode) ? ivaEntry : t))
-      : [...form.taxes, ivaEntry];
-
-    onFormChange({ taxes: nextTaxes });
+    onFormChange({
+      cabysId: item.id,
+      cabys: item.code,
+      cabysDescription: item.description ?? item.code,
+      taxes: lineTaxesToTaxEntries(
+        applyCabysIva(lineTaxes, item, ratesData ?? []),
+        factorsData ?? [],
+      ),
+    });
     setExpanded((p) => ({ ...p, ivaTax: true }));
+  };
+
+  // A new product type invalidates the CABYS, and with it the IVA it suggested.
+  const handleProductTypeChange = (id: number, clearCabys: boolean) => {
+    onFormChange(
+      clearCabys
+        ? {
+            productTypeId: id,
+            cabysId: "",
+            cabys: "",
+            cabysDescription: "",
+            taxes: form.taxes.filter((tx) => !isIvaCode(tx.taxCode)),
+          }
+        : { productTypeId: id },
+    );
   };
 
   // Intercept GeneralInfoSection changes: collapse + clear when toggling OFF
@@ -287,36 +292,6 @@ export function ProductDrawerForm({
     onFormChange(fullPatch);
   };
 
-  // Clear IVA taxes when product type changes and CABYS is cleared (from FiscalInformationSection)
-  const handleFormChange = (patch: Partial<ProductFormState>) => {
-    if ("cabys" in patch && patch.cabys === "" && "productTypeId" in patch) {
-      onFormChange({
-        ...patch,
-        taxes: form.taxes.filter((t) => !IVA_CODES.includes(t.taxCode)),
-      });
-      return;
-    }
-    onFormChange(patch);
-  };
-
-  // Discount management — multiple per type allowed
-  const addDiscount = (entry: DiscountFormEntry) => {
-    onFormChange({ discounts: [...form.discounts, entry] });
-    setExpanded((p) => ({ ...p, discounts: true }));
-  };
-
-  const removeDiscount = (id: string) => {
-    onFormChange({ discounts: form.discounts.filter((d) => d.id !== id) });
-  };
-
-  const updateDiscount = (id: string, patch: Partial<DiscountFormEntry>) => {
-    onFormChange({
-      discounts: form.discounts.map((d) =>
-        d.id === id ? { ...d, ...patch } : d
-      ),
-    });
-  };
-
   // Code management — one per type, remove by index
   const addCode = (entry: CodeFormEntry) => {
     onFormChange({ codes: [...form.codes, entry] });
@@ -331,23 +306,6 @@ export function ProductDrawerForm({
   const updateCode = (index: number, patch: Partial<CodeFormEntry>) => {
     onFormChange({ codes: form.codes.map((c, i) => (i === index ? { ...c, ...patch } : c)) });
   };
-
-  // Factory tax charge
-  const handleFactoryTaxChange = (chargeId: number | undefined, hasFactoryTax: boolean) => {
-    onFormChange({ factoryTaxChargeId: chargeId, hasFactoryTax });
-  };
-
-  // Aggregated validation errors from child sections (discount cascade,
-  // special_fields per code, etc.). Mirrors the LineDetailDrawer pattern.
-  const [commercialErrors, setCommercialErrors] = useState<string[]>([]);
-  // The IVA rules store-be enforces on save (rate code; the code-08 factor).
-  // Blocking here means the user is told beside the field, not by a 422.
-  const [ivaErrors, setIvaErrors] = useState<string[]>([]);
-  const validationErrors = [...commercialErrors, ...ivaErrors];
-  const canSave =
-    form.name.trim().length > 0 &&
-    Number(form.price) > 0 &&
-    validationErrors.length === 0;
 
   const price = Number(form.price) || 0;
 
@@ -375,6 +333,19 @@ export function ProductDrawerForm({
     taxTypes: taxesData ?? [],
   });
   const baseAmountForIva = productLine.amounts?.base_amount ?? price;
+
+  // The IVA rules store-be enforces on save (rate code; the code-08 factor),
+  // and the discount cascade's own check (nature 99 needs a reason). Blocking
+  // here means the user is told beside the field, not by a 422.
+  const [ivaErrors, setIvaErrors] = useState<string[]>([]);
+  const validationErrors = [
+    ...(productLine.error ? [t(productLine.error.message)] : []),
+    ...ivaErrors,
+  ];
+  const canSave =
+    form.name.trim().length > 0 &&
+    Number(form.price) > 0 &&
+    validationErrors.length === 0;
 
   return (
     <Drawer
@@ -481,77 +452,85 @@ export function ProductDrawerForm({
             />
 
             {/* 6. Fiscal Information */}
-            <FiscalInformationSection
-              form={form}
+            <FiscalSection
+              mode="product"
+              productTypeId={form.productTypeId}
+              cabys={form.cabys || undefined}
+              cabysDescription={form.cabysDescription || undefined}
               isExpanded={expanded.fiscal}
               onToggle={() => toggle("fiscal")}
               disabled={!form.has_fiscal_info}
-              onChange={handleFormChange}
+              onProductTypeChange={handleProductTypeChange}
               onCabysSelect={handleCabysSelect}
+              onCabysManual={(code) => onFormChange({ cabys: code, cabysDescription: "" })}
+              onCabysClear={() => onFormChange({ cabysId: "", cabys: "", cabysDescription: "" })}
             />
 
             {/* 7. Discounts */}
             <DiscountsSection
-              discounts={form.discounts}
+              mode="product"
+              discounts={lineDiscounts}
+              onChange={setDiscounts}
               basePrice={price}
               isExpanded={expanded.discounts}
               onToggle={() => toggle("discounts")}
               disabled={!generalStarted}
-              onAdd={addDiscount}
-              onRemove={removeDiscount}
-              onUpdate={updateDiscount}
             />
 
             {/* 8. Other Taxes */}
             <OtherTaxSection
-              taxes={form.taxes}
-              cabys={form.cabys || undefined}
+              mode="product"
+              taxes={lineTaxes}
+              onChange={setTaxes}
               basePrice={price}
+              cabys={form.cabys || undefined}
+              detailQuantity={1}
               isExpanded={expanded.otherTax}
               onToggle={() => toggle("otherTax")}
               disabled={!fiscalAndCabys}
-              onAdd={addTax}
-              onRemove={removeTax}
-              onUpdate={updateTax}
             />
 
             {/* 9. IVA Tax */}
             <IvaTaxSection
-              taxes={form.taxes}
-              factoryTaxChargeId={form.factoryTaxChargeId}
+              mode="product"
+              taxes={lineTaxes}
+              onChange={setTaxes}
               baseAmount={baseAmountForIva}
+              subtotalAfterDiscount={productLine.discount?.subtotalAfterDiscount ?? price}
+              factoryChargeCode={factoryChargeCode}
+              onFactoryChargeChange={handleFactoryChargeChange}
+              factoryAssumedTax={productLine.amounts?.factory_assumed_tax}
+              manualBase={form.baseAmount ? Number(form.baseAmount) : undefined}
+              onManualBaseChange={(v) => onFormChange({ baseAmount: v === undefined ? "" : String(v) })}
               isExpanded={expanded.ivaTax}
               onToggle={() => toggle("ivaTax")}
               disabled={!fiscalAndCabys}
-              onAdd={addTax}
-              onRemove={removeTax}
-              onUpdate={updateTax}
-              onFactoryTaxChargeChange={handleFactoryTaxChange}
               onValidationChange={setIvaErrors}
             />
 
-            {/* 10. Exoneración del artículo (Nota 10.1) */}
-            <ExemptionSection
-              authorizationCode={form.exemptionAuthorizationCode}
-              exemptedRate={form.exemptedRate}
-              exemptionNumber={form.exemptionNumber}
-              isExpanded={expanded.exemption}
-              onToggle={() => toggle("exemption")}
-              disabled={!fiscalAndCabys}
-              onChange={onFormChange}
-            />
-
-            {/* 11. Commercial Value — last, after taxes */}
+            {/* 10. Commercial Value — last, after taxes */}
             <CommercialValueSection
-              form={form}
-              taxes={form.taxes}
-              discounts={form.discounts}
-              hasFactoryTax={form.hasFactoryTax}
+              mode="product"
+              basePrice={price}
+              discounts={lineDiscounts}
+              discountAmounts={(productLine.discount?.perDiscount ?? []).map((d) => d.amount)}
+              subtotalAfterDiscount={productLine.discount?.subtotalAfterDiscount ?? price}
+              taxes={lineTaxes}
+              amounts={productLine.amounts}
+              priceInput={
+                <div>
+                  <FormLabel required>{t("products.basePriceNoTax")}</FormLabel>
+                  <MoneyInput
+                    placeholder="0"
+                    min={0}
+                    value={form.price}
+                    onChange={(value) => onFormChange({ price: value })}
+                  />
+                </div>
+              }
               isExpanded={expanded.commercial}
               onToggle={() => toggle("commercial")}
               disabled={!generalStarted}
-              onChange={onFormChange}
-              onValidationChange={setCommercialErrors}
             />
 
             {validationErrors.length > 0 && (
