@@ -783,7 +783,7 @@ If you write a helper component or render function that produces user-visible te
 | Add a new CSS variable / utility | `src/index.css` (+ `tailwind.config.js` if exposing as Tailwind class) |
 | Add a translation | Matching domain JSON files in `src/locales/{es,en}/` |
 | Filter / search a store-be list | **`lib/search/`** — the DSL core (`dsl.ts`) and one builder per list (`builders.ts`: clients, products, branches, stores, departments, orders; `consecutives.ts`). Fields are **snake_case only** and must be in `SEARCH_FIELDS`: store-be DROPS a clause it cannot resolve, silently, and returns the list unfiltered. Never hand-write a `search=` string. |
-| Filter the documents list (sales-api) | `hooks/useSales.ts` `toWireSearch` → `DocumentSearchDTO` (`search_term`, `start_date`/`end_date`, `total_min`/`total_max`, `sort: {field: dir}`). That DTO ignores unknown keys the same way. |
+| Filter the documents list (sales-api) | `hooks/useSales.ts` `toWireSearch` → `DocumentSearchDTO` (`search_term`, `sale_date` and `total_amount` as ranges `a~b` / `a~` / `~b` / single value, `sort: {field: dir}`). The dashboard trend sends the same `sale_date` range. That DTO ignores unknown keys the same way. |
 
 ---
 

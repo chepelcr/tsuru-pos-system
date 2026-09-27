@@ -16,15 +16,21 @@ interface UseSalesParams {
 
 /**
  * The modal's filters in sales-api's `search` contract (`DocumentSearchDTO`):
- * `search_term`, `status`, `start_date` / `end_date` (ISO; a bare date end is
- * the whole day), `total_min` / `total_max`, `sort: {field: "asc"|"desc"}`,
- * `branch_number` / `terminal_number`, `origin`.
+ * `search_term`, `status`, `sale_date` and `total_amount` as RANGES in the
+ * platform grammar (`a~b`, open-ended `a~` / `~b`, or a single value — a single
+ * date is that whole day), `sort: {field: "asc"|"desc"}`,
+ * `branch_number` / `terminal_number`, `origin`. snake_case only.
  *
- * That DTO IGNORES unknown keys, so a misnamed filter is not an error — it is
- * no filter. The date used to travel as `sale_date: "a~b"` and the total as
- * `total_amount`, and the sort as the string `"sale_date,asc"` (a 400): none of
- * the three ever reached the query. Everything here is snake_case.
+ * That DTO ignores unknown keys, so a misnamed filter is not an error — it is
+ * no filter. `toWireSearch.test.ts` pins every key.
  */
+/** `a~b`, or open-ended `a~` / `~b`; nothing when both sides are empty. */
+function rangeValue(lo: string | number | undefined, hi: string | number | undefined): string | undefined {
+  const a = lo === undefined || lo === "" ? "" : String(lo);
+  const b = hi === undefined || hi === "" ? "" : String(hi);
+  return a || b ? `${a}~${b}` : undefined;
+}
+
 export function toWireSearch(s: ComplexSearchFilters | undefined): Record<string, unknown> | undefined {
   if (!s) return undefined;
 
@@ -44,21 +50,23 @@ export function toWireSearch(s: ComplexSearchFilters | undefined): Record<string
   if (s.branch_number != null && s.terminal_number != null) out.terminal_number = s.terminal_number;
   if (s.origin) out.origin = s.origin;
 
+  let saleDate: string | undefined;
   if (s.dateMode === "single" && s.dateValue) {
-    if (s.dateOp !== "<=") out.start_date = s.dateValue;
-    if (s.dateOp !== ">=") out.end_date = s.dateValue;
+    const v = s.dateValue;
+    saleDate = s.dateOp === ">=" ? `${v}~` : s.dateOp === "<=" ? `~${v}` : v;
   } else {
-    if (s.start_date) out.start_date = s.start_date;
-    if (s.end_date) out.end_date = s.end_date;
+    saleDate = rangeValue(s.start_date, s.end_date);
   }
+  if (saleDate) out.sale_date = saleDate;
 
+  let totalAmount: string | undefined;
   if (s.totalMode === "single" && s.totalValue !== undefined) {
-    if (s.totalOp !== "<") out.total_min = s.totalValue;
-    if (s.totalOp !== ">") out.total_max = s.totalValue;
+    const v = String(s.totalValue);
+    totalAmount = s.totalOp === ">" ? `${v}~` : s.totalOp === "<" ? `~${v}` : v;
   } else {
-    if (s.totalMin !== undefined) out.total_min = s.totalMin;
-    if (s.totalMax !== undefined) out.total_max = s.totalMax;
+    totalAmount = rangeValue(s.totalMin, s.totalMax);
   }
+  if (totalAmount) out.total_amount = totalAmount;
 
   return Object.keys(out).length ? out : undefined;
 }

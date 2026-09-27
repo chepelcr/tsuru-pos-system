@@ -62,9 +62,8 @@ function queryString(params: Record<string, string | number | undefined>): strin
  */
 function documentSearch(options: DashboardQueryOptions): string | undefined {
   if (!options.dateFrom && !options.dateTo) return undefined;
-  const search: Record<string, string> = {};
-  if (options.dateFrom) search.start_date = options.dateFrom;
-  if (options.dateTo) search.end_date = options.dateTo;
+  // The platform range syntax, like the list: `from~to`, open-ended on either side.
+  const search = { sale_date: `${options.dateFrom ?? ""}~${options.dateTo ?? ""}` };
   // Encoded here and again by URLSearchParams; the backend's Query() decodes
   // once. Same double-encode the documents list does — deliberately identical,
   // because the two are read by the same parser.
