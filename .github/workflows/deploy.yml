@@ -111,6 +111,15 @@ jobs:
             echo "::warning::No ${base}/api/support-url — using the support API custom-domain target."
           fi
 
+          if value=$(get "api/blog-url"); then
+            echo "VITE_BLOG_API_URL=${value}" >> "$GITHUB_ENV"
+          fi
+          if value=$(get "features/blog-enabled"); then
+            case "$value" in true|false) echo "VITE_BLOG_ENABLED=${value}" >> "$GITHUB_ENV" ;; *)
+              echo "::error::Invalid blog feature flag"; exit 1 ;;
+            esac
+          fi
+
           # Optional — without it the bell still lists what its hydrate loaded,
           # it just stops updating live. Not worth failing a release over.
           if value=$(get "appsync/events-url"); then
