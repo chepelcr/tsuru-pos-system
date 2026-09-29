@@ -62,6 +62,7 @@ const GalleryPage = lazy(() => import("@/pages/dashboard/GalleryPage"));
 const TemplatesPage = lazy(() => import("@/pages/dashboard/TemplatesPage"));
 const DeploymentsPage = lazy(() => import("@/pages/dashboard/DeploymentsPage"));
 const SupportPage = lazy(() => import('@/pages/dashboard/SupportPage'));
+const BlogWriterPage = lazy(() => import('@/pages/dashboard/BlogWriterPage'));
 
 const DASHBOARD_ROLES = ["gerente", "supervisor", "customer", "cajero"];
 
@@ -327,6 +328,10 @@ export default function Routes() {
       />
 
       {/* Dashboard — more specific paths first */}
+      {import.meta.env.VITE_BLOG_ENABLED === 'true' && <Route
+        path={ROUTES.DASHBOARD_BLOG}
+        component={() => <RequireAuth><DashboardLayout><BlogWriterPage /></DashboardLayout></RequireAuth>}
+      />}
       <Route
         path={ROUTES.DASHBOARD_SESSIONS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.sessions}><SessionsPage /></DashboardPage>}

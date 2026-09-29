@@ -23,6 +23,7 @@ interface DashboardSidebarProps {
 const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   historicalDocuments: { icon: "clock", labelKey: "shell.historicalDocuments" },
   dashboard:     { icon: "chart",       labelKey: "shell.panel" },
+  blog:          { icon: "fileText",    labelKey: "shell.blog" },
   productos:     { icon: "package",     labelKey: "shell.products" },
   categories:    { icon: "layers",      labelKey: "shell.categories" },
   clients:       { icon: "user",        labelKey: "shell.clients" },
@@ -222,6 +223,11 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
         {/* Panel — standalone, primary view */}
         {renderItem("dashboard")}
+        {import.meta.env.VITE_BLOG_ENABLED === 'true' && <button type="button"
+          className={`sidebar-item ${active === 'blog' ? 'active' : ''}`}
+          onClick={() => goNav('blog')}>
+          <Icon name="fileText" size={16} />{t('shell.blog')}
+        </button>}
 
         {/* Collapsible sections (accordion) — hidden when no item is visible */}
         {SECTIONS.map((section) => {

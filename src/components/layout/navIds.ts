@@ -12,6 +12,7 @@
  */
 export type NavId =
   | "dashboard"
+  | "blog"
   | "config"
   | "puestos"
   | "consecutives"

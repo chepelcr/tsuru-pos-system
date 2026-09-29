@@ -28,6 +28,7 @@ import type { NavId } from "./navIds";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 function getActiveNav(location: string): NavId {
+  if (location.startsWith(ROUTES.DASHBOARD_BLOG)) return "blog";
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
   // Includes /stations/:branch/terminals/:terminal (terminal detail).
   if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
@@ -60,6 +61,7 @@ function getActiveNav(location: string): NavId {
 
 const NAV_PATHS: Record<NavId, string> = {
   dashboard: ROUTES.DASHBOARD,
+  blog: ROUTES.DASHBOARD_BLOG,
   config:    ROUTES.DASHBOARD_SESSIONS,
   puestos:   ROUTES.DASHBOARD_STATIONS,
   consecutives: ROUTES.DASHBOARD_CONSECUTIVES,
@@ -108,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <>
         <NotificationsBridge />
         <DashboardShell active={active} onNav={handleNav}>
-          {null}
+          {active === "blog" ? children : null}
         </DashboardShell>
       </>
     );
