@@ -199,11 +199,11 @@ const pollosPortenos: ThemeDef = {
   },
 };
 
-// ─── Theme: jmarkets (POS DEFAULT — id kept; Tsuru natural-pigment palette:
+// ─── Theme: tsuru (POS DEFAULT; Tsuru natural-pigment palette:
 //     Borgoña primary, Carmesí Achiote CTA, Dosel Talamanca success/secondary,
 //     Arena de Mastate bg, Piedra text, Oro de Maíz accent) ──────────────────
-const jmarkets: ThemeDef = {
-  id: "jmarkets",
+const tsuru: ThemeDef = {
+  id: "tsuru",
   name: "Tsuru",
   fonts: {
     sans: '"Barlow", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -276,9 +276,9 @@ const jmarkets: ThemeDef = {
   },
 };
 
-// ─── Theme: jmarkets-demo (Orange / Blue) ───────────────────────────────────
-const jmarketsDemo: ThemeDef = {
-  id: "jmarkets-demo",
+// ─── Theme: tsuru-demo (Orange / Blue) ───────────────────────────────────
+const tsuruDemo: ThemeDef = {
+  id: "tsuru-demo",
   name: "Tsuru Demo",
   fonts: {
     sans: '"Inter", ui-sans-serif, system-ui, sans-serif',
@@ -760,9 +760,9 @@ const beautyEssentials: ThemeDef = {
 
 /** All themes keyed by id. */
 export const THEMES: Record<string, ThemeDef> = {
-  "jmarkets": jmarkets,
+  "tsuru": tsuru,
   "pollos-portenos": pollosPortenos,
-  "jmarkets-demo": jmarketsDemo,
+  "tsuru-demo": tsuruDemo,
   "tech-gadgets": techGadgets,
   "vintage-fashion": vintageFashion,
   "artisan-crafts": artisanCrafts,
@@ -774,9 +774,9 @@ export const THEMES: Record<string, ThemeDef> = {
 
 /** Ordered theme list for galleries — default first. */
 export const THEME_LIST: ThemeDef[] = [
-  jmarkets,
+  tsuru,
   pollosPortenos,
-  jmarketsDemo,
+  tsuruDemo,
   techGadgets,
   vintageFashion,
   artisanCrafts,
@@ -787,9 +787,19 @@ export const THEME_LIST: ThemeDef[] = [
 ];
 
 /** The fallback theme id when an org has no theme / an unknown one. */
-export const DEFAULT_THEME_ID = "jmarkets";
+export const DEFAULT_THEME_ID = "tsuru";
 
 /** Type guard: is `id` a known theme id? */
 export function isKnownThemeId(id: string | undefined | null): id is string {
   return !!id && id in THEMES;
+}
+
+/** Migrate saved theme IDs from before the Tsuru rename. */
+export function normalizeThemeId(id: string | undefined | null): string {
+  const legacyIds: Record<string, string> = {
+    "jmarkets": "tsuru",
+    "jmarkets-demo": "tsuru-demo",
+  };
+  const canonical = id ? (legacyIds[id] ?? id) : DEFAULT_THEME_ID;
+  return isKnownThemeId(canonical) ? canonical : DEFAULT_THEME_ID;
 }

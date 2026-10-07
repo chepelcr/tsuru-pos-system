@@ -193,7 +193,7 @@ If you want to match dashboard's login flow:
 
 3. **Organization Display**
    - Shows org name
-   - Shows subdomain: `{subdomain}.j-markets.jcampos.dev`
+   - Shows subdomain: `{subdomain}.tsuru.jcampos.dev`
    - Status badge with color coding
    - Warning for incomplete setup
    - Hover effects with chevron icon

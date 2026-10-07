@@ -17,7 +17,7 @@ import {
   THEMES,
   THEME_TOKENS,
   DEFAULT_THEME_ID,
-  isKnownThemeId,
+  normalizeThemeId,
   type ThemeDef,
 } from "@/theme/themes";
 
@@ -71,7 +71,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 function readStoredThemeId(): string {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (isKnownThemeId(stored)) return stored;
+    return normalizeThemeId(stored);
   } catch {
     /* localStorage unavailable (SSR / privacy mode) — fall through */
   }
@@ -142,8 +142,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // (No longer read from org.theme on the markets-api, nor from the Hacienda
   // config response.)
   const orgThemeId = useMemo(() => {
-    if (isKnownThemeId(themeData?.theme)) return themeData!.theme!;
-    return DEFAULT_THEME_ID;
+    return normalizeThemeId(themeData?.theme);
   }, [themeData?.theme]);
 
   // Auth and org-picker routes are always the default palette — an org has not
@@ -155,7 +154,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     : override ?? (themeData ? orgThemeId : readStoredThemeId());
 
   const setThemeId = useCallback((id: string) => {
-    const resolved = isKnownThemeId(id) ? id : DEFAULT_THEME_ID;
+    const resolved = normalizeThemeId(id);
     setOverride(resolved);
   }, []);
 

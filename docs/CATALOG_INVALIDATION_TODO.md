@@ -73,7 +73,7 @@ Call `notifications.add(...)` (from `useNotifications()`) with **exactly**:
 | `kind`       | `"catalogs.updated"`                                                        |
 | `payload`    | object containing `catalog: string`                                         |
 | `payload.catalog` | one of the catalog prefixes (see below), or `"*"` for everything       |
-| `target_apps`     | `["*"]` for catalog events (catalogs are shared across every jmarkets app) |
+| `target_apps`     | `["*"]` for catalog events (catalogs are shared across every tsuru app) |
 | `source`     | `"be"` recommended (informational only)                                     |
 | `level`      | `"info"` recommended (informational only — silent events are not rendered)  |
 | `titleKey`   | any non-empty i18n key (unused, but the interface requires it)              |
@@ -118,7 +118,7 @@ listener will accept invalidation events for it.
 
 ## App targeting (`target_apps`)
 
-Notifications are global across the jmarkets ecosystem (POS, main dashboard,
+Notifications are global across the tsuru ecosystem (POS, main dashboard,
 landing site, future apps). To stop the POS from processing events meant for
 the main dashboard, every notification carries an optional `target_apps:
 string[]`.
@@ -129,7 +129,7 @@ string[]`.
 | `[]`                               | every app (treated as global)                              |
 | `["*"]`                            | every app (explicit global)                                |
 | `["pos"]`                          | only the POS app                                           |
-| `["dashboard"]`                    | only the main jmarkets dashboard                           |
+| `["dashboard"]`                    | only the main tsuru dashboard                           |
 | `["pos", "dashboard"]`             | POS and dashboard; other apps skip                         |
 
 The current app code is hardcoded in `src/lib/appCode.ts` as

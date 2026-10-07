@@ -48,7 +48,7 @@ template, and trigger the storefront's build+deploy. **`CLAUDE.md` must be updat
   **POS admin UI itself**. POS already ships 9 themes (the POS default + the 8 store palettes). Picking a
   theme is a **client-side visual no-op** to the storefront — it only restyles the POS app.
 - **Storefront template** (`org.template_name`): the **page structure + section content** of the
-  **customer-facing store** (the 8 designs deployed to `{name}-example.j-markets.jcampos.dev`). Selecting
+  **customer-facing store** (the 8 designs deployed to `{name}-example.tsuru.jcampos.dev`). Selecting
   one **clones page/section/content rows** server-side (markets-api `TemplateCloneService`) and is what
   the **deploy pipeline builds + publishes**. This is NOT the POS theme.
 
@@ -147,7 +147,7 @@ Port `dashboard/src/components/admin/templates/{TemplateGallery,TemplateCard,Tem
   (`from-primary/5 to-secondary/5`, `text-white`, `bg-gradient-to-r`) → POS `card` + design-system
   classes. Keep the "start fresh" semantics (passes `null` templateId).
 - **Preview** (`TemplatePreview`): a modal showing thumbnail + description + a **live demo link**
-  (`https://{template.name}-example.j-markets.jcampos.dev`) + "what's included" list + "Use template".
+  (`https://{template.name}-example.tsuru.jcampos.dev`) + "what's included" list + "Use template".
   Re-host in a POS `<Modal>` (CLAUDE.md ui). Keep the demo-URL builder (it's a real, deployed preview).
 - **Search + category filter**: client-side over `displayName`/`description`/`category` (source does
   this). Reuse POS `ListToolbar`/`forms/SearchInput` for search; category chips via POS `Badge`.
@@ -516,7 +516,7 @@ early before committing to UI.
 - [ ] `/dashboard/storefront` lists templates from `GET /api/templates?activeOnly=true`; search + category
       filter work; the card matching `org.template_name` shows as active/selected; Playground card present.
 - [ ] **Preview** opens a modal with thumbnail/description and a working "Visit demo"
-      (`{name}-example.j-markets.jcampos.dev`).
+      (`{name}-example.tsuru.jcampos.dev`).
 - [ ] **Select** opens a **destructive/warning confirm** ("this overwrites your storefront content");
       confirming applies the template (sets `template_name`, re-clones content), invalidates org +
       `pages-content` + deployments; the new template is now active; switching to Content shows the cloned

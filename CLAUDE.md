@@ -82,10 +82,10 @@ artifact, so `pnpm run build` locally only produces `dist/` for inspection.
 
 > ⚠️ **Retired: the S3 + CloudFront deploy.** This section used to describe `scripts/deploy.sh`
 > deploying `cloudformation/frontend-site.yml` to an S3 bucket behind CloudFront at
-> `pos.j-markets.jcampos.dev`, under the now-retired `J-CAMPOS` account. None of that exists any
+> `pos.tsuru.jcampos.dev`, under the now-retired `J-CAMPOS` account. None of that exists any
 > more: the script and the template are deleted, and `cloudformation/` holds only
-> `deploy-role.yml`. If you find a doc still pointing at `pos.j-markets.jcampos.dev` or at a
-> `jmarkets-*` bucket, it is stale.
+> `deploy-role.yml`. If you find a doc still pointing at `pos.tsuru.jcampos.dev` or at a
+> `tsuru-*` bucket, it is stale.
 
 ---
 
@@ -97,7 +97,7 @@ A Vite + React 18 + TypeScript single-page app — a **standalone POS + electron
 
 It is deployed as a **single** Pages site at `app.tsuru.jcampos.dev`, serving every organization
 — the org is resolved from the signed-in user's membership, not from the hostname. (It was once
-deployed per organization to `{org}.j-markets.jcampos.dev`; that went with the S3/CloudFront
+deployed per organization to `{org}.tsuru.jcampos.dev`; that went with the S3/CloudFront
 retirement in §0.)
 
 **Stack** (versions are intentional — don't bump without checking):

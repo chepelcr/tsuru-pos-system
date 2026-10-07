@@ -1,5 +1,5 @@
 /**
- * Identifies the current FE app inside the jmarkets ecosystem.
+ * Identifies the current FE app inside the tsuru ecosystem.
  *
  * Notifications coming through the shared user-app notifications channel
  * carry a `target_apps: string[]` list. Each FE app filters incoming events
@@ -7,7 +7,7 @@
  *
  * Conventions:
  *  - `"pos"`               — this POS system (cashier + admin dashboard)
- *  - `"dashboard"`         — the main jmarkets dashboard (BeautyMarket/dashboard/)
+ *  - `"dashboard"`         — the main tsuru dashboard (BeautyMarket/dashboard/)
  *  - `"landing"`           — the public landing/marketing site (if it ever subscribes)
  *  - additional codes are reserved for future apps
  *
