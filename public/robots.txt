@@ -1,0 +1,4 @@
+# Public app shells are fetchable so their noindex can be read.
+# Private records remain protected by authentication and authorization.
+User-agent: *
+Allow: /
