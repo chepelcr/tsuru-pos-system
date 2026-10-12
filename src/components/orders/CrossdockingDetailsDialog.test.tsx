@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import type { Order } from '@/types/order';
+import { REPORT_COLOR_PALETTES, type ReportColorScheme } from '@/theme/reportColors';
 import { CrossdockingDetailsDialog } from './CrossdockingDetailsDialog';
 
 vi.mock('@/hooks/useRbac', () => ({
@@ -40,6 +41,25 @@ describe('CrossdockingDetailsDialog', () => {
     localStorage.setItem('language', 'es');
     vi.mocked(downloadFromUrl).mockClear();
   });
+
+  it.each(['green', 'orange', 'blue', 'green_alt'] as ReportColorScheme[])(
+    'uses the saved %s palette inside the portaled modal',
+    (color) => {
+      render(
+        <LanguageProvider>
+          <CrossdockingDetailsDialog open onClose={() => undefined} order={{ ...order, report_color: color }} />
+        </LanguageProvider>,
+      );
+
+      const dialog = screen.getByRole('dialog');
+      const palette = REPORT_COLOR_PALETTES[color];
+      const report = dialog.querySelector<HTMLElement>('.crossdocking-report');
+      expect(report?.style.getPropertyValue('--report-header')).toBe(palette.header);
+      expect(report?.style.getPropertyValue('--report-header-light')).toBe(palette.headerLight);
+      expect(report?.style.getPropertyValue('--report-row-alternate')).toBe(palette.rowAlternate);
+      expect(dialog.querySelector('header [aria-label]')?.getAttribute('style')).toContain('background');
+    },
+  );
 
   it('keeps every PDF, Excel, and generated-report download available', () => {
     render(

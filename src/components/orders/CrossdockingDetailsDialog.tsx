@@ -7,6 +7,7 @@ import { usePermissions } from '@/hooks/useRbac';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import type { Order } from '@/types/order';
 import { CrossdockingSummaries } from './CrossdockingSummaries';
+import { ReportColorChip } from './ReportColorSelector';
 
 interface CrossdockingDetailsDialogProps {
   open: boolean;
@@ -51,8 +52,9 @@ export function CrossdockingDetailsDialog({ open, onClose, order }: Crossdocking
             <div className="flex items-center gap-2 min-w-0">
               <Icon name="store" size={17} className="text-accent-rose flex-shrink-0" />
               <div className="min-w-0">
-                <div id={titleId} className="font-display font-bold text-[16px] truncate">
-                  {t('orders.crossdocking.distribution')} #{order.document_number}
+                <div id={titleId} className="font-display font-bold text-[16px] flex items-center gap-2 min-w-0">
+                  <span className="truncate">{t('orders.crossdocking.distribution')} #{order.document_number}</span>
+                  {order.report_color && <ReportColorChip color={order.report_color} />}
                 </div>
                 <div className="t-xs text-muted-foreground">
                   {t('orders.crossdocking.nativeDescription')}
