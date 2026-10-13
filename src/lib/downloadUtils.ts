@@ -7,7 +7,7 @@
 /** Downloads a file from a URL by fetching it to a blob and triggering an anchor. */
 export async function downloadFile(url: string, fileName: string, extension: string = 'pdf') {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-store' });
     const blob = await response.blob();
 
     const downloadUrl = window.URL.createObjectURL(blob);
@@ -45,7 +45,8 @@ export function getFileNameFromUrl(url: string): string {
 
 /** Fetches a server URL and triggers a download using its derived filename. */
 export async function downloadFromUrl(url: string) {
-  const response = await fetch(url);
+  // Regenerated order reports keep their URLs; always retrieve the current file.
+  const response = await fetch(url, { cache: 'no-store' });
   const blob = await response.blob();
   downloadBlob(blob, getFileNameFromUrl(url));
 }
