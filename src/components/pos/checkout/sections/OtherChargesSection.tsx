@@ -8,13 +8,15 @@
  * `lib/otherCharges`, which mirrors sales-be.
  */
 
+import { useId } from 'react';
 import { Receipt as ReceiptIcon } from 'lucide-react';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
-import { MoneyInput, Select } from '@/components/ui';
+import { Select } from '@/components/ui';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAllOtherCharges } from '@/hooks/useDataApi';
 import { CountryISO, OtherChargeCode } from '@/lib/enums';
-import { formatMoney } from '@/lib/money';
+import { useDocumentCurrencyOptional } from '@/contexts/DocumentCurrencyContext';
+import { CatalogFeedback } from '../fields/CatalogFeedback';
 import { MAX_OTHER_CHARGES, otherChargeAmount } from '@/lib/otherCharges';
 import type { GetAllOtherChargesParams } from '@/services/data-api/dtos/other-charges';
 import type { OtherCharge } from '@/types/invoice';
@@ -29,7 +31,7 @@ interface OtherChargesSectionProps {
   errors: string[];
 }
 
-const FIELD = 'w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary';
+const FIELD = 'min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary';
 const LABEL = 'text-[10px] font-bold uppercase tracking-wider text-muted-foreground';
 
 const BLANK: OtherCharge = { type: OtherChargeCode.SERVICE_TAX_10, description: '', percentage: 10 };
@@ -43,7 +45,9 @@ export function OtherChargesSection({
   errors,
 }: OtherChargesSectionProps) {
   const { t } = useLanguage();
-  const { data: catalog } = useAllOtherCharges({ iso_code: CountryISO.COSTA_RICA } as GetAllOtherChargesParams);
+  const id = useId();
+  const { symbol, fmtConverted } = useDocumentCurrencyOptional();
+  const { data: catalog, isLoading, isError, refetch } = useAllOtherCharges({ iso_code: CountryISO.COSTA_RICA } as GetAllOtherChargesParams);
 
   const atMax = charges.length >= MAX_OTHER_CHARGES;
   const add = () => { if (!atMax) onChange([...charges, { ...BLANK }]); };
@@ -72,24 +76,26 @@ export function OtherChargesSection({
           <div key={i} className="rounded-md border border-border p-3 space-y-3 bg-muted/20 mb-2">
             <div className="flex items-center justify-between">
               <span className="text-[12px] font-semibold">{t('checkout.otherCharges.chargeN', { n: i + 1 })}</span>
-              <button onClick={() => remove(i)} className="text-[11px] text-muted-foreground hover:text-destructive">
+              <button type="button" onClick={() => remove(i)} className="text-[11px] text-muted-foreground hover:text-destructive">
                 {t('common.delete')}
               </button>
             </div>
 
             <div className="space-y-1">
-              <label className={LABEL}>{t('checkout.otherCharges.type')}</label>
-              <Select value={charge.type} onChange={(e) => update(i, { type: e.target.value })} className={FIELD}>
+              <label htmlFor={`${id}-${i}-type`} className={LABEL}>{t('checkout.otherCharges.type')}</label>
+              <Select id={`${id}-${i}-type`} disabled={isLoading} value={charge.type} onChange={(e) => update(i, { type: e.target.value })} className={FIELD}>
                 {(catalog ?? []).map((row) => (
                   <option key={row.code} value={row.code}>{row.code} · {row.description}</option>
                 ))}
               </Select>
+              <CatalogFeedback isLoading={isLoading} isError={isError} isEmpty={catalog?.length === 0} onRetry={() => { void refetch(); }} />
             </div>
 
             {charge.type === OtherChargeCode.OTHER && (
               <div className="space-y-1">
-                <label className={LABEL}>{t('checkout.otherCharges.otherType')}</label>
+                <label htmlFor={`${id}-${i}-otherType`} className={LABEL}>{t('checkout.otherCharges.otherType')}</label>
                 <input
+                  id={`${id}-${i}-otherType`}
                   value={charge.other_charge_type ?? ''}
                   maxLength={100}
                   onChange={(e) => update(i, { other_charge_type: e.target.value })}
@@ -101,8 +107,9 @@ export function OtherChargesSection({
             {charge.type === OtherChargeCode.THIRD_PARTY_COLLECTION && (
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className={LABEL}>{t('checkout.otherCharges.thirdPartyId')}</label>
+                  <label htmlFor={`${id}-${i}-thirdPartyId`} className={LABEL}>{t('checkout.otherCharges.thirdPartyId')}</label>
                   <input
+                    id={`${id}-${i}-thirdPartyId`}
                     value={charge.other_person?.identification?.number ?? ''}
                     inputMode="numeric"
                     maxLength={20}
@@ -116,8 +123,9 @@ export function OtherChargesSection({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className={LABEL}>{t('checkout.otherCharges.thirdPartyName')}</label>
+                  <label htmlFor={`${id}-${i}-thirdPartyName`} className={LABEL}>{t('checkout.otherCharges.thirdPartyName')}</label>
                   <input
+                    id={`${id}-${i}-thirdPartyName`}
                     value={charge.other_person?.name ?? ''}
                     maxLength={100}
                     onChange={(e) => update(i, { other_person: { ...charge.other_person, name: e.target.value } })}
@@ -128,8 +136,9 @@ export function OtherChargesSection({
             )}
 
             <div className="space-y-1">
-              <label className={LABEL}>{t('checkout.otherCharges.detail')}</label>
+              <label htmlFor={`${id}-${i}-detail`} className={LABEL}>{t('checkout.otherCharges.detail')}</label>
               <input
+                  id={`${id}-${i}-detail`}
                 value={charge.description ?? ''}
                 maxLength={160}
                 onChange={(e) => update(i, { description: e.target.value })}
@@ -137,50 +146,55 @@ export function OtherChargesSection({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 items-end">
-              <div className="space-y-1">
-                <label className={LABEL}>{t('checkout.otherCharges.mode')}</label>
-                <Select
-                  value={byPercent ? 'percent' : 'amount'}
-                  onChange={(e) =>
-                    update(i, e.target.value === 'percent'
-                      ? { percentage: charge.percentage ?? 10, amount: undefined }
-                      : { percentage: undefined, amount: amount || undefined })
-                  }
-                  className={FIELD}
-                >
-                  <option value="percent">{t('checkout.otherCharges.byPercent')}</option>
-                  <option value="amount">{t('checkout.otherCharges.byAmount')}</option>
-                </Select>
+            <div className="space-y-1">
+              <label htmlFor={`${id}-${i}-value`} className={LABEL}>
+                {t(byPercent ? 'checkout.otherCharges.percentage' : 'checkout.otherCharges.amount')}
+              </label>
+              <div className="flex min-w-0 min-h-11 overflow-hidden rounded-md border border-border bg-background focus-within:border-primary">
+                <input
+                  id={`${id}-${i}-value`}
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={byPercent ? 100 : undefined}
+                  step={byPercent ? 'any' : '0.01'}
+                  value={byPercent ? charge.percentage ?? '' : charge.amount ?? ''}
+                  onChange={(e) => update(i, byPercent
+                    ? { percentage: e.target.value === '' ? 0 : Number(e.target.value), amount: undefined }
+                    : { amount: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  className="min-w-0 w-full flex-1 bg-transparent px-3 py-2 text-sm t-num outline-none"
+                />
+                <div role="group" aria-label={t('checkout.otherCharges.mode')} className="flex shrink-0 border-l border-border">
+                  <button
+                    type="button"
+                    aria-label={t('checkout.otherCharges.byAmount')}
+                    aria-pressed={!byPercent}
+                    onClick={() => { if (byPercent) update(i, { percentage: undefined, amount }); }}
+                    className={`min-w-11 px-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${!byPercent ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
+                  >
+                    {symbol}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('checkout.otherCharges.byPercent')}
+                    aria-pressed={byPercent}
+                    onClick={() => {
+                      if (!byPercent) update(i, {
+                        percentage: linesSubtotal > 0 ? Number(((amount * 100) / linesSubtotal).toFixed(5)) : 0,
+                        amount: undefined,
+                      });
+                    }}
+                    className={`min-w-11 border-l border-border px-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${byPercent ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted'}`}
+                  >
+                    %
+                  </button>
+                </div>
               </div>
-              {byPercent ? (
-                <div className="space-y-1">
-                  <label className={LABEL}>{t('checkout.otherCharges.percentage')}</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    value={charge.percentage ?? ''}
-                    onChange={(e) => update(i, { percentage: e.target.value === '' ? 0 : Number(e.target.value) })}
-                    className={FIELD}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <label className={LABEL}>{t('checkout.otherCharges.amount')}</label>
-                  <MoneyInput
-                    value={charge.amount ?? ''}
-                    onChange={(raw) => update(i, { amount: raw === '' ? undefined : Number(raw) })}
-                    className={FIELD}
-                  />
-                </div>
-              )}
             </div>
 
             <div className="flex justify-between t-sm">
               <span className="text-muted-foreground">{t('checkout.otherCharges.chargeTotal')}</span>
-              <span className="font-semibold t-num">{formatMoney(amount)}</span>
+              <span className="font-semibold t-num">{fmtConverted(amount)}</span>
             </div>
           </div>
         );

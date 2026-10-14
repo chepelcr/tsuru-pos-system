@@ -29,20 +29,21 @@ const SKELETON_COUNT = 6;
 
 function OrderCardSkeleton() {
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-2 mb-4">
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex-1 min-w-0">
           <div className="skeleton-block h-4 w-32 mb-2" />
           <div className="skeleton-block-dim h-3 w-24" />
         </div>
         <div className="skeleton-block h-6 w-20 rounded-full" />
       </div>
-      <div className="flex flex-col gap-2.5 mb-4">
-        <div className="skeleton-block-dim h-3 w-40" />
-        <div className="skeleton-block-dim h-3 w-36" />
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-3">
+        <div className="skeleton-block-dim h-3 w-24" />
+        <div className="skeleton-block-dim h-3 w-20" />
         <div className="skeleton-block-dim h-3 w-28" />
+        <div className="skeleton-block-dim h-3 w-16" />
       </div>
-      <div className="pt-3 border-t border-border flex items-center justify-between">
+      <div className="pt-2 border-t border-border flex items-center justify-between">
         <div className="skeleton-block-dim h-3 w-16" />
         <div className="skeleton-block h-5 w-24" />
       </div>
@@ -50,61 +51,68 @@ function OrderCardSkeleton() {
   );
 }
 
-function OrderInfoLine({ icon, children }: { icon: string; children: React.ReactNode }) {
+function OrderInfoLine({ icon, children, title }: { icon: string; children: React.ReactNode; title?: string }) {
   return (
-    <div className="flex items-center gap-2 text-muted-foreground min-w-0">
+    <div className="flex items-center gap-1.5 text-muted-foreground min-w-0" title={title}>
       <Icon name={icon} size={13} className="flex-shrink-0" />
       <span className="t-xs truncate">{children}</span>
     </div>
   );
 }
 
-function OrderListCard({ order, onClick }: { order: Order; onClick: () => void }) {
+export function OrderListCard({ order, onClick }: { order: Order; onClick: () => void }) {
   const { t, language } = useLanguage();
   const locale = language === 'es' ? 'es-CR' : 'en-US';
   const itemCount = order.line_count ?? order.lines?.length ?? 0;
 
   return (
-    <Card hoverable className="p-5 cursor-pointer" onClick={onClick}>
+    <button
+      type="button"
+      className="card card-hover p-4 w-full text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      onClick={onClick}
+      aria-label={`${t('orders.orderNumber')} #${order.document_number}`}
+    >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
           <h3 className="t-h4 !mb-0.5 truncate flex items-center gap-1.5">
             <span className="truncate">
-              {t('orders.orderNumber')} #{order.document_number}
+              #{order.document_number}
             </span>
             {order.report_color && <ReportColorChip color={order.report_color} />}
           </h3>
-          <p className="t-sm text-muted-foreground truncate">{order.client?.name}</p>
+          <p className="t-sm text-muted-foreground truncate" title={order.client?.name}>{order.client?.name}</p>
         </div>
         <div className="flex-shrink-0">
           <OrderStatusBadge status={order.order_status} />
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 mb-4">
-        {order.delivery_date && (
-          <OrderInfoLine icon="calendar">{formatOrderDate(order.delivery_date, locale)}</OrderInfoLine>
-        )}
-        {order.supplier?.name && <OrderInfoLine icon="store">{order.supplier.name}</OrderInfoLine>}
-        {order.delivery_location?.name && (
-          <OrderInfoLine icon="mapPin">{order.delivery_location.name}</OrderInfoLine>
-        )}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-3">
+        <div className="min-w-0">
+          {order.delivery_date && (
+            <OrderInfoLine icon="calendar">{formatOrderDate(order.delivery_date, locale)}</OrderInfoLine>
+          )}
+        </div>
         <OrderInfoLine icon="package">
           {itemCount} {itemCount === 1 ? t('orders.item') : t('orders.items')}
         </OrderInfoLine>
-      </div>
-
-      {order.event && (
-        <div className="mb-3">
-          <Badge variant="outline">{order.event}</Badge>
+        <div className="min-w-0">
+          {order.delivery_location?.name && (
+            <OrderInfoLine icon="mapPin" title={order.delivery_location.name}>{order.delivery_location.name}</OrderInfoLine>
+          )}
         </div>
-      )}
-
-      <div className="pt-3 border-t border-border flex items-center justify-between">
-        <span className="t-sm text-muted-foreground">{t('common.total')}</span>
-        <span className="t-stat">{fmt(order.grand_total)}</span>
+        {order.event && (
+          <div className="min-w-0 truncate" title={order.event}>
+            <Badge variant="outline">{order.event}</Badge>
+          </div>
+        )}
       </div>
-    </Card>
+
+      <div className="pt-2 border-t border-border flex items-center justify-between gap-2">
+        <span className="t-xs text-muted-foreground">{t('common.total')}</span>
+        <span className="font-display text-[22px] leading-tight font-bold">{fmt(order.grand_total)}</span>
+      </div>
+    </button>
   );
 }
 

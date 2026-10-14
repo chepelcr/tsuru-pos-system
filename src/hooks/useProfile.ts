@@ -4,8 +4,7 @@ import { api, userPath } from "@/lib/api";
 /**
  * Body accepted by the markets-api profile update route.
  *
- * The backend `PUT /api/users/{userId}/profile` swagger schema accepts ONLY
- * these three fields. `email` is a Cognito-managed attribute and is NOT part
+ * These are the editable identity fields. `email` is Cognito-managed and is NOT part
  * of this payload (changing it requires a separate Cognito updateUserAttribute
  * + re-verification flow — out of scope). See plan 06 §2.2.
  */
@@ -21,9 +20,6 @@ export interface UpdateProfileData {
  * ⚠ Uses `api.put` (not PATCH): the real route is
  * `PUT /api/users/{userId}/profile` (UserController registers `router.put`).
  *
- * TODO(verify-endpoint): confirm the markets-api `PUT /api/users/{userId}/profile`
- * accepts exactly `{ first_name, last_name, username }` and returns the full updated
- * profile. If a PATCH alias is later added, switch the verb here.
  */
 /** PUT /profile body for the first-login tour (the server stamps the time). */
 export interface UpdateOnboardingTourData {
@@ -47,5 +43,30 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: ({ userId, data }: { userId: string; data: UpdateProfileData }) =>
       api.put<UpdateProfileData>(userPath(userId, "/profile"), data),
+  });
+}
+
+interface ProfilePhotoUpload {
+  upload_url: string;
+  file_url: string;
+}
+
+/** Save the permanent URL only after the image upload succeeds. */
+export function useUpdateProfilePhoto(userId: string) {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const target = await api.post<ProfilePhotoUpload>(userPath(userId, "/profile/photo/presigned"), {
+        file_type: file.type,
+        file_size: file.size,
+      });
+      const response = await fetch(target.upload_url, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!response.ok) throw new Error("Profile photo upload failed");
+      const saved = await api.put<{ picture_url: string }>(userPath(userId, "/profile"), { picture_url: target.file_url });
+      return saved.picture_url;
+    },
   });
 }

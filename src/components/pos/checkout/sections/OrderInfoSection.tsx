@@ -6,6 +6,7 @@ import { FormLabel, Select } from '@/components/ui';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useStores } from '@/hooks/useStores';
 import { DeliveryLocationField } from '../fields/DeliveryLocationField';
+import { CatalogFeedback } from '../fields/CatalogFeedback';
 import type { ChainClient } from '@/lib/chainClients';
 import type { ChainClientInfo, ManualOrderDeliveryLocation } from '@/types/order';
 import type { SaleReceiver } from '@/types/receiver';
@@ -117,8 +118,10 @@ export function OrderInfoSection({
    */
   const fromOrder = !!orderNumber;
 
-  const { data: departmentsResp } = useDepartments(orgId, clientId, { page_size: 100 });
-  const { data: storesResp } = useStores(orgId, clientId, { page_size: 100 });
+  const departmentsQuery = useDepartments(orgId, clientId, { page_size: 100 });
+  const storesQuery = useStores(orgId, clientId, { page_size: 100 });
+  const departmentsResp = departmentsQuery.data;
+  const storesResp = storesQuery.data;
   const departments = departmentsResp?.data ?? [];
   const stores = storesResp?.data ?? [];
 
@@ -306,7 +309,7 @@ export function OrderInfoSection({
             id="chain-department"
             className="input input-sm w-full"
             value={data.department_id ?? ''}
-            disabled={!clientId}
+            disabled={!clientId || departmentsQuery.isLoading}
             onChange={(e) => {
               const dept = departments.find((d) => d.department_id === e.target.value);
               onChange({
@@ -327,6 +330,7 @@ export function OrderInfoSection({
               </option>
             ))}
           </Select>
+          {clientId && <CatalogFeedback isLoading={departmentsQuery.isLoading} isError={departmentsQuery.isError} isEmpty={departmentsResp?.data.length === 0} onRetry={() => { void departmentsQuery.refetch(); }} />}
           {/* The vendor number, under the select that determines it. It is the
               number the chain assigns to US, maintained on the department, so
               choosing the department chooses it — a label, not an input, for the
@@ -348,7 +352,7 @@ export function OrderInfoSection({
             id="chain-store"
             className="input input-sm w-full"
             value={data.store_id ?? ''}
-            disabled={!clientId}
+            disabled={!clientId || storesQuery.isLoading}
             onChange={(e) => {
               const store = stores.find((st) => st.store_id === e.target.value);
               onChange({
@@ -367,6 +371,7 @@ export function OrderInfoSection({
               </option>
             ))}
           </Select>
+          {clientId && <CatalogFeedback isLoading={storesQuery.isLoading} isError={storesQuery.isError} isEmpty={storesResp?.data.length === 0} onRetry={() => { void storesQuery.refetch(); }} />}
           {/* The delivery point's GLN, which reaches the document as
               `WMEnviarGLN` — the ship-to, not the customer's own GLN. */}
           {data.gln && (

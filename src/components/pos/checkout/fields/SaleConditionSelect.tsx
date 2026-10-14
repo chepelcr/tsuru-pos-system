@@ -3,6 +3,7 @@ import type { GetAllSaleConditionsParams } from '@/services/data-api';
 import { CountryISO } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Select } from '@/components/ui';
+import { CatalogFeedback } from './CatalogFeedback';
 
 interface SaleConditionSelectProps {
   value: string;
@@ -25,7 +26,7 @@ export function SaleConditionSelect({
   disabled,
 }: SaleConditionSelectProps) {
   const { t } = useLanguage();
-  const { data: saleConditions } = useAllSaleConditions({
+  const { data: saleConditions, isLoading, isError, refetch } = useAllSaleConditions({
     iso_code: CountryISO.COSTA_RICA,
   } as GetAllSaleConditionsParams);
 
@@ -37,7 +38,7 @@ export function SaleConditionSelect({
       <Select
         id={id}
         value={value}
-        disabled={disabled}
+        disabled={disabled || isLoading}
         onChange={(e) => onChange(e.target.value)}
         className="pp-input w-full"
       >
@@ -47,6 +48,7 @@ export function SaleConditionSelect({
           </option>
         ))}
       </Select>
+      <CatalogFeedback isLoading={isLoading} isError={isError} isEmpty={saleConditions?.length === 0} onRetry={() => { void refetch(); }} />
     </div>
   );
 }

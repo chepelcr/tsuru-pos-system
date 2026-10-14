@@ -11,7 +11,7 @@
  * resolved: the product drawer sat on "Cargando información…" forever. It only
  * reproduced on a cold cache, which is why it looked intermittent.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const fetchMock = vi.fn();
 
@@ -39,6 +39,7 @@ async function freshClient() {
 }
 
 describe("document_version_id is never silently omitted", () => {
+  afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     fetchMock.mockReset();
   });
@@ -81,6 +82,35 @@ describe("document_version_id is never silently omitted", () => {
     client.setDocumentVersionId(4);
     await client.getAllTaxes({ iso_code: "188" });
     expect(urlOf()).toContain("document_version_id=4");
+  });
+
+  it("waits again when a provider clears a previously resolved version", async () => {
+    const client = await freshClient();
+    client.setDocumentVersionId(1);
+    client.setDocumentVersionId(undefined);
+    const inFlight = client.getAllSaleConditions({ iso_code: "188" } as never);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fetchMock).not.toHaveBeenCalled();
+    client.setDocumentVersionId(2);
+    await inFlight;
+    expect(urlOf()).toContain("document_version_id=2");
+  });
+
+  it("rejects a missing version without sending an invalid catalog request", async () => {
+    vi.useFakeTimers();
+    const client = await freshClient();
+    const inFlight = client.getAllOtherCharges({ iso_code: "188" } as never);
+    const rejection = expect(inFlight).rejects.toThrow("Document version is unavailable");
+    await vi.advanceTimersByTimeAsync(15_000);
+    await rejection;
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not wait for an ambient version when one was explicitly supplied", async () => {
+    const client = await freshClient();
+    await client.getAllReferenceCodes({ iso_code: "188", document_version_id: 2 });
+    expect(urlOf()).toContain("document_version_id=2");
   });
 
   it("lets an explicit version win over the ambient one", async () => {

@@ -94,7 +94,7 @@ export function CrossdockingDetailsDialog({ open, onClose, order }: Crossdocking
             )}
             {canExport && orderPdfUrl && (
               <Button variant="outline" size="sm" icon="fileText" onClick={() => downloadFromUrl(orderPdfUrl)}>
-                {t('orders.attachments.orderPdf')}
+                {t('orders.crossdocking.downloadOrder')}
               </Button>
             )}
             {canExport && orderExcelUrl && (

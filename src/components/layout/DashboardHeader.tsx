@@ -1,3 +1,4 @@
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -46,12 +47,9 @@ export function DashboardHeader({
   const notifications = useNotifications();
   const [syncing, setSyncing] = useState(false);
 
-  // Initials for the avatar trigger; the menu itself carries the labels.
+  // The menu trigger reflects profile photo changes immediately.
   const accountName =
     [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.name || "";
-  const accountInitials = accountName
-    ? accountName.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
-    : "U";
 
   // Replays the offline outbox and refreshes what the page is showing. It used
   // to be a toolbar button beside the theme toggle — with NO onClick at all, so
@@ -189,9 +187,7 @@ export function DashboardHeader({
               type="button"
               aria-label={t("profile.openAria")}
             >
-              <span className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-[11px]">
-                {accountInitials}
-              </span>
+              <UserAvatar src={user?.picture_url} name={accountName} />
             </button>
           }
         />

@@ -1,3 +1,4 @@
+import { rawPartyPayload } from "@/lib/partyNumbers";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { crossAppApi, crossAppOrgPath } from "@/lib/api";
 import { isOfflineError } from "@/lib/offline";
@@ -92,7 +93,10 @@ export function clientDisplayName(c: Client | null | undefined): string {
  */
 export function formatPhone(phone: PhoneValue | null | undefined): string {
   if (!phone?.number) return "";
-  const local = [phone.area_code, phone.number].filter(Boolean).join("-");
+  const digits = phone.number.replace(/\D/g, "");
+  const cr = phone.dial_code === "506" || phone.country_code === "188";
+  const number = cr && digits.length === 8 ? `${digits.slice(0, 4)}-${digits.slice(4)}` : phone.number;
+  const local = [phone.area_code, number].filter(Boolean).join("-");
   const prefix = [phone.dial_code && `+${phone.dial_code}`, phone.dial_area].filter(Boolean).join(" ");
   return prefix ? `${prefix} ${local}` : local;
 }
@@ -144,7 +148,7 @@ export function useCreateClient(orgId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (dto: CreateClientDto) =>
-      crossAppApi.post<Client>(crossAppOrgPath(orgId!, "/clients"), dto),
+      crossAppApi.post<Client>(crossAppOrgPath(orgId!, "/clients"), rawPartyPayload(dto)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients", orgId] });
     },
@@ -209,7 +213,7 @@ export function useUpdateClient(orgId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ clientId, dto }: { clientId: string; dto: UpdateClientDto }) =>
-      crossAppApi.put<Client>(crossAppOrgPath(orgId!, `/clients/${clientId}`), dto),
+      crossAppApi.put<Client>(crossAppOrgPath(orgId!, `/clients/${clientId}`), rawPartyPayload(dto)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients", orgId] });
     },

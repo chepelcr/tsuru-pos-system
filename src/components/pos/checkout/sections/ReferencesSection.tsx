@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Link as LinkIcon } from 'lucide-react';
 import { useAllReferences, useAllReferenceCodes } from '@/hooks/useDataApi';
 import type { GetAllReferencesParams, GetAllReferenceCodesParams } from '@/services/data-api';
@@ -12,7 +13,8 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionWrapper } from '@/components/common/SectionWrapper';
 import type { SaleReference } from '@/types/reference';
-import { Select } from "@/components/ui";
+import { Select } from '@/components/ui';
+import { CatalogFeedback } from '../fields/CatalogFeedback';
 
 interface ReferencesSectionProps {
   isExpanded: boolean;
@@ -66,14 +68,15 @@ export function ReferencesSection({
   required = false,
 }: ReferencesSectionProps) {
   const { t } = useLanguage();
-  const { data: referenceTypes } = useAllReferences({ iso_code: CountryISO.COSTA_RICA } as GetAllReferencesParams);
-  const { data: referenceCodes } = useAllReferenceCodes({ iso_code: CountryISO.COSTA_RICA } as GetAllReferenceCodesParams);
+  const id = useId();
+  const typesQuery = useAllReferences({ iso_code: CountryISO.COSTA_RICA } as GetAllReferencesParams);
+  const codesQuery = useAllReferenceCodes({ iso_code: CountryISO.COSTA_RICA } as GetAllReferenceCodesParams);
 
   // Only the codes and types this document may actually carry.
-  const typeOptions = (referenceTypes ?? []).filter((rt: any) =>
+  const typeOptions = (typesQuery.data ?? []).filter((rt: any) =>
     allowedOn(REFERENCE_TYPE_DOC_TYPES, String(rt.code ?? ''), documentType),
   );
-  const codeOptions = (referenceCodes ?? []).filter((rc: any) =>
+  const codeOptions = (codesQuery.data ?? []).filter((rc: any) =>
     allowedOn(REFERENCE_CODE_DOC_TYPES, String(rc.code ?? ''), documentType),
   );
 
@@ -111,6 +114,7 @@ export function ReferencesSection({
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-semibold">{t('checkout.references.referenceN', { n: i + 1 })}</span>
             <button
+              type="button"
               onClick={() => remove(i)}
               className="text-[11px] text-muted-foreground hover:text-destructive"
             >
@@ -118,15 +122,17 @@ export function ReferencesSection({
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <div className="space-y-3">
+            <div className="min-w-0 space-y-1">
+              <label htmlFor={`${id}-${i}-type`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {t('checkout.references.type')}
               </label>
               <Select
+                id={`${id}-${i}-type`}
+                disabled={typesQuery.isLoading}
                 value={ref.type}
                 onChange={(e) => update(i, { type: e.target.value })}
-                className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+                className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
               >
                 {typeOptions.map((rt: any) => (
                   <option key={rt.code ?? rt.id} value={rt.code ?? String(rt.id).padStart(2, '0')}>
@@ -134,15 +140,18 @@ export function ReferencesSection({
                   </option>
                 ))}
               </Select>
+              <CatalogFeedback isLoading={typesQuery.isLoading} isError={typesQuery.isError} isEmpty={typesQuery.data?.length === 0} onRetry={() => { void typesQuery.refetch(); }} />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="min-w-0 space-y-1">
+              <label htmlFor={`${id}-${i}-code`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {t('checkout.references.code')}
               </label>
               <Select
+                id={`${id}-${i}-code`}
+                disabled={codesQuery.isLoading}
                 value={ref.code}
                 onChange={(e) => update(i, { code: e.target.value })}
-                className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+                className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
               >
                 {codeOptions.map((rc: any) => (
                   <option key={rc.code ?? rc.id} value={rc.code ?? String(rc.id).padStart(2, '0')}>
@@ -150,6 +159,7 @@ export function ReferencesSection({
                   </option>
                 ))}
               </Select>
+              <CatalogFeedback isLoading={codesQuery.isLoading} isError={codesQuery.isError} isEmpty={codesQuery.data?.length === 0} onRetry={() => { void codesQuery.refetch(); }} />
             </div>
           </div>
 
@@ -159,27 +169,29 @@ export function ReferencesSection({
           {(ref.type === ReferenceDocType.OTHER || ref.code === ReferenceActionCode.OTHER) && (
             <div className="grid grid-cols-2 gap-2">
               {ref.type === ReferenceDocType.OTHER && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor={`${id}-${i}-other_type`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     {t('checkout.references.otherType')}
                   </label>
                   <input
+                    id={`${id}-${i}-other_type`}
                     value={ref.other_type ?? ''}
                     onChange={(e) => update(i, { other_type: e.target.value })}
-                    className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+                    className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
                     placeholder={t('checkout.references.otherTypePlaceholder')}
                   />
                 </div>
               )}
               {ref.code === ReferenceActionCode.OTHER && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="min-w-0 space-y-1">
+                  <label htmlFor={`${id}-${i}-other_code`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     {t('checkout.references.otherCode')}
                   </label>
                   <input
+                    id={`${id}-${i}-other_code`}
                     value={ref.other_code ?? ''}
                     onChange={(e) => update(i, { other_code: e.target.value })}
-                    className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+                    className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
                     placeholder={t('checkout.references.otherCodePlaceholder')}
                   />
                 </div>
@@ -187,54 +199,55 @@ export function ReferencesSection({
             </div>
           )}
 
+          <div className="min-w-0 space-y-1">
+            <label htmlFor={`${id}-${i}-number`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              {t('checkout.references.documentNumber')}
+            </label>
+            <input
+              id={`${id}-${i}-number`}
+              value={ref.number}
+              onChange={(e) => update(i, { number: e.target.value })}
+              className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+              placeholder="50601…"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {t('checkout.references.documentNumber')}
+            <div className="min-w-0 space-y-1">
+              <label htmlFor={`${id}-${i}-reason`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {t('checkout.references.reason')} *
               </label>
               <input
-                value={ref.number}
-                onChange={(e) => update(i, { number: e.target.value })}
-                className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
-                placeholder="50601…"
+                id={`${id}-${i}-reason`}
+                value={ref.reason || ''}
+                onChange={(e) => update(i, { reason: e.target.value })}
+                maxLength={180}
+                className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+                placeholder={t('checkout.references.reasonPlaceholder')}
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="min-w-0 space-y-1">
+              <label htmlFor={`${id}-${i}-date`} className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 {t('checkout.references.date')}
               </label>
               <input
+                id={`${id}-${i}-date`}
                 type="date"
                 value={ref.date}
                 onChange={(e) => update(i, { date: e.target.value })}
-                className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
+                className="min-w-0 w-full min-h-11 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
-          </div>
-
-          {/* `Razon` is a mandatory String(180). The backend used to substitute
-              a single space when it was blank, filing a document whose stated
-              justification for referencing another one was empty. */}
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {t('checkout.references.reason')} *
-            </label>
-            <input
-              value={ref.reason || ''}
-              onChange={(e) => update(i, { reason: e.target.value })}
-              maxLength={180}
-              className="w-full h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:border-primary"
-              placeholder={t('checkout.references.reasonPlaceholder')}
-            />
           </div>
         </div>
       ))}
 
       <button
+        type="button"
         onClick={add}
         disabled={atMax}
         title={atMax ? t('checkout.references.maxReached', { max: MAX_REFERENCES }) : undefined}
-        className="w-full h-9 rounded-md border border-dashed border-border text-[12px] text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="min-w-0 w-full min-h-11 rounded-md border border-dashed border-border text-[12px] text-muted-foreground hover:border-primary hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {t('checkout.references.add')}
       </button>

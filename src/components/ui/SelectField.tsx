@@ -106,7 +106,7 @@ export function SelectField({
    */
   const [searchRevealed, setSearchRevealed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [pos, setPos] = useState<{ top: number; left: number; width: number; dropUp: boolean } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number; maxHeight: number; dropUp: boolean } | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -169,10 +169,13 @@ export function SelectField({
       const estimated = Math.min(filtered.length * 40 + (showSearch ? 48 : 0) + 8, 320);
       const below = window.innerHeight - r.bottom;
       const dropUp = below < estimated && r.top > below;
+      const width = Math.min(r.width, window.innerWidth - 16);
+      const maxHeight = Math.max(40, Math.min(320, (dropUp ? r.top : below) - 14));
       setPos({
-        top: dropUp ? Math.max(8, r.top - estimated - 6) : r.bottom + 6,
-        left: Math.max(8, Math.min(r.left, window.innerWidth - r.width - 8)),
-        width: r.width,
+        top: dropUp ? Math.max(8, r.top - Math.min(estimated, maxHeight) - 6) : r.bottom + 6,
+        left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)),
+        width,
+        maxHeight,
         dropUp,
       });
     };
@@ -361,7 +364,7 @@ export function SelectField({
               "dropdown-menu fixed z-drawer-modal max-h-[320px] overflow-y-auto fade-up",
               pos.dropUp && "dropdown-menu-up",
             )}
-            style={{ top: pos.top, left: pos.left, width: pos.width }}
+            style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }}
           >
             {showSearch && (
               <div className="p-1 pb-1.5">

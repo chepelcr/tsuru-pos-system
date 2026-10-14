@@ -34,6 +34,7 @@ interface AuthUser {
   first_name?: string;
   last_name?: string;
   username?: string;
+  picture_url?: string | null;
   role: UserRole;
   /**
    * First-login tour state from GET /profile: null = not finished/skipped yet

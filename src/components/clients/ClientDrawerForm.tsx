@@ -1,3 +1,4 @@
+import { rawIdentificationNumber, rawPhoneNumber } from "@/lib/partyNumbers";
 import { useState, useEffect, useMemo } from "react";
 import { Drawer, Button, Spinner } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
@@ -194,7 +195,7 @@ function formToReceiver(
     customer_type_code: String(customerTypeNum).padStart(2, "0"),
     identification: {
       code: f.identification?.code,
-      number: f.identification?.number?.trim() || undefined,
+      number: rawIdentificationNumber(f.identification?.code, f.identification?.number) || undefined,
     },
     fax: carryOver?.fax,
     economic_activity: carryOver?.economic_activity,
@@ -202,7 +203,7 @@ function formToReceiver(
       ? {
           country_code: f.phone.country_code || CountryISO.COSTA_RICA,
           area_code: f.phone.area_code || undefined,
-          number: f.phone.number,
+          number: rawPhoneNumber(f.phone.number) || undefined,
           description: f.phone.description || undefined,
         }
       : undefined,

@@ -341,5 +341,8 @@
   "checkout.otherCharges.thirdPartyId": "Third-party identification",
   "checkout.otherCharges.thirdPartyName": "Third-party name",
   "checkout.otherCharges.title": "Other charges",
-  "checkout.otherCharges.type": "Charge type"
+  "checkout.otherCharges.type": "Charge type",
+  "checkout.catalog.empty": "No options available.",
+  "checkout.catalog.error": "Could not load the options.",
+  "checkout.catalog.loading": "Loading options…"
 }

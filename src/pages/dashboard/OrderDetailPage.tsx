@@ -75,7 +75,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="p-6">
+    <Card className="min-w-0 p-4 sm:p-6">
       <div className="flex items-center gap-2 mb-4">
         <Icon name={icon} size={14} className="text-accent-rose" />
         <span className="label-section">{title}</span>
@@ -112,7 +112,7 @@ function TotalRow({
 }) {
   return (
     <div
-      className={`flex items-center justify-between ${
+      className={`flex items-center justify-between gap-4 ${
         emphasis ? 'pt-2.5 mt-1 border-t border-border' : ''
       }`}
     >
@@ -120,8 +120,8 @@ function TotalRow({
       <span
         className={
           emphasis
-            ? 't-stat'
-            : `t-body font-semibold ${positive ? 'text-success' : 'text-foreground'}`
+            ? 't-stat shrink-0 t-num'
+            : `t-body font-semibold shrink-0 t-num ${positive ? 'text-success' : 'text-foreground'}`
         }
       >
         {positive ? '-' : ''}
@@ -226,12 +226,11 @@ function LineItems({ order }: { order: Order }) {
 
   return (
     <SectionCard title={t('orders.lineItems.title')} icon="package">
-      <div className="rounded-md border border-border overflow-x-auto">
-        <table className="w-full border-collapse">
+      <div className="rounded-md border border-border overflow-x-auto" role="region" aria-label={t('orders.lineItems.title')} tabIndex={0}>
+        <table className="w-full min-w-[640px] border-collapse">
           <thead>
             <tr className="border-b border-border bg-muted/30">
               <th className="pp-th">{t('orders.lineItems.product')}</th>
-              <th className="pp-th">{t('orders.lineItems.cabys')}</th>
               <th className="pp-th text-center">{t('orders.lineItems.unit')}</th>
               <th className="pp-th text-right">{t('orders.lineItems.price')}</th>
               <th className="pp-th text-center">{t('orders.lineItems.quantity')}</th>
@@ -244,7 +243,7 @@ function LineItems({ order }: { order: Order }) {
               const gaps = missingFiscal(item, t);
               return (
                 <tr key={item.line_number} className="border-b border-border last:border-b-0">
-                  <td className="pp-td">
+                  <td className="pp-td min-w-[200px]">
                     <div className="font-semibold text-foreground">{item.description}</div>
                     <div className="t-xs text-muted-foreground">
                       {t('orders.lineItems.code')}: {item.code} · {item.internal_code}
@@ -257,9 +256,6 @@ function LineItems({ order }: { order: Order }) {
                         {gaps.join(' · ')}
                       </div>
                     )}
-                  </td>
-                  <td className="pp-td font-mono t-xs text-muted-foreground">
-                    {item.cabys || '—'}
                   </td>
                   <td className="pp-td text-center t-xs text-muted-foreground">
                     {item.unit_measure || '—'}
@@ -281,7 +277,7 @@ function LineItems({ order }: { order: Order }) {
           <TotalRow label={t('orders.lineItems.discounts')} value={order.discounts} positive />
         )}
         <TotalRow label={t('orders.lineItems.netTotal')} value={order.net_total} />
-        {order.taxes > 0 && <TotalRow label={t('orders.lineItems.taxes')} value={order.taxes} />}
+        <TotalRow label={t('orders.lineItems.taxes')} value={order.taxes} />
         <TotalRow label={t('orders.lineItems.orderTotal')} value={order.grand_total} emphasis />
       </div>
     </SectionCard>
@@ -350,7 +346,7 @@ export default function OrderDetailPage({ orderId }: Props) {
   const back = (
     <button
       onClick={() => navigate(ROUTES.DASHBOARD_ORDERS)}
-      className="t-body inline-flex items-center gap-1.5 text-muted-foreground bg-transparent border-0 cursor-pointer mb-5 py-1.5 hover:text-foreground transition-colors"
+      className="t-body inline-flex min-h-11 items-center gap-1.5 text-muted-foreground bg-transparent border-0 cursor-pointer mb-3 py-1.5 hover:text-foreground transition-colors"
     >
       <Icon name="arrowLeft" size={14} /> {t('orders.detail.back')}
     </button>
@@ -358,11 +354,11 @@ export default function OrderDetailPage({ orderId }: Props) {
 
   if (isLoading) {
     return (
-      <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto">
+      <div className="order-detail-page px-4 sm:px-6 pt-4 sm:pt-6 pb-12 max-w-[1280px] mx-auto">
         {back}
 
         {/* Hero header */}
-        <Card className="px-7 pt-7 pb-6 mb-3.5">
+        <Card className="p-4 sm:p-6 mb-3.5">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <div className="skeleton-block animate-pulse h-7 w-56 mb-2.5 rounded-md" />
@@ -418,7 +414,7 @@ export default function OrderDetailPage({ orderId }: Props) {
           </div>
 
           {/* Right: info cards */}
-          <div className="flex flex-col gap-3.5">
+          <div className="order-detail-info-grid">
             {Array.from({ length: 2 }).map((_, card) => (
               <Card key={card} className="p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -447,7 +443,7 @@ export default function OrderDetailPage({ orderId }: Props) {
 
   if (error || !order) {
     return (
-      <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto">
+      <div className="px-6 pt-6 pb-12 max-w-[1280px] mx-auto">
         {back}
         <div className="py-12">
           <EmptyState
@@ -527,7 +523,7 @@ export default function OrderDetailPage({ orderId }: Props) {
       : null,
     hasCrossdocking
       ? {
-          label: t('common.view'),
+          label: t('orders.crossdocking.view'),
           icon: 'eye',
           action: () => setCrossdockPreviewOpen(true),
         }
@@ -542,27 +538,28 @@ export default function OrderDetailPage({ orderId }: Props) {
   ].filter(Boolean) as MenuItem[];
 
   return (
-    <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto fade-in">
+    <div className="order-detail-page px-4 sm:px-6 pt-4 sm:pt-6 pb-12 max-w-[1280px] mx-auto fade-in">
       {back}
 
       {/* Hero header */}
-      <Card className="px-7 pt-7 pb-6 mb-3.5 !border-accent-rose-border bg-gradient-to-br from-accent-rose-soft to-transparent">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <h1 className="t-h1 !my-0 !mb-1.5 leading-tight flex items-center gap-2">
-              <span>
-                {t('orders.orderNumber')} #{order.document_number}
-              </span>
-              {order.report_color && <ReportColorChip color={order.report_color} />}
-            </h1>
+      <Card className="p-4 sm:p-6 mb-3.5 !border-accent-rose-border bg-gradient-to-br from-accent-rose-soft to-transparent">
+        <div className="order-detail-header">
+          <div className="order-detail-identity min-w-0">
+            <div className="mb-3">
+              <div className="t-label mb-1">{t('orders.orderNumber')}</div>
+              <div className="flex items-center gap-2">
+                <h1 className="t-h1 !my-0 !text-2xl sm:!text-3xl min-w-0 break-all leading-tight">#{order.document_number}</h1>
+                {order.report_color && <ReportColorChip color={order.report_color} />}
+              </div>
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={statusCfg.variant} className="inline-flex items-center gap-1">
                 <Icon name={statusCfg.icon} size={11} />
                 {t(`orders.status.${order.order_status}`)}
               </Badge>
-              {text(order.event) && <Badge variant="outline">{text(order.event)}</Badge>}
+              {text(order.event) && <Badge variant="outline" className="max-w-full !whitespace-normal break-words">{text(order.event)}</Badge>}
               {documentState !== 'none' && order.document_id && (
-                <Link href={documentDetailPath(order.document_id)} className="no-underline">
+                <Link href={documentDetailPath(order.document_id)} className="no-underline min-w-0 max-w-full">
                 <Badge
                   variant={
                     documentState === 'processing'
@@ -571,7 +568,7 @@ export default function OrderDetailPage({ orderId }: Props) {
                         ? 'destructive'
                         : 'success'
                   }
-                  className="inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1 max-w-full !whitespace-normal break-all"
                 >
                   <Icon name="fileText" size={11} />
                   {/* "Facturado" only once Hacienda has accepted it. While the
@@ -592,47 +589,55 @@ export default function OrderDetailPage({ orderId }: Props) {
               )}
             </div>
           </div>
-          <div className="flex items-start gap-3 flex-shrink-0">
-            <div className="flex flex-col items-end gap-1">
-              <span className="t-label">{t('common.total')}</span>
-              <span className="t-stat-xl">{fmt(order.grand_total)}</span>
-            </div>
+          <div className="order-detail-menu shrink-0">
             {menuItems.length > 0 && (
               <Menu
                 items={menuItems}
                 trigger={
-                  <button className="btn btn-outline btn-sm btn-icon" type="button" aria-label={t('common.actions')}>
+                  <button className="btn btn-outline btn-icon !h-11 !w-11" type="button" aria-label={t('common.actions')}>
                     <Icon name="moreV" size={15} />
                   </button>
                 }
               />
             )}
           </div>
+          <div className="order-detail-total flex items-end justify-between gap-3 pt-4 border-t border-accent-rose-border">
+            <span className="t-label shrink-0">{t('orders.lineItems.orderTotal')}</span>
+            <span className="t-stat-xl !text-3xl sm:!text-4xl min-w-0 break-all text-right">{fmt(order.grand_total)}</span>
+          </div>
         </div>
 
-        {/* Billing a delivered pedido — the one action that turns it fiscal. */}
-        {canInvoice && (
-          <div className="mt-5">
-            <Button variant="primary" size="sm" icon="fileText" onClick={() => invoiceOrder(order)}>
-              {t('orders.invoice.action')}
-            </Button>
-          </div>
-        )}
-
-        {/* Attachment downloads */}
-        {canExport && (att.pdf_url || att.excel_url || att.nuevo_reporte_url || att.ticket_url) && (
-          <div className="flex flex-wrap gap-2 mt-5">
-            {att.pdf_url && (
+        {/* One action group; billing does not depend on export permission. */}
+        {(canInvoice || canExport) && (
+          <div className="order-detail-actions" role="group" aria-label={t('common.actions')}>
+            {canInvoice && (
+              <Button variant="primary" size="sm" icon="fileText" onClick={() => invoiceOrder(order)}>
+                {t('orders.invoice.action')}
+              </Button>
+            )}
+            {canExport && att.pdf_url && (
               <Button variant="outline" size="sm" icon="fileText" onClick={() => downloadAttachment(att.pdf_url)}>
                 {t('orders.attachments.orderPdf')}
               </Button>
             )}
-            {att.excel_url && (
+            {/* Tickets are generated on demand, even before an attachment exists. */}
+            {canExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                icon="print"
+                disabled={ticket.isPending}
+                onClick={() => ticket.mutate(order.document_number)}
+              >
+                {t('orders.attachments.ticket')}
+              </Button>
+            )}
+            {canExport && att.excel_url && (
               <Button variant="outline" size="sm" icon="download" onClick={() => downloadAttachment(att.excel_url)}>
                 {t('orders.attachments.orderExcel')}
               </Button>
             )}
-            {att.nuevo_reporte_url && (
+            {canExport && att.nuevo_reporte_url && (
               <Button
                 variant="outline"
                 size="sm"
@@ -642,56 +647,46 @@ export default function OrderDetailPage({ orderId }: Props) {
                 {t('orders.attachments.nuevoReporte')}
               </Button>
             )}
-            {/* Rendered by the backend on demand, like every other format —
-                so a reprint matches the original exactly. Regenerating picks
-                up the consecutive and QR once the order has been invoiced. */}
-            <Button
-              variant="outline"
-              size="sm"
-              icon="print"
-              disabled={ticket.isPending}
-              onClick={() => ticket.mutate(order.document_number)}
-            >
-              {t('orders.attachments.ticket')}
-            </Button>
           </div>
         )}
 
-        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-5 pt-5 border-t border-accent-rose-border">
+        <div className="order-detail-metadata gap-x-6 gap-y-3 mt-5 pt-5 border-t border-accent-rose-border">
           {order.creation_date && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Icon name="calendar" size={13} />
-              <span className="t-xs">
-                {t('orders.detail.createdAt')}: {formatOrderDate(order.creation_date, locale, 'long')}
-              </span>
+            <div className="flex items-start gap-2 text-muted-foreground min-w-0">
+              <Icon name="calendar" size={15} className="shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="t-label">{t('orders.detail.createdAt')}</div>
+                <div className="t-sm text-foreground break-words">{formatOrderDate(order.creation_date, locale, 'long')}</div>
+              </div>
             </div>
           )}
           {order.delivery_date && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Icon name="clock" size={13} />
-              <span className="t-xs">
-                {t('orders.detail.deliveryDate')}: {formatOrderDate(order.delivery_date, locale, 'long')}
-              </span>
+            <div className="flex items-start gap-2 text-muted-foreground min-w-0">
+              <Icon name="clock" size={15} className="shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="t-label">{t('orders.detail.deliveryDate')}</div>
+                <div className="t-sm text-foreground break-words">{formatOrderDate(order.delivery_date, locale, 'long')}</div>
+              </div>
               {/* Rescheduling used to mean deleting the order and re-importing
                   its spreadsheet. Offered only where it can succeed — pending or
                   processing, unbilled — and the server enforces the same. */}
               {canUpdate && canEditDeliveryDate(order) && (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-xs btn-icon"
+                  className="btn btn-ghost btn-icon !h-11 !w-11 shrink-0"
                   onClick={() => setDeliveryDateOpen(true)}
                   title={t('orders.deliveryDate.edit')}
                   aria-label={t('orders.deliveryDate.edit')}
                 >
-                  <Icon name="pencil" size={12} />
+                  <Icon name="edit" size={15} />
                 </button>
               )}
             </div>
           )}
           {text(order.department) && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Icon name="layers" size={13} />
-              <span className="t-xs">{text(order.department)}</span>
+            <div className="flex items-start gap-2 text-muted-foreground min-w-0">
+              <Icon name="layers" size={15} className="shrink-0 mt-0.5" />
+              <div className="min-w-0"><div className="t-label">{t('orders.detail.department')}</div><div className="t-sm text-foreground break-words">{text(order.department)}</div></div>
             </div>
           )}
         </div>
@@ -741,7 +736,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         </div>
 
         {/* Right: customer / supplier / delivery */}
-        <div className="flex flex-col gap-3.5">
+        <div className="order-detail-info-grid">
           {order.client && (
             <SectionCard title={t('orders.detail.customer')} icon="user">
               <InfoRow icon="user" label={t('common.name')} value={text(order.client.name)} />

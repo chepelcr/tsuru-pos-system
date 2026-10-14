@@ -224,6 +224,13 @@ class DataApiClient {
    * This is managed internally by the DocumentVersionContext.
    */
   setDocumentVersionId(id: number | undefined) {
+    if (id === undefined && this.documentVersionId !== undefined) {
+      // A new provider can mount before its version query resolves. A promise
+      // released by the previous provider must not release these new requests.
+      this.documentVersionReady = new Promise<void>((resolve) => {
+        this.resolveDocumentVersion = resolve;
+      });
+    }
     this.documentVersionId = id;
     // Only a real version releases the waiters. The provider also calls this
     // with `undefined` on its first render, before its fetch resolves, and
@@ -245,17 +252,22 @@ class DataApiClient {
       const { [NEEDS_DOCUMENT_VERSION]: _marker, ...rest } = query;
       query = rest;
 
-      if (this.documentVersionId === undefined) {
+      if (this.documentVersionId === undefined && !rest.document_version_id) {
         // Bounded: a request that hangs forever is worse than one that fails,
         // and the caller surfaces an error it can retry. Without the bound an
         // environment where the version never loads would hold every catalog
         // request open indefinitely.
-        await Promise.race([
-          this.documentVersionReady,
-          new Promise<void>((resolve) =>
-            setTimeout(resolve, DOCUMENT_VERSION_TIMEOUT_MS),
-          ),
-        ]);
+        let timeout: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            this.documentVersionReady,
+            new Promise<never>((_, reject) => {
+              timeout = setTimeout(() => reject(new Error('Document version is unavailable')), DOCUMENT_VERSION_TIMEOUT_MS);
+            }),
+          ]);
+        } finally {
+          clearTimeout(timeout);
+        }
       }
 
       if (this.documentVersionId !== undefined && !rest.document_version_id) {

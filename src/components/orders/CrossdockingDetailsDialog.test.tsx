@@ -73,7 +73,7 @@ describe('CrossdockingDetailsDialog', () => {
     expect(screen.getByRole('button', { name: 'Excel del pedido' })).not.toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Descargar PDF' }));
-    fireEvent.click(screen.getByRole('button', { name: 'PDF' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar orden' }));
 
     expect(downloadFromUrl).toHaveBeenNthCalledWith(1, 'https://uploads.example/crossdocking.pdf');
     expect(downloadFromUrl).toHaveBeenNthCalledWith(2, 'https://uploads.example/order.pdf');

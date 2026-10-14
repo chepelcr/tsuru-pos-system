@@ -708,10 +708,10 @@
     transition: grid-template-rows 300ms ease-out, opacity 300ms ease-out;
   }
   .collapse-grid[data-open="true"] { grid-template-rows: 1fr; opacity: 1; }
-  .section-collapse { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms ease-in-out; }
+  .section-collapse { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: 0fr; transition: grid-template-rows 300ms ease-in-out; }
   .section-collapse[data-open="true"] { grid-template-rows: 1fr; }
   .section-collapse[data-open="true"] > .section-collapse-content { overflow: visible; }
-  .section-collapse-content { min-height: 0; overflow: hidden; }
+  .section-collapse-content { min-width: 0; min-height: 0; overflow: hidden; }
 
   .documents-toolbar-desktop { display: none; min-width: 0; }
   .documents-drawer-toggle { display: none; }
@@ -744,15 +744,73 @@
     background-color: var(--report-header-medium);
     color: var(--report-header-text);
   }
-  .order-detail-grid {
+  .order-detail-page {
+    container: order-detail / inline-size;
+  }
+  .order-detail-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "identity menu" "total total";
+    align-items: start;
+    gap: 1.25rem 0.75rem;
+  }
+  .order-detail-identity { grid-area: identity; }
+  .order-detail-menu { grid-area: menu; }
+  .order-detail-total { grid-area: total; }
+  .order-detail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  .order-detail-metadata,
+  .order-detail-grid,
+  .order-detail-info-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
     gap: 0.875rem;
   }
-  @media (min-width: 720px) {
+  .order-detail-actions .btn {
+    min-width: 0;
+    min-height: 44px;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    white-space: normal;
+  }
+  @container order-detail (min-width: 560px) {
+    .order-detail-actions {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .order-detail-metadata,
+    .order-detail-info-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @container order-detail (min-width: 760px) {
+    .order-detail-header {
+      grid-template-columns: minmax(0, 1fr) auto 44px;
+      grid-template-areas: "identity total menu";
+      gap: 1.5rem;
+    }
+    .order-detail-total {
+      flex-direction: column;
+      border-top: 0;
+      padding-top: 0;
+      gap: 0.25rem;
+    }
+    .order-detail-metadata {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @container order-detail (min-width: 1040px) {
     .order-detail-grid {
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: minmax(0, 2.5fr) minmax(280px, 1fr);
+    }
+    .order-detail-info-grid {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 }

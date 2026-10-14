@@ -11,6 +11,7 @@ import { useUpdateOnboardingTour, useUpdateProfile } from "@/hooks/useProfile";
 import { usePermissions } from "@/hooks/useRbac";
 import { roleLabel as orgRoleLabel } from "@/lib/rbacI18n";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
+import { ProfilePhotoPicker } from "@/components/common/ProfilePhotoPicker";
 import { RoleSwitcherCard } from "@/components/roles/RoleSwitcherCard";
 import {
   Card,
@@ -276,6 +277,12 @@ export default function ProfilePage() {
             </CardDescription>
           </CardHeader>
           <CardBody>
+            {user && <ProfilePhotoPicker
+              userId={user.userId}
+              name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
+              value={user.picture_url}
+              onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
+            />}
             {!isEditing ? (
               <div className="flex flex-col gap-4">
                 {/* Name/surname and email/username read as pairs, so they sit
@@ -386,7 +393,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* ── Security ──────────────────────────────────────────────────── */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Icon name="lock" size={18} className="text-primary" />
@@ -394,16 +401,13 @@ export default function ProfilePage() {
             </div>
             <CardDescription>{t("profile.securityDescription")}</CardDescription>
           </CardHeader>
-          <CardBody>
+          <CardBody className="flex flex-1 flex-col">
             {securityView === "menu" ? (
-              // Two peer actions side by side. Each stacks its own icon /
-              // title / description vertically — the card is 2/5 of the row, so
-              // a horizontal icon-then-text row would squeeze both to slivers.
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 grid-rows-2 flex-1 gap-3">
                 <button
                   type="button"
                   onClick={() => setSecurityView("changePassword")}
-                  className="card-hover flex flex-col gap-2 w-full text-left p-4 rounded-lg border border-border bg-card"
+                  className="card-hover flex flex-col justify-center gap-2 w-full text-left p-4 rounded-lg border border-border bg-card"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="icon-pill icon-pill-primary-soft flex-shrink-0">
@@ -413,7 +417,7 @@ export default function ProfilePage() {
                       {t("profile.changePassword")}
                     </span>
                   </div>
-                  <p className="t-sm text-muted-foreground m-0 text-justify hyphens-auto">
+                  <p className="t-sm text-muted-foreground m-0">
                     {t("profile.changePasswordDescription")}
                   </p>
                 </button>
@@ -422,7 +426,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleSendResetLink}
                   disabled={sendingReset || !user?.email}
-                  className="card-hover flex flex-col gap-2 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
+                  className="card-hover flex flex-col justify-center gap-2 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="icon-pill icon-pill-muted flex-shrink-0">
@@ -432,7 +436,7 @@ export default function ProfilePage() {
                       {t("profile.resetPassword")}
                     </span>
                   </div>
-                  <p className="t-sm text-muted-foreground m-0 text-justify hyphens-auto">
+                  <p className="t-sm text-muted-foreground m-0">
                     {t("profile.resetPasswordDescription")}
                   </p>
                 </button>

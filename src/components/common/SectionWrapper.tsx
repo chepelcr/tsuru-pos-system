@@ -34,7 +34,7 @@ export function SectionWrapper({
 
   return (
     <div
-      className={`rounded-lg overflow-hidden transition-opacity duration-200 ${
+      className={`min-w-0 w-full rounded-lg overflow-hidden transition-opacity duration-200 ${
         disabled ? "border border-border/40 opacity-55" : "border border-border opacity-100"
       } ${className ?? ""}`}
     >
@@ -81,7 +81,7 @@ export function SectionWrapper({
       {/* Content */}
       <div className="section-collapse" data-open={isExpanded}>
         <div className="section-collapse-content">
-          <div className="px-4 py-3.5 flex flex-col gap-3">
+          <div className="min-w-0 px-4 py-3.5 flex flex-col gap-3 [&>*]:min-w-0">
             {loading && (
               <div className="text-center py-2 text-xs text-muted-foreground">
                 {t("common.loading")}

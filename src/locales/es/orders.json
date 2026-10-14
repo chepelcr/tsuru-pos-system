@@ -262,5 +262,8 @@
   "salePoint.title": "Punto de venta",
   "salePoint.totals": "{boxes} bultos · {units} unidades",
   "salePoint.totals.derived": "Los totales se calculan a partir de las líneas.",
-  "orders.creditNotes.title": "Notas de crédito"
+  "orders.creditNotes.title": "Notas de crédito",
+  "orders.crossdocking.downloadOrder": "Descargar orden",
+  "orders.crossdocking.view": "Ver Crossdocking",
+  "orders.detail.department": "Departamento"
 }

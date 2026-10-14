@@ -262,5 +262,8 @@
   "salePoint.title": "Sale point",
   "salePoint.totals": "{boxes} boxes · {units} units",
   "salePoint.totals.derived": "Totals are computed from the lines.",
-  "orders.creditNotes.title": "Credit notes"
+  "orders.creditNotes.title": "Credit notes",
+  "orders.crossdocking.downloadOrder": "Download order",
+  "orders.crossdocking.view": "View Crossdocking",
+  "orders.detail.department": "Department"
 }

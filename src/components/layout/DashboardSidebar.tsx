@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useOrganization } from "@/hooks/useOrganization";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { usePermissions, useCanOpenCreateMenu, useCreatableDocTypes } from "@/hooks/useRbac";
 import { useActiveSession } from "@/hooks/useActiveSession";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -98,8 +98,6 @@ function sectionOf(active: NavId): SectionId | null {
 
 export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarProps) {
   const { user } = useAuthContext();
-  const { useDefaultOrganization } = useOrganization();
-  const { data: org } = useDefaultOrganization(user?.userId);
   // RBAC nav gating (my-permissions, O1). Fail-closed (TSR-332): the nav is
   // built from the caller's available modules + read grants only.
   const {
@@ -152,11 +150,8 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     onClose?.();
   };
 
-  // Initials still come from the full name — "JP" reads better than "JO".
+  // Photo fallback initials use the full name.
   const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.name || "";
-  const initials = fullName
-    ? fullName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
-    : "U";
   // The footer slot is one line beside a 28px avatar, and a full four-part
   // Costa Rican name ("Jose Pablo Campos Solano") only ever rendered ellipsed.
   // Prefer the username the user chose, then the given name alone.
@@ -193,7 +188,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
       {/* ── HEADER (always visible) ── */}
       <div className="shrink-0 px-4 pt-4">
         <div className="px-2 pt-1 pb-4 border-b border-sidebar-border flex items-center justify-between">
-          <Logo orgName={org?.name} />
+          <Logo />
           {onClose && (
             <button className="btn btn-ghost btn-sm btn-icon ml-2" onClick={onClose}>
               <Icon name="close" size={16} />
@@ -333,9 +328,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
           }}
           aria-label={t("profile.openAria")}
         >
-          <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-display font-bold text-[11px] flex-shrink-0">
-            {initials}
-          </div>
+          <UserAvatar src={user?.picture_url} name={fullName || display_name} />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold overflow-hidden text-ellipsis whitespace-nowrap">
               {display_name}

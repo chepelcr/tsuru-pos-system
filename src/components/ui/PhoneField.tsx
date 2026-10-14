@@ -27,6 +27,7 @@ export function PhoneField({
   id,
 }: PhoneFieldProps) {
   const cc = countryCode || CountryISO.COSTA_RICA;
+  const digits = (number ?? "").replace(/\D/g, "");
 
   return (
     <div className="grid grid-cols-[150px_1fr] gap-2.5">
@@ -42,7 +43,9 @@ export function PhoneField({
         type="tel"
         inputMode="numeric"
         disabled={disabled}
-        value={number ?? ""}
+        value={cc === CountryISO.COSTA_RICA && digits.length > 4
+          ? `${digits.slice(0, 4)}-${digits.slice(4)}`
+          : digits}
         onChange={(e) =>
           onChange({ countryCode: cc, number: e.target.value.replace(/\D+/g, "").slice(0, 20) })
         }
