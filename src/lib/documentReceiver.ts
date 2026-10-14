@@ -24,6 +24,8 @@ export function buildDocumentReceiver(inbound?: SaleReceiver | null, client?: Cl
       state_id: client.residence.state_id ?? undefined,
       county_id: client.residence.county_id ?? undefined,
       district_id: client.residence.district_id ?? undefined,
+      neighborhood_id: client.residence.neighborhood_id ?? undefined,
+      neighborhood_name: client.residence.neighborhood_name ?? undefined,
       address: client.residence.address ?? undefined,
     } : undefined,
   } : {};
@@ -35,9 +37,9 @@ export function buildDocumentReceiver(inbound?: SaleReceiver | null, client?: Cl
     number: ['05', '06'].includes(id.code ?? '') ? id.number?.trim() : id.number?.replace(/\D/g, ''),
   };
   if (result.residence) {
-    const { state_id, state_name, county_id, county_name, district_id, district_name, neighborhood_name, address } = result.residence;
+    const { state_id, state_name, county_id, county_name, district_id, district_name, neighborhood_id, neighborhood_name, address } = result.residence;
     result.residence = id?.code === '05' ? { address } : {
-      state_id, state_name, county_id, county_name, district_id, district_name, neighborhood_name, address,
+      state_id, state_name, county_id, county_name, district_id, district_name, neighborhood_id, neighborhood_name, address,
     };
   }
   return Object.values(result).some(Boolean) ? result : null;

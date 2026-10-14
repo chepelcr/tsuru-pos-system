@@ -10,7 +10,7 @@ export interface ClientSearchResult {
   identification?: { code?: string | null; number?: string | null } | null;
   email?: string | null;
   phone?: { country_code?: string | null; area_code?: string | null; number?: string | null; description?: string | null } | null;
-  residence?: { state_id?: number | null; county_id?: number | null; district_id?: number | null; neighborhood_id?: number | null; address?: string | null } | null;
+  residence?: { state_id?: number | null; county_id?: number | null; district_id?: number | null; neighborhood_id?: number | null; neighborhood_name?: string | null; address?: string | null } | null;
 }
 
 /** A client row in the shape the POS cart and checkout carry. */
@@ -29,6 +29,7 @@ export function clientToSearchResult(c: Client): ClientSearchResult {
           county_id: c.residence.county_id,
           district_id: c.residence.district_id,
           neighborhood_id: c.residence.neighborhood_id,
+          neighborhood_name: c.residence.neighborhood_name,
           address: c.residence.address,
         }
       : null,

@@ -27,6 +27,8 @@ const payload: SaleDocument = {
   terminal_number: 1,
   branch_number: 1,
   sale_condition: "01",
+  receiver: { name: "Receptor", residence: { state_id: 1, county_id: 2, district_id: 3,
+    neighborhood_id: 7, address: "Casa 12" } },
   details: [],
   payments: [],
 };

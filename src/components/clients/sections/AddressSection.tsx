@@ -39,6 +39,7 @@ export function AddressSection({
             county_id: form.residence?.county_id ?? null,
             district_id: form.residence?.district_id ?? null,
             neighborhood_id: form.residence?.neighborhood_id ?? null,
+            neighborhood_name: form.residence?.neighborhood_name ?? null,
             address: form.residence?.address ?? "",
           }}
           onChange={(loc) =>
@@ -49,6 +50,7 @@ export function AddressSection({
                 county_id: loc.county_id ?? undefined,
                 district_id: loc.district_id ?? undefined,
                 neighborhood_id: loc.neighborhood_id ?? undefined,
+                neighborhood_name: loc.neighborhood_name ?? undefined,
                 address: loc.address ?? "",
               },
             }))

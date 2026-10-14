@@ -111,7 +111,16 @@ describe("formToReceiver", () => {
     expect(receiver.identification?.code).toBe("02");
     expect(receiver.residence?.address).toBe("Zona Franca, Bodega 4");
     expect(receiver.residence?.state_id).toBe(1);
+    expect(receiver.residence?.neighborhood_id).toBe(7);
     expect(receiver.email).toBe("cxp@walmart.cr");
+  });
+
+  it("preserves a document's neighborhood when only contact details change", () => {
+    const original = { name: 'Receptor', residence: { state_id: 1, county_id: 3, district_id: 5,
+      neighborhood_name: 'Barrio del documento', address: 'Casa 12' } };
+    const form = receiverToForm(original, null, []);
+    const saved = formToReceiver({ ...form, email: 'changed@example.com' }, [], original);
+    expect(saved.residence?.neighborhood_name).toBe('Barrio del documento');
   });
 });
 

@@ -79,10 +79,9 @@ export function resolveReceiverAddress(
       state_id: source.state_id ?? null,
       county_id: source.county_id ?? null,
       district_id: source.district_id ?? null,
-      // `Residence` (the Hacienda shape) carries neighborhood_name, while the
-      // client and the cascade carry neighborhood_id. Only the id is useful here.
-      neighborhood_id:
-        (source as { neighborhood_id?: number | null }).neighborhood_id ?? null,
+      // Keep either representation when copying a document address to delivery.
+      neighborhood_id: source.neighborhood_id ?? null,
+      neighborhood_name: source.neighborhood_name ?? null,
       address: source.address ?? null,
     };
   }

@@ -51,22 +51,22 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
 
   const handleState = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
-    onChange({ state_id: id, county_id: null, district_id: null, neighborhood_id: null, address: value.address });
+    onChange({ state_id: id, county_id: null, district_id: null, neighborhood_id: null, neighborhood_name: null, address: value.address });
   };
 
   const handleCounty = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
-    onChange({ ...value, county_id: id, district_id: null, neighborhood_id: null });
+    onChange({ ...value, county_id: id, district_id: null, neighborhood_id: null, neighborhood_name: null });
   };
 
   const handleDistrict = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
-    onChange({ ...value, district_id: id, neighborhood_id: null });
+    onChange({ ...value, district_id: id, neighborhood_id: null, neighborhood_name: null });
   };
 
   const handleNeighborhood = (e: SelectChangeEvent) => {
     const id = e.target.value ? parseInt(e.target.value) : null;
-    onChange({ ...value, neighborhood_id: id });
+    onChange({ ...value, neighborhood_id: id, neighborhood_name: neighborhoods.find((n) => n.neighborhood_id === id)?.neighborhood_name ?? null });
   };
 
   const selectPlaceholder = (loading: boolean) => (loading ? t("common.loading") : t("placeholder.selectOption"));
@@ -114,7 +114,7 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
 
           <div>
             <FormLabel>{t("location.neighborhood")}</FormLabel>
-            <Select value={value.neighborhood_id?.toString() ?? ""} onChange={handleNeighborhood} disabled={!districtId || nbLoading}>
+            <Select value={(value.neighborhood_id ?? neighborhoods.find((n) => n.neighborhood_name === value.neighborhood_name)?.neighborhood_id)?.toString() ?? ""} onChange={handleNeighborhood} disabled={!districtId || nbLoading}>
               <option value="">{selectPlaceholder(nbLoading)}</option>
               {neighborhoods.map((n) => (
                 <option key={n.neighborhood_id} value={n.neighborhood_id}>{n.neighborhood_name}</option>

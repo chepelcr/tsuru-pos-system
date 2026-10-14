@@ -52,7 +52,7 @@ import type {
  *
  * Uses the canonical Hacienda code strings throughout. Receiver may carry a
  * `neighborhood_id` (LocationSelect cascade state) — the payload builder
- * resolves it to `neighborhood_name` if a name isn't already present.
+ * keeps it until sales resolves `neighborhood_name` before fiscal generation.
  */
 /**
  * Split what the till took from what the document says.
@@ -594,9 +594,8 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
 
   /**
    * Build a canonical SaleReceiver from either a draft (with `neighborhood_id`)
-   * or a ClientSearchResult. Drops `neighborhood_id` from the outbound shape;
-   * caller is responsible for resolving the name (the checkout form does so via
-   * the loaded useNeighborhoods cache when the user picks a neighborhood).
+   * or a ClientSearchResult. Preserve the selected neighborhood until sales
+   * resolves its name, including submissions replayed from the offline outbox.
    */
   const handleConfirmPayment = async ({
     assignmentId,

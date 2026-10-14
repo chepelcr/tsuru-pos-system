@@ -159,9 +159,8 @@ function receiverToForm(
           state_id: r?.residence?.state_id ?? undefined,
           county_id: r?.residence?.county_id ?? undefined,
           district_id: r?.residence?.district_id ?? undefined,
-          // Client form keeps neighborhood_id locally (LocationSelect cascade);
-          // the canonical receiver doesn't carry it (Hacienda wants the name).
-          neighborhood_id: undefined,
+          neighborhood_id: r?.residence?.neighborhood_id,
+          neighborhood_name: r?.residence?.neighborhood_name,
           address: r?.residence?.address ?? "",
         }
       : {
@@ -169,6 +168,7 @@ function receiverToForm(
           county_id: src?.residence?.county_id ?? undefined,
           district_id: src?.residence?.district_id ?? undefined,
           neighborhood_id: src?.residence?.neighborhood_id ?? undefined,
+          neighborhood_name: src?.residence?.neighborhood_name ?? undefined,
           address: src?.residence?.address ?? "",
         },
   };
@@ -176,8 +176,8 @@ function receiverToForm(
 
 /**
  * Project the client-create form back into a canonical SaleReceiver. The
- * residence drops `neighborhood_id` (FE-only) — the checkout form must
- * later resolve it to `neighborhood_name` before submitting to sales-api.
+ * neighborhood name survives contact edits; the optional catalog id is
+ * resolved by sales before persistence, including offline checkout replay.
  */
 function formToReceiver(
   f: CreateClientDto,
@@ -211,9 +211,8 @@ function formToReceiver(
       state_id: f.residence?.state_id ?? undefined,
       county_id: f.residence?.county_id ?? undefined,
       district_id: f.residence?.district_id ?? undefined,
-      // Canonical receiver carries the NAME, not the id. The checkout drawer
-      // resolves neighborhood_id → neighborhood_name from the data-api cache.
-      neighborhood_name: undefined,
+      neighborhood_id: f.residence?.neighborhood_id,
+      neighborhood_name: f.residence?.neighborhood_name,
       address: f.residence?.address?.trim() || undefined,
     },
   };

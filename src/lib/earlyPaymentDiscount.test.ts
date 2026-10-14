@@ -28,7 +28,8 @@ const ORIGINAL: SaleDocument = {
   document_key: '50627032500010244007700100001010000000537126458971',
   consecutive_number: '00100001010000000537',
   sale_date: '2025-03-27T10:00:00Z',
-  receiver: { name: 'Walmart', identification: { code: '02', number: '3102007223' } } as SaleDocument['receiver'],
+  receiver: { name: 'Walmart', identification: { code: '02', number: '3102007223' },
+    residence: { state_id: 1, county_id: 1, district_id: 1, neighborhood_name: 'Barrio original', address: 'Casa 12' } } as SaleDocument['receiver'],
   details: [
     {
       line_number: 1, description: 'Almohada', cabys: '2718000000100', quantity: 2, unit_measure: 'Unid',
@@ -122,6 +123,7 @@ describe('buildFinancialCreditNote', () => {
     expect(note.credit_term).toBe('30');
     expect(note.client_id).toBe('c-1');
     expect(note.receiver).toBe(ORIGINAL.receiver);
+    expect(note.receiver?.residence?.neighborhood_name).toBe('Barrio original');
   });
 
   it('carries one line on the CABYS the rate taxed, the IVA out of the amount', () => {

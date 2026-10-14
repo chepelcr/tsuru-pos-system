@@ -72,6 +72,10 @@ describe('resolveReceiverAddress', () => {
     const receiver: SaleReceiver = { residence: { address: 'Otra dirección', state_id: 7 } };
     expect(resolveReceiverAddress(receiver, walmart)!.address).toBe('Otra dirección');
   });
+  it('keeps the neighborhood name when copying an existing document address', () => {
+    expect(resolveReceiverAddress({ residence: { state_id: 1, neighborhood_name: 'Barrio original', address: 'Casa 12' } }, null))
+      .toMatchObject({ neighborhood_name: 'Barrio original', address: 'Casa 12' });
+  });
 
   it('skips an empty receiver residence rather than treating it as an address', () => {
     const receiver: SaleReceiver = { residence: {} };

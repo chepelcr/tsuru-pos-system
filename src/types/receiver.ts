@@ -6,9 +6,8 @@
  * Hacienda enum-like fields are code STRINGS ("01", "02", ...), never
  * numeric IDs — the sales-api Lambda has no access to the data-api catalog.
  *
- * ResidenceLocalState.neighborhood_id is kept for the LocationSelect
- * cascade only. useCartFlow resolves it to Residence.neighborhood_name at
- * submit time (Hacienda spec wants the name, not the id).
+ * A neighborhood_id may accompany a request as a catalog hint. Sales resolves
+ * it before storing the document; snapshots, responses and XML carry its name.
  */
 
 export interface Phone {
@@ -56,6 +55,8 @@ export interface Residence {
   county_name?: string;
   district_id?: number;
   district_name?: string;
+  /** Request-only catalog hint, resolved by sales before fiscal generation. */
+  neighborhood_id?: number;
   /** Hacienda canonical: NAME (not id). */
   neighborhood_name?: string;
   country_code?: string;

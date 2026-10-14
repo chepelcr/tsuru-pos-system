@@ -28,6 +28,7 @@ export interface ResidenceValue {
   county_id?: number | null;
   district_id?: number | null;
   neighborhood_id?: number | null;
+  neighborhood_name?: string | null;
   address?: string | null;
 }
 
@@ -71,7 +72,7 @@ export interface CreateClientDto {
   identification?: { code?: string; number?: string };
   email?: string;
   phone?: { country_code?: string; area_code?: string; number?: string; description?: string };
-  residence?: { state_id?: number; county_id?: number; district_id?: number; neighborhood_id?: number; address?: string };
+  residence?: { state_id?: number; county_id?: number; district_id?: number; neighborhood_id?: number; neighborhood_name?: string; address?: string };
   /** Free-text customer note (plan 02 §2.3 / §6.3). */
   notes?: string;
 }
