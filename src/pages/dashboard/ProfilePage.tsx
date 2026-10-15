@@ -238,7 +238,7 @@ export default function ProfilePage() {
       {/* Stack the avatar on phones; center it across both field rows on desktop. */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ── Personal info ─────────────────────────────────────────────── */}
-        <Card>
+        <Card data-tour="profile">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -549,7 +549,7 @@ export default function ProfilePage() {
       {/* ── First-login tutorial ───────────────────────────────────────── */}
       <Card className="mt-6">
         <CardHeader>
-          <div className="flex items-center gap-2" data-tour="profile">
+          <div className="flex items-center gap-2">
             <Icon name="sparkles" size={18} className="text-primary" />
             <CardTitle>{t("onboarding.restart.title")}</CardTitle>
           </div>
