@@ -178,6 +178,7 @@
   "products.specifyUnit": "Specify unit",
   "products.statusActive": "Active",
   "products.statusInactive": "Inactive",
+  "products.selectProduct": "Select {name}",
   "products.stock": "Stock {n}",
   "products.subtitle": "Products shared across all branches.",
   "products.suggestedIva": "Suggested VAT: {pct}%",

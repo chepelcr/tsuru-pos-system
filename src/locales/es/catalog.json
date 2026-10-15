@@ -178,6 +178,7 @@
   "products.specifyUnit": "Especificar unidad",
   "products.statusActive": "Activos",
   "products.statusInactive": "Inactivos",
+  "products.selectProduct": "Seleccionar {name}",
   "products.stock": "Stock {n}",
   "products.subtitle": "Productos compartidos por todas las sucursales.",
   "products.suggestedIva": "IVA sugerido: {pct}%",

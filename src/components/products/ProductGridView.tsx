@@ -62,21 +62,23 @@ export function ProductGridView({
                 size={0}
                 className="w-full h-auto aspect-square !rounded-none object-cover"
               />
-              <div className="absolute top-2 left-2">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(p.product_id)}
-                  onChange={() => onToggleSelect(p.product_id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-[18px] h-[18px] cursor-pointer accent-primary"
-                />
-              </div>
-              <div className="absolute top-2 right-2 flex gap-1">
-                {p.status === 0 && <Badge variant="secondary">{t("common.inactive")}</Badge>}
-                {lowStock(p) && <Badge variant="warning">{t("products.stock", { n: String(p.stock_quantity) })}</Badge>}
-              </div>
             </div>
             <div className="p-3.5 flex flex-1 flex-col">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <label className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    aria-label={t("products.selectProduct", { name: p.name })}
+                    checked={selected.includes(p.product_id)}
+                    onChange={() => onToggleSelect(p.product_id)}
+                    className="w-[18px] h-[18px] cursor-pointer accent-primary"
+                  />
+                </label>
+                <div className="flex flex-wrap justify-end gap-1">
+                  {p.status === 0 && <Badge variant="secondary">{t("common.inactive")}</Badge>}
+                  {lowStock(p) && <Badge variant="warning">{t("products.stock", { n: String(p.stock_quantity) })}</Badge>}
+                </div>
+              </div>
               <div className="flex justify-between items-start gap-2 mb-1">
                 <div className="text-sm font-bold leading-tight">{p.name}</div>
                 <Badge variant="outline" className="flex-shrink-0 !text-[9px]">{p.category?.name ?? "—"}</Badge>
