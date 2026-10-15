@@ -64,8 +64,8 @@ export function ProductGridView({
               />
             </div>
             <div className="p-3.5 flex flex-1 flex-col">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <label className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start gap-2 mb-1">
+                <label className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     aria-label={t("products.selectProduct", { name: p.name })}
@@ -74,15 +74,15 @@ export function ProductGridView({
                     className="w-[18px] h-[18px] cursor-pointer accent-primary"
                   />
                 </label>
-                <div className="flex flex-wrap justify-end gap-1">
+                <div className="min-w-0 flex-1 text-sm font-bold leading-tight break-words">{p.name}</div>
+                <Badge variant="outline" className="flex-shrink-0 !text-[9px]">{p.category?.name ?? "—"}</Badge>
+              </div>
+              {(p.status === 0 || lowStock(p)) && (
+                <div className="flex flex-wrap gap-1 mt-1 mb-2 pl-7">
                   {p.status === 0 && <Badge variant="secondary">{t("common.inactive")}</Badge>}
                   {lowStock(p) && <Badge variant="warning">{t("products.stock", { n: String(p.stock_quantity) })}</Badge>}
                 </div>
-              </div>
-              <div className="flex justify-between items-start gap-2 mb-1">
-                <div className="text-sm font-bold leading-tight">{p.name}</div>
-                <Badge variant="outline" className="flex-shrink-0 !text-[9px]">{p.category?.name ?? "—"}</Badge>
-              </div>
+              )}
               <div className="flex justify-between items-center mt-auto pt-2.5">
                 <ProductPriceEditor
                   productId={p.product_id}
