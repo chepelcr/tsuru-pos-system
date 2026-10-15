@@ -254,7 +254,7 @@ export default function ProfilePage() {
       {/* Multi-role members switch their active role here (TSR-330). */}
       <RoleSwitcherCard />
 
-      {/* Keep the avatar beside the identity fields to avoid a separate photo row. */}
+      {/* Center the avatar across the name and contact rows. */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ── Personal info ─────────────────────────────────────────────── */}
         <Card>
@@ -284,7 +284,7 @@ export default function ProfilePage() {
                     value={user.picture_url}
                     onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
                   />}
-                  <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                     <div className="min-w-0">
                       <div className="t-label">{t("profile.firstName")}</div>
                       <p className="t-body font-medium text-foreground break-words">
@@ -297,23 +297,21 @@ export default function ProfilePage() {
                         {user?.last_name || placeholder}
                       </p>
                     </div>
+                    <div className="min-w-0">
+                      <div className="t-label">{t("common.email")}</div>
+                      <p className="t-body font-medium text-foreground break-words">
+                        {user?.email || placeholder}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="t-label">{t("profile.username")}</div>
+                      <p className="t-body font-medium text-foreground break-words">
+                        {user?.username || placeholder}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="min-w-0">
-                    <div className="t-label">{t("common.email")}</div>
-                    <p className="t-body font-medium text-foreground break-words">
-                      {user?.email || placeholder}
-                    </p>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="t-label">{t("profile.username")}</div>
-                    <p className="t-body font-medium text-foreground break-words">
-                      {user?.username || placeholder}
-                    </p>
-                  </div>
-                </div>
-                <div>
+                <div className="pl-24">
                   <div className="t-label">{t("common.role")}</div>
                   <span className="badge badge-primary-soft mt-1">{roleLabel}</span>
                 </div>
@@ -323,7 +321,7 @@ export default function ProfilePage() {
                 onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
                 className="flex flex-col gap-4"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-center gap-4">
                   {user && <ProfilePhotoPicker
                     userId={user.userId}
                     name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
@@ -353,25 +351,25 @@ export default function ProfilePage() {
                         render={({ field }) => <Input {...field} />}
                       />
                     </FormField>
+
+                    {/* Email is Cognito-managed and never sent in PUT. */}
+                    <FormField label={t("common.email")}>
+                      <Input value={user?.email ?? ""} readOnly disabled />
+                    </FormField>
+
+                    <FormField
+                      label={t("profile.username")}
+                      required
+                      error={tErr(profileForm.formState.errors.username?.message)}
+                    >
+                      <Controller
+                        control={profileForm.control}
+                        name="username"
+                        render={({ field }) => <Input {...field} />}
+                      />
+                    </FormField>
                   </div>
                 </div>
-
-                <FormField
-                  label={t("profile.username")}
-                  required
-                  error={tErr(profileForm.formState.errors.username?.message)}
-                >
-                  <Controller
-                    control={profileForm.control}
-                    name="username"
-                    render={({ field }) => <Input {...field} />}
-                  />
-                </FormField>
-
-                {/* Email is a Cognito-managed attribute — read-only, never sent in PUT. */}
-                <FormField label={t("common.email")}>
-                  <Input value={user?.email ?? ""} readOnly disabled />
-                </FormField>
 
                 <div className="flex gap-3 pt-1">
                   <Button
@@ -408,17 +406,17 @@ export default function ProfilePage() {
           </CardHeader>
           <CardBody className="flex flex-1 flex-col">
             {securityView === "menu" ? (
-              <div className="grid grid-cols-1 grid-rows-2 flex-1 gap-3">
+              <div className="grid grid-cols-2 flex-1 gap-3">
                 <button
                   type="button"
                   onClick={() => setSecurityView("changePassword")}
-                  className="card-hover flex flex-col justify-center gap-2 w-full text-left p-4 rounded-lg border border-border bg-card"
+                  className="card-hover flex flex-col justify-start gap-2 w-full text-left p-4 rounded-lg border border-border bg-card"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex flex-col items-start gap-2 min-w-0">
                     <span className="icon-pill icon-pill-primary-soft flex-shrink-0">
                       <Icon name="lock" size={18} />
                     </span>
-                    <span className="t-body font-medium text-foreground">
+                    <span className="t-body font-medium text-foreground break-words">
                       {t("profile.changePassword")}
                     </span>
                   </div>
@@ -431,13 +429,13 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleSendResetLink}
                   disabled={sendingReset || !user?.email}
-                  className="card-hover flex flex-col justify-center gap-2 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
+                  className="card-hover flex flex-col justify-start gap-2 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex flex-col items-start gap-2 min-w-0">
                     <span className="icon-pill icon-pill-muted flex-shrink-0">
                       <Icon name="refresh" size={18} />
                     </span>
-                    <span className="t-body font-medium text-foreground">
+                    <span className="t-body font-medium text-foreground break-words">
                       {t("profile.resetPassword")}
                     </span>
                   </div>
