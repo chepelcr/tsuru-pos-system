@@ -75,6 +75,8 @@ export function ProfilePhotoPicker({ userId, name, value, onSaved }: ProfilePhot
       await remove.mutateAsync();
       onSaved(null);
       setSaved(t("profile.photo.removed"));
+      setOpen(false);
+      setPreview(undefined);
     } catch {
       setError(t("profile.photo.removeError"));
     } finally {
@@ -111,25 +113,18 @@ export function ProfilePhotoPicker({ userId, name, value, onSaved }: ProfilePhot
           <span aria-hidden="true" className={`absolute inset-0 flex items-center justify-center rounded-full bg-foreground/60 text-background transition-opacity motion-reduce:transition-none group-hover:opacity-100 group-focus-within:opacity-100 ${saving ? "opacity-100" : "opacity-0"}`}>
             {saving ? <Spinner size={22} /> : <Icon name="edit" size={22} />}
           </span>
-          <span aria-hidden="true" className={`absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm group-hover:opacity-0 group-focus-within:opacity-0 ${value ? "[@media(hover:none)]:hidden" : ""}`}><Icon name="edit" size={14} /></span>
+          <span aria-hidden="true" className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm group-hover:opacity-0 group-focus-within:opacity-0"><Icon name="edit" size={14} /></span>
         </button>
-        {value && <button
-          type="button"
-          className="absolute -bottom-1 -right-1 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-destructive shadow-sm opacity-0 pointer-events-none transition-opacity motion-reduce:transition-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto disabled:cursor-wait"
-          aria-label={t("profile.photo.remove")}
-          title={t("profile.photo.remove")}
-          disabled={saving}
-          onClick={() => void removePhoto()}
-        ><Icon name="trash" size={17} /></button>}
-        {error && !open && <p className="absolute left-0 top-full z-popover mt-2 w-56 max-w-[calc(100vw-6rem)] rounded-lg border border-destructive/30 bg-card p-3 t-xs text-destructive shadow-dropdown" role="alert">{error}</p>}
         {saved && <p className="sr-only" role="status">{saved}</p>}
       </div>
       {open && <ProfilePhotoEditor
         src={preview}
         error={error}
         saving={saving}
+        removing={remove.isPending}
         onSelect={selectPhoto}
         onClose={close}
+        onRemove={value ? () => void removePhoto() : undefined}
         onSave={(image, zoom, position) => void savePhoto(image, zoom, position)}
         onImageError={() => setError(t("profile.photo.unreadable"))}
       />}

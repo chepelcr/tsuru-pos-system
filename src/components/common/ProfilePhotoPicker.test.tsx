@@ -69,7 +69,9 @@ describe("profile photo editor", () => {
   it("removes the photo through the compact avatar control and returns to initials", async () => {
     const onSaved = vi.fn();
     const { rerender } = render(<ProfilePhotoPicker userId="u1" name="Test User" value={savedUrl} onSaved={onSaved} />);
-    fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
+    expect(screen.queryByRole("button", { name: "profile.photo.remove" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.change" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "profile.photo.remove" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(null));
     expect(mutateAsync).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -84,6 +86,7 @@ describe("profile photo editor", () => {
     removeAsync.mockRejectedValueOnce(new Error("Unable to remove"));
     const onSaved = vi.fn();
     render(<ProfilePhotoPicker userId="u1" name="Test" value={savedUrl} onSaved={onSaved} />);
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.change" }));
     fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("profile.photo.removeError"));
     expect(onSaved).not.toHaveBeenCalled();
@@ -98,6 +101,7 @@ describe("profile photo editor", () => {
     removeAsync.mockReturnValue(new Promise<void>((resolve) => { finish = resolve; }));
     const onSaved = vi.fn();
     render(<ProfilePhotoPicker userId="u1" name="Test" value={savedUrl} onSaved={onSaved} />);
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.change" }));
     fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
     const change = screen.getByRole("button", { name: "profile.photo.change" }) as HTMLButtonElement;
     const remove = screen.getByRole("button", { name: "profile.photo.remove" }) as HTMLButtonElement;
@@ -105,7 +109,7 @@ describe("profile photo editor", () => {
     expect(remove.disabled).toBe(true);
     fireEvent.click(change); fireEvent.click(remove);
     expect(removeAsync).toHaveBeenCalledOnce();
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("dialog")).toBeTruthy();
     await act(async () => finish());
     expect(onSaved).toHaveBeenCalledWith(null);
   });

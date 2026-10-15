@@ -9,13 +9,15 @@ interface ProfilePhotoEditorProps {
   src?: string;
   error?: string;
   saving: boolean;
+  removing?: boolean;
   onSelect: (file: File) => void;
   onClose: () => void;
+  onRemove?: () => void;
   onSave: (image: HTMLImageElement, zoom: number, position: PhotoPosition) => void;
   onImageError: () => void;
 }
 
-export function ProfilePhotoEditor({ src, error, saving, onSelect, onClose, onSave, onImageError }: ProfilePhotoEditorProps) {
+export function ProfilePhotoEditor({ src, error, saving, removing, onSelect, onClose, onRemove, onSave, onImageError }: ProfilePhotoEditorProps) {
   const { t } = useLanguage();
   const id = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -159,10 +161,11 @@ export function ProfilePhotoEditor({ src, error, saving, onSelect, onClose, onSa
           </div>}
 
           {error && <p className="t-sm text-destructive" role="alert">{error}</p>}
+          {onRemove && <Button variant="ghost" className="w-full min-h-11 text-destructive hover:bg-destructive/10" icon={removing ? undefined : "trash"} disabled={saving} onClick={onRemove}>{removing && <Spinner size={16} />}{t(removing ? "profile.photo.removing" : "profile.photo.remove")}</Button>}
           <div className="grid grid-cols-2 gap-2 border-t border-border pt-4">
             <Button variant="outline" className="min-h-11" disabled={saving} onClick={onClose}>{t("common.cancel")}</Button>
             <Button variant="primary" className="min-h-11" disabled={!dimensions || saving} onClick={() => { if (image.current && dimensions) onSave(image.current, zoom, position); }}>
-              {saving && <Spinner size={16} />}{t(saving ? "profile.photo.saving" : "profile.photo.save")}
+              {saving && !removing && <Spinner size={16} />}{t(saving && !removing ? "profile.photo.saving" : "profile.photo.save")}
             </Button>
           </div>
         </div>
