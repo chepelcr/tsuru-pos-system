@@ -254,7 +254,7 @@ export default function ProfilePage() {
       {/* Multi-role members switch their active role here (TSR-330). */}
       <RoleSwitcherCard />
 
-      {/* Center the avatar across the name and contact rows. */}
+      {/* Stack the avatar on phones; center it across both field rows on desktop. */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ── Personal info ─────────────────────────────────────────────── */}
         <Card>
@@ -277,14 +277,14 @@ export default function ProfilePage() {
           <CardBody>
             {!isEditing ? (
               <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center gap-4 sm:flex-row">
                   {user && <ProfilePhotoPicker
                     userId={user.userId}
                     name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
                     value={user.picture_url}
                     onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
                   />}
-                  <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  <div className="grid w-full min-w-0 sm:flex-1 grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                     <div className="min-w-0">
                       <div className="t-label">{t("profile.firstName")}</div>
                       <p className="t-body font-medium text-foreground break-words">
@@ -311,7 +311,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="pl-24">
+                <div className="sm:pl-24">
                   <div className="t-label">{t("common.role")}</div>
                   <span className="badge badge-primary-soft mt-1">{roleLabel}</span>
                 </div>
@@ -321,14 +321,14 @@ export default function ProfilePage() {
                 onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
                 className="flex flex-col gap-4"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center gap-4 sm:flex-row">
                   {user && <ProfilePhotoPicker
                     userId={user.userId}
                     name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
                     value={user.picture_url}
                     onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
                   />}
-                  <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid w-full min-w-0 sm:flex-1 grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormField
                       label={t("profile.firstName")}
                       required
