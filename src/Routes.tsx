@@ -331,7 +331,7 @@ export default function Routes() {
       {/* Dashboard — more specific paths first */}
       {import.meta.env.VITE_BLOG_ENABLED === 'true' && <Route
         path={ROUTES.DASHBOARD_BLOG}
-        component={() => <RequireAuth><DashboardLayout><BlogWriterPage /></DashboardLayout></RequireAuth>}
+        component={() => <DashboardPage><BlogWriterPage /></DashboardPage>}
       />}
       <Route
         path={ROUTES.DASHBOARD_SESSIONS}

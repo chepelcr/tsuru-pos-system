@@ -884,6 +884,15 @@ accordion follows either active route. Guide cards share content rows on desktop
 so task examples align while translated text can grow naturally; mobile cards
 remain stacked. There is no assistant composer in this app.
 
+The blog route must use the shared `DashboardPage` wrapper, even though the writer
+itself does not use fiscal catalogs. `DashboardLayout` calls `useOfflineBootstrap`,
+which requires `DocumentVersionProvider`. A bare `RequireAuth` + layout bypasses
+that provider and crashes on a direct blog visit. Do not attach a business-module
+permission requirement to the personal writer. Its no-organization path remains
+available through the layout's existing blog exception. `src/Routes.blog.test.tsx`
+exercises the real version provider and offline hook for direct visits, navigation,
+all supported roles, absent organizations, catalog loading/errors and auth gating.
+
 `useOverlayLayer` coordinates focus/Escape with other dialogs. The tutorial opts out
 of body scroll locking so nested target scrolling remains possible, uses
 `data-overlay-autofocus` on its instruction region, and makes the application root

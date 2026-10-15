@@ -3,13 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { BlogDocumentEditor } from '@/components/blog/BlogDocumentEditor';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { blogApi } from '@/lib/blogApi';
 import { emptyBlogDocument, type BlogDocument, type BlogPost } from '@/lib/blogTypes';
 
 export default function BlogWriterPage() {
   const { user } = useAuthContext();
   const userId = user?.userId ?? '';
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  usePageTitle([t('shell.blog')]);
   const es = language === 'es';
   const posts = useQuery({ queryKey: ['my-blog-posts', userId], queryFn: () => blogApi.list(userId), enabled: !!userId });
   const [selected, setSelected] = useState<BlogPost | null>(null);
@@ -96,7 +98,7 @@ export default function BlogWriterPage() {
           <span className="block text-sm font-semibold">{post.revision?.document.title[language] || post.slug}</span>
           <span className="mt-1 block text-xs text-muted-foreground">{post.status.replace(/_/g, ' ')}</span>
         </button>)}
-        {!posts.isLoading && !posts.data?.length && <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        {!posts.isLoading && !posts.isError && !posts.data?.length && <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
           {es ? 'Todavía no tienes artículos.' : 'You have no articles yet.'}</p>}
       </aside>
       <section className="min-w-0 rounded-xl border border-border bg-card p-5 space-y-5">
