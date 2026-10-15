@@ -125,8 +125,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // section that owns the active route, so the current page's section is marked.
   const [openSection, setOpenSection] = useState<SectionId | null>(() => sectionOf(active));
   useEffect(() => {
-    const s = sectionOf(active);
-    if (s) setOpenSection(s);
+    setOpenSection(sectionOf(active));
   }, [active]);
 
   const toggleSection = (id: SectionId) =>

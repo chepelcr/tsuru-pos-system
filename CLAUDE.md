@@ -884,14 +884,22 @@ accordion follows either active route. Guide cards share content rows on desktop
 so task examples align while translated text can grow naturally; mobile cards
 remain stacked. There is no assistant composer in this app.
 
-The blog route must use the shared `DashboardPage` wrapper, even though the writer
-itself does not use fiscal catalogs. `DashboardLayout` calls `useOfflineBootstrap`,
-which requires `DocumentVersionProvider`. A bare `RequireAuth` + layout bypasses
-that provider and crashes on a direct blog visit. Do not attach a business-module
-permission requirement to the personal writer. Its no-organization path remains
-available through the layout's existing blog exception. `src/Routes.blog.test.tsx`
-exercises the real version provider and offline hook for direct visits, navigation,
-all supported roles, absent organizations, catalog loading/errors and auth gating.
+All `/dashboard` routes share one persistent `DashboardRoutes` boundary in
+`Routes.tsx`: `RequireAuth → DocumentVersionProvider → DashboardLayout → Switch`.
+Keep the shell outside the child route switch so navigation preserves the sidebar
+and its accordion elements; replacing the layout on each page prevents a closing
+section from animating. The sidebar follows the active route, including collapsing
+all groups for standalone pages (Panel, Profile, Documents, Programs).
+`DashboardPage` supplies per-page permissions, Suspense and page transitions.
+
+The blog uses `DashboardPage` without a business-module permission requirement.
+Its no-organization path remains available through the layout's existing blog
+exception. The shared version provider remains required because `DashboardLayout`
+calls `useOfflineBootstrap`. `src/Routes.blog.test.tsx` exercises the real provider
+and hook for direct visits, navigation, all supported roles, absent organizations,
+catalog loading/errors and auth gating. `src/Routes.sidebar.test.tsx` verifies
+persistent accordion elements, standalone/cross-group/in-group navigation, detail
+parameters and route permission enforcement.
 
 The article list opens new and existing drafts in the shared `Drawer` (880px,
 full width on smaller screens), with fixed footer actions. Dirty closes use the

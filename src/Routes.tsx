@@ -195,7 +195,7 @@ function RequireAuth({
   return <>{children}</>;
 }
 
-// Shorthand: protected page inside the dashboard shell
+// Per-page permissions and loading inside the persistent dashboard shell
 function DashboardPage({
   children,
   permissions,
@@ -210,17 +210,11 @@ function DashboardPage({
   );
 
   return (
-    <RequireAuth roles={DASHBOARD_ROLES}>
-      <DocumentVersionProvider isoCode={CountryISO.COSTA_RICA}>
-        <DashboardLayout>
-          <PageTransition>
-            {permissions ? (
-              <PermissionBoundary requirements={permissions}>{page}</PermissionBoundary>
-            ) : page}
-          </PageTransition>
-        </DashboardLayout>
-      </DocumentVersionProvider>
-    </RequireAuth>
+    <PageTransition>
+      {permissions ? (
+        <PermissionBoundary requirements={permissions}>{page}</PermissionBoundary>
+      ) : page}
+    </PageTransition>
   );
 }
 
@@ -294,40 +288,12 @@ function DocumentsRoute() {
   );
 }
 
-export default function Routes() {
-  const { user } = useAuthContext();
-
+function DashboardRoutes() {
   return (
-    <Suspense fallback={<RouteLoading fullScreen />}>
-      <Switch>
-      {/* Public */}
-      <Route path={ROUTES.LOGIN}>
-        <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
-      </Route>
-      <Route path={ROUTES.REGISTER}>
-        <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
-      </Route>
-      <Route path={ROUTES.VERIFY_EMAIL} component={VerifyEmail} />
-      <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
-      <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />
-      <Route path={ROUTES.ACCEPT_INVITE} component={AcceptInvitation} />
-      <Route
-        path={ROUTES.SELECT_ORG}
-        component={() => (
-          <RequireAuth>
-            <SelectOrganization />
-          </RequireAuth>
-        )}
-      />
-      <Route
-        path={ROUTES.CREATE_ORG}
-        component={() => (
-          <RequireAuth>
-            <CreateOrganization />
-          </RequireAuth>
-        )}
-      />
-
+    <RequireAuth roles={DASHBOARD_ROLES}>
+      <DocumentVersionProvider isoCode={CountryISO.COSTA_RICA}>
+        <DashboardLayout>
+          <Switch>
       {/* Dashboard — more specific paths first */}
       {import.meta.env.VITE_BLOG_ENABLED === 'true' && <Route
         path={ROUTES.DASHBOARD_BLOG}
@@ -518,6 +484,50 @@ export default function Routes() {
         path={ROUTES.DASHBOARD}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.dashboard}><DashboardHome /></DashboardPage>}
       />
+
+          </Switch>
+        </DashboardLayout>
+      </DocumentVersionProvider>
+    </RequireAuth>
+  );
+}
+
+export default function Routes() {
+  const { user } = useAuthContext();
+
+  return (
+    <Suspense fallback={<RouteLoading fullScreen />}>
+      <Switch>
+      {/* Public */}
+      <Route path={ROUTES.LOGIN}>
+        <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
+      </Route>
+      <Route path={ROUTES.REGISTER}>
+        <RedirectIfAuthenticated><Register /></RedirectIfAuthenticated>
+      </Route>
+      <Route path={ROUTES.VERIFY_EMAIL} component={VerifyEmail} />
+      <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
+      <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />
+      <Route path={ROUTES.ACCEPT_INVITE} component={AcceptInvitation} />
+      <Route
+        path={ROUTES.SELECT_ORG}
+        component={() => (
+          <RequireAuth>
+            <SelectOrganization />
+          </RequireAuth>
+        )}
+      />
+      <Route
+        path={ROUTES.CREATE_ORG}
+        component={() => (
+          <RequireAuth>
+            <CreateOrganization />
+          </RequireAuth>
+        )}
+      />
+
+      {/* Keep the shell and its sidebar mounted across dashboard pages. */}
+      <Route path={/^\/dashboard(?:\/.*)?$/} component={DashboardRoutes} />
 
       {/* Root redirect */}
       <Route path="/">
