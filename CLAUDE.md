@@ -181,6 +181,11 @@ Shadows: --shadow-card --shadow-card-hover --shadow-dropdown --shadow-dropdown-u
 | Z-index | `z-dropdown / z-overlay / z-modal / z-tooltip / z-drawer / z-drawer-modal` |
 | Fonts | `font-sans / font-display / font-mono` |
 
+Catalog `ProductGridView` uses equal fractional grid rows. Both its `FadeIn`
+wrapper and `Card` must fill the row height; the card body is a flex column with
+an auto-margin price/action footer. Preserve that chain so full product names
+can wrap while card heights and bottom prices stay aligned across every row.
+
 ### 3.3 Component classes (defined in `src/index.css` — prefer these over recomposing)
 
 - **Typography**: `.t-h1 .t-h2 .t-h3 .t-h4 .t-body .t-sm .t-xs .t-label .t-num .t-stat .t-stat-xl`

@@ -45,12 +45,12 @@ export function ProductGridView({
   const { t } = useLanguage();
 
   return (
-    <div className="grid-auto-fill-220 gap-3.5">
+    <div className="grid-auto-fill-220 auto-rows-fr gap-3.5">
       {products.map((p, i) => (
-        <FadeIn key={p.product_id} delay={i * 0.03} duration={0.4}>
+        <FadeIn key={p.product_id} delay={i * 0.03} duration={0.4} className="h-full min-w-0">
           <Card
             hoverable
-            className={`!p-0 overflow-hidden ${p.status !== 0 ? "opacity-100" : "opacity-60"} ${
+            className={`!p-0 h-full flex flex-col overflow-hidden ${p.status !== 0 ? "opacity-100" : "opacity-60"} ${
               onNavigate ? "cursor-pointer" : "cursor-default"
             }`}
             onClick={() => onNavigate?.(p.product_id)}
@@ -76,12 +76,12 @@ export function ProductGridView({
                 {lowStock(p) && <Badge variant="warning">{t("products.stock", { n: String(p.stock_quantity) })}</Badge>}
               </div>
             </div>
-            <div className="p-3.5">
+            <div className="p-3.5 flex flex-1 flex-col">
               <div className="flex justify-between items-start gap-2 mb-1">
                 <div className="text-sm font-bold leading-tight">{p.name}</div>
                 <Badge variant="outline" className="flex-shrink-0 !text-[9px]">{p.category?.name ?? "—"}</Badge>
               </div>
-              <div className="flex justify-between items-center mt-2.5">
+              <div className="flex justify-between items-center mt-auto pt-2.5">
                 <ProductPriceEditor
                   productId={p.product_id}
                   price={p.sale_price ?? p.price}
