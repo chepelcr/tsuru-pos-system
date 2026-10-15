@@ -878,7 +878,11 @@ material tutorial change and define legacy behavior explicitly.
 The header book button, Profile and `/dashboard/guide` replay the tutorial. The guide
 uses the same filtered workflows and English/Spanish task examples. Its sidebar item
 is available to every authenticated role, like Profile, rather than gated by a
-business-module permission. There is no assistant composer in this app.
+business-module permission. The sidebar's Tsuru accordion groups Getting started
+and My articles; My articles retains the `VITE_BLOG_ENABLED` feature gate. The
+accordion follows either active route. Guide cards share content rows on desktop
+so task examples align while translated text can grow naturally; mobile cards
+remain stacked. There is no assistant composer in this app.
 
 `useOverlayLayer` coordinates focus/Escape with other dialogs. The tutorial opts out
 of body scroll locking so nested target scrolling remains possible, uses

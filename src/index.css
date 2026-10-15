@@ -884,4 +884,11 @@
 .tutorial-guide-link { display: inline-flex; align-items: center; align-self: flex-start; gap: 6px; min-height: 44px; font-size: 0.8125rem; color: hsl(var(--accent-foreground)); text-decoration: underline; text-underline-offset: 3px; }
 .tutorial-route-notice { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
 .tutorial-guide-number { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: var(--radius); background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); font-weight: 600; font-size: 0.875rem; }
+/* Share content rows across neighboring guide cards so translated copy can grow
+   while examples, outcomes and actions stay aligned without fixed heights. */
+@media (min-width: 768px) {
+  @supports (grid-template-rows: subgrid) {
+    .tutorial-guide-grid > .tutorial-guide-card { display: grid; grid-row: span 5; grid-template-rows: subgrid; }
+  }
+}
 .tutorial-replay { min-width: 44px; min-height: 44px; }

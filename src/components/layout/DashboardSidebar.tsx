@@ -24,6 +24,7 @@ interface DashboardSidebarProps {
 const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   historicalDocuments: { icon: "clock", labelKey: "shell.historicalDocuments" },
   dashboard:     { icon: "chart",       labelKey: "shell.panel" },
+  guide:         { icon: "fileText",    labelKey: "onboarding.guide.title" },
   blog:          { icon: "fileText",    labelKey: "shell.blog" },
   productos:     { icon: "package",     labelKey: "shell.products" },
   categories:    { icon: "layers",      labelKey: "shell.categories" },
@@ -47,7 +48,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   // from the navigation (see DashboardHeader).
 };
 
-type SectionId = "commercial" | "admin" | "storefront" | "reports";
+type SectionId = "tsuru" | "commercial" | "admin" | "storefront" | "reports";
 
 /**
  * RBAC map — the catalog mirrors this sidebar 1:1 (modules = sections /
@@ -57,8 +58,8 @@ type SectionId = "commercial" | "admin" | "storefront" | "reports";
  * This is display metadata only; WHAT renders is decided by the caller's
  * resolved permissions (TSR-332): an item exists only when my-permissions
  * lists its module as available to the caller AND grants `read` on the pair.
- * An item with no entry here never renders. Nothing renders before
- * my-permissions resolves — the nav shows a skeleton instead.
+ * Business items without an entry never render. They wait for my-permissions;
+ * the Tsuru guide and feature-gated blog have their own visibility rules.
  */
 const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   dashboard:     ["panel", "overview"],
@@ -86,6 +87,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
 
 /** Collapsible sections. `Panel` (dashboard) and `Documentos` are standalone. */
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
+  { id: "tsuru",      labelKey: "shell.sectionTsuru", icon: "sparkles", items: ["guide", "blog"] },
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
   { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "consecutives", "members", "roles", "config"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
@@ -163,6 +165,8 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // AND the caller's active role can read the pair. Fail-closed: unknown
   // permissions, or an item with no RBAC pair, render nothing.
   const itemVisible = (id: NavId): boolean => {
+    if (id === "guide") return true;
+    if (id === "blog") return import.meta.env.VITE_BLOG_ENABLED === "true";
     const perm = NAV_PERMISSION[id];
     if (!perm || !permsReady) return false;
     return hasModule(perm[0]) && can(perm[0], "read", perm[1]);
@@ -178,7 +182,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
         className={`sidebar-item ${active === id ? "active" : ""}`}
         onClick={() => goNav(id)}
       >
-        <Icon name={meta.icon} size={16} />
+        {id === "guide" ? <BookOpen size={16} aria-hidden="true" /> : <Icon name={meta.icon} size={16} />}
         {t(meta.labelKey)}
       </button>
     );
@@ -201,10 +205,6 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
       {/* ── SCROLLABLE NAV (only this region scrolls) ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-0.5">
         <div className="t-label px-2.5 pb-1.5">{t("shell.navigation")}</div>
-        <button type="button" className={`sidebar-item ${active === "guide" ? "active" : ""}`}
-          onClick={() => goNav("guide")}>
-          <BookOpen size={16} aria-hidden="true" />{t("onboarding.guide.title")}
-        </button>
 
         {/* Permissions unresolved: nothing is offered until the server says so. */}
         {!permsReady && !permsError && (
@@ -223,11 +223,6 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
 
         {/* Panel — standalone, primary view */}
         {renderItem("dashboard")}
-        {import.meta.env.VITE_BLOG_ENABLED === 'true' && <button type="button"
-          className={`sidebar-item ${active === 'blog' ? 'active' : ''}`}
-          onClick={() => goNav('blog')}>
-          <Icon name="fileText" size={16} />{t('shell.blog')}
-        </button>}
 
         {/* Collapsible sections (accordion) — hidden when no item is visible */}
         {SECTIONS.map((section) => {

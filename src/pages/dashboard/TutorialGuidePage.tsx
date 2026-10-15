@@ -28,9 +28,9 @@ export default function TutorialGuidePage() {
         <h2 className="t-h3 mb-2">{t("onboarding.guide.before.title")}</h2>
         <p className="t-body text-muted-foreground">{t("onboarding.guide.before.body")}</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="tutorial-guide-grid grid gap-4 md:grid-cols-2">
         {tutorial.steps.map((step, index) => (
-          <article key={step.id} className="card p-5 flex flex-col gap-3">
+          <article key={step.id} className="tutorial-guide-card card p-5 flex flex-col gap-3">
             <div className="flex items-start gap-3">
               <span className="tutorial-guide-number" aria-hidden="true">{index + 1}</span>
               <h2 className="t-h3">{t(`onboarding.step.${step.id}.title`)}</h2>
@@ -42,7 +42,7 @@ export default function TutorialGuidePage() {
             </div>
             <p className="t-sm text-muted-foreground"><strong className="text-foreground">{t("onboarding.result")} </strong>
               {t(`onboarding.step.${step.id}.result`)}</p>
-            <Button type="button" variant="outline" className="mt-auto self-start" onClick={() => navigate(step.route)}>
+            <Button type="button" variant="outline" className="mt-auto self-start justify-self-start" onClick={() => navigate(step.route)}>
               {t("onboarding.guide.go")}<ArrowRight size={16} aria-hidden="true" />
             </Button>
           </article>
