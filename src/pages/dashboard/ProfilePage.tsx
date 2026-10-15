@@ -311,9 +311,9 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                <div className="sm:pl-24">
+                <div className="flex items-center gap-2 sm:pl-24">
                   <div className="t-label">{t("common.role")}</div>
-                  <span className="badge badge-primary-soft mt-1">{roleLabel}</span>
+                  <span className="badge badge-primary-soft">{roleLabel}</span>
                 </div>
               </div>
             ) : (
@@ -410,13 +410,13 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setSecurityView("changePassword")}
-                  className="card-hover flex flex-col justify-start gap-2 w-full text-left p-4 rounded-lg border border-border bg-card"
+                  className="card-hover flex flex-col justify-start gap-2 w-full text-left p-3 sm:p-4 rounded-lg border border-border bg-card"
                 >
-                  <div className="flex flex-col items-start gap-2 min-w-0">
-                    <span className="icon-pill icon-pill-primary-soft flex-shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                    <span className="icon-pill-primary-soft inline-flex h-5 w-5 shrink-0 items-center justify-center sm:h-10 sm:w-10">
                       <Icon name="lock" size={18} />
                     </span>
-                    <span className="t-body font-medium text-foreground break-words">
+                    <span className="t-body min-w-0 flex-1 font-medium text-foreground break-words">
                       {t("profile.changePassword")}
                     </span>
                   </div>
@@ -429,13 +429,13 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleSendResetLink}
                   disabled={sendingReset || !user?.email}
-                  className="card-hover flex flex-col justify-start gap-2 w-full text-left p-4 rounded-lg border border-border bg-card disabled:opacity-60"
+                  className="card-hover flex flex-col justify-start gap-2 w-full text-left p-3 sm:p-4 rounded-lg border border-border bg-card disabled:opacity-60"
                 >
-                  <div className="flex flex-col items-start gap-2 min-w-0">
-                    <span className="icon-pill icon-pill-muted flex-shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                    <span className="icon-pill-muted inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius)] sm:h-10 sm:w-10">
                       <Icon name="refresh" size={18} />
                     </span>
-                    <span className="t-body font-medium text-foreground break-words">
+                    <span className="t-body min-w-0 flex-1 font-medium text-foreground break-words">
                       {t("profile.resetPassword")}
                     </span>
                   </div>
