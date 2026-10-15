@@ -86,7 +86,9 @@ export function useOverlayLayer({
     });
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isTopLayer()) return;
+      // A nested control (for example a select listbox) consumes its own
+      // Escape before the surrounding drawer should dismiss.
+      if (!isTopLayer() || event.defaultPrevented) return;
 
       if (event.key === "Escape" && dismissibleRef.current) {
         event.preventDefault();

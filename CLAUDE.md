@@ -893,6 +893,14 @@ available through the layout's existing blog exception. `src/Routes.blog.test.ts
 exercises the real version provider and offline hook for direct visits, navigation,
 all supported roles, absent organizations, catalog loading/errors and auth gating.
 
+The article list opens new and existing drafts in the shared `Drawer` (880px,
+full width on smaller screens), with fixed footer actions. Dirty closes use the
+shared confirmation `Modal`; saves and uploads lock editing, switching and
+dismissal until they finish. `BlogDocumentEditor` uses shared inputs, buttons,
+cards and `SelectField` for translated image layouts. The overlay hook respects
+consumed keyboard events, so Escape closes a nested listbox before the drawer.
+`BlogWriterPage.test.tsx` covers the drawer, close protection and mutation flows.
+
 `useOverlayLayer` coordinates focus/Escape with other dialogs. The tutorial opts out
 of body scroll locking so nested target scrolling remains possible, uses
 `data-overlay-autofocus` on its instruction region, and makes the application root
