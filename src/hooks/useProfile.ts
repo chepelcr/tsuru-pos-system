@@ -70,3 +70,13 @@ export function useUpdateProfilePhoto(userId: string) {
     },
   });
 }
+
+/** Remove the account photo and return to initials in every account avatar. */
+export function useRemoveProfilePhoto(userId: string) {
+  return useMutation({
+    mutationFn: async () => {
+      const saved = await api.put<{ picture_url: null }>(userPath(userId, "/profile"), { picture_url: null });
+      return saved.picture_url;
+    },
+  });
+}

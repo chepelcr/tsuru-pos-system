@@ -2,10 +2,10 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfilePhotoPicker } from "./ProfilePhotoPicker";
 
-const { mutateAsync, revokeObjectURL, createObjectURL, drawImage } = vi.hoisted(() => ({
-  mutateAsync: vi.fn(), revokeObjectURL: vi.fn(), createObjectURL: vi.fn(), drawImage: vi.fn(),
+const { mutateAsync, removeAsync, revokeObjectURL, createObjectURL, drawImage } = vi.hoisted(() => ({
+  mutateAsync: vi.fn(), removeAsync: vi.fn(), revokeObjectURL: vi.fn(), createObjectURL: vi.fn(), drawImage: vi.fn(),
 }));
-vi.mock("@/hooks/useProfile", () => ({ useUpdateProfilePhoto: () => ({ mutateAsync }) }));
+vi.mock("@/hooks/useProfile", () => ({ useUpdateProfilePhoto: () => ({ mutateAsync }), useRemoveProfilePhoto: () => ({ mutateAsync: removeAsync }) }));
 vi.mock("@/contexts/LanguageContext", () => ({ useLanguage: () => ({ t: (key: string) => key }) }));
 
 beforeEach(() => {
@@ -29,6 +29,7 @@ beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
   vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => callback(new Blob(["cropped"], { type: "image/png" })));
   mutateAsync.mockResolvedValue("https://cdn.example.com/saved.png");
+  removeAsync.mockResolvedValue(null);
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
@@ -65,6 +66,50 @@ function pinchToDouble(stage: HTMLElement) {
 }
 
 describe("profile photo editor", () => {
+  it("removes the photo through the compact avatar control and returns to initials", async () => {
+    const onSaved = vi.fn();
+    const { rerender } = render(<ProfilePhotoPicker userId="u1" name="Test User" value={savedUrl} onSaved={onSaved} />);
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(null));
+    expect(mutateAsync).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    rerender(<ProfilePhotoPicker userId="u1" name="Test User" value={null} onSaved={onSaved} />);
+    expect(screen.queryByAltText("profile.photo.title")).toBeNull();
+    expect(screen.getByText("TU")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "profile.photo.remove" })).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("profile.photo.removed");
+  });
+
+  it("retains the saved photo and offers retry when removal fails", async () => {
+    removeAsync.mockRejectedValueOnce(new Error("Unable to remove"));
+    const onSaved = vi.fn();
+    render(<ProfilePhotoPicker userId="u1" name="Test" value={savedUrl} onSaved={onSaved} />);
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("profile.photo.removeError"));
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(screen.getByAltText("profile.photo.title").getAttribute("src")).toBe(savedUrl);
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(null));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("locks update and duplicate removal while the delete request is pending", async () => {
+    let finish!: () => void;
+    removeAsync.mockReturnValue(new Promise<void>((resolve) => { finish = resolve; }));
+    const onSaved = vi.fn();
+    render(<ProfilePhotoPicker userId="u1" name="Test" value={savedUrl} onSaved={onSaved} />);
+    fireEvent.click(screen.getByRole("button", { name: "profile.photo.remove" }));
+    const change = screen.getByRole("button", { name: "profile.photo.change" }) as HTMLButtonElement;
+    const remove = screen.getByRole("button", { name: "profile.photo.remove" }) as HTMLButtonElement;
+    expect(change.disabled).toBe(true);
+    expect(remove.disabled).toBe(true);
+    fireEvent.click(change); fireEvent.click(remove);
+    expect(removeAsync).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await act(async () => finish());
+    expect(onSaved).toHaveBeenCalledWith(null);
+  });
+
   it("opens the modal before choosing, and cancels without uploading or changing the saved photo", () => {
     const { onSaved } = setup();
     expect(screen.getByRole("dialog")).toBeTruthy();

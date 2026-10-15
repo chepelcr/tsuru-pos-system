@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { useUpdateProfilePhoto } from "./useProfile";
+import { useRemoveProfilePhoto, useUpdateProfilePhoto } from "./useProfile";
 
 vi.mock("aws-amplify/auth", () => ({ fetchAuthSession: async () => ({ tokens: { idToken: { toString: () => "test-token" } } }) }));
 
@@ -16,6 +16,17 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 afterEach(() => vi.unstubAllGlobals());
 
 describe("profile photo upload and persistence", () => {
+  it("removes the saved photo with a null profile value and no storage upload", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(json({ picture_url: null }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { result } = renderHook(() => useRemoveProfilePhoto("u1"), { wrapper: wrapper() });
+    await act(async () => { expect(await result.current.mutateAsync()).toBeNull(); });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][0]).toContain("/api/users/u1/profile");
+    expect(fetchMock.mock.calls[0][1].method).toBe("PUT");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ picture_url: null });
+  });
+
   it("uses the account route and snake_case, uploads the file, then persists the permanent URL", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(json({ upload_url: uploadUrl, file_url: imageUrl }))

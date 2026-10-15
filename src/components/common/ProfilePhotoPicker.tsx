@@ -1,33 +1,34 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { Icon } from "@/components/ui";
+import { Icon, Spinner } from "@/components/ui";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { ProfilePhotoEditor } from "@/components/common/ProfilePhotoEditor";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useUpdateProfilePhoto } from "@/hooks/useProfile";
+import { useRemoveProfilePhoto, useUpdateProfilePhoto } from "@/hooks/useProfile";
 import { cropProfilePhoto, type PhotoPosition } from "@/lib/profilePhotoCrop";
 
 interface ProfilePhotoPickerProps {
   userId: string;
   name: string;
   value?: string | null;
-  onSaved: (url: string) => void;
+  onSaved: (url: string | null) => void;
 }
 
 export function ProfilePhotoPicker({ userId, name, value, onSaved }: ProfilePhotoPickerProps) {
   const { t } = useLanguage();
   const upload = useUpdateProfilePhoto(userId);
+  const remove = useRemoveProfilePhoto(userId);
   const inFlight = useRef(false);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<string>();
   const [error, setError] = useState<string>();
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string>();
   const [saving, setSaving] = useState(false);
   const [dragging, setDragging] = useState(false);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   const selectPhoto = (file: File) => {
     if (inFlight.current) return;
-    setSaved(false);
+    setSaved(undefined);
     setOpen(true);
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024) {
       setError(t("profile.photo.invalid"));
@@ -53,11 +54,29 @@ export function ProfilePhotoPicker({ userId, name, value, onSaved }: ProfilePhot
       const file = await cropProfilePhoto(image, zoom, position);
       const url = await upload.mutateAsync(file);
       onSaved(url);
-      setSaved(true);
+      setSaved(t("profile.photo.saved"));
       setOpen(false);
       setPreview(undefined);
     } catch {
       setError(t("profile.photo.error"));
+    } finally {
+      inFlight.current = false;
+      setSaving(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (inFlight.current || !value) return;
+    inFlight.current = true;
+    setSaving(true);
+    setSaved(undefined);
+    setError(undefined);
+    try {
+      await remove.mutateAsync();
+      onSaved(null);
+      setSaved(t("profile.photo.removed"));
+    } catch {
+      setError(t("profile.photo.removeError"));
     } finally {
       inFlight.current = false;
       setSaving(false);
@@ -74,25 +93,36 @@ export function ProfilePhotoPicker({ userId, name, value, onSaved }: ProfilePhot
   return (
     <>
       <div
-        className={`mb-5 border-b pb-5 space-y-2 rounded-lg ${dragging ? "border-primary bg-primary/10 ring-2 ring-primary" : "border-border"}`}
+        className={`group relative h-20 w-20 shrink-0 rounded-full ${dragging ? "ring-2 ring-primary ring-offset-2" : ""}`}
         aria-busy={saving}
         onDragOver={(event) => { event.preventDefault(); if (!saving) setDragging(true); }}
         onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
         onDrop={dropPhoto}
       >
-        <div className="flex items-center gap-4">
-          <UserAvatar src={value} name={name} alt={t("profile.photo.title")} className="h-20 w-20 shrink-0 text-2xl" />
-          <div className="min-w-0 space-y-2">
-            <p className="t-sm font-semibold">{t("profile.photo.title")}</p>
-            <button type="button" className="btn btn-outline btn-sm min-h-11" disabled={saving} onClick={() => { setSaved(false); setOpen(true); }}>
-              <Icon name="upload" size={14} />
-              {t(value ? "profile.photo.change" : "profile.photo.add")}
-            </button>
-            <p className="t-xs text-muted-foreground">{t("profile.photo.hint")}</p>
-            <p className="t-xs text-muted-foreground">{t("profile.photo.dropHint")}</p>
-          </div>
-        </div>
-        {saved && <p className="t-xs text-success" role="status">{t("profile.photo.saved")}</p>}
+        <button
+          type="button"
+          className="relative block h-full w-full rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-wait"
+          aria-label={t(value ? "profile.photo.change" : "profile.photo.add")}
+          title={t(value ? "profile.photo.change" : "profile.photo.add")}
+          disabled={saving}
+          onClick={() => { setSaved(undefined); setError(undefined); setOpen(true); }}
+        >
+          <UserAvatar src={value} name={name} alt={t("profile.photo.title")} className="h-full w-full text-2xl" />
+          <span aria-hidden="true" className={`absolute inset-0 flex items-center justify-center rounded-full bg-foreground/60 text-background transition-opacity motion-reduce:transition-none group-hover:opacity-100 group-focus-within:opacity-100 ${saving ? "opacity-100" : "opacity-0"}`}>
+            {saving ? <Spinner size={22} /> : <Icon name="edit" size={22} />}
+          </span>
+          <span aria-hidden="true" className={`absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm group-hover:opacity-0 group-focus-within:opacity-0 ${value ? "[@media(hover:none)]:hidden" : ""}`}><Icon name="edit" size={14} /></span>
+        </button>
+        {value && <button
+          type="button"
+          className="absolute -bottom-1 -right-1 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-destructive shadow-sm opacity-0 pointer-events-none transition-opacity motion-reduce:transition-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto disabled:cursor-wait"
+          aria-label={t("profile.photo.remove")}
+          title={t("profile.photo.remove")}
+          disabled={saving}
+          onClick={() => void removePhoto()}
+        ><Icon name="trash" size={17} /></button>}
+        {error && !open && <p className="absolute left-0 top-full z-popover mt-2 w-56 max-w-[calc(100vw-6rem)] rounded-lg border border-destructive/30 bg-card p-3 t-xs text-destructive shadow-dropdown" role="alert">{error}</p>}
+        {saved && <p className="sr-only" role="status">{saved}</p>}
       </div>
       {open && <ProfilePhotoEditor
         src={preview}

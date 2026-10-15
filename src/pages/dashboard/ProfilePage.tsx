@@ -254,9 +254,7 @@ export default function ProfilePage() {
       {/* Multi-role members switch their active role here (TSR-330). */}
       <RoleSwitcherCard />
 
-      {/* Even split. The personal card no longer needs extra track: its fields
-          sit two-up with role on its own row, so the email keeps half the card
-          and stays on one line. */}
+      {/* Keep the avatar beside the identity fields to avoid a separate photo row. */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ── Personal info ─────────────────────────────────────────────── */}
         <Card>
@@ -277,32 +275,31 @@ export default function ProfilePage() {
             </CardDescription>
           </CardHeader>
           <CardBody>
-            {user && <ProfilePhotoPicker
-              userId={user.userId}
-              name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
-              value={user.picture_url}
-              onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
-            />}
             {!isEditing ? (
               <div className="flex flex-col gap-4">
-                {/* Name/surname and email/username read as pairs, so they sit
-                    as pairs — two tracks, which also gives the email half the
-                    card and keeps its label on one line. Role stands on its own
-                    row: it is a badge, not a field, and squeezing it into the
-                    second row cost the email the width it needs. */}
+                <div className="flex items-center gap-4">
+                  {user && <ProfilePhotoPicker
+                    userId={user.userId}
+                    name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
+                    value={user.picture_url}
+                    onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
+                  />}
+                  <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <div className="t-label">{t("profile.firstName")}</div>
+                      <p className="t-body font-medium text-foreground break-words">
+                        {user?.first_name || placeholder}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="t-label">{t("profile.lastName")}</div>
+                      <p className="t-body font-medium text-foreground break-words">
+                        {user?.last_name || placeholder}
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="min-w-0">
-                    <div className="t-label">{t("profile.firstName")}</div>
-                    <p className="t-body font-medium text-foreground break-words">
-                      {user?.first_name || placeholder}
-                    </p>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="t-label">{t("profile.lastName")}</div>
-                    <p className="t-body font-medium text-foreground break-words">
-                      {user?.last_name || placeholder}
-                    </p>
-                  </div>
                   <div className="min-w-0">
                     <div className="t-label">{t("common.email")}</div>
                     <p className="t-body font-medium text-foreground break-words">
@@ -326,29 +323,37 @@ export default function ProfilePage() {
                 onSubmit={profileForm.handleSubmit(handleProfileSubmit)}
                 className="flex flex-col gap-4"
               >
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    label={t("profile.firstName")}
-                    required
-                    error={tErr(profileForm.formState.errors.first_name?.message)}
-                  >
-                    <Controller
-                      control={profileForm.control}
-                      name="first_name"
-                      render={({ field }) => <Input {...field} />}
-                    />
-                  </FormField>
-                  <FormField
-                    label={t("profile.lastName")}
-                    required
-                    error={tErr(profileForm.formState.errors.last_name?.message)}
-                  >
-                    <Controller
-                      control={profileForm.control}
-                      name="last_name"
-                      render={({ field }) => <Input {...field} />}
-                    />
-                  </FormField>
+                <div className="flex items-start gap-4">
+                  {user && <ProfilePhotoPicker
+                    userId={user.userId}
+                    name={[user.first_name, user.last_name].filter(Boolean).join(" ") || user.name || user.username || user.email}
+                    value={user.picture_url}
+                    onSaved={(picture_url) => applyProfileUpdate({ picture_url })}
+                  />}
+                  <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      label={t("profile.firstName")}
+                      required
+                      error={tErr(profileForm.formState.errors.first_name?.message)}
+                    >
+                      <Controller
+                        control={profileForm.control}
+                        name="first_name"
+                        render={({ field }) => <Input {...field} />}
+                      />
+                    </FormField>
+                    <FormField
+                      label={t("profile.lastName")}
+                      required
+                      error={tErr(profileForm.formState.errors.last_name?.message)}
+                    >
+                      <Controller
+                        control={profileForm.control}
+                        name="last_name"
+                        render={({ field }) => <Input {...field} />}
+                      />
+                    </FormField>
+                  </div>
                 </div>
 
                 <FormField
