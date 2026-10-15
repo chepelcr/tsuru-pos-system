@@ -11,6 +11,7 @@
  * CLAUDE.md §5.1.
  */
 export type NavId =
+  | "guide"
   | "dashboard"
   | "blog"
   | "config"

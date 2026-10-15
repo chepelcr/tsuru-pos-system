@@ -105,6 +105,7 @@ export function NewDocumentButton({
         <button
           onClick={() => setOpen((v) => !v)}
           aria-label={t('documents.newDocument')}
+          data-tour="create-document"
           title={t('documents.newDocument')}
           className={cn(
             'inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-md transition-colors',

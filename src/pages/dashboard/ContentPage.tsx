@@ -209,12 +209,13 @@ export default function ContentPage() {
 
       {/* Page cards — each opens a drawer with that page's sections */}
       <FadeIn>
-        <div className="grid gap-3 sm:grid-cols-2" data-tour="content-pages">
-          {pages.map((page) => {
+        <div className="grid gap-3 sm:grid-cols-2">
+          {pages.map((page, index) => {
             const count = page.sections?.length ?? 0;
             return (
               <button
                 key={page.slug}
+                data-tour={index === 0 ? "content-page" : undefined}
                 type="button"
                 className="card card-hover text-left w-full p-5 flex items-start gap-4 group"
                 onClick={() => {

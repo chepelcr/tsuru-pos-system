@@ -44,6 +44,8 @@ interface UseOverlayLayerOptions {
   panelRef: RefObject<HTMLElement>;
   dismissible: boolean;
   onClose: () => void;
+  /** Spotlight tours must keep nested page scrolling available. */
+  lockScroll?: boolean;
 }
 
 /**
@@ -55,6 +57,7 @@ export function useOverlayLayer({
   panelRef,
   dismissible,
   onClose,
+  lockScroll = true,
 }: UseOverlayLayerOptions) {
   const idRef = useRef(Symbol("overlay"));
   const closeRef = useRef(onClose);
@@ -71,12 +74,13 @@ export function useOverlayLayer({
     const id = idRef.current;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     overlayStack.push(id);
-    lockBodyScroll();
+    if (lockScroll) lockBodyScroll();
 
     const focusFrame = window.requestAnimationFrame(() => {
       const panel = panelRef.current;
       if (!panel || !isTopLayer()) return;
-      const preferred = panel.querySelector<HTMLElement>("[data-overlay-autofocus]");
+      const preferred = panel.hasAttribute("data-overlay-autofocus")
+        ? panel : panel.querySelector<HTMLElement>("[data-overlay-autofocus]");
       const first = preferred ?? panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       (first ?? panel).focus();
     });
@@ -121,10 +125,10 @@ export function useOverlayLayer({
       document.removeEventListener("keydown", handleKeyDown);
       const index = overlayStack.lastIndexOf(id);
       if (index >= 0) overlayStack.splice(index, 1);
-      unlockBodyScroll();
+      if (lockScroll) unlockBodyScroll();
       if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
-  }, [active, panelRef]);
+  }, [active, panelRef, lockScroll]);
 
   return { isTopLayer };
 }

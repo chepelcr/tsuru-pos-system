@@ -25,9 +25,9 @@ function NotificationsBridge({ orgId }: { orgId?: string }) {
 }
 
 import type { NavId } from "./navIds";
-import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 function getActiveNav(location: string): NavId {
+  if (location.startsWith(ROUTES.DASHBOARD_GUIDE)) return "guide";
   if (location.startsWith(ROUTES.DASHBOARD_BLOG)) return "blog";
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
   // Includes /stations/:branch/terminals/:terminal (terminal detail).
@@ -60,6 +60,7 @@ function getActiveNav(location: string): NavId {
 }
 
 const NAV_PATHS: Record<NavId, string> = {
+  guide: ROUTES.DASHBOARD_GUIDE,
   dashboard: ROUTES.DASHBOARD,
   blog: ROUTES.DASHBOARD_BLOG,
   config:    ROUTES.DASHBOARD_SESSIONS,
@@ -127,8 +128,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             {children}
           </DashboardShell>
-          {/* First-login tour: spans pages, so it lives with the shell. */}
-          <OnboardingTour />
           {/* The XML import queue lives here, not in a page: uploads keep going while the user navigates. */}
           <DocumentImportTray orgId={org.id} />
         </ExchangeRateProvider>

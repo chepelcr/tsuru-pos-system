@@ -38,8 +38,9 @@ interface AuthUser {
   role: UserRole;
   /**
    * First-login tour state from GET /profile: null = not finished/skipped yet
-   * (the dashboard runs it), an ISO timestamp once done. Absent until the
-   * profile is loaded, which never triggers the tour.
+   * (the overview offers it), an ISO timestamp once done/skipped. Absent until
+   * the profile is loaded. The tutorial also keeps versioned per-org progress
+   * locally, and explicit replay does not reset this cross-device flag.
    */
   onboarding_tour_completed_at?: string | null;
 }

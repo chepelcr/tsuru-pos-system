@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Spinner } from "@/components/ui";
 import Routes from "@/Routes";
 import { PendingSalesSyncBridge } from "@/components/sync/PendingSalesSyncBridge";
+import { TutorialProvider } from "@/components/onboarding/TutorialProvider";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 export default function App() {
   const { isLoading } = useAuthContext();
@@ -20,7 +22,10 @@ export default function App() {
   return (
     <ThemeProvider>
       <PendingSalesSyncBridge />
-      <Routes />
+      <TutorialProvider>
+        <Routes />
+        <OnboardingTour />
+      </TutorialProvider>
     </ThemeProvider>
   );
 }

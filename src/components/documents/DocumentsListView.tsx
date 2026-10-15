@@ -139,7 +139,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
         searchValue={term}
         onSearchChange={handleSearchTermChange}
         searchPlaceholderKey="documents.searchPlaceholder"
-        statusSlot={<IssuedReceivedToggle />}
+        statusSlot={<div data-tour="documents"><IssuedReceivedToggle /></div>}
         secondary={
           <div className="flex items-center gap-2">
             <DocumentTypesFilter

@@ -97,13 +97,13 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="flex justify-between items-start mb-7 flex-wrap gap-3">
         <div>
-          <h1 className="t-h1 mb-1.5">{t("clients.title")}</h1>
+          <h1 className="t-h1 mb-1.5" data-tour="clients">{t("clients.title")}</h1>
           <p className="t-body text-muted-foreground">
             {pagination ? `${pagination.total_elements} ${t("clients.registered")}` : t("clients.directory")}
           </p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.newClient")}</Button>
+          <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate} data-tour="new-client">{t("clients.newClient")}</Button>
         )}
       </div>
 

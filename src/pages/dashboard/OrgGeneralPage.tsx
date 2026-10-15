@@ -143,7 +143,7 @@ export default function OrgGeneralPage() {
             <Icon name="arrowLeft" size={15} />
             {t("orgSettings.title")}
           </button>
-          <h1 className="t-h1 mb-1">{t("orgSettings.general.title")}</h1>
+          <h1 data-tour="organization" className="t-h1 mb-1">{t("orgSettings.general.title")}</h1>
           <p className="t-body text-muted-foreground">
             {t("orgSettings.general.subtitle")}
           </p>

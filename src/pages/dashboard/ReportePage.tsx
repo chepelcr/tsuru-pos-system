@@ -110,7 +110,7 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
             {/* The organisation, not a session: this variant of the page is the
                 session-free report. The session drawer renders the other one. */}
             <h1 className="t-h1 mb-1.5">{org?.name ?? t("shell.reports")}</h1>
-            <p className="t-body text-muted-foreground">
+            <p className="t-body text-muted-foreground" data-tour="reports">
               {/* The window the figures actually cover. This used to print
                   today's date beside all-time totals, which read as a daily
                   report and was not one. */}

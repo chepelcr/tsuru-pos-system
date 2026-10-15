@@ -7,7 +7,8 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { useUpdateOnboardingTour, useUpdateProfile } from "@/hooks/useProfile";
+import { useUpdateProfile } from "@/hooks/useProfile";
+import { useTutorial } from "@/components/onboarding/TutorialProvider";
 import { usePermissions } from "@/hooks/useRbac";
 import { roleLabel as orgRoleLabel } from "@/lib/rbacI18n";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
@@ -71,27 +72,7 @@ export default function ProfilePage() {
   const { add } = useNotifications();
   const [, navigate] = useLocation();
   const updateProfile = useUpdateProfile();
-  const updateTour = useUpdateOnboardingTour();
-
-  // Clearing the flag is all it takes: the dashboard shell starts the tour
-  // whenever the profile says it is not done.
-  const handleReplayTour = async () => {
-    if (!user?.userId) return;
-    try {
-      await updateTour.mutateAsync({
-        userId: user.userId,
-        data: { onboarding_tour_completed: false },
-      });
-      applyProfileUpdate({ onboarding_tour_completed_at: null });
-      navigate(ROUTES.DASHBOARD);
-    } catch {
-      add({
-        source: "fe",
-        level: "destructive",
-        titleKey: "onboarding.restart.error",
-      });
-    }
-  };
+  const tutorial = useTutorial();
 
   usePageTitle([t("profile.title")]);
 
@@ -568,7 +549,7 @@ export default function ProfilePage() {
       {/* ── First-login tutorial ───────────────────────────────────────── */}
       <Card className="mt-6">
         <CardHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-tour="profile">
             <Icon name="sparkles" size={18} className="text-primary" />
             <CardTitle>{t("onboarding.restart.title")}</CardTitle>
           </div>
@@ -579,8 +560,8 @@ export default function ProfilePage() {
             variant="outline"
             size="sm"
             icon="sparkles"
-            onClick={() => void handleReplayTour()}
-            disabled={updateTour.isPending}
+            onClick={tutorial.replay}
+            disabled={!tutorial.ready}
           >
             {t("onboarding.restart.button")}
           </Button>

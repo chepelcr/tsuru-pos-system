@@ -1,162 +1,85 @@
-import { useCallback, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { driver, type Driver } from "driver.js";
-import "driver.js/dist/driver.css";
-import { useAuthContext } from "@/contexts/AuthContext";
+import { BookOpen, X, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useUpdateOnboardingTour } from "@/hooks/useProfile";
+import { Button } from "@/components/ui";
 import { ROUTES } from "@/routePaths";
-
-/**
- * First-login guided tour. The store's name, logo and phone are captured in
- * onboarding, so the tour covers what is left to make the storefront real: its
- * page content, a first product, and where to see and share it.
- *
- * Each step lives on its own route, so the tour navigates, waits for the step's
- * `data-tour` anchor to mount, and spotlights it (driver.js dims everything
- * else). Finishing or skipping stores `onboarding_tour_completed_at` on the
- * profile; the Profile page's "replay" clears it.
- */
-interface TourStep {
-  route: string;
-  anchor: string;
-  titleKey: string;
-  bodyKey: string;
-}
-
-export const ONBOARDING_TOUR_STEPS: readonly TourStep[] = [
-  {
-    route: ROUTES.DASHBOARD_CONTENT,
-    anchor: "content-pages",
-    titleKey: "onboarding.tour.content.title",
-    bodyKey: "onboarding.tour.content.body",
-  },
-  {
-    route: ROUTES.DASHBOARD_PRODUCTS,
-    anchor: "new-product",
-    titleKey: "onboarding.tour.product.title",
-    bodyKey: "onboarding.tour.product.body",
-  },
-  {
-    route: ROUTES.DASHBOARD,
-    anchor: "view-store",
-    titleKey: "onboarding.tour.store.title",
-    bodyKey: "onboarding.tour.store.body",
-  },
-];
-
-/** How long a step waits for its page to render the anchor before skipping it. */
-const ANCHOR_TIMEOUT_MS = 8000;
-
-function waitForAnchor(anchor: string, signal: AbortSignal): Promise<Element | null> {
-  const selector = `[data-tour="${anchor}"]`;
-  return new Promise((resolve) => {
-    const found = document.querySelector(selector);
-    if (found) return resolve(found);
-
-    const observer = new MutationObserver(() => {
-      const el = document.querySelector(selector);
-      if (el) finish(el);
-    });
-    const timer = window.setTimeout(() => finish(null), ANCHOR_TIMEOUT_MS);
-    function finish(el: Element | null) {
-      observer.disconnect();
-      window.clearTimeout(timer);
-      resolve(el);
-    }
-    signal.addEventListener("abort", () => finish(null), { once: true });
-    observer.observe(document.body, { childList: true, subtree: true });
-  });
-}
+import { useTutorial } from "./TutorialProvider";
+import { TutorialSpotlight } from "./TutorialSpotlight";
 
 export function OnboardingTour() {
-  const { user, applyProfileUpdate } = useAuthContext();
+  const tour = useTutorial();
   const { t } = useLanguage();
-  const [, navigate] = useLocation();
-  const updateTour = useUpdateOnboardingTour();
-  const running = useRef(false);
-
-  // Only an explicit null starts it: undefined means the profile is not loaded.
-  const pending = !!user && user.onboarding_tour_completed_at === null;
-
-  const complete = useCallback(() => {
-    if (!user) return;
-    applyProfileUpdate({ onboarding_tour_completed_at: new Date().toISOString() });
-    updateTour.mutate({ userId: user.userId, data: { onboarding_tour_completed: true } });
-  }, [user, applyProfileUpdate, updateTour]);
-
-  useEffect(() => {
-    if (!pending || running.current) return;
-    running.current = true;
-    const abort = new AbortController();
-    let active: Driver | null = null;
-
-    const show = async (index: number) => {
-      if (abort.signal.aborted) return;
-      if (index >= ONBOARDING_TOUR_STEPS.length) {
-        complete();
-        return;
-      }
-      const step = ONBOARDING_TOUR_STEPS[index];
-      navigate(step.route);
-      const element = await waitForAnchor(step.anchor, abort.signal);
-      if (abort.signal.aborted) return;
-      // A page without its anchor (e.g. no permission) skips to the next step.
-      if (!element) return show(index + 1);
-
-      const isLast = index === ONBOARDING_TOUR_STEPS.length - 1;
-      let advancing = false;
-      active = driver({
-        overlayOpacity: 0.7,
-        stagePadding: 8,
-        stageRadius: 10,
-        allowClose: true,
-        // A stray click on the dimmed page must not throw the whole tour away;
-        // skipping is the popover's X or Esc.
-        overlayClickBehavior: () => {},
-        popoverClass: "tsuru-tour",
-        showButtons: index > 0 ? ["previous", "next", "close"] : ["next", "close"],
-        nextBtnText: isLast ? t("onboarding.tour.done") : t("common.next"),
-        prevBtnText: t("common.back"),
-        onNextClick: () => {
-          advancing = true;
-          active?.destroy();
-          void show(index + 1);
-        },
-        onPrevClick: () => {
-          advancing = true;
-          active?.destroy();
-          void show(index - 1);
-        },
-        // Close (X, Esc) = skip: the tour never comes back on
-        // its own, and it can be replayed from the profile.
-        onDestroyed: () => {
-          if (!advancing && !abort.signal.aborted) complete();
-        },
-      });
-      active.highlight({
-        element,
-        popover: {
-          title: t(step.titleKey),
-          description:
-            `<p>${t(step.bodyKey)}</p>` +
-            `<p class="tsuru-tour-progress">${t("onboarding.tour.progress", {
-              current: index + 1,
-              total: ONBOARDING_TOUR_STEPS.length,
-            })}</p>`,
-        },
-      });
-    };
-
-    void show(0);
-    return () => {
-      abort.abort();
-      active?.destroy();
-      running.current = false;
-    };
-    // Starts once per pending state; navigation inside the tour must not restart it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pending]);
-
-  return null;
+  const [location, navigate] = useLocation();
+  const inDashboard = location === ROUTES.DASHBOARD || location.startsWith(`${ROUTES.DASHBOARD}/`);
+  if (!tour.ready || !inDashboard) return null;
+  const welcome = tour.progress.status === "welcome" && location === ROUTES.DASHBOARD;
+  if (!welcome && tour.progress.status !== "active") return null;
+  const step = tour.current;
+  if (!step) return null;
+  const onRoute = location === step.route;
+  const last = tour.index === tour.steps.length - 1;
+  return (
+    <TutorialSpotlight anchor={welcome ? undefined : step.anchor} stepId={welcome ? "welcome" : step.id}
+      onRoute={onRoute} onClose={tour.dismiss}>
+      {(missingTarget) => <>
+      <div className="tutorial-heading">
+        <span className="tutorial-eyebrow"><BookOpen size={16} aria-hidden="true" />{t("onboarding.label")}</span>
+        <button type="button" className="tutorial-close" onClick={tour.dismiss} aria-label={t("onboarding.close")}>
+          <X size={18} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="tutorial-copy" data-tutorial-scroll="">
+        <h2 id="tutorial-title" className="t-h2">{t(welcome ? "onboarding.welcome.title" : `onboarding.step.${step.id}.title`)}</h2>
+        <p id="tutorial-description" className="t-body text-muted-foreground">
+          {t(welcome ? "onboarding.welcome.body" : `onboarding.step.${step.id}.body`)}
+        </p>
+        {welcome ? (
+          <p className="t-sm text-muted-foreground">{t("onboarding.welcome.count", { count: tour.steps.length })}</p>
+        ) : (
+          <>
+            <div className="tutorial-example">
+              <p className="t-label text-primary">{t("onboarding.example")}</p>
+              <p className="t-sm">{t(`onboarding.step.${step.id}.example`)}</p>
+            </div>
+            <p className="t-sm text-muted-foreground"><strong className="text-foreground">{t("onboarding.result")} </strong>
+              {t(`onboarding.step.${step.id}.result`)}</p>
+            {!onRoute && (
+              <div className="tutorial-route-notice" role="status">
+                <p className="t-sm">{t("onboarding.away")}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => navigate(step.route)}>{t("onboarding.return")}</Button>
+              </div>
+            )}
+            {missingTarget && <p className="t-sm text-muted-foreground" role="status">{t("onboarding.missing")}</p>}
+            <p className="tutorial-progress-label" aria-live="polite">
+              {t("onboarding.tour.progress", { current: tour.index + 1, total: tour.steps.length })}
+            </p>
+            <progress className="tutorial-progress" value={tour.index + 1} max={tour.steps.length}
+              aria-label={t("onboarding.progressLabel")} />
+          </>
+        )}
+        <button type="button" className="tutorial-guide-link" onClick={tour.openGuide}>
+          <BookOpen size={14} aria-hidden="true" />{t("onboarding.guide.open")}
+        </button>
+      </div>
+      <footer className="tutorial-footer">
+        {welcome ? (
+          <>
+            <Button type="button" variant="ghost" onClick={tour.dismiss}>{t("onboarding.later")}</Button>
+            <Button type="button" onClick={tour.start}>{t("onboarding.start")}<ArrowRight size={16} aria-hidden="true" /></Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" variant="outline" disabled={tour.index === 0} onClick={() => tour.move(-1)}>
+              <ArrowLeft size={16} aria-hidden="true" />{t("common.back")}
+            </Button>
+            <Button type="button" onClick={() => tour.move(1)}>
+              {t(last ? "onboarding.tour.done" : "common.next")}
+              {last ? <Check size={16} aria-hidden="true" /> : <ArrowRight size={16} aria-hidden="true" />}
+            </Button>
+          </>
+        )}
+      </footer>
+      </>}
+    </TutorialSpotlight>
+  );
 }

@@ -249,7 +249,7 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex justify-between items-start mb-7 flex-wrap gap-3">
         <div>
-          <h1 className="t-h1 mb-1.5">{t("products.title")}</h1>
+          <h1 className="t-h1 mb-1.5" data-tour="products">{t("products.title")}</h1>
           <p className="t-body text-muted-foreground">
             {pagination ? `${pagination.total_elements} productos registrados` : t("products.subtitle")}
           </p>

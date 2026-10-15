@@ -5,6 +5,7 @@
 /* ============ POLLOS PORTEÑOS — Design System ============ */
 
 :root {
+  --tutorial-scrim: 20 14% 8%;
   --brand-orange-500: 23 88% 47%;
   --brand-orange-600: 23 90% 40%;
 
@@ -69,6 +70,7 @@
   --z-tooltip: 100;
   --z-drawer: 200;
   --z-drawer-modal: 210;
+  --z-tutorial: 220;
 
   /* Shadow tokens */
   --shadow-card: 0 1px 2px rgba(0,0,0,0.06);
@@ -125,6 +127,7 @@
   --z-tooltip: 100;
   --z-drawer: 200;
   --z-drawer-modal: 210;
+  --z-tutorial: 220;
 
   --shadow-card: 0 1px 2px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4);
@@ -853,54 +856,32 @@
   }
 }
 
-/* ── First-login tour (driver.js popover, components/onboarding/OnboardingTour) ──
-   driver.js ships its own light-only colors; these rules put the popover on the
-   design-system tokens so it follows the theme and dark mode. */
-.driver-popover.tsuru-tour {
-  background: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-  border: 1px solid hsl(var(--border));
-  border-radius: calc(var(--radius) + 4px);
-  box-shadow: var(--shadow-modal);
-  font-family: var(--font-sans);
-  max-width: 340px;
-  padding: 18px 18px 14px;
-}
-.driver-popover.tsuru-tour .driver-popover-title {
-  font-family: var(--font-display);
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: hsl(var(--foreground));
-}
-.driver-popover.tsuru-tour .driver-popover-description {
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: hsl(var(--muted-foreground));
-}
-.driver-popover.tsuru-tour .tsuru-tour-progress {
-  margin-top: 10px;
-  font-size: 0.75rem;
-  color: hsl(var(--muted-foreground));
-}
-.driver-popover.tsuru-tour .driver-popover-footer button {
-  font-family: var(--font-sans);
-  text-shadow: none;
-  border-radius: var(--radius);
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--card));
-  color: hsl(var(--foreground));
-  padding: 6px 12px;
-  font-size: 0.8125rem;
-}
-.driver-popover.tsuru-tour .driver-popover-footer .driver-popover-next-btn {
-  background: hsl(var(--primary));
-  border-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-}
-.driver-popover.tsuru-tour .driver-popover-close-btn {
-  color: hsl(var(--muted-foreground));
-}
-.driver-popover.tsuru-tour .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: hsl(var(--card)); }
-.driver-popover.tsuru-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: hsl(var(--card)); }
-.driver-popover.tsuru-tour .driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: hsl(var(--card)); }
-.driver-popover.tsuru-tour .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: hsl(var(--card)); }
+/* Guided tutorial: portal layers share viewport coordinates with the live target. */
+.tutorial-overlay { position: fixed; z-index: var(--z-tutorial); pointer-events: none; }
+.tutorial-backdrop { position: absolute; inset: 0; pointer-events: auto; }
+.tutorial-backdrop path { fill: hsl(var(--tutorial-scrim) / 0.72); }
+.tutorial-click-shield { fill: transparent; pointer-events: all; }
+.tutorial-highlight { position: absolute; border: 2px solid hsl(var(--primary)); border-radius: var(--radius); box-shadow: 0 0 0 4px hsl(var(--primary) / 0.18); pointer-events: none; }
+.tutorial-panel { position: absolute; display: flex; flex-direction: column; overflow: hidden; pointer-events: auto; background: hsl(var(--card)); color: hsl(var(--card-foreground)); border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) + 8px); box-shadow: var(--shadow-modal); }
+.tutorial-panel:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 3px; }
+.tutorial-panel button:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.tutorial-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 12px 0 20px; flex-shrink: 0; }
+.tutorial-eyebrow { display: flex; align-items: center; gap: 8px; color: hsl(var(--accent-foreground)); font-size: 0.75rem; font-weight: 600; }
+.tutorial-close { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: var(--radius); color: hsl(var(--muted-foreground)); }
+.tutorial-close:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+.tutorial-copy { padding: 0 20px 20px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.tutorial-copy h2 { margin: 0; text-wrap: balance; }
+.tutorial-example { background: hsl(var(--accent)); border: 1px solid hsl(var(--border)); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.tutorial-example .text-primary { color: hsl(var(--accent-foreground)); }
+.tutorial-progress-label { font-size: 0.75rem; color: hsl(var(--muted-foreground)); }
+.tutorial-progress { display: block; appearance: none; width: 100%; height: 4px; border: 0; border-radius: var(--radius); overflow: hidden; background: hsl(var(--muted)); color: hsl(var(--primary)); }
+.tutorial-progress::-webkit-progress-bar { background: hsl(var(--muted)); }
+.tutorial-progress::-webkit-progress-value { background: hsl(var(--primary)); }
+.tutorial-progress::-moz-progress-bar { background: hsl(var(--primary)); }
+.tutorial-footer { display: flex; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid hsl(var(--border)); background: hsl(var(--card)); flex-shrink: 0; }
+.tutorial-footer .btn { min-height: 44px; }
+.tutorial-footer .btn-primary { background: hsl(var(--accent-foreground)); border-color: hsl(var(--accent-foreground)); color: hsl(var(--accent)); }
+.tutorial-guide-link { display: inline-flex; align-items: center; align-self: flex-start; gap: 6px; min-height: 44px; font-size: 0.8125rem; color: hsl(var(--accent-foreground)); text-decoration: underline; text-underline-offset: 3px; }
+.tutorial-route-notice { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
+.tutorial-guide-number { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: var(--radius); background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); font-weight: 600; font-size: 0.875rem; }
+.tutorial-replay { min-width: 44px; min-height: 44px; }

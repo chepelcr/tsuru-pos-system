@@ -9,6 +9,7 @@ export const ROUTES = {
   ACCEPT_INVITE: "/join/:token",
 
   DASHBOARD: "/dashboard",
+  DASHBOARD_GUIDE: "/dashboard/guide",
   DASHBOARD_BLOG: "/dashboard/blog",
   DASHBOARD_MEMBERS: "/dashboard/members",
   DASHBOARD_ROLES: "/dashboard/roles",

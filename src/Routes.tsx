@@ -56,6 +56,7 @@ const OrgContactPage = lazy(() => import("@/pages/dashboard/OrgContactPage"));
 const OrgPaymentPage = lazy(() => import("@/pages/dashboard/OrgPaymentPage"));
 const OrgShippingPage = lazy(() => import("@/pages/dashboard/OrgShippingPage"));
 const ProfilePage = lazy(() => import("@/pages/dashboard/ProfilePage"));
+const TutorialGuidePage = lazy(() => import("@/pages/dashboard/TutorialGuidePage"));
 const ProgramsPage = lazy(() => import("@/pages/dashboard/ProgramsPage"));
 const ContentPage = lazy(() => import("@/pages/dashboard/ContentPage"));
 const GalleryPage = lazy(() => import("@/pages/dashboard/GalleryPage"));
@@ -506,6 +507,8 @@ export default function Routes() {
       />
 
       {/* Profile — available to every authenticated role; before the catch-all dashboard route */}
+      <Route path={ROUTES.DASHBOARD_GUIDE}
+        component={() => <DashboardPage><TutorialGuidePage /></DashboardPage>} />
       <Route
         path={ROUTES.PROFILE}
         component={() => <DashboardPage><ProfilePage /></DashboardPage>}

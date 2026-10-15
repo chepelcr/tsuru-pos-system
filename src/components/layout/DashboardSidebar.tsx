@@ -10,6 +10,7 @@ import { documentEditorPath, ROUTES } from "@/routePaths";
 import type { EditorDocTypeCode, EditorDocumentTypeInfo } from "@/types/invoice";
 import { Icon, Logo } from "@/components/ui";
 import { roleLabel } from "@/lib/rbacI18n";
+import { BookOpen } from "lucide-react";
 
 import type { NavId } from "./navIds";
 
@@ -200,6 +201,10 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
       {/* ── SCROLLABLE NAV (only this region scrolls) ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-3 flex flex-col gap-0.5">
         <div className="t-label px-2.5 pb-1.5">{t("shell.navigation")}</div>
+        <button type="button" className={`sidebar-item ${active === "guide" ? "active" : ""}`}
+          onClick={() => goNav("guide")}>
+          <BookOpen size={16} aria-hidden="true" />{t("onboarding.guide.title")}
+        </button>
 
         {/* Permissions unresolved: nothing is offered until the server says so. */}
         {!permsReady && !permsError && (

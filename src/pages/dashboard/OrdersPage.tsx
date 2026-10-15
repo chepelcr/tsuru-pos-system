@@ -208,7 +208,7 @@ export default function OrdersPage() {
     <div className="px-6 pt-6 pb-12 max-w-[1400px] mx-auto fade-in">
       <div className="flex justify-between items-start mb-5 flex-wrap gap-3">
         <div>
-          <h1 className="t-h1 mb-1.5">{t('orders.title')}</h1>
+          <h1 className="t-h1 mb-1.5" data-tour="orders">{t('orders.title')}</h1>
           <p className="t-body text-muted-foreground">{t('orders.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

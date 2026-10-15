@@ -854,3 +854,37 @@ misconfiguration is worse than a red build.
 ## 14. Where the historical context lives
 
 The folder has many planning/migration `.md` files (CLIENT_FORM_*, FORMLABEL_MIGRATION_*, LINE_DETAIL_*, TAX_*, POS_PRODUCT_FORM_*, etc.). Treat them as historical — what was tried, decided, or migrated. **This CLAUDE.md is the canonical current-state doc**; the others are point-in-time records. Don't trust them over the live code, but they explain *why* something is the way it is.
+
+## 15. Guided tutorial and permanent guide
+
+`App.tsx` mounts `TutorialProvider` and `OnboardingTour` above `Routes`. Keep them
+there: separate Wouter routes recreate `DashboardLayout`, so that layout does not
+provide a stable controller lifetime. `TutorialSpotlight` portals to `document.body`
+to avoid transformed page-entry wrappers.
+
+`components/onboarding/tutorialModel.ts` resolves the real workflows using the same
+RBAC checks and creation-menu availability as the application. Steps have stable IDs,
+routes and explicit `data-tour` anchors. Keep IDs independent of translated copy and
+array position. Missing controls retain navigation; the renderer never looks for an
+anchor on an unrelated route or silently skips after a timeout. The cutout is a
+teaching highlight; background work cannot be submitted from inside the tutorial.
+
+Progress lives under `tsuru:tutorial:v2:<userId>:<orgId>` with unseen, welcome, active,
+dismissed and complete states. Existing server completions suppress automatic welcome;
+replay works locally without resetting the server flag. The server completion flag
+remains a best-effort cross-device acknowledgement. Bump the local version only for a
+material tutorial change and define legacy behavior explicitly.
+
+The header book button, Profile and `/dashboard/guide` replay the tutorial. The guide
+uses the same filtered workflows and English/Spanish task examples. Its sidebar item
+is available to every authenticated role, like Profile, rather than gated by a
+business-module permission. There is no assistant composer in this app.
+
+`useOverlayLayer` coordinates focus/Escape with other dialogs. The tutorial opts out
+of body scroll locking so nested target scrolling remains possible, uses
+`data-overlay-autofocus` on its instruction region, and makes the application root
+inert until the dialog closes. `--z-tutorial` is the tutorial's shared layer token.
+
+Regression tests live beside the provider, spotlight and workflow model. When adding
+a step, add both locales' title/body/example/result, its actual page anchor, permission
+filtering and meaningful workflow coverage.

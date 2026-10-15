@@ -164,7 +164,7 @@ export default function SessionsPage() {
       {/* Header */}
       <div className="flex justify-between items-start mb-5 flex-wrap gap-3">
         <div>
-          <h1 className="t-h1 mb-1.5">{t("session.title")}</h1>
+          <h1 className="t-h1 mb-1.5" data-tour="sessions">{t("session.title")}</h1>
           <p className="t-body text-muted-foreground">{t("session.manageActiveSessions")}</p>
         </div>
         {canCreateSessions && (

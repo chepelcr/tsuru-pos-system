@@ -15,6 +15,8 @@ import { NewDocumentButton } from "@/components/documents/NewDocumentButton";
 import { NotificationsBell } from "@/components/layout/NotificationsBell";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { syncPendingSales } from "@/services/pendingSalesSync";
+import { BookOpen } from "lucide-react";
+import { useTutorial } from "@/components/onboarding/TutorialProvider";
 
 interface DashboardHeaderProps {
   /** Mobile hamburger → opens left sidebar drawer */
@@ -33,6 +35,7 @@ export function DashboardHeader({
   const { dark, toggle: toggleDark } = useDarkMode();
   const { language, toggle: toggleLanguage } = useLanguageSwitch();
   const { t } = useLanguage();
+  const tutorial = useTutorial();
   const openCount = useDocumentStore((s) => s.open_documents.length);
   const maxVisible = useMaxVisibleTabs();
   // On md+ the toolbar shows the first `maxVisible` open tabs (2 with the
@@ -93,6 +96,7 @@ export function DashboardHeader({
       action: () => void handleSync(),
     },
     { label: t("shell.profile"), icon: "user", action: () => setLocation(ROUTES.PROFILE) },
+    { label: t("onboarding.guide.title"), icon: "fileText", action: () => setLocation(ROUTES.DASHBOARD_GUIDE) },
     { label: t("shell.switchOrg"), icon: "store", action: () => setLocation(ROUTES.SELECT_ORG) },
     // Support moved out of the sidebar footer: it is an errand the person runs,
     // not a section of the app, and the sidebar hid it whenever it collapsed.
@@ -127,6 +131,11 @@ export function DashboardHeader({
           Sync moved into the account menu: it is the person's session, not this
           page, and as a toolbar button it had no onClick and did nothing. */}
       <div className="flex items-center gap-2 shrink-0">
+        <button type="button" className="btn btn-ghost btn-sm btn-icon tutorial-replay"
+          data-tour="tutorial-replay" aria-label={t("onboarding.restart.button")}
+          title={t("onboarding.restart.button")} onClick={tutorial.replay} disabled={!tutorial.ready}>
+          <BookOpen size={18} aria-hidden="true" />
+        </button>
         {/* New Document button — always visible; collapses to icon-only on sm+ */}
         <NewDocumentButton />
 
@@ -186,6 +195,7 @@ export function DashboardHeader({
               className="btn btn-ghost btn-sm btn-icon"
               type="button"
               aria-label={t("profile.openAria")}
+              data-tour="profile-menu"
             >
               <UserAvatar src={user?.picture_url} name={accountName} />
             </button>

@@ -164,7 +164,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Orders or documents — not the same population. An order may never be
               billed, and a document may have no order behind it. */}
-          <div className="tabs" role="tablist" aria-label={t("dash.source")}>
+          <div className="tabs" role="tablist" aria-label={t("dash.source")} data-tour="overview">
             {(["orders", "documents"] as const).map((option) => (
               <button
                 key={option}
