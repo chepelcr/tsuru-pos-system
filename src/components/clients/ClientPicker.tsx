@@ -6,6 +6,7 @@ import { useClients, clientDisplayName } from "@/hooks/useClients";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { buildClientSearch } from "@/lib/search";
+import { formatIdentification } from "@/lib/identification";
 import { clientToSearchResult } from "@/hooks/useClientSearch";
 import type { ClientSearchResult } from "@/hooks/useClientSearch";
 
@@ -74,7 +75,9 @@ export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, vari
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-semibold text-foreground truncate">{name}</div>
               {c.identification?.number && (
-                <div className="text-[11px] text-muted-foreground">{c.identification.number}</div>
+                <div className="text-[11px] text-muted-foreground">
+                  {formatIdentification(c.identification.code, c.identification.number)}
+                </div>
               )}
             </div>
             {selected && <Icon name="check" size={14} className="text-accent-rose flex-shrink-0" />}

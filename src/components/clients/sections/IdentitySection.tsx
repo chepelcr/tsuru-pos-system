@@ -5,6 +5,7 @@ import { FormLabel, Select } from "@/components/ui";
 import { useAllCustomerTypes, useAllIdentifications, useAllCountries } from "@/hooks/useDataApi";
 import { dataApiClient } from "@/services/data-api";
 import { CountryISO, CustomerType, IdTypeCode, allowedIdCodes } from "@/lib/enums";
+import { formatIdentification } from "@/lib/identification";
 import { applyIdMask, validateIdLength, getIdPlaceholder } from "@/utils/idValidation";
 import type { CreateClientDto } from "@/hooks/useClients";
 
@@ -239,7 +240,7 @@ export function IdentitySection({
               } ${idComplete && isCR ? "!bg-primary/[0.06] !border-[1.5px] !border-primary/35" : ""} ${
                 !canEditCriticalFields ? "cursor-not-allowed opacity-60" : ""
               }`}
-              value={form.identification?.number ?? ""}
+              value={formatIdentification(idCode, form.identification?.number)}
               onChange={canEditCriticalFields ? (e) => handleIdNumberChange(e.target.value) : undefined}
               placeholder={getIdPlaceholder(idCode)}
               disabled={!canEditCriticalFields || idComplete || lookingUpTaxpayer}

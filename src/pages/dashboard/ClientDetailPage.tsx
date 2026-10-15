@@ -15,6 +15,7 @@ import {
 import { ClientDrawerForm } from "@/components/clients/ClientDrawerForm";
 import { usePermissions } from "@/hooks/useRbac";
 import { ID_TYPE_SHORT, ID_TYPE_LABEL } from "@/lib/enums";
+import { formatIdentification } from "@/lib/identification";
 import { Card, Icon, Button, Badge, Menu } from "@/components/ui";
 import { initials, avatarColor } from "@/utils/avatar";
 import { ClientNotes } from "@/components/clients/ClientNotes";
@@ -128,6 +129,7 @@ export default function ClientDetailPage({ clientId }: Props) {
   const [bg, fg] = avatarColor(displayName);
   const idCode  = client?.identification?.code;
   const idShort = idCode ? ID_TYPE_SHORT[idCode] : undefined;
+  const displayId = formatIdentification(idCode, client?.identification?.number);
   const phone = formatPhone(client?.phone);
   const isActive = client?.status === 1;
 
@@ -272,7 +274,7 @@ export default function ClientDetailPage({ clientId }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               {idShort && client.identification?.number && (
                 <span className="bg-accent-rose-soft text-accent-rose border border-accent-rose-border px-2 py-0.5 rounded-[5px] text-[11px] font-bold">
-                  {idShort} · {client.identification.number}
+                  {idShort} · {displayId}
                 </span>
               )}
               <Badge variant={isActive ? "success" : "secondary"}>
@@ -329,7 +331,7 @@ export default function ClientDetailPage({ clientId }: Props) {
             {hasIdentity && (
               <Section title={t("clients.identity")} icon="user">
                 {idCode && <InfoRow icon="fileText" label={t("clients.idType")} value={ID_TYPE_LABEL[idCode] ?? idCode} />}
-                {client.identification?.number && <InfoRow icon="copy" label={t("clients.idNumber")} value={client.identification.number} />}
+                {client.identification?.number && <InfoRow icon="copy" label={t("clients.idNumber")} value={displayId} />}
                 {client.client_gln && <InfoRow icon="layers" label={t("clients.gln")} value={client.client_gln} />}
               </Section>
             )}

@@ -9,6 +9,7 @@
  *   02  Cédula Jurídica  10 digits    →  X-XXX-XXXXXX    (e.g. 3-101-123456)
  *   03  DIMEX            11–12 digits →  unformatted (raw digits)
  *   04  NITE             10 digits    →  unformatted (raw digits)
+ *   05  Passport         variable     →  unchanged
  *
  * `formatIdentification` always returns a readable string. `unmaskIdentification`
  * strips everything that isn't a digit. `expectedLengthForCode` returns the
@@ -27,15 +28,16 @@ export function unmaskIdentification(value: string | null | undefined): string {
 /**
  * Format raw digits with the canonical CR dash layout for the given code.
  * If the input is shorter than expected, formats what's there and lets the user
- * keep typing. If the code has no mask (03, 04, unknown), the raw value is
+ * keep typing. If the code has no mask (03, 04, 05, unknown), the raw value is
  * returned unchanged.
  */
 export function formatIdentification(code: string | null | undefined, raw: string | null | undefined): string {
-  const digits = unmaskIdentification(raw);
-  if (!digits) return "";
+  if (!raw) return "";
 
   switch (code) {
     case "01": {
+      const digits = unmaskIdentification(raw);
+      if (!digits) return "";
       // 9 digits → X-XXXX-XXXX
       const a = digits.slice(0, 1);
       const b = digits.slice(1, 5);
@@ -43,6 +45,8 @@ export function formatIdentification(code: string | null | undefined, raw: strin
       return [a, b, c].filter(Boolean).join("-");
     }
     case "02": {
+      const digits = unmaskIdentification(raw);
+      if (!digits) return "";
       // 10 digits → X-XXX-XXXXXX
       const a = digits.slice(0, 1);
       const b = digits.slice(1, 4);
@@ -52,7 +56,7 @@ export function formatIdentification(code: string | null | undefined, raw: strin
     case "03":
     case "04":
     default:
-      return digits;
+      return raw;
   }
 }
 

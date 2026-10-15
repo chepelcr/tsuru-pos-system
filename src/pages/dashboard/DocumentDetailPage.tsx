@@ -14,6 +14,7 @@ import type { SaleDocument, SalePayment } from '@/types/invoice';
 import type { LineDetail } from '@/types/lineDetail';
 import type { SaleReference } from '@/types/reference';
 import { fmtAmount } from '@/lib/utils';
+import { formatIdentification } from '@/lib/identification';
 import { downloadFromUrl } from '@/lib/downloadUtils';
 import { Card, Icon, Badge, EmptyState, Button, Menu, type MenuItem } from '@/components/ui';
 import { DocumentActionModal } from '@/components/documents/DocumentActionModal';
@@ -120,7 +121,7 @@ function PartyCard({ title, party, labels }: { title: string; party?: SaleReceiv
     <div className="t-h4 mb-2 break-words">{party.name ?? '—'}</div>
     {party.trade_name && <PairRow label={t('documents.detail.tradeName')} value={party.trade_name} />}
     {party.identification?.number && (
-      <PairRow label={labels.identificationType(party.identification.code)} value={<span className="font-mono">{party.identification.number}</span>} />
+      <PairRow label={labels.identificationType(party.identification.code)} value={<span className="font-mono">{formatIdentification(party.identification.code, party.identification.number)}</span>} />
     )}
     {party.customer_type_code && <PairRow label={t('documents.detail.customerType')} value={labels.customerType(party.customer_type_code)} />}
     {party.email && <PairRow label={t('common.email')} value={party.email} />}
@@ -277,7 +278,9 @@ function LineItems({ sale, labels }: { sale: SaleDocument; labels: DocumentCatal
                       {charge.other_person?.name && (
                         <div className="t-xs text-muted-foreground">
                           {charge.other_person.name}
-                          {charge.other_person.identification?.number ? ` · ${charge.other_person.identification.number}` : ''}
+                          {charge.other_person.identification?.number
+                            ? ` · ${formatIdentification(charge.other_person.identification.code, charge.other_person.identification.number)}`
+                            : ''}
                         </div>
                       )}
                     </td>

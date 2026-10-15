@@ -3,6 +3,7 @@ import { FadeIn } from "@/components/ui/FadeIn";
 import { useUpdateClientStatus, clientDisplayName, formatPhone, type Client } from "@/hooks/useClients";
 import { usePermissions } from "@/hooks/useRbac";
 import { ID_TYPE_SHORT } from "@/lib/enums";
+import { formatIdentification } from "@/lib/identification";
 import { initials, avatarColor } from "@/utils/avatar";
 
 interface ClientCardProps {
@@ -25,6 +26,7 @@ export function ClientCard({ client, orgId, onNavigate, onEdit, onToggleActive, 
   const displayName = clientDisplayName(client);
   const [bg, fg] = avatarColor(displayName);
   const idShort = client.identification?.code ? ID_TYPE_SHORT[client.identification.code] : undefined;
+  const displayId = formatIdentification(client.identification?.code, client.identification?.number);
   const phone = formatPhone(client.phone);
   const isActive = client.status === 1;
 
@@ -61,7 +63,7 @@ export function ClientCard({ client, orgId, onNavigate, onEdit, onToggleActive, 
                 <span className="bg-accent-rose-soft text-accent-rose border border-accent-rose-border px-1.5 py-px rounded-sm text-[10px] font-bold">
                   {idShort}
                 </span>
-                <span className="text-[11px] text-muted-foreground">{client.identification.number}</span>
+                <span className="text-[11px] text-muted-foreground">{displayId}</span>
               </div>
             ) : (
               <div className="mt-1">
