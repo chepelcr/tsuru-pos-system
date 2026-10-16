@@ -67,7 +67,7 @@ export default function DashboardShell({
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-dvh flex">
       <div className={`dashboard-sidebar-full sticky top-0 h-screen flex-shrink-0 overflow-hidden z-50 bg-card transition-[width] duration-[250ms] ease-out ${sidebarCollapsed ? "w-0" : "w-60"}`}>
         <DashboardSidebar active={active} onNav={handleNav} />
       </div>
@@ -99,7 +99,7 @@ export default function DashboardShell({
           onDocsClick={() => right.setOpen(!right.open)}
           docsOpen={right.open}
         />
-        <main className="flex-1">{children}</main>
+        <main className="flex flex-1 flex-col min-w-0">{children}</main>
       </div>
     </div>
   );

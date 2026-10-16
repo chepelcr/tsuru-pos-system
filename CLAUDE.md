@@ -93,7 +93,7 @@ artifact, so `pnpm run build` locally only produces `dist/` for inspection.
 
 A Vite + React 18 + TypeScript single-page app — a **standalone POS + electronic-invoicing system** (historically incubated under `BeautyMarket/templates/`, now its own repo `chepelcr/tsuru-pos-system`). It serves as both:
 - **POS workstation** (`/dashboard/pos`, `/pos/*`) — cashier-facing checkout flow
-- **Admin dashboard** (`/dashboard/*`) — products, clients, sessions, stations, electronic invoicing (documents), assignments, reports
+- **Admin dashboard** (`/dashboard/*`) — products, clients, sessions, branches, electronic invoicing (documents), assignments, reports
 
 It is deployed as a **single** Pages site at `app.tsuru.jcampos.dev`, serving every organization
 — the org is resolved from the signed-in user's membership, not from the hostname. (It was once
@@ -214,6 +214,11 @@ beneath the badge on the right. Keep the badge no taller than the line height.
 ### 3.4 Layout helpers (in index.css)
 
 - `.session-page` — page wrapper (`max-w-1280` + responsive padding)
+- `.dashboard-page` — stretches route content through the flex shell. A direct
+  child with a direct `.list-pagination` footer becomes a full-height list;
+  its footer consumes spare space above it without stretching the cards.
+  Nested list/picker footers keep their container's own height. Documents keep
+  pagination as a non-scrolling sibling of the list content.
 - `.grid-session`, `.grid-form`, `.grid-member` — common grid templates with responsive breakpoints
 - `.tabs-container` — scroll-overflow wrapper for tab bars
 - `.docs-toolbar` — container-query toolbar for the documents page
@@ -331,7 +336,9 @@ LOGIN              /login
 SELECT_ORG         /organizations/select
 DASHBOARD          /dashboard          → DashboardPage
 DASHBOARD_SESSIONS /dashboard/sessions → SessionsPage
-DASHBOARD_STATIONS /dashboard/stations → PuestosPage
+DASHBOARD_BRANCHES /dashboard/branches → BranchesPage
+DASHBOARD_BRANCH_TYPES /dashboard/branch-types → BranchTypesPage (admin/branch-types CRUD)
+Legacy /dashboard/stations links redirect to /dashboard/branches.
 DASHBOARD_PRODUCTS /dashboard/products → ProductsPage (+ /:id ProductDetailPage)
 DASHBOARD_REPORTS  /dashboard/reports  → ReportePage
 DASHBOARD_REPORTS_IVA /dashboard/reports/iva → IvaReportPage (declaración de IVA, D-150)
@@ -358,7 +365,7 @@ The RBAC catalog in `be/management-be/src/seeds/rbac-seed.ts` **mirrors this sid
 2. Map it in `be/management-be/src/seeds/rbac-seed.ts`: the module, its submodules, **all its grantable actions** (`submoduleActionMatrix`), and the system-role grants (`rolePermissionMatrix`).
 3. Apply the idempotent catalog seed in management-be (`npm run db:seed`); `src/scripts/run-rbac-reseed.ts` is the re-run path when rows already exist.
 
-Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. the manual order (`PM`) is always offered, gated on `commercial/create/orders`, while the electronic types need `registered-organization` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations, **consecutives** — read/update only; update is the audited raise-only counter correction, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`; **historical** — the Hacienda ledger, `read`/`export`/`update`).
+Current mapping: `panel`(overview) · `documents`(emitted, received — **POS belongs here**: a POS sale = an emitted document; there is no separate `pos` module. the manual order (`PM`) is always offered, gated on `commercial/create/orders`, while the electronic types need `registered-organization` — see `useFiscalMode`) · `commercial`(products, categories, clients, orders, confirmations) · `admin`(organization, stations [Sucursales], branch-types [Tipos de sucursal; CRUD], **consecutives** — read/update only; update is the audited raise-only counter correction, members, roles, sessions) · `organization`(fiscal-info, hacienda, notifications, theme, general, branding, contact, payment, shipping, plantilla) · `storefront`(content, gallery, templates, deployments) · `reports`(general, **iva** — the D-150 declaration report; `read` + `export`; **historical** — the Hacienda ledger, `read`/`export`/`update`).
 
 `historicalDocuments` is an item of the **Reportes** section, mapped to
 `reports/historical` (read/export/update) — not a standalone item and not a new

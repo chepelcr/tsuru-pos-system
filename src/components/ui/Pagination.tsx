@@ -35,7 +35,7 @@ export function Pagination({
   const sizes = [...new Set([...pageSizeOptions, pageSize])].filter((size) => size > 0).sort((a, b) => a - b);
 
   return (
-    <nav aria-label={t("common.pagination")} className={cn("mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between", className)}>
+    <nav aria-label={t("common.pagination")} className={cn("list-pagination mt-6 flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between", className)}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="t-sm text-muted-foreground" aria-live="polite">
           {t("common.paginationSummary", { start: startItem, end: endItem, total: totalElements, items: itemName ?? t("common.items") })}

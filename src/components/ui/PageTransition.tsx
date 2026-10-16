@@ -47,7 +47,7 @@ export function PageTransition({ children }: PageTransitionProps) {
 
   return (
     <div
-      className={transitionStage === "fadeOut" ? "page-transition-exit" : "page-transition-enter"}
+      className={`dashboard-page flex flex-1 flex-col min-w-0 ${transitionStage === "fadeOut" ? "page-transition-exit" : "page-transition-enter"}`}
       onAnimationEnd={() => {
         if (transitionStage === "fadeOut") {
           setDisplayLocation(location);

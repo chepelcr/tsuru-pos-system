@@ -83,8 +83,8 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <div className="flex-1 overflow-auto">
+    <div className="flex flex-1 flex-col min-h-0 bg-background">
+      <div className="flex flex-1 flex-col min-h-0 overflow-auto">
         <Suspense
           fallback={(
             <div className="flex items-center justify-center h-[60vh]">

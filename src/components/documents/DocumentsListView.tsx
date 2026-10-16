@@ -132,7 +132,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
   );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden fade-in">
+    <div className="flex flex-1 flex-col min-h-0 h-full overflow-hidden fade-in">
       {/* Shared ListToolbar layout — Emitidos/Recibidos lives in the
           custom statusSlot since it's not a standard status filter,
           and the document types multi-select fills the secondary slot. */}
@@ -174,7 +174,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
             ))}
           </div>
         ) : error ? (
-          <div className="min-h-64 flex items-center justify-center p-4">
+          <div className="min-h-64 h-full flex items-center justify-center p-4">
             <EmptyState
               icon="alertCircle"
               title={t('documents.list.errorTitle')}
@@ -194,7 +194,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
             />
           </div>
         ) : docs.length === 0 ? (
-          <div className="min-h-64 flex items-center justify-center p-4">
+          <div className="min-h-64 h-full flex items-center justify-center p-4">
             <EmptyState
               icon="fileText"
               title={t('documents.list.emptyTitle')}
@@ -235,21 +235,22 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
             </div>
           </div>
         )}
-        {!isLoading && !error && pagination && (
-          <div className="px-4 pb-4">
-            <Pagination
-              page={pagination.page + 1}
-              totalPages={pagination.total_pages}
-              totalElements={pagination.total_elements}
-              pageSize={pagination.page_size}
-              onPageChange={(next) => setPage(next - 1)}
-              onPageSizeChange={setPageSize}
-              pageSizeOptions={[20, 50, 100]}
-              itemName={t('documents.itemName')}
-            />
-          </div>
-        )}
       </div>
+      {!isLoading && !error && pagination && (
+        <div className="shrink-0 border-t border-border bg-background p-4">
+          <Pagination
+            className="mt-0"
+            page={pagination.page + 1}
+            totalPages={pagination.total_pages}
+            totalElements={pagination.total_elements}
+            pageSize={pagination.page_size}
+            onPageChange={(next) => setPage(next - 1)}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[20, 50, 100]}
+            itemName={t('documents.itemName')}
+          />
+        </div>
+      )}
 
       {/* "Ver PDF" gets its own full-height viewer — the tabbed action modal is
           for the small side-actions. Shown for accepted AND rejected documents:

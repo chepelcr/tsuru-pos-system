@@ -310,6 +310,20 @@
 /* Page wrapper */
 .session-page { padding: 24px 24px 40px; max-width: 1280px; margin: 0 auto; }
 
+/* A page-level list fills the shell's remaining height. Keep nested pickers
+   and detail-card pagination scoped to their own containers. */
+.dashboard-page > * { min-width: 0; width: 100%; }
+.dashboard-page > :has(> .list-pagination) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.dashboard-page > :has(> .list-pagination) > * { flex-shrink: 0; }
+.dashboard-page > :has(> .list-pagination) > .list-pagination {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
 /* Tabs scrollable container so long tab bars don't overflow on mobile */
 .tabs-container { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
 
