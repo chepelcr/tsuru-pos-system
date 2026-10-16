@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Card, Drawer, EmptyState, FormLabel, Input, Modal, Select, Spinner } from "@/components/ui";
+import { Badge, Button, Card, Drawer, EmptyState, FormLabel, Icon, Input, Modal, Select, SelectField, Spinner } from "@/components/ui";
+import { BRANCH_TYPE_ICONS } from "@/config/branchTypeIcons";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { SearchInput } from "@/components/forms/SearchInput";
 import { useOrgContext } from "@/contexts/OrgContext";
@@ -57,12 +58,16 @@ function BranchTypesContent({ orgId }: { orgId: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {rows.map((row) => (
             <Card key={row.id} className="p-5 flex flex-col gap-3 min-w-0">
-              <h2 className="font-display font-bold text-lg break-words">{row.name}</h2>
+              <div className="flex items-center gap-2 min-w-0">
+                <Icon name={row.icon || "store"} size={20} className="shrink-0 text-primary" />
+                <h2 className="font-display font-bold text-lg break-words">{row.name}</h2>
+              </div>
+              {row.is_default && <div><Badge variant="secondary">{t("branchTypes.default")}</Badge></div>}
               <p className="t-sm text-muted-foreground break-words">{t("branchTypes.code")}: <span className="font-mono">{row.code}</span></p>
               <p className="t-sm text-muted-foreground">{t("branchTypes.order")}: {row.sort_order}</p>
               {(canUpdate || canDelete) && <div className="flex flex-wrap gap-2 mt-auto pt-2">
                 {canUpdate && <Button size="sm" variant="outline" icon="edit" onClick={() => setTarget(row)}>{t("common.edit")}</Button>}
-                {canDelete && <Button size="sm" variant="destructive" icon="trash" disabled={remove.isPending} onClick={() => deleteType(row)}>{t("common.delete")}</Button>}
+                {canDelete && !row.is_default && <Button size="sm" variant="destructive" icon="trash" disabled={remove.isPending} onClick={() => deleteType(row)}>{t("common.delete")}</Button>}
               </div>}
             </Card>
           ))}
@@ -96,6 +101,8 @@ function BranchTypeEditor({ orgId, value, onClose }: { orgId: string; value?: Br
   const [icon, setIcon] = useState(value?.icon ?? "store");
   const [color, setColor] = useState(value?.color ?? "primary");
   const canSave = can("admin", value ? "update" : "create", "branch-types");
+  const iconOptions = BRANCH_TYPE_ICONS.map((key) => ({ value: key as string, label: t(`branchTypes.icon.${key}`), icon: key as string }));
+  if (!iconOptions.some((option) => option.value === icon)) iconOptions.unshift({ value: icon, label: icon, icon });
   return (
     <Drawer open onClose={onClose} dismissible={!save.isPending} closeLabel={t("common.close")}
       title={t(value ? "branchTypes.edit" : "branchTypes.new")} icon="layers" width={480}
@@ -122,10 +129,7 @@ function BranchTypeEditor({ orgId, value, onClose }: { orgId: string; value?: Br
         <div><FormLabel htmlFor="bt-order">{t("branchTypes.order")}</FormLabel>
           <Input id="bt-order" type="number" required min={0} step={1} value={order} onChange={(e) => setOrder(Number(e.target.value))} /></div>
         <div><FormLabel htmlFor="bt-icon">{t("branchTypes.icon")}</FormLabel>
-          <Select id="bt-icon" value={icon} onChange={(e) => setIcon(e.target.value)}>
-            {!["store", "home", "layers"].includes(icon) && <option value={icon}>{icon}</option>}
-            {["store", "home", "layers"].map((key) => <option key={key} value={key}>{t(`branchTypes.icon.${key}`)}</option>)}
-          </Select></div>
+          <SelectField id="bt-icon" value={icon} onChange={setIcon} options={iconOptions} /></div>
         <div><FormLabel htmlFor="bt-color">{t("branchTypes.color")}</FormLabel>
           <Select id="bt-color" value={color} onChange={(e) => setColor(e.target.value)}>
             {!["primary", "info"].includes(color) && <option value={color}>{color}</option>}

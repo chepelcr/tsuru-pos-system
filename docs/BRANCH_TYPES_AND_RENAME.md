@@ -10,7 +10,7 @@ The POS calls branches **Sucursales / Branches** throughout navigation, checkout
 
 `useBranchTypes(orgId)` reads store-be's `/api/organizations/{orgId}/branch-types`. An empty catalog stays empty. Failed reads show an error and retry control instead of inventing fallback types. Mutations invalidate that organization's catalog, updating branch forms, cards and filters. Changing organizations closes editors and confirmations.
 
-The branch form labels its selector **Tipo de sucursal / Branch type**, uses the organization's catalog and offers a management link when permitted. New branches select the first saved type. An organization with an empty catalog must add a type before manually creating a branch.
+The branch form labels its selector **Tipo de sucursal / Branch type**, uses the organization's catalog and offers a management link when permitted. Every organization receives an editable default type named **Branch** (`code=branch`, `is_default=true`). New branches select that saved default. It cannot be deleted, and existing branch assignments remain unchanged. The catalog API repairs a missing default; the organization-registration event also persists it before creating its first branch.
 
 Session configuration offers all active branches, including custom types. Session kind (`match`/`shift`) remains a separate concept with its existing API contract; it no longer filters branches by `stand`/`restaurant`. Its private query key avoids colliding with the shared branch array cache.
 
@@ -18,7 +18,7 @@ Session configuration offers all active branches, including custom types. Sessio
 
 Store-be owns GET/POST collection and PUT/DELETE item routes. Endpoint guards use `admin/branch-types` actions. Type codes remain strings stored on `branches.type`; existing codes are preserved. Updating a type changes presentation fields without sending a new code.
 
-Automatic registration/history discovery reuses an organization's first saved type. If no type exists, it persists one editable `general` catalog entry in the same transaction as the discovered branch. It does not invent the old stand/restaurant pair. Empty discovery creates no types.
+Automatic registration/history discovery uses the organization's saved Branch default for new branches. Existing branches keep their assigned types. Empty discovery creates no types. Migration `20261016_default_branch_types` adds the default marker and seeds Branch for every existing organization, including organizations without branches, while preserving all custom types and presentations.
 
 Migration `20261015_branch_type_catalog` restores only codes actually referenced by existing branches and does not overwrite customized catalog rows. It was applied to dev: three missing entries restored, zero remaining branches without a catalog match.
 
@@ -29,3 +29,5 @@ The stable `admin/stations` permission key is retained, with display name **Sucu
 Management migration `0027_branch_types_admin.sql` adds the catalog/action matrix, assigns the surface to existing organizations and mirrors only the actions a role already has on stations or module-wide admin. It is idempotent and preserves custom roles. Future organizations inherit the new submodule from their normal admin module assignment.
 
 Both migrations and the permissions setup are applied to dev; all five organizations have the new submodule available. Application rollout is tracked in the ecosystem roadmap and branch-types audit.
+
+The icon editor offers 20 business/location icons through the shared searchable select. Icon choices and branch type choices show one leading icon in the dropdown and selected value. The branch type filter uses the same icon treatment.

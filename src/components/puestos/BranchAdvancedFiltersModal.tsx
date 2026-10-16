@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
 import { FiltersModal } from "@/components/common/FiltersModal";
-import { Select } from "@/components/ui";
+import { Select, SelectField } from "@/components/ui";
 
 /**
  * Advanced filters for the puestos (branches) list — type + sort.
@@ -41,17 +41,15 @@ export function BranchAdvancedFiltersModal({ open, filters, onApply, onClose }: 
       applyLabel={t("common.applyFilters")}
     >
       <div className="space-y-1">
-        <label className="t-label">{t("puestos.type")}</label>
-        <Select
+        <label htmlFor="filter-branch-type" className="t-label">{t("branchTypes.label")}</label>
+        <SelectField
+          id="filter-branch-type"
           value={local.type ?? ""}
-          onChange={(e) => patch({ type: e.target.value || undefined })}
-          className="pp-input"
-        >
-          <option value="">{t("common.all")}</option>
-          {typeOptions.map((opt) => (
-            <option key={opt.code} value={opt.code}>{opt.name}</option>
-          ))}
-        </Select>
+          onChange={(value) => patch({ type: value || undefined })}
+          baseClass="pp-input"
+          options={[{ value: "", label: t("common.all"), icon: "layers" },
+            ...typeOptions.map((opt) => ({ value: opt.code, label: opt.name, icon: opt.icon || "store" }))]}
+        />
       </div>
 
       <div className="space-y-1">

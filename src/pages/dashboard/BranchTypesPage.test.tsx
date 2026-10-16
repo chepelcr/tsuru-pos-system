@@ -25,10 +25,35 @@ beforeEach(() => {
   state.orgId = 'org-1';
   state.writable = true;
   localStorage.setItem('language', 'en');
+  Element.prototype.scrollIntoView = vi.fn();
   vi.mocked(crossAppApi.get).mockResolvedValue({ data: [] });
 });
 
 describe('branch type management', () => {
+  it('offers twenty labeled icons, prepends the icon, and saves the selected icon', async () => {
+    vi.mocked(crossAppApi.get).mockResolvedValue({ data: [type] });
+    vi.mocked(crossAppApi.put).mockResolvedValue({ ...type, icon: 'warehouse' });
+    setup();
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    const combo = screen.getByRole('combobox', { name: 'Icon' });
+    fireEvent.click(combo);
+    expect(screen.getAllByRole('option')).toHaveLength(20);
+    const warehouse = screen.getByRole('option', { name: 'Warehouse' });
+    expect(warehouse.firstElementChild?.tagName.toLowerCase()).toBe('svg');
+    fireEvent.click(warehouse);
+    expect(combo.textContent).toBe('Warehouse');
+    expect(combo.querySelectorAll('span > svg')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(crossAppApi.put).toHaveBeenCalledWith('/api/organizations/org-1/branch-types/type-1', expect.objectContaining({ icon: 'warehouse' })));
+  });
+  it('identifies the default type and keeps its edit action available', async () => {
+    vi.mocked(crossAppApi.get).mockResolvedValue({ data: [{ ...type, code: 'branch', name: 'Branch', is_default: true }] });
+    setup();
+    await screen.findByRole('heading', { name: 'Branch' });
+    expect(screen.getByText('Default type')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+  });
   it('keeps an empty organization catalog empty instead of adding legacy types', async () => {
     setup();
     await screen.findByText('No branch types yet');

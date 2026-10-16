@@ -33,7 +33,9 @@ export function BranchForm({ editing, onSave, isSaving, onClose, renderButtons }
   const catalog = useBranchTypes(orgId);
   const [type, setType] = useState<BranchType>(editing?.type ?? "");
   useEffect(() => {
-    if (!editing && !type && catalog.data?.length) setType(catalog.data[0].code);
+    if (!editing && !type && catalog.data?.length) {
+      setType((catalog.data.find((option) => option.is_default) ?? catalog.data[0]).code);
+    }
   }, [editing, type, catalog.data]);
   const [phone, setPhone] = useState<BranchPhoneValue>({
     country_code: editing?.phone?.country_code ?? CountryISO.COSTA_RICA,

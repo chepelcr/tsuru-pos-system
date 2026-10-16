@@ -1,7 +1,7 @@
 import { Store } from "lucide-react";
 import { Link } from "wouter";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { Input, FormLabel, Select, Button } from "@/components/ui";
+import { Input, FormLabel, SelectField, Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBranchTypes } from "@/hooks/useBranchTypes";
 import { useOrgContext } from "@/contexts/OrgContext";
@@ -47,11 +47,10 @@ export function BranchGeneralSection({
         {/* Type toggle */}
         <div>
           <FormLabel htmlFor="b-type" required>{t("branchTypes.label")}</FormLabel>
-          <Select id="b-type" required value={typeOptions.some((o) => o.code === type) ? type : ""}
-            onChange={(e) => setType(e.target.value)} disabled={catalog.isLoading || catalog.isError || !typeOptions.length}>
-            <option value="">{t(catalog.isLoading ? "common.loading" : "branchTypes.select")}</option>
-            {typeOptions.map((opt) => <option key={opt.id} value={opt.code}>{opt.name}</option>)}
-          </Select>
+          <SelectField id="b-type" value={typeOptions.some((o) => o.code === type) ? type : ""}
+            onChange={setType} disabled={catalog.isLoading || catalog.isError || !typeOptions.length}
+            placeholder={t(catalog.isLoading ? "common.loading" : "branchTypes.select")}
+            options={typeOptions.map((opt) => ({ value: opt.code, label: opt.name, icon: opt.icon || "store" }))} />
           {catalog.isError ? (
             <div role="alert" className="mt-2 text-destructive t-sm">
               {t("branchTypes.loadError")}

@@ -24,6 +24,7 @@ export interface BranchTypeOption {
   /** Optional CSS-var color token name (e.g. "primary", "info"). */
   color?: string | null;
   sort_order: number;
+  is_default?: boolean;
   status: number;
 }
 

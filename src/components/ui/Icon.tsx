@@ -1,4 +1,6 @@
 import React from "react";
+import { Building2, Warehouse, Factory, Truck, UtensilsCrossed, Coffee, Hotel, Hospital,
+  BriefcaseBusiness, Wrench, Scissors, Tent, ShoppingBasket, type LucideIcon } from "lucide-react";
 
 type IconName =
   | "menu" | "close" | "check" | "plus" | "minus"
@@ -18,6 +20,12 @@ type IconName =
   | "graduationCap"
   | "burger" | "drink"
   | "hash";
+
+const additionalIcons: Record<string, LucideIcon> = {
+  building: Building2, warehouse: Warehouse, factory: Factory, truck: Truck,
+  utensils: UtensilsCrossed, coffee: Coffee, hotel: Hotel, hospital: Hospital,
+  briefcase: BriefcaseBusiness, wrench: Wrench, scissors: Scissors, tent: Tent, basket: ShoppingBasket,
+};
 
 interface IconProps {
   name: IconName | string;
@@ -105,6 +113,8 @@ const paths: Record<string, React.ReactNode> = {
 };
 
 export function Icon({ name, size = 18, strokeWidth = 2, className, style }: IconProps) {
+  const AdditionalIcon = additionalIcons[name];
+  if (AdditionalIcon) return <AdditionalIcon size={size} strokeWidth={strokeWidth} className={className} style={style} aria-hidden="true" />;
   return (
     <svg
       width={size}
