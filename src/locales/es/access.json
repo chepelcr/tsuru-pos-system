@@ -4,7 +4,7 @@
   "assignments.newAssignment": "Nueva asignación",
   "assignments.loading": "Cargando asignaciones…",
   "assignments.noActive": "Sin asignaciones activas",
-  "assignments.station": "Puesto: {id}",
+  "assignments.station": "Sucursal: {id}",
   "assignments.start": "Inicio: {time}",
   "assignments.finish": "Finalizar",
   "assignments.session": "Sesión",
@@ -86,7 +86,7 @@
   "rbac.sub.commercial.orders": "Órdenes",
   "rbac.sub.commercial.confirmations": "Confirmaciones",
   "rbac.sub.admin.organization": "Organización",
-  "rbac.sub.admin.stations": "Puestos",
+  "rbac.sub.admin.stations": "Sucursales",
   "rbac.sub.admin.members": "Miembros",
   "rbac.sub.admin.roles": "Roles",
   "rbac.sub.admin.sessions": "Sesiones",
@@ -179,5 +179,6 @@
   "roles.members.removeRole": "Quitar rol",
   "roles.members.removeRoleTitle": "Quitar rol",
   "roles.members.removeRoleConfirm": "¿Quitar el rol \"{role}\" a {name}? Si era su rol activo, pasará a otro de sus roles.",
-  "roles.members.removeRoleAria": "Quitar el rol {role}"
+  "roles.members.removeRoleAria": "Quitar el rol {role}",
+  "rbac.sub.admin.branch-types": "Tipos de sucursal"
 }

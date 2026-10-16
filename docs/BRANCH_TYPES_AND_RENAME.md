@@ -1,114 +1,31 @@
-# Branch-Type Personalization + Heritage Rename — BE/FE mapping
+# Branches and organization branch types
 
-> **Context.** This POS was originally built for a soda (snack bar) selling at the Puntarenas
-> stadium, so the codebase carries stadium-specific concepts ("Partido", "Stand vs Restaurante",
-> "gradas/caja"). We are **not removing** the functionality — we are **generalizing** the naming so
-> the product fits any business, and making **branch types configurable per organization** instead of
-> a hardcoded two-value enum.
->
-> The **frontend copy/labels have already been generalized** (see §3). The **data-model / enum-value
-> renames and the configurable branch-type catalog require backend work** — this doc is the contract
-> for that BE change so FE and BE stay in sync.
+Updated 2026-10-15.
 
----
+The POS calls branches **Sucursales / Branches** throughout navigation, checkout, sessions, reports and permissions. The canonical route is `/dashboard/branches`; old `/dashboard/stations` links, including terminal detail links, redirect to it and preserve query strings.
 
-## 1. Branch types — make them personalizable (BE work)
+## Branch type management
 
-### Today (hardcoded)
-- FE: `src/types/branch.ts` → `export type BranchType = "stand" | "restaurant";`
-- Used in: `components/puestos/BranchForm.tsx`, `BranchCard.tsx`, `BranchAdvancedFiltersModal.tsx`,
-  `sections/BranchGeneralSection.tsx`, and the session flow (`SessionConfig.tsx`,
-  `session/StationAssignments.tsx`, `session/InventoryTable.tsx`) which filters branches by `type`.
-- Stored on the branch as `type: "stand" | "restaurant"` (cross-app-be `branches` table).
-- Session creation maps session kind → branch type: event session → `stand`, regular → `restaurant`.
+**Internal Administration → Branch types** (`/dashboard/branch-types`) lists only the active organization's saved catalog. Users with the appropriate action grants can create, edit or delete types. The editor supports name, immutable code, icon, semantic color and display order. A referenced type cannot be deleted; the conflict appears inside its confirmation dialog.
 
-### Target (per-org configurable catalog)
-Replace the burned enum with an **org-scoped Branch Type catalog**:
+`useBranchTypes(orgId)` reads store-be's `/api/organizations/{orgId}/branch-types`. An empty catalog stays empty. Failed reads show an error and retry control instead of inventing fallback types. Mutations invalidate that organization's catalog, updating branch forms, cards and filters. Changing organizations closes editors and confirmations.
 
-**New table** `branch_types` (cross-app-be):
-| column | type | notes |
-|---|---|---|
-| `id` | uuid PK | |
-| `organization_id` | uuid FK | org-scoped |
-| `code` | string | stable slug, unique per org (e.g. `kiosk`, `venue`) |
-| `name` | string | display label (user-editable) |
-| `icon` | string (nullable) | optional icon key from the FE `<Icon>` set |
-| `color` | string (nullable) | optional CSS-var token name (e.g. `primary`, `info`) — NOT a hex |
-| `is_active` | bool | soft-disable |
-| `sort_order` | int | gallery/list order |
-| `is_default` | bool (optional) | the type preselected in the branch form |
+The branch form labels its selector **Tipo de sucursal / Branch type**, uses the organization's catalog and offers a management link when permitted. New branches select the first saved type. An organization with an empty catalog must add a type before manually creating a branch.
 
-**Branch model change:** `branches.type` (enum) → `branches.branch_type_id` (FK → `branch_types.id`).
-Keep a denormalized `branch_type_code`/`branch_type_name` on the branch response for convenient FE
-rendering, or expand the relation in the branch DTO.
+Session configuration offers all active branches, including custom types. Session kind (`match`/`shift`) remains a separate concept with its existing API contract; it no longer filters branches by `stand`/`restaurant`. Its private query key avoids colliding with the shared branch array cache.
 
-**Endpoints** (org-scoped, cross-app-be, `/api/organizations/{orgId}/branch-types`):
-- `GET    /branch-types` — list (FE populates the form select + filters from this)
-- `POST   /branch-types`
-- `PUT    /branch-types/{id}`
-- `DELETE /branch-types/{id}` (or `is_active=false`)
+## API and data compatibility
 
-**Migration / seed:** for every existing org, seed two default rows preserving current behavior, and
-backfill `branches.branch_type_id`:
-- `stand` → `{ code: "kiosk", name: "Puesto" }` (was "Stand")
-- `restaurant` → `{ code: "venue", name: "Local" }` (was "Restaurante")
+Store-be owns GET/POST collection and PUT/DELETE item routes. Endpoint guards use `admin/branch-types` actions. Type codes remain strings stored on `branches.type`; existing codes are preserved. Updating a type changes presentation fields without sending a new code.
 
-**Session ↔ branch-type coupling (today):** `SessionConfig` hardcodes event→`stand`,
-regular→`restaurant`. After personalization this filter should be **driven by data**, not the enum —
-e.g. a session type carries an allowed `branch_type_code[]`, or the filter is removed and the user
-picks any active branch. Decide during BE design; flag here so FE can update the session flow.
+Automatic registration/history discovery reuses an organization's first saved type. If no type exists, it persists one editable `general` catalog entry in the same transaction as the discovered branch. It does not invent the old stand/restaurant pair. Empty discovery creates no types.
 
-### Frontend follow-up (after the endpoint exists)
-- Add `useBranchTypes(orgId)` hook (cross-app-be) + a `BranchType` shape `{ id, code, name, icon?, color? }`.
-- `BranchForm`/`BranchGeneralSection`/`BranchCard`/`BranchAdvancedFiltersModal`: render the type
-  selector + labels + color/icon from the fetched catalog instead of the literal `["stand","restaurant"]`.
-- Optionally add a small "Branch types" manager UI (under Organization settings or Puestos) for CRUD.
-- Remove the hardcoded `BranchType = "stand" | "restaurant"` union once all consumers read the catalog.
+Migration `20261015_branch_type_catalog` restores only codes actually referenced by existing branches and does not overwrite customized catalog rows. It was applied to dev: three missing entries restored, zero remaining branches without a catalog match.
 
----
+## Permissions and rollout
 
-## 2. Session type & context value renames (BE work)
+The stable `admin/stations` permission key is retained, with display name **Sucursales**. New `admin/branch-types` supports create/read/update/delete. Owner/admin templates inherit their existing admin actions; manager/staff gain no new administration rights.
 
-The session "type" and "context" carry stadium semantics. UI copy is already generalized; the
-**stored values** should be renamed for a generic vocabulary:
+Management migration `0027_branch_types_admin.sql` adds the catalog/action matrix, assigns the surface to existing organizations and mirrors only the actions a role already has on stations or module-wide admin. It is idempotent and preserves custom roles. Future organizations inherit the new submodule from their normal admin module assignment.
 
-| Concept | Current stored value | Proposed generic value | Where |
-|---|---|---|---|
-| Session kind (UI union) | `"partido"` / `"regular"` | `"event"` / `"standard"` | FE `SessionConfig`/`SessionTypeSelector`/`SessionPreview` (internal only) |
-| Session `type` (API) | `"match"` / `"shift"` | `"event"` / `"shift"` (or `"standard"`) | cross-app-be sessions |
-| Session `context` (API) | `"gradas"` / `"caja"` | `"floor"` / `"register"` (generic) | cross-app-be sessions |
-| Session default name | `` `vs ${rival}` `` | keep as free-text name (drop "vs" default) | FE `SessionConfig` |
-
-These are **API contract changes** — coordinate FE + BE together (or accept both old+new values during
-a transition). Until then, FE keeps emitting the current values; only the **display copy** changed.
-
----
-
-## 3. Heritage copy already generalized on the frontend (no BE impact)
-
-Pure i18n value changes in `src/contexts/LanguageContext.tsx` (keys unchanged, both es+en):
-
-| Key | Before (es) | After (es) |
-|---|---|---|
-| `session.match` | Partido | Evento |
-| `session.matchDesc` | Ventas en estadio | Operación por evento |
-| `session.regularDesc` | Operación restaurante | Operación regular |
-| `session.matchTime` | Hora del partido | Hora del evento |
-| `session.tabMatch` | Datos del partido | Datos del evento |
-| `session.subtitle` | …nuevo **partido**… | …nueva **sesión**… |
-| `dash.sessionSales` / `mobile.sessionSales` | Ventas del partido | Ventas de la sesión |
-| `puestos.stand` | Stand | Puesto _(placeholder until §1 catalog)_ |
-| `puestos.restaurant` | Restaurante | Local _(placeholder until §1 catalog)_ |
-
-> Note: the i18n **keys** still read `match*` / `stand` / `restaurant` for now to avoid a wide rename;
-> they can be renamed to `event*` / catalog-driven labels in a later cleanup once §1/§2 land.
-
----
-
-## 4. Suggested rollout order
-1. BE: add `branch_types` table + endpoints + seed/backfill (§1). **Non-breaking** (keep old enum
-   readable during transition).
-2. FE: `useBranchTypes` + swap the hardcoded selector/labels to the catalog; add the manager UI.
-3. BE+FE together: rename session `type`/`context` values (§2) behind a transition window.
-4. FE cleanup: rename the `match*`/`stand`/`restaurant` i18n **keys** and the internal
-   `"partido"|"regular"` union to `event`/`standard`.
+Both migrations and the permissions setup are applied to dev; all five organizations have the new submodule available. Application rollout is tracked in the ecosystem roadmap and branch-types audit.

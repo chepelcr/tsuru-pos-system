@@ -97,16 +97,14 @@ export default function SessionConfig({ onDone, onSuccess, initialSession }: Ses
 
   // Fetch data
   const { data: branchesResponse } = useQuery({
-    queryKey: ["branches", org?.id],
+    queryKey: ["session-config-branches", org?.id],
     enabled: !!user && !!org,
     queryFn: () =>
       crossAppApi.get<BranchListResponse>(crossAppOrgPath(org!.id, `/branches?page_size=100&search=${ACTIVE_ONLY}`)),
   });
 
   const allBranches: Branch[] = branchesResponse?.data ?? [];
-  const branches = allBranches.filter((b) =>
-    sessionType === "partido" ? b.type === "stand" : b.type === "restaurant"
-  );
+  const branches = allBranches;
 
   const { data: members = [] } = useQuery({
     queryKey: ["org-users", org?.id],

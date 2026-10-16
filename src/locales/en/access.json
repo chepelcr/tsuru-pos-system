@@ -4,7 +4,7 @@
   "assignments.newAssignment": "New assignment",
   "assignments.loading": "Loading assignments…",
   "assignments.noActive": "No active assignments",
-  "assignments.station": "Station: {id}",
+  "assignments.station": "Branch: {id}",
   "assignments.start": "Start: {time}",
   "assignments.finish": "Finish",
   "assignments.session": "Session",
@@ -86,7 +86,7 @@
   "rbac.sub.commercial.orders": "Orders",
   "rbac.sub.commercial.confirmations": "Confirmations",
   "rbac.sub.admin.organization": "Organization",
-  "rbac.sub.admin.stations": "Stations",
+  "rbac.sub.admin.stations": "Branches",
   "rbac.sub.admin.members": "Members",
   "rbac.sub.admin.roles": "Roles",
   "rbac.sub.admin.sessions": "Sessions",
@@ -179,5 +179,6 @@
   "roles.members.removeRole": "Remove role",
   "roles.members.removeRoleTitle": "Remove role",
   "roles.members.removeRoleConfirm": "Remove the \"{role}\" role from {name}? If it was their active role, they move to another of their roles.",
-  "roles.members.removeRoleAria": "Remove the {role} role"
+  "roles.members.removeRoleAria": "Remove the {role} role",
+  "rbac.sub.admin.branch-types": "Branch types"
 }

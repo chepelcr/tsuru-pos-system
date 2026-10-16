@@ -1,8 +1,12 @@
 import { Store } from "lucide-react";
+import { Link } from "wouter";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
-import { Icon, Input, FormLabel } from "@/components/ui";
+import { Input, FormLabel, Select, Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useBranchTypeOptions } from "@/hooks/useBranchTypes";
+import { useBranchTypes } from "@/hooks/useBranchTypes";
+import { useOrgContext } from "@/contexts/OrgContext";
+import { usePermissions } from "@/hooks/useRbac";
+import { ROUTES } from "@/routePaths";
 import type { BranchType } from "@/types";
 
 interface BranchGeneralSectionProps {
@@ -27,11 +31,14 @@ export function BranchGeneralSection({
   onToggle,
 }: BranchGeneralSectionProps) {
   const { t } = useLanguage();
-  const typeOptions = useBranchTypeOptions();
+  const { orgId } = useOrgContext();
+  const catalog = useBranchTypes(orgId);
+  const typeOptions = catalog.data ?? [];
+  const { can } = usePermissions();
 
   return (
     <SectionWrapper
-      title="Información General"
+      title={t("branch.generalInfo")}
       icon={Store}
       isExpanded={isExpanded}
       onToggle={onToggle}
@@ -39,25 +46,25 @@ export function BranchGeneralSection({
       <div className="flex flex-col gap-4">
         {/* Type toggle */}
         <div>
-          <FormLabel>{t("session.sessionType")}</FormLabel>
-          <div className="grid grid-cols-2 gap-2">
-            {typeOptions.map((opt) => (
-              <button
-                key={opt.code}
-                type="button"
-                onClick={() => setType(opt.code)}
-                className={`px-4 py-3 rounded-lg border-2 cursor-pointer flex items-center gap-2 text-sm transition-all ${
-                  type === opt.code
-                    ? "border-primary bg-primary/[0.08] text-primary font-bold"
-                    : "border-border bg-transparent text-foreground font-medium"
-                }`}
-              >
-                {/* icon name comes from the catalog (data-driven) */}
-                <Icon name={(opt.icon || "store") as never} size={15} />
-                {opt.name}
-              </button>
-            ))}
-          </div>
+          <FormLabel htmlFor="b-type" required>{t("branchTypes.label")}</FormLabel>
+          <Select id="b-type" required value={typeOptions.some((o) => o.code === type) ? type : ""}
+            onChange={(e) => setType(e.target.value)} disabled={catalog.isLoading || catalog.isError || !typeOptions.length}>
+            <option value="">{t(catalog.isLoading ? "common.loading" : "branchTypes.select")}</option>
+            {typeOptions.map((opt) => <option key={opt.id} value={opt.code}>{opt.name}</option>)}
+          </Select>
+          {catalog.isError ? (
+            <div role="alert" className="mt-2 text-destructive t-sm">
+              {t("branchTypes.loadError")}
+              <Button type="button" variant="link" size="sm" onClick={() => catalog.refetch()}>{t("common.retry")}</Button>
+            </div>
+          ) : !catalog.isLoading && !typeOptions.length ? (
+            <p className="t-sm mt-2 text-muted-foreground">{t("branchTypes.emptyDescription")}</p>
+          ) : null}
+          {can("admin", "read", "branch-types") && (
+            <Link href={ROUTES.DASHBOARD_BRANCH_TYPES} className="block mt-2 text-sm text-primary hover:underline">
+              {t("branchTypes.manage")}
+            </Link>
+          )}
         </div>
 
         {/* Name */}
@@ -70,7 +77,7 @@ export function BranchGeneralSection({
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="ej. Puesto Principal, Sector Norte…"
+            placeholder={t("branch.namePlaceholder")}
           />
         </div>
 

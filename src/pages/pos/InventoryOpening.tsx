@@ -25,7 +25,7 @@ export default function InventoryOpening({
   products,
   assignmentId,
   onDone,
-  puestoName = "Puesto",
+  puestoName = "Sucursal",
   sessionName = "Sesión activa",
   sessionTime,
   onExit,

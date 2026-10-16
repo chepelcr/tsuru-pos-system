@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useOrgContext } from "@/contexts/OrgContext";
+import { useBranchTypes } from "@/hooks/useBranchTypes";
 import { Card } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -27,7 +29,12 @@ export function BranchForm({ editing, onSave, isSaving, onClose, renderButtons }
 
   const [name, setName] = useState(editing?.name ?? "");
   const [code, setCode] = useState<number | "">(editing?.code ?? "");
-  const [type, setType] = useState<BranchType>(editing?.type ?? "stand");
+  const { orgId } = useOrgContext();
+  const catalog = useBranchTypes(orgId);
+  const [type, setType] = useState<BranchType>(editing?.type ?? "");
+  useEffect(() => {
+    if (!editing && !type && catalog.data?.length) setType(catalog.data[0].code);
+  }, [editing, type, catalog.data]);
   const [phone, setPhone] = useState<BranchPhoneValue>({
     country_code: editing?.phone?.country_code ?? CountryISO.COSTA_RICA,
     number: editing?.phone?.number ?? "",
@@ -51,6 +58,7 @@ export function BranchForm({ editing, onSave, isSaving, onClose, renderButtons }
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (isSaving || !catalog.data?.some((option) => option.code === type)) return;
     onSave({
       name: name.trim(),
       code: Number(code),

@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { Route, Switch, Redirect, useLocation, useParams } from "wouter";
+import { Route, Switch, Redirect, useLocation, useParams, useSearch } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DocumentVersionProvider } from "@/contexts/DocumentVersionContext";
@@ -25,7 +25,8 @@ const CreateOrganization = lazy(() => import("@/pages/CreateOrganization"));
 const AcceptInvitation = lazy(() => import("@/pages/AcceptInvitation"));
 const DashboardHome = lazy(() => import("@/pages/dashboard/DashboardPage"));
 const SessionsPage = lazy(() => import("@/pages/dashboard/SessionsPage"));
-const PuestosPage = lazy(() => import("@/pages/dashboard/PuestosPage"));
+const BranchesPage = lazy(() => import("@/pages/dashboard/BranchesPage"));
+const BranchTypesPage = lazy(() => import("@/pages/dashboard/BranchTypesPage"));
 const TerminalDetailPage = lazy(() => import("@/pages/dashboard/TerminalDetailPage"));
 const ConsecutivesPage = lazy(() => import("@/pages/dashboard/ConsecutivesPage"));
 const ProductsPage = lazy(() => import("@/pages/dashboard/ProductsPage"));
@@ -70,6 +71,7 @@ const DASHBOARD_ROLES = ["gerente", "supervisor", "customer", "cajero"];
 const ROUTE_PERMISSIONS = {
   dashboard: [["panel", "read", "overview"]],
   sessions: [["admin", "read", "sessions"]],
+  branchTypes: [["admin", "read", "branch-types"]],
   stations: [["admin", "read", "stations"]],
   consecutives: [["admin", "read", "consecutives"]],
   products: [["commercial", "read", "products"]],
@@ -303,14 +305,18 @@ function DashboardRoutes() {
         path={ROUTES.DASHBOARD_SESSIONS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.sessions}><SessionsPage /></DashboardPage>}
       />
-      {/* Terminal detail before the stations list so its params match first */}
+      <Route path={ROUTES.LEGACY_TERMINAL_DETAIL} component={LegacyTerminalRedirect} />
+      <Route path={ROUTES.LEGACY_DASHBOARD_STATIONS} component={LegacyBranchesRedirect} />
+      <Route path={ROUTES.DASHBOARD_BRANCH_TYPES}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.branchTypes}><BranchTypesPage /></DashboardPage>} />
+      {/* Terminal detail before the branches list so its params match first */}
       <Route
         path={ROUTES.DASHBOARD_TERMINAL_DETAIL}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.stations}><TerminalDetailPage /></DashboardPage>}
       />
       <Route
-        path={ROUTES.DASHBOARD_STATIONS}
-        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.stations}><PuestosPage /></DashboardPage>}
+        path={ROUTES.DASHBOARD_BRANCHES}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.stations}><BranchesPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_CONSECUTIVES}
@@ -540,4 +546,15 @@ export default function Routes() {
       </Switch>
     </Suspense>
   );
+}
+
+function LegacyBranchesRedirect() {
+  const search = useSearch();
+  return <Redirect to={`${ROUTES.DASHBOARD_BRANCHES}${search ? `?${search}` : ""}`} />;
+}
+
+function LegacyTerminalRedirect() {
+  const { branchCode, terminalCode } = useParams<{ branchCode: string; terminalCode: string }>();
+  const search = useSearch();
+  return <Redirect to={`${ROUTES.DASHBOARD_BRANCHES}/${branchCode}/terminals/${terminalCode}${search ? `?${search}` : ""}`} />;
 }

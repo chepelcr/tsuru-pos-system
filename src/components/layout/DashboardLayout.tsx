@@ -30,8 +30,9 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_GUIDE)) return "guide";
   if (location.startsWith(ROUTES.DASHBOARD_BLOG)) return "blog";
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
-  // Includes /stations/:branch/terminals/:terminal (terminal detail).
-  if (location.startsWith(ROUTES.DASHBOARD_STATIONS)) return "puestos";
+  // Includes /branches/:branch/terminals/:terminal (terminal detail).
+  if (location.startsWith(ROUTES.DASHBOARD_BRANCH_TYPES)) return "branchTypes";
+  if (location.startsWith(ROUTES.DASHBOARD_BRANCHES)) return "branches";
   if (location.startsWith(ROUTES.DASHBOARD_CONSECUTIVES)) return "consecutives";
   if (location.startsWith(ROUTES.DASHBOARD_CATEGORIES)) return "categories";
   if (location.startsWith(ROUTES.DASHBOARD_PRODUCTS)) return "productos";
@@ -64,7 +65,8 @@ const NAV_PATHS: Record<NavId, string> = {
   dashboard: ROUTES.DASHBOARD,
   blog: ROUTES.DASHBOARD_BLOG,
   config:    ROUTES.DASHBOARD_SESSIONS,
-  puestos:   ROUTES.DASHBOARD_STATIONS,
+  branches:   ROUTES.DASHBOARD_BRANCHES,
+  branchTypes: ROUTES.DASHBOARD_BRANCH_TYPES,
   consecutives: ROUTES.DASHBOARD_CONSECUTIVES,
   productos: ROUTES.DASHBOARD_PRODUCTS,
   categories: ROUTES.DASHBOARD_CATEGORIES,

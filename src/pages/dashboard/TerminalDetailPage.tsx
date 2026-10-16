@@ -127,7 +127,7 @@ export default function TerminalDetailPage() {
           title={t("terminal.notFound")}
           description={t("terminal.notFoundDescription")}
           action={
-            <Button variant="outline" icon="arrowLeft" onClick={() => navigate(ROUTES.DASHBOARD_STATIONS)}>
+            <Button variant="outline" icon="arrowLeft" onClick={() => navigate(ROUTES.DASHBOARD_BRANCHES)}>
               {t("terminal.backToStations")}
             </Button>
           }
@@ -144,7 +144,7 @@ export default function TerminalDetailPage() {
     <div className="px-6 pt-6 pb-12 max-w-[1100px] mx-auto flex flex-col gap-5">
       {/* Header */}
       <div className="fade-up">
-        <Link href={ROUTES.DASHBOARD_STATIONS} className="inline-flex items-center gap-1 t-sm text-muted-foreground no-underline hover:text-foreground mb-3">
+        <Link href={ROUTES.DASHBOARD_BRANCHES} className="inline-flex items-center gap-1 t-sm text-muted-foreground no-underline hover:text-foreground mb-3">
           <Icon name="arrowLeft" size={14} /> {t("terminal.backToStations")}
         </Link>
         <div className="flex items-start justify-between gap-4 flex-wrap">

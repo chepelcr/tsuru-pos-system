@@ -28,7 +28,7 @@ const BRANCH_STATUS_OPTIONS: readonly StatusOption<BranchStatusValue>[] = [
   { value: "all", labelKey: "common.all" },
 ];
 
-export default function PuestosPage() {
+export default function BranchesPage() {
   const qc = useQueryClient();
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();

@@ -32,7 +32,8 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   orders:        { icon: "cart",        labelKey: "shell.orders" },
   confirmations: { icon: "checkCircle", labelKey: "shell.confirmations" },
   organization:  { icon: "settings",    labelKey: "shell.orgSettings" },
-  puestos:       { icon: "store",       labelKey: "shell.stations" },
+  branches:       { icon: "store",       labelKey: "shell.stations" },
+  branchTypes:   { icon: "layers", labelKey: "branchTypes.title" },
   consecutives:  { icon: "hash",        labelKey: "shell.consecutives" },
   members:       { icon: "users",       labelKey: "shell.members" },
   roles:         { icon: "shield",      labelKey: "shell.roles" },
@@ -69,7 +70,8 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   orders:        ["commercial", "orders"],
   confirmations: ["commercial", "confirmations"],
   organization:  ["admin", "organization"],
-  puestos:       ["admin", "stations"],
+  branches:       ["admin", "stations"],
+  branchTypes:   ["admin", "branch-types"],
   consecutives:  ["admin", "consecutives"],
   members:       ["admin", "members"],
   roles:         ["admin", "roles"],
@@ -89,7 +91,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "tsuru",      labelKey: "shell.sectionTsuru", icon: "sparkles", items: ["guide", "blog"] },
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
-  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "puestos", "consecutives", "members", "roles", "config"] },
+  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "branches", "branchTypes", "consecutives", "members", "roles", "config"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
   { id: "reports",    labelKey: "shell.reports",           icon: "trending", items: ["reporte", "ivaReport", "historicalDocuments"] },
 ];

@@ -34,6 +34,9 @@ vi.mock('@/pages/dashboard/BlogWriterPage', () => ({ default: () => <h1>My artic
 vi.mock('@/pages/dashboard/DashboardPage', () => ({ default: () => <h1>Overview page</h1> }));
 vi.mock('@/pages/dashboard/ProductsPage', () => ({ default: () => <h1>Products page</h1> }));
 vi.mock('@/pages/dashboard/CategoriesPage', () => ({ default: () => <h1>Categories page</h1> }));
+vi.mock('@/pages/dashboard/BranchesPage', () => ({ default: () => <h1>Branches page</h1> }));
+vi.mock('@/pages/dashboard/BranchTypesPage', () => ({ default: () => <h1>Branch types page</h1> }));
+vi.mock('@/pages/dashboard/TerminalDetailPage', () => ({ default: () => <h1>Terminal page</h1> }));
 vi.mock('@/pages/dashboard/ProductDetailPage', () => ({ default: ({ productId }: { productId: string }) => <h1>Product {productId}</h1> }));
 vi.mock('@/pages/dashboard/OrgGeneralPage', () => ({ default: () => <h1>Organization general page</h1> }));
 vi.mock('@/pages/dashboard/ProfilePage', () => ({ default: () => <h1>Profile page</h1> }));
@@ -57,6 +60,16 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('persistent sidebar accordion across dashboard navigation', () => {
+  it('opens branch types from Internal Administration and preserves old branch links', async () => {
+    const view = openPage('/dashboard/stations');
+    await screen.findByRole('heading', { name: 'Branches page' });
+    expect(section('Internal Administration').content.dataset.open).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Branch types' }));
+    await screen.findByRole('heading', { name: 'Branch types page' });
+    expect(section('Internal Administration').content.dataset.open).toBe('true');
+    act(() => view.router.navigate('/dashboard/stations/1/terminals/2'));
+    await screen.findByRole('heading', { name: 'Terminal page' });
+  });
   it('keeps the open section mounted so it can close when leaving a subsection for the overview', async () => {
     openPage();
     await screen.findByRole('heading', { name: 'My articles page' });

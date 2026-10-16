@@ -16,13 +16,15 @@ export type BranchType = string;
 
 /** A selectable branch-type option from the per-org catalog. */
 export interface BranchTypeOption {
-  id?: string;
+  id: string;
   code: string;
   name: string;
   /** Optional Icon name from the design-system icon set. */
-  icon?: string;
+  icon?: string | null;
   /** Optional CSS-var color token name (e.g. "primary", "info"). */
-  color?: string;
+  color?: string | null;
+  sort_order: number;
+  status: number;
 }
 
 export type BranchStatus = 1 | 2 | 3; // 1=Active, 2=Inactive, 3=Deleted
