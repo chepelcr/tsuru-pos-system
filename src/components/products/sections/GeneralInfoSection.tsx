@@ -142,6 +142,12 @@ export function GeneralInfoSection({
 
       <div className="flex flex-col gap-2">
         <ToggleRow
+          label={t("products.isProgram")}
+          description={t("products.isProgramDesc")}
+          checked={form.type === "program"}
+          onChange={(checked) => onChange({ type: checked ? "program" : "product" })}
+        />
+        <ToggleRow
           label={t("products.trackInventory")}
           description={t("products.trackInventoryDesc")}
           checked={form.track_inventory}
@@ -183,6 +189,7 @@ function ToggleRow({
       </div>
       <input
         type="checkbox"
+        aria-label={label}
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         className="w-[18px] h-[18px] cursor-pointer accent-primary"

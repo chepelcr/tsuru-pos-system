@@ -1,3 +1,5 @@
+import type { ProductType } from "./product";
+
 /**
  * Hacienda-code-only entry shapes.
  *
@@ -78,6 +80,7 @@ export interface CodeFormEntry {
 
 export interface ProductFormState {
   // General Info
+  type: ProductType;
   name: string;
   description: string;
   category_id: string;
@@ -180,6 +183,7 @@ export const DEFAULT_UNIT_MEASURE = "Unid";
  */
 
 export const EMPTY_PRODUCT_FORM: ProductFormState = {
+  type: "product",
   name: "",
   description: "",
   category_id: "",

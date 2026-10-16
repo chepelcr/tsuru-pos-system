@@ -40,7 +40,6 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
   reporte:       { icon: "trending",    labelKey: "shell.reportsGeneral" },
   ivaReport:     { icon: "pie",         labelKey: "shell.reportsIva" },
-  programs:      { icon: "graduationCap", labelKey: "shell.programs" },
   content:       { icon: "fileText",    labelKey: "shell.content" },
   gallery:       { icon: "grid",        labelKey: "shell.gallery" },
   templates:     { icon: "grid",        labelKey: "shell.templates" },
@@ -82,7 +81,6 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
   deployments:   ["storefront", "deployments"],
   reporte:       ["reports", "general"],
   ivaReport:     ["reports", "iva"],
-  programs:      ["programs", "programs"],
   documents:     ["documents", "emitted"],
   historicalDocuments: ["reports", "historical"],
 };
@@ -260,10 +258,6 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
             </div>
           );
         })}
-
-        {/* Programas — standalone, template-gated item (W12). renderItem returns
-            null when the template lacks a programs section or the role can't read it. */}
-        {itemVisible("programs") && <div className="mt-1.5">{renderItem("programs")}</div>}
 
         {/* Documentos — standalone, at the end of the menu */}
         {itemVisible("documents") && (

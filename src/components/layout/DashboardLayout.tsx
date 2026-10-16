@@ -46,7 +46,7 @@ function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_ORDERS))   return "orders";
   if (location.startsWith(ROUTES.DASHBOARD_MEMBERS))  return "members";
   if (location.startsWith(ROUTES.DASHBOARD_ROLES))    return "roles";
-  if (location.startsWith(ROUTES.DASHBOARD_PROGRAMS))    return "programs";
+  if (location.startsWith(ROUTES.DASHBOARD_PROGRAMS)) return "productos";
   if (location.startsWith(ROUTES.DASHBOARD_GALLERY))     return "gallery";
   if (location.startsWith(ROUTES.DASHBOARD_CONTENT))     return "content";
   // Templates was relocated into the org-settings "Plantilla" card, so it no
@@ -84,7 +84,6 @@ const NAV_PATHS: Record<NavId, string> = {
   gallery:     ROUTES.DASHBOARD_GALLERY,
   templates:   ROUTES.DASHBOARD_TEMPLATES,
   deployments: ROUTES.DASHBOARD_DEPLOYMENTS,
-  programs:  ROUTES.DASHBOARD_PROGRAMS,
   support:   ROUTES.DASHBOARD_SUPPORT,
   profile:   ROUTES.PROFILE,
 };

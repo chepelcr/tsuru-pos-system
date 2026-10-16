@@ -55,7 +55,7 @@ export interface ProductSearchOptions {
   term?: string;
   status?: number | string;
   categoryId?: string;
-  type?: string;
+  type?: import("@/types/product").ProductType;
   price?:
     | { mode: "single"; op?: "=" | ">" | "<"; value?: number }
     | { mode: "range"; min?: number; max?: number };

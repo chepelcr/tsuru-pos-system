@@ -58,7 +58,6 @@ const OrgPaymentPage = lazy(() => import("@/pages/dashboard/OrgPaymentPage"));
 const OrgShippingPage = lazy(() => import("@/pages/dashboard/OrgShippingPage"));
 const ProfilePage = lazy(() => import("@/pages/dashboard/ProfilePage"));
 const TutorialGuidePage = lazy(() => import("@/pages/dashboard/TutorialGuidePage"));
-const ProgramsPage = lazy(() => import("@/pages/dashboard/ProgramsPage"));
 const ContentPage = lazy(() => import("@/pages/dashboard/ContentPage"));
 const GalleryPage = lazy(() => import("@/pages/dashboard/GalleryPage"));
 const TemplatesPage = lazy(() => import("@/pages/dashboard/TemplatesPage"));
@@ -105,7 +104,6 @@ const ROUTE_PERMISSIONS = {
   confirmations: [["commercial", "read", "confirmations"]],
   members: [["admin", "read", "members"]],
   roles: [["admin", "read", "roles"]],
-  programs: [["programs", "read", "programs"]],
   content: [["storefront", "read", "content"]],
   gallery: [["storefront", "read", "gallery"]],
   templates: [["storefront", "read", "templates"]],
@@ -407,11 +405,10 @@ function DashboardRoutes() {
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.clients}><ClientsPage /></DashboardPage>}
       />
 
-      {/* Programs — template-gated section (W12). The page itself redirects to
-          the dashboard when the org's template has no programs section. */}
+      {/* Legacy Programs links now open the product catalog with its type filter. */}
       <Route
         path={ROUTES.DASHBOARD_PROGRAMS}
-        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.programs}><ProgramsPage /></DashboardPage>}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.products}><Redirect to={`${ROUTES.DASHBOARD_PRODUCTS}?type=program`} /></DashboardPage>}
       />
 
       {/* Sitio web (storefront CMS) — content, templates, deployments */}

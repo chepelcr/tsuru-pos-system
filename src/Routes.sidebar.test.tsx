@@ -6,11 +6,11 @@ import { memoryLocation } from 'wouter/memory-location';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import Routes from './Routes';
 
-const state = vi.hoisted(() => ({ canRead: true }));
+const state = vi.hoisted(() => ({ canRead: true, deniedModule: '' }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuthContext: () => ({ user: { userId: 'user-1', role: 'customer', first_name: 'Test' }, isLoading: false }) }));
 vi.mock('@/hooks/useOrganization', () => ({ useOrganization: () => ({ useDefaultOrganization: () => ({ data: { id: 'org-1', name: 'Test organization' } }) }) }));
 vi.mock('@/hooks/useRbac', () => ({
-  usePermissions: () => ({ can: () => state.canRead, hasModule: () => true, isReady: true, role: 'admin' }),
+  usePermissions: () => ({ can: (module: string) => state.canRead && module !== state.deniedModule, hasModule: () => true, isReady: true, role: 'admin' }),
   useCanOpenCreateMenu: () => false,
   useCreatableDocTypes: () => [],
 }));
@@ -55,11 +55,27 @@ beforeEach(() => {
   vi.stubEnv('VITE_BLOG_ENABLED', 'true');
   localStorage.setItem('language', 'en');
   state.canRead = true;
+  state.deniedModule = '';
 });
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe('persistent sidebar accordion across dashboard navigation', () => {
+  it('opens legacy Programs links in Products using commercial permissions and removes duplicate navigation', async () => {
+    state.deniedModule = 'programs';
+    openPage('/dashboard/programs');
+    await screen.findByRole('heading', { name: 'Products page' });
+    expect(section('Commercial Management').content.dataset.open).toBe('true');
+    expect(screen.queryByRole('button', { name: 'Programs' })).toBeNull();
+  });
+
+  it('denies legacy Programs links when the role cannot read products', async () => {
+    state.deniedModule = 'commercial';
+    openPage('/dashboard/programs');
+    expect(await screen.findByRole('heading', { name: 'No access' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Products page' })).toBeNull();
+  });
+
   it('opens branch types from Internal Administration and preserves old branch links', async () => {
     const view = openPage('/dashboard/stations');
     await screen.findByRole('heading', { name: 'Branches page' });

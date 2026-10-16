@@ -13,6 +13,24 @@
  */
 import { describe, expect, it } from "vitest";
 import { productFormFromProduct, productSavePayload } from "./productFormMapping";
+import { EMPTY_PRODUCT_FORM } from "@/types/productForm";
+
+describe("product catalog classification", () => {
+  it.each(["product", "service", "program"])("preserves %s when editing any other field", (type) => {
+    const form = productFormFromProduct({ name: "Course", price: 100, type });
+    expect(productSavePayload({ ...form, name: "Updated course" }).type).toBe(type);
+  });
+
+  it("creates a program from the shared product form and can turn it back into a product", () => {
+    expect(productSavePayload({ ...EMPTY_PRODUCT_FORM, type: "program" }).type).toBe("program");
+    const form = productFormFromProduct({ name: "Course", price: 100, type: "program" });
+    expect(productSavePayload({ ...form, type: "product" }).type).toBe("product");
+  });
+
+  it("defaults ordinary records without a catalog type to product", () => {
+    expect(productSavePayload(productFormFromProduct({ name: "Item", price: 100 })).type).toBe("product");
+  });
+});
 
 /** A product configured the way the fiscal form allows — every field populated. */
 const FULLY_CONFIGURED = {

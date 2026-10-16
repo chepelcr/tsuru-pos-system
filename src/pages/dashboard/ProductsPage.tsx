@@ -2,7 +2,7 @@ import { productFormFromProduct, productSavePayload } from "@/lib/productFormMap
 import { buildProductSearch } from "@/lib/search";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { ordersApi, ordersOrgPath } from "@/lib/api";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -40,6 +40,10 @@ export default function ProductsPage() {
   const { t } = useLanguage();
   const { confirm, ConfirmModal } = useConfirmModal();
   const [, navigate] = useLocation();
+  const search = useSearch();
+  const queryType = new URLSearchParams(search).get("type");
+  const catalogType = queryType === "product" || queryType === "service" || queryType === "program"
+    ? queryType : undefined;
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can } = usePermissions();
@@ -56,7 +60,7 @@ export default function ProductsPage() {
   // page provides for issued/received.
   const [statusFilter, setStatusFilter] = useState<ProductStatusValue>("1");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [advanced, setAdvanced] = useState<ProductAdvancedFilters>({});
+  const [advanced, setAdvanced] = useState<ProductAdvancedFilters>({ type: catalogType });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -78,6 +82,13 @@ export default function ProductsPage() {
   const [unitsPerBox, setUnitsPerBox] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Includes bookmarked /dashboard/programs links redirected to this catalog.
+  useEffect(() => {
+    setAdvanced((current) => ({ ...current, type: catalogType }));
+    setPage(1);
+    setSelected([]);
+  }, [catalogType]);
+
   // Scroll to top when page changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -86,6 +97,7 @@ export default function ProductsPage() {
   // Partial name OR exact code (a scanned barcode finds its product).
   const searchFilter = buildProductSearch({
     term,
+    type: advanced.type,
     status: statusFilter,
     categoryId: categoryId || undefined,
     price:
@@ -151,7 +163,7 @@ export default function ProductsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["products", org?.id] }); setDrawerProduct(null); setSelected([]); },
   });
 
-  const openNew = () => { setForm({ ...EMPTY_FORM }); setImageUrl(""); setUnitsPerBox(""); setDrawerProduct("new"); };
+  const openNew = () => { setForm({ ...EMPTY_FORM, type: advanced.type ?? "product" }); setImageUrl(""); setUnitsPerBox(""); setDrawerProduct("new"); };
 
   const openEdit = (p: Product) => {
     setForm(productFormFromProduct(p));
@@ -176,6 +188,7 @@ export default function ProductsPage() {
   const toggleSelect = (id: string) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
 
   const hasAdvancedFilters =
+    !!advanced.type ||
     advanced.priceValue !== undefined ||
     advanced.priceMin !== undefined ||
     advanced.priceMax !== undefined ||
@@ -363,7 +376,15 @@ export default function ProductsPage() {
         open={showAdvanced}
         orgId={org!.id}
         filters={advanced}
-        onApply={(next) => { setAdvanced(next); setPage(1); }}
+        onApply={(next) => {
+          setAdvanced(next);
+          setPage(1);
+          const params = new URLSearchParams(search);
+          if (next.type) params.set("type", next.type);
+          else params.delete("type");
+          const query = params.toString();
+          navigate(`${ROUTES.DASHBOARD_PRODUCTS}${query ? `?${query}` : ""}`, { replace: true });
+        }}
         onClose={() => setShowAdvanced(false)}
       />
 

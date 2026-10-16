@@ -72,8 +72,12 @@ export interface ProductDiscount {
   reason?: string;
 }
 
+export type ProductType = "product" | "service" | "program";
+
 export interface Product {
   product_id: string;
+  /** Storefront classification; programs share the product API and permissions. */
+  type?: ProductType;
   name: string;
   description?: string;
   price: number;

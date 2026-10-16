@@ -34,6 +34,5 @@ export type NavId =
   | "gallery"
   | "templates"
   | "deployments"
-  | "programs"
   | "support"
   | "profile";

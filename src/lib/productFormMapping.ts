@@ -64,6 +64,7 @@ export function productSavePayload(
 
   return {
     // ── Basic fields ────────────────────────────────────────────────────────
+    type: form.type,
     name: form.name.trim(),
     description: trimmed(form.description),
     price: Number(form.price),
@@ -176,6 +177,7 @@ export function productFormFromProduct(p: any): ProductFormState {
   const hasTaxes = (p.taxes ?? []).length > 0;
 
   return {
+    type: p.type ?? "product",
     name: p.name,
     description: p.description ?? "",
     price: String(p.price),

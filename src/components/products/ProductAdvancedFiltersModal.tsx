@@ -4,9 +4,10 @@ import { FiltersModal } from "@/components/common/FiltersModal";
 import { RangeSlider } from "@/components/common/RangeSlider";
 import { useProductPriceBounds } from "@/hooks/useProducts";
 import { Select, MoneyInput } from "@/components/ui";
+import type { ProductType } from "@/types/product";
 
 /**
- * Advanced filters for products — price (single comparison OR range) + sort.
+ * Advanced filters for products — catalog type, price and sort.
  * Search term, category and status live on the toolbar itself (most common)
  * and are NOT duplicated here.
  *
@@ -24,6 +25,7 @@ export type PriceMode = "single" | "range";
 export type PriceOperator = "=" | ">" | "<";
 
 export interface ProductAdvancedFilters {
+  type?: ProductType;
   priceMode?: PriceMode;
   /** Single-mode only. */
   priceOp?: PriceOperator;
@@ -101,6 +103,21 @@ export function ProductAdvancedFiltersModal({ open, orgId, filters, onApply, onC
       onApply={() => { onApply(local); onClose(); }}
       applyLabel={t("common.applyFilters")}
     >
+      <div className="space-y-1">
+        <label className="t-label" htmlFor="product-type-filter">{t("products.typeLabel")}</label>
+        <Select
+          id="product-type-filter"
+          value={local.type ?? ""}
+          onChange={(e) => patch({ type: (e.target.value || undefined) as ProductType | undefined })}
+          className="pp-input"
+        >
+          <option value="">{t("products.allTypes")}</option>
+          <option value="product">{t("products.typeProduct")}</option>
+          <option value="service">{t("products.typeService")}</option>
+          <option value="program">{t("products.typeProgram")}</option>
+        </Select>
+      </div>
+
       {/* Price filter — label on the left, mode toggle right-aligned. */}
       <div className="flex items-center justify-between gap-3">
         <label className="t-label">{t("products.priceFilter")}</label>
