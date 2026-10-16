@@ -192,7 +192,7 @@ export default function PuestosPage() {
       )}
 
       {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}
@@ -200,7 +200,7 @@ export default function PuestosPage() {
           pageSize={pagination.page_size}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
-          itemName="puestos"
+          itemName={t("stations.itemName")}
           pageSizeOptions={[12, 24, 48, 96]}
         />
       )}

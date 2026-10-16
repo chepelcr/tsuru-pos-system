@@ -31,7 +31,10 @@
   "common.no": "No",
   "common.noResults": "Sin resultados",
   "common.optional": "Opcional",
-  "common.pageSize": "Elementos por página",
+  "common.pageSize": "Mostrar",
+  "common.pagination": "Paginación",
+  "common.paginationPage": "Página {page} de {total}",
+  "common.items": "elementos",
   "common.paginationSummary": "Mostrando {start}-{end} de {total} {items}",
   "common.phone": "Teléfono",
   "common.previous": "Anterior",
@@ -171,5 +174,11 @@
   "time.daysAgo": "hace {n}d",
   "time.hoursAgo": "hace {n}h",
   "time.minutesAgo": "hace {n}m",
-  "time.secondsAgo": "hace {n}s"
+  "time.secondsAgo": "hace {n}s",
+  "products.itemName": "productos",
+  "clients.itemName": "clientes",
+  "stations.itemName": "puestos",
+  "session.itemName": "sesiones",
+  "assignments.itemName": "asignaciones",
+  "documents.itemName": "documentos"
 }

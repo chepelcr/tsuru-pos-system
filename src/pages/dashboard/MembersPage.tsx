@@ -77,6 +77,7 @@ export default function MembersPage() {
 
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -95,11 +96,11 @@ export default function MembersPage() {
     });
   }, [members, term]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredMembers.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pagedMembers = filteredMembers.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
   );
 
   const openInvite = () => {
@@ -423,13 +424,14 @@ export default function MembersPage() {
         </div>
       )}
 
-      {filteredMembers.length > PAGE_SIZE && (
+      {!membersLoading && (
         <Pagination
           page={currentPage}
           totalPages={totalPages}
           totalElements={filteredMembers.length}
-          pageSize={PAGE_SIZE}
+          pageSize={pageSize}
           onPageChange={setPage}
+          onPageSizeChange={setPageSize}
           itemName={t("members.itemName")}
         />
       )}

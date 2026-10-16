@@ -45,7 +45,7 @@ export function ProductGridView({
   const { t } = useLanguage();
 
   return (
-    <div className="grid-auto-fill-220 auto-rows-fr gap-3.5">
+    <div className="grid-docs auto-rows-fr gap-3.5">
       {products.map((p, i) => (
         <FadeIn key={p.product_id} delay={i * 0.03} duration={0.4} className="h-full min-w-0">
           <Card

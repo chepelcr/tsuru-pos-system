@@ -219,7 +219,7 @@ export default function SessionsPage() {
       )}
 
       {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}
@@ -227,7 +227,7 @@ export default function SessionsPage() {
           pageSize={pagination.page_size}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
-          itemName="sesiones"
+          itemName={t("session.itemName")}
           pageSizeOptions={[12, 24, 48, 96]}
         />
       )}

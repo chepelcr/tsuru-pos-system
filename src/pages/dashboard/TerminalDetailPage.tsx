@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -9,7 +9,7 @@ import { useBranch } from "@/hooks/useBranches";
 import { useConsecutives } from "@/hooks/useConsecutives";
 import { useSales } from "@/hooks/useSales";
 import { useAllDocumentTypes } from "@/hooks/useDataApi";
-import { Badge, Button, EmptyState, Icon, Spinner } from "@/components/ui";
+import { Badge, Button, EmptyState, Icon, Pagination, Spinner } from "@/components/ui";
 import {
   ConsecutiveEditDrawer,
   type ConsecutiveEditTarget,
@@ -92,6 +92,8 @@ export default function TerminalDetailPage() {
 
   // ── Documents emitted at this terminal ──────────────────────────────────
   const [docsPage, setDocsPage] = useState(0);
+  const [docsPageSize, setDocsPageSize] = useState(DOCS_PAGE_SIZE);
+  useEffect(() => setDocsPage(0), [orgId, branchCode, terminalCode]);
   const salesQuery = useSales({
     orgId: orgId ?? "",
     issued: true,
@@ -99,7 +101,7 @@ export default function TerminalDetailPage() {
     // included even when no terminal row matched their clave.
     search: terminal ? { branch_number: branchCode, terminal_number: terminalCode } : undefined,
     page: docsPage,
-    size: DOCS_PAGE_SIZE,
+    size: docsPageSize,
     enabled: !!terminal && canReadDocuments,
   });
   const docs = (salesQuery.data?.data ?? []) as unknown as DocumentListItem[];
@@ -289,17 +291,19 @@ export default function TerminalDetailPage() {
               })}
             </ul>
           )}
-          {docsPagination && docsPagination.total_pages > 1 && (
-            <footer className="px-5 py-3 border-t border-border flex items-center justify-between gap-3">
-              <Button variant="outline" size="sm" icon="chevronLeft" disabled={docsPage === 0} onClick={() => setDocsPage((p) => p - 1)}>
-                {t("common.previous")}
-              </Button>
-              <span className="t-xs text-muted-foreground">
-                {docsPage + 1} / {docsPagination.total_pages}
-              </span>
-              <Button variant="outline" size="sm" iconRight="chevronRight" disabled={docsPage + 1 >= docsPagination.total_pages} onClick={() => setDocsPage((p) => p + 1)}>
-                {t("common.next")}
-              </Button>
+          {docsPagination && (
+            <footer className="px-5 py-3 border-t border-border">
+              <Pagination
+                className="mt-0"
+                page={docsPagination.page + 1}
+                totalPages={docsPagination.total_pages}
+                totalElements={docsPagination.total_elements}
+                pageSize={docsPagination.page_size}
+                onPageChange={(next) => setDocsPage(next - 1)}
+                onPageSizeChange={setDocsPageSize}
+                pageSizeOptions={[10, 20, 50, 100]}
+                itemName={t("documents.itemName")}
+              />
             </footer>
           )}
         </section>

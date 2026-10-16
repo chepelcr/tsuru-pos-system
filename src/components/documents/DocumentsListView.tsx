@@ -20,7 +20,7 @@ import { hasHaciendaActions } from '@/lib/documentStatus';
 import { useDocumentImportStore } from '@/hooks/useDocumentImport';
 
 const SKELETON_COUNT = 6;
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 interface DocumentsListViewProps {
   orgId: string;
@@ -83,6 +83,8 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
   const [term, setTerm] = useState(search.searchTerm ?? '');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  useEffect(() => setPage(0), [orgId, is_received]);
   const [actionModal, setActionModal] = useState<{
     doc: DocumentListItem;
     action: string;
@@ -100,7 +102,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
     issued: !is_received,
     search,
     page,
-    size: PAGE_SIZE,
+    size: pageSize,
   });
 
   const docs = data?.data ?? [];
@@ -172,7 +174,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
             ))}
           </div>
         ) : error ? (
-          <div className="h-full flex items-center justify-center p-4">
+          <div className="min-h-64 flex items-center justify-center p-4">
             <EmptyState
               icon="alertCircle"
               title={t('documents.list.errorTitle')}
@@ -192,7 +194,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
             />
           </div>
         ) : docs.length === 0 ? (
-          <div className="h-full flex items-center justify-center p-4">
+          <div className="min-h-64 flex items-center justify-center p-4">
             <EmptyState
               icon="fileText"
               title={t('documents.list.emptyTitle')}
@@ -231,18 +233,20 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
                 </FadeIn>
               ))}
             </div>
-
-            {pagination && pagination.total_pages > 1 && (
-              <div className="mt-6">
-                <Pagination
-                  page={page}
-                  totalPages={pagination.total_pages}
-                  totalElements={pagination.total_elements}
-                  pageSize={pagination.page_size}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
+          </div>
+        )}
+        {!isLoading && !error && pagination && (
+          <div className="px-4 pb-4">
+            <Pagination
+              page={pagination.page + 1}
+              totalPages={pagination.total_pages}
+              totalElements={pagination.total_elements}
+              pageSize={pagination.page_size}
+              onPageChange={(next) => setPage(next - 1)}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[20, 50, 100]}
+              itemName={t('documents.itemName')}
+            />
           </div>
         )}
       </div>

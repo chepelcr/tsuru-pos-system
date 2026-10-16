@@ -118,24 +118,25 @@ export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps
             })}
           </div>
 
-          {pagination && (
-            <div className="mt-4">
-              <Pagination
-                page={pagination.page}
-                totalPages={pagination.total_pages}
-                totalElements={pagination.total_elements}
-                pageSize={pagination.page_size}
-                onPageChange={setPage}
-                onPageSizeChange={(s) => {
-                  setPageSize(s);
-                  setPage(1);
-                }}
-                itemName={t("orders.itemName")}
-                pageSizeOptions={[8, 16, 32]}
-              />
-            </div>
-          )}
+
         </>
+      )}
+      {pagination && !isLoading && (
+        <div className="mt-4">
+          <Pagination
+            page={pagination.page}
+            totalPages={pagination.total_pages}
+            totalElements={pagination.total_elements}
+            pageSize={pagination.page_size}
+            onPageChange={setPage}
+            onPageSizeChange={(s) => {
+              setPageSize(s);
+              setPage(1);
+            }}
+            itemName={t("orders.itemName")}
+            pageSizeOptions={[8, 16, 32]}
+          />
+        </div>
       )}
     </Card>
   );

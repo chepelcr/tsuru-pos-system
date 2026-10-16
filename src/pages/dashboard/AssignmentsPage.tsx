@@ -340,7 +340,7 @@ export default function AssignmentsPage() {
       })}
 
       {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}
@@ -348,7 +348,7 @@ export default function AssignmentsPage() {
           pageSize={pagination.page_size}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
-          itemName="asignaciones"
+          itemName={t("assignments.itemName")}
           pageSizeOptions={[12, 24, 48, 96]}
         />
       )}

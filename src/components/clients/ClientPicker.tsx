@@ -31,7 +31,7 @@ export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, vari
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
   const debouncedTerm = useDebounce(term, 300);
-  const pageSize = PAGE_SIZE[variant];
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE[variant]);
 
   const { data, isLoading } = useClients(orgId, {
     search: buildClientSearch({ term: debouncedTerm, status: 1 }),
@@ -116,15 +116,16 @@ export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, vari
         )}
       </div>
 
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}
           totalElements={pagination.total_elements}
           pageSize={pagination.page_size}
           onPageChange={setPage}
+          onPageSizeChange={setPageSize}
           itemName={t("tabs.clients")}
-          pageSizeOptions={[pageSize]}
+          pageSizeOptions={variant === "inline" ? [5, 10, 20] : [20, 50, 100]}
         />
       )}
     </div>

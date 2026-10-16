@@ -181,7 +181,9 @@ Shadows: --shadow-card --shadow-card-hover --shadow-dropdown --shadow-dropdown-u
 | Z-index | `z-dropdown / z-overlay / z-modal / z-tooltip / z-drawer / z-drawer-modal` |
 | Fonts | `font-sans / font-display / font-mono` |
 
-Catalog `ProductGridView` uses equal fractional grid rows. Both its `FadeIn`
+Catalog `ProductGridView` uses the shared two-column `.grid-docs` layout
+(one column when narrow) and equal fractional grid rows. Its loading grid uses
+the same column layout. Both its `FadeIn`
 wrapper and `Card` must fill the row height; the card body is a flex column with
 an auto-margin price/action footer. Preserve that chain so full product names
 can wrap while card heights and bottom prices stay aligned across every row.
@@ -559,12 +561,28 @@ pre-discount amount. The un-eroded base Note 20 needs travels as
 ## 9. Common patterns — copy these
 
 ### Pagination
+Use the shared `Pagination` for every paginated list, including embedded
+client/order/product pickers and terminal documents. Keep it visible whenever
+pagination metadata exists, including one-page and empty lists. It always shows
+the item range, translated **Mostrar / Show** page-size selector and one-based
+**Página X de Y / Page X of Y** controls. `onPageSizeChange` is required; changing
+size resets to UI page 1. The current size is included even when absent from the
+suggested options. Use a localized `itemName` and `className="mt-0"` inside a
+container that already provides footer padding.
+
+**Sales and historical APIs are zero-based:** pass `pagination.page + 1` and map
+`onPageChange={(next) => setPage(next - 1)}`. Keep their API/query state zero-based.
+Other catalog APIs and client-side lists use one-based state. Document filters,
+issued/received changes and page-size changes reset the API page to zero.
+`Pagination.test.tsx` and `DocumentsListView.pagination.test.tsx` cover ranges,
+page boundaries, size reset, localized labels and the sales adapter.
+
 ```tsx
 <Pagination
   page={pagination.page} totalPages={pagination.total_pages}
   totalElements={pagination.total_elements} pageSize={pagination.page_size}
   onPageChange={setPage} onPageSizeChange={setPageSize}
-  itemName="productos" pageSizeOptions={[12, 24, 48, 96]}
+  itemName={t("products.itemName")} pageSizeOptions={[12, 24, 48, 96]}
 />
 ```
 

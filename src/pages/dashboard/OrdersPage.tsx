@@ -150,6 +150,7 @@ export default function OrdersPage() {
 
   const [term, setTerm] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [filters, setFilters] = useState<OrdersAdvancedFilters>({ ...EMPTY_ORDERS_FILTERS });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -174,7 +175,7 @@ export default function OrdersPage() {
     orgId,
     filters: searchFilters,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
   });
 
   const orders = data?.data ?? [];
@@ -285,17 +286,20 @@ export default function OrdersPage() {
             ))}
           </div>
 
-          {pagination && (
-            <Pagination
-              page={pagination.page}
-              totalPages={pagination.total_pages}
-              totalElements={pagination.total_elements}
-              pageSize={pagination.page_size}
-              onPageChange={setPage}
-              itemName={t('orders.itemName')}
-            />
-          )}
+
         </>
+      )}
+
+      {pagination && !isLoading && !error && (
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.total_pages}
+          totalElements={pagination.total_elements}
+          pageSize={pagination.page_size}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          itemName={t('orders.itemName')}
+        />
       )}
 
       <OrdersFiltersModal

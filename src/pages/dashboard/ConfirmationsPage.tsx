@@ -45,12 +45,13 @@ export default function ConfirmationsPage() {
   const canUpdate = can('commercial', 'update', 'confirmations');
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data, isLoading, error, refetch } = useConfirmations({
     orgId,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
   });
 
   const confirmations = data?.data ?? [];
@@ -117,17 +118,20 @@ export default function ConfirmationsPage() {
             ))}
           </div>
 
-          {pagination && (
-            <Pagination
-              page={pagination.page}
-              totalPages={pagination.total_pages}
-              totalElements={pagination.total_elements}
-              pageSize={pagination.page_size}
-              onPageChange={setPage}
-              itemName={t('confirmations.itemName')}
-            />
-          )}
+
         </>
+      )}
+
+      {pagination && !isLoading && !error && (
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.total_pages}
+          totalElements={pagination.total_elements}
+          pageSize={pagination.page_size}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          itemName={t('confirmations.itemName')}
+        />
       )}
 
       <CreateConfirmationDialog open={createOpen} onClose={() => setCreateOpen(false)} orgId={orgId} />

@@ -305,7 +305,7 @@ export default function ProductsPage() {
       )}
 
       {isLoading ? (
-        <div className="grid-auto-fill-240 gap-3.5">
+        <div className="grid-docs gap-3.5">
           {Array.from({ length: pageSize }).map((_, i) => <ProductSkeletonCard key={i} />)}
         </div>
       ) : products.length === 0 ? (
@@ -333,7 +333,7 @@ export default function ProductsPage() {
           pageSize={pagination.page_size} // Use backend's actual page_size
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
-          itemName="productos"
+          itemName={t("products.itemName")}
           pageSizeOptions={[12, 24, 48, 96]}
         />
       )}

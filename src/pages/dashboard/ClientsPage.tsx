@@ -42,6 +42,7 @@ export default function ClientsPage() {
   const [advanced, setAdvanced] = useState<ClientAdvancedFilters>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(24);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
@@ -65,7 +66,7 @@ export default function ClientsPage() {
   const { data: listData, isLoading } = useClients(orgId, {
     search: searchFilter || undefined,
     page,
-    page_size: 24,
+    page_size: pageSize,
   });
   const clients = listData?.data ?? [];
   const pagination = listData?.pagination;
@@ -147,14 +148,15 @@ export default function ClientsPage() {
       )}
 
       {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}
           totalElements={pagination.total_elements}
           pageSize={pagination.page_size}
           onPageChange={setPage}
-          itemName="clientes"
+          onPageSizeChange={setPageSize}
+          itemName={t("clients.itemName")}
         />
       )}
 

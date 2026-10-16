@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
+import { Pagination } from "@/components/ui/Pagination";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ProductGridSkeleton } from "./ProductGridSkeleton";
@@ -23,12 +24,13 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(isDesktop ? 24 : 12);
 
   const { data: productsResp, isLoading } = useProducts({
     search,
     category_id: categoryId,
     page,
-    page_size: isDesktop ? 24 : 12,
+    page_size: pageSize,
   });
 
   const { data: categoriesResp } = useCategories(orgId);
@@ -148,30 +150,19 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
         )}
       </div>
 
-      {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-2 px-5 py-3 border-t border-border flex-shrink-0">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-            className={`px-3.5 py-1.5 rounded-lg border border-border bg-transparent text-[13px] ${
-              page <= 1 ? "text-muted-foreground opacity-40 cursor-default" : "text-foreground cursor-pointer"
-            }`}
-          >
-            ←
-          </button>
-          <span className="text-xs text-muted-foreground">
-            {page} / {pagination.total_pages}
-          </span>
-          <button
-            disabled={page >= pagination.total_pages}
-            onClick={() => setPage((p) => p + 1)}
-            className={`px-3.5 py-1.5 rounded-lg border border-border bg-transparent text-[13px] ${
-              page >= pagination.total_pages ? "text-muted-foreground opacity-40 cursor-default" : "text-foreground cursor-pointer"
-            }`}
-          >
-            →
-          </button>
+      {/* Same footer as the catalog and document lists. */}
+      {pagination && (
+        <div className="px-5 py-3 border-t border-border flex-shrink-0">
+          <Pagination
+            className="mt-0"
+            page={pagination.page}
+            totalPages={pagination.total_pages}
+            totalElements={pagination.total_elements}
+            pageSize={pagination.page_size}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemName={t("products.itemName")}
+          />
         </div>
       )}
     </div>

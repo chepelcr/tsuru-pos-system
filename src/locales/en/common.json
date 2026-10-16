@@ -31,7 +31,10 @@
   "common.no": "No",
   "common.noResults": "No results",
   "common.optional": "Optional",
-  "common.pageSize": "Items per page",
+  "common.pageSize": "Show",
+  "common.pagination": "Pagination",
+  "common.paginationPage": "Page {page} of {total}",
+  "common.items": "items",
   "common.paginationSummary": "Showing {start}-{end} of {total} {items}",
   "common.phone": "Phone",
   "common.previous": "Previous",
@@ -171,5 +174,11 @@
   "time.daysAgo": "{n}d ago",
   "time.hoursAgo": "{n}h ago",
   "time.minutesAgo": "{n}m ago",
-  "time.secondsAgo": "{n}s ago"
+  "time.secondsAgo": "{n}s ago",
+  "products.itemName": "products",
+  "clients.itemName": "customers",
+  "stations.itemName": "stations",
+  "session.itemName": "sessions",
+  "assignments.itemName": "assignments",
+  "documents.itemName": "documents"
 }

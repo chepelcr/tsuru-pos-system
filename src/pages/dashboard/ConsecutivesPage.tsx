@@ -241,7 +241,7 @@ export default function ConsecutivesPage() {
         </div>
       )}
 
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}

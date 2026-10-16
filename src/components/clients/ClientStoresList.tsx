@@ -20,7 +20,7 @@ interface ClientStoresListProps {
 export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
   const { t } = useLanguage();
   const { confirm, ConfirmModal } = useConfirmModal();
-  const { searchQuery, page, pageSize, sortBy, sortOrder, setSearchQuery, setPage } =
+  const { searchQuery, page, pageSize, sortBy, sortOrder, setSearchQuery, setPage, setPageSize } =
     useStoreListStore();
 
   // RBAC action gating — stores inherit commercial/clients tuples (§5.1).
@@ -140,13 +140,14 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
         </div>
       )}
 
-      {pagination && pagination.total_pages > 1 && (
+      {pagination && (
         <Pagination
           page={pagination.page}
           totalPages={pagination.total_pages}
           totalElements={pagination.total_elements}
           pageSize={pagination.page_size}
           onPageChange={setPage}
+          onPageSizeChange={setPageSize}
           itemName={t("stores.itemName")}
         />
       )}
