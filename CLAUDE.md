@@ -185,8 +185,10 @@ Catalog `ProductGridView` uses equal fractional grid rows. Both its `FadeIn`
 wrapper and `Card` must fill the row height; the card body is a flex column with
 an auto-margin price/action footer. Preserve that chain so full product names
 can wrap while card heights and bottom prices stay aligned across every row.
-The selection checkbox and title share a normal-flow header row: reserve the
-checkbox width and text gap so wrapped names never overlap the checkbox.
+The title header uses a contained float layout: the checkbox and category badge
+occupy only its first 20px line. The name flows beside those controls on line one,
+then uses the full card width on later lines. Keep the controls no taller than
+the line height so their exclusion does not indent subsequent lines.
 
 ### 3.3 Component classes (defined in `src/index.css` — prefer these over recomposing)
 

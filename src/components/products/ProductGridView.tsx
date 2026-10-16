@@ -64,8 +64,8 @@ export function ProductGridView({
               />
             </div>
             <div className="p-3.5 flex flex-1 flex-col">
-              <div className="flex items-start gap-2 mb-1">
-                <label className="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <div className="flow-root mb-1 text-sm font-bold leading-5">
+                <label className="float-left mr-2 inline-flex h-5 w-5 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     aria-label={t("products.selectProduct", { name: p.name })}
@@ -74,11 +74,13 @@ export function ProductGridView({
                     className="w-[18px] h-[18px] cursor-pointer accent-primary"
                   />
                 </label>
-                <div className="min-w-0 flex-1 text-sm font-bold leading-tight break-words">{p.name}</div>
-                <Badge variant="outline" className="flex-shrink-0 !text-[9px]">{p.category?.name ?? "—"}</Badge>
+                <Badge variant="outline" className="float-right ml-2 max-w-[50%] !text-[9px]">
+                  <span className="truncate" title={p.category?.name ?? "—"}>{p.category?.name ?? "—"}</span>
+                </Badge>
+                <span className="break-words">{p.name}</span>
               </div>
               {(p.status === 0 || lowStock(p)) && (
-                <div className="flex flex-wrap gap-1 mt-1 mb-2 pl-7">
+                <div className="flex flex-wrap gap-1 mt-1 mb-2">
                   {p.status === 0 && <Badge variant="secondary">{t("common.inactive")}</Badge>}
                   {lowStock(p) && <Badge variant="warning">{t("products.stock", { n: String(p.stock_quantity) })}</Badge>}
                 </div>
