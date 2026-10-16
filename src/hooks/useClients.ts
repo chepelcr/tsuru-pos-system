@@ -215,8 +215,11 @@ export function useUpdateClient(orgId: string | undefined) {
   return useMutation({
     mutationFn: ({ clientId, dto }: { clientId: string; dto: UpdateClientDto }) =>
       crossAppApi.put<Client>(crossAppOrgPath(orgId!, `/clients/${clientId}`), rawPartyPayload(dto)),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clients", orgId] });
+    onSuccess: (updatedClient, { clientId }) => {
+      if (updatedClient) {
+        qc.setQueryData(["client", orgId, clientId], updatedClient);
+      }
+      return qc.invalidateQueries({ queryKey: ["clients", orgId] });
     },
   });
 }
@@ -237,8 +240,11 @@ export function useUpdateClientStatus(orgId: string | undefined) {
         crossAppOrgPath(orgId!, `/clients/${clientId}/status`),
         { status }
       ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["clients", orgId] });
+    onSuccess: (updatedClient, { clientId }) => {
+      if (updatedClient) {
+        qc.setQueryData(["client", orgId, clientId], updatedClient);
+      }
+      return qc.invalidateQueries({ queryKey: ["clients", orgId] });
     },
   });
 }
