@@ -19,6 +19,7 @@ export { LocationSelect } from "./LocationSelect";
 export { CountryFlag } from "./CountryFlag";
 export { CountrySelect } from "./CountrySelect";
 export { PhoneField } from "./PhoneField";
+export { WhatsAppField } from "./WhatsAppField";
 export { Spinner } from "./Spinner";
 export { Pagination } from "./Pagination";
 export { FadeIn } from "./FadeIn";

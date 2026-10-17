@@ -10,6 +10,8 @@ interface PhoneFieldProps {
   disabled?: boolean;
   numberPlaceholder?: string;
   id?: string;
+  numberId?: string;
+  countryLabel?: string;
 }
 
 /**
@@ -25,21 +27,27 @@ export function PhoneField({
   disabled,
   numberPlaceholder = "22223333",
   id,
+  numberId,
+  countryLabel,
 }: PhoneFieldProps) {
   const cc = countryCode || CountryISO.COSTA_RICA;
   const digits = (number ?? "").replace(/\D/g, "");
 
   return (
-    <div className="grid grid-cols-[150px_1fr] gap-2.5">
+    <div className="flex flex-wrap gap-2.5">
       <CountrySelect
+        className="min-w-0 basis-28 flex-1"
         id={id}
+        ariaLabel={countryLabel}
         value={cc}
         display="dial"
         disabled={disabled}
         onChange={(iso) => onChange({ countryCode: iso, number: number ?? "" })}
       />
       <input
-        className="pp-input w-full"
+        id={numberId}
+        autoComplete="tel-national"
+        className="pp-input w-full min-w-0 basis-32 flex-1"
         type="tel"
         inputMode="numeric"
         disabled={disabled}

@@ -53,6 +53,8 @@ const buildSchema = (t: (k: string) => string) =>
 type BrandingValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface BrandingSettingsFormProps {
+  formId?: string;
+  hideActions?: boolean;
   initialValues?: OrgThemeBranding;
   onSubmit: (data: OrgThemeBranding) => Promise<void>;
   isSaving?: boolean;
@@ -69,6 +71,8 @@ interface BrandingSettingsFormProps {
  * the stored value is the asset's absolute CloudFront URL.
  */
 export function BrandingSettingsForm({
+  formId,
+  hideActions = false,
   initialValues,
   onSubmit,
   isSaving = false,
@@ -142,7 +146,7 @@ export function BrandingSettingsForm({
   );
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="card p-5 space-y-4">
+    <form id={formId} onSubmit={handleSubmit(submit)} className={hideActions ? "space-y-4" : "card p-5 space-y-4"}>
       <div className="grid gap-4 sm:grid-cols-2">
         <ColorRow
           name="primary_color"
@@ -232,7 +236,7 @@ export function BrandingSettingsForm({
         </FormField>
       </div>
 
-      {canSave && (
+      {canSave && !hideActions && (
         <div className="flex justify-end pt-1">
           <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
             {isSaving ? (

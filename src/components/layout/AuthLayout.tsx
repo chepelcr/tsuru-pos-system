@@ -36,7 +36,7 @@ export function AuthLayout({
   aside,
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       <AuthNavbar
         leftSlot={navLeftSlot}
         showLogout={showLogout}
@@ -45,10 +45,10 @@ export function AuthLayout({
       />
       <main className="flex-1 flex items-center justify-center px-4 pt-20 pb-10">
         {aside ? (
-          <div className={cn("w-full mx-auto max-w-5xl grid lg:grid-cols-2 gap-8 items-center", className)}>
+          <div className={cn("w-full mx-auto max-w-md lg:max-w-5xl grid lg:grid-cols-2 gap-8 items-center", className)}>
             {/* Form stays on top on mobile; story sits to the left on desktop. */}
+            <div className="min-w-0 order-first lg:order-last">{children}</div>
             <div className="order-last lg:order-first">{aside}</div>
-            <div>{children}</div>
           </div>
         ) : (
           <div className={cn("w-full mx-auto", maxWidthClassName, className)}>{children}</div>

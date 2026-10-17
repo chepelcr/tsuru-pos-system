@@ -6,7 +6,7 @@ import { Icon, Menu, type MenuItem } from "@/components/ui";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { ROUTES } from "@/routePaths";
 import { useDarkMode } from "@/hooks/useDarkMode";
-import { useLanguageSwitch } from "@/hooks/useLanguageSwitch";
+import { LanguageToggle } from "@/components/common/LanguageToggle";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore } from "@/store/documentStore";
 import { useMaxVisibleTabs } from "@/store/uiStore";
@@ -33,7 +33,6 @@ export function DashboardHeader({
   docsOpen = false,
 }: DashboardHeaderProps) {
   const { dark, toggle: toggleDark } = useDarkMode();
-  const { language, toggle: toggleLanguage } = useLanguageSwitch();
   const { t } = useLanguage();
   const tutorial = useTutorial();
   const openCount = useDocumentStore((s) => s.open_documents.length);
@@ -142,18 +141,7 @@ export function DashboardHeader({
         {/* Notifications bell */}
         <NotificationsBell />
 
-        {/* Language toggle + Country flag */}
-        <button
-          className="btn btn-ghost btn-sm btn-icon"
-          onClick={toggleLanguage}
-          aria-label="Toggle language"
-        >
-          <img
-            src={language === "es" ? "https://flagcdn.com/w20/cr.png" : "https://flagcdn.com/w20/us.png"}
-            alt={language === "es" ? "Costa Rica" : "United States"}
-            className="w-5 h-auto rounded-sm"
-          />
-        </button>
+        <LanguageToggle />
 
         {/* Dark mode toggle */}
         <button

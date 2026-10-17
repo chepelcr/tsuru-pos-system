@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { MapPin, Share2 } from "lucide-react";
-import { Spinner, LocationSelect, PhoneField } from "@/components/ui";
+import { Spinner, LocationSelect, PhoneField, WhatsAppField } from "@/components/ui";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { FormField } from "@/components/forms/FormField";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,12 +22,13 @@ const buildSchema = (t: (k: string) => string) =>
     facebook_url: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
     instagram_url: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
     twitter_url: z.string().url(t("orgSettings.contact.urlInvalid")).optional().or(z.literal("")),
-    whatsapp_number: z.string().optional(),
   });
 
 type ContactValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface ContactSettingsFormProps {
+  formId?: string;
+  hideActions?: boolean;
   initialValues?: OrgContactSettings;
   onSubmit: (data: OrgContactSettings) => Promise<void>;
   isSaving?: boolean;
@@ -40,6 +41,8 @@ interface ContactSettingsFormProps {
  * ("Contacto" + "Redes sociales"). Re-skinned from the dashboard's shadcn form.
  */
 export function ContactSettingsForm({
+  formId,
+  hideActions = false,
   initialValues,
   onSubmit,
   isSaving = false,
@@ -59,7 +62,6 @@ export function ContactSettingsForm({
       facebook_url: initialValues?.facebook_url ?? "",
       instagram_url: initialValues?.instagram_url ?? "",
       twitter_url: initialValues?.twitter_url ?? "",
-      whatsapp_number: initialValues?.whatsapp_number ?? "",
     },
   });
 
@@ -67,6 +69,7 @@ export function ContactSettingsForm({
   // via the shared LocationSelect — both controlled, merged into the payload on
   // submit. LocationSelect's "otras señas" textarea is the single address field.
   const [phone, setPhone] = useState(initialValues?.phone ?? "");
+  const [whatsapp, setWhatsapp] = useState(initialValues?.whatsapp_number ?? "");
   const [phone_country_code, setPhoneCountryCode] = useState(
     initialValues?.phone_country_code ?? CountryISO.COSTA_RICA,
   );
@@ -83,6 +86,7 @@ export function ContactSettingsForm({
       ...data,
       phone,
       phone_country_code,
+      whatsapp_number: whatsapp,
       address: location.address ?? "",
       state_id: location.state_id,
       county_id: location.county_id,
@@ -92,7 +96,7 @@ export function ContactSettingsForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-4">
+    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-4">
       <SectionWrapper title={t("orgSettings.contact.title")} icon={MapPin}>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label={t("common.email")} error={errors.email?.message}>
@@ -161,18 +165,18 @@ export function ContactSettingsForm({
             />
           </FormField>
 
-          <FormField label={t("orgSettings.contact.whatsapp")} error={errors.whatsapp_number?.message}>
-            <input
-              className="pp-input w-full"
-              type="tel"
-              placeholder={t("orgSettings.contact.whatsappPlaceholder")}
-              {...register("whatsapp_number")}
+          <FormField htmlFor="contact-settings-whatsapp" label={t("orgSettings.contact.whatsapp")}>
+            <WhatsAppField
+              numberId="contact-settings-whatsapp"
+              value={whatsapp}
+              onChange={setWhatsapp}
+              fallbackCountryCode={phone_country_code}
             />
           </FormField>
         </div>
       </SectionWrapper>
 
-      {canSave && (
+      {canSave && !hideActions && (
         <div className="flex justify-end pt-1">
           <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
             {isSaving ? (

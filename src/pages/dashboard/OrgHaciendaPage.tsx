@@ -11,6 +11,7 @@ import { FadeIn } from "@/components/ui/FadeIn";
 import { HaciendaTab } from "@/components/org-settings/tabs/HaciendaTab";
 import { HaciendaConfigDrawer } from "@/components/org-settings/HaciendaConfigDrawer";
 import { HaciendaCredentialsStepper } from "@/components/org-settings/hacienda/HaciendaCredentialsStepper";
+import { FiscalInfoRequired } from "@/components/org-settings/FiscalInfoRequired";
 import { ROUTES } from "@/routePaths";
 
 export default function OrgHaciendaPage() {
@@ -54,38 +55,39 @@ export default function OrgHaciendaPage() {
           </p>
         </div>
 
-        {savedNoticeVisible && (
-          <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-success/10 border border-success/30">
-            <Icon name="checkCircle" size={14} className="text-success mt-0.5 flex-shrink-0" />
-            <span className="t-sm">{t("orgSettings.fiscalInfo.saveSuccess")}</span>
-          </div>
-        )}
+        <FiscalInfoRequired orgId={org?.id}>
+          {savedNoticeVisible && (
+            <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-success/10 border border-success/30">
+              <Icon name="checkCircle" size={14} className="text-success mt-0.5 flex-shrink-0" />
+              <span className="t-sm">{t("orgSettings.fiscalInfo.saveSuccess")}</span>
+            </div>
+          )}
 
-        {showStepper && org && canUpdate ? (
-          <HaciendaCredentialsStepper
-            orgId={org.id}
-            onSaved={() => {
-              setSavedNoticeVisible(true);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        ) : (
-          <HaciendaTab
-            config={config}
-            isLoading={isLoading}
-            onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
-          />
-        )}
+          {showStepper && org && canUpdate ? (
+            <HaciendaCredentialsStepper
+              orgId={org.id}
+              onSaved={() => {
+                setSavedNoticeVisible(true);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          ) : (
+            <HaciendaTab
+              config={config}
+              isLoading={isLoading}
+              onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
+            />
+          )}
+          {org && canUpdate && (
+            <HaciendaConfigDrawer
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              config={config}
+              orgId={org.id}
+            />
+          )}
+        </FiscalInfoRequired>
       </FadeIn>
-
-      {org && canUpdate && (
-        <HaciendaConfigDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          config={config}
-          orgId={org.id}
-        />
-      )}
     </div>
   );
 }

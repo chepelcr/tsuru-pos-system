@@ -18,6 +18,8 @@ const buildSchema = (t: (k: string) => string) =>
 type ShippingValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface ShippingSettingsFormProps {
+  formId?: string;
+  hideActions?: boolean;
   initialValues?: OrgShippingSettings;
   onSubmit: (data: OrgShippingSettings) => Promise<void>;
   isSaving?: boolean;
@@ -30,6 +32,8 @@ interface ShippingSettingsFormProps {
  * default cost) and three toggle rows. Re-skinned from the dashboard form.
  */
 export function ShippingSettingsForm({
+  formId,
+  hideActions = false,
   initialValues,
   onSubmit,
   isSaving = false,
@@ -58,7 +62,7 @@ export function ShippingSettingsForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="card p-5 space-y-4">
+    <form id={formId} onSubmit={handleSubmit(submit)} className={hideActions ? "space-y-4" : "card p-5 space-y-4"}>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField
           label={t("orgSettings.shipping.freeShippingThreshold")}
@@ -139,7 +143,7 @@ export function ShippingSettingsForm({
         </div>
       </label>
 
-      {canSave && (
+      {canSave && !hideActions && (
         <div className="flex justify-end pt-1">
           <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
             {isSaving ? (

@@ -19,14 +19,6 @@ interface StepperProps {
   hideFooter?: boolean;
   /** Hide the step rail (used on the welcome step so the rail doesn't compete with the hero). */
   hideRail?: boolean;
-  /**
-   * Keep the two-row grid rail at every breakpoint instead of switching to the
-   * single-row flex layout at >=640px. Use it when the stepper lives in a narrow
-   * column (the auth card beside the brand-story panel): there the flex row wraps,
-   * which leaves a connector segment dangling after the last chip of a row and
-   * pushes the wrapped chips off-centre.
-   */
-  stackedRail?: boolean;
   /** Disables the Next/Save button (parent indicates validation state). */
   canAdvance?: boolean;
   isSaving?: boolean;
@@ -48,7 +40,6 @@ export function Stepper({
   welcomeMode = false,
   hideFooter = false,
   hideRail = false,
-  stackedRail = false,
   canAdvance = true,
   isSaving = false,
   onPrev,
@@ -58,6 +49,8 @@ export function Stepper({
 }: StepperProps) {
   const { t } = useLanguage();
   const bodyRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  const previousStep = useRef(current);
 
   const visibleSteps = steps.filter((s) => !s.hideFromRail);
   const isLast = current === steps.length - 1;
@@ -70,6 +63,11 @@ export function Stepper({
     // Force reflow so the animation restarts.
     void bodyRef.current.offsetWidth;
     bodyRef.current.classList.add("fade-in");
+    if (previousStep.current !== current) {
+      previousStep.current = current;
+      bodyRef.current.focus({ preventScroll: true });
+      railRef.current?.scrollIntoView?.({ block: "start", behavior: "instant" });
+    }
   }, [current]);
 
   // Map the active step into the visible-rail index so welcome (hidden) shows
@@ -79,7 +77,7 @@ export function Stepper({
   );
 
   const handlePrimaryClick = () => {
-    if (isSaving) return;
+    if (isSaving || !canAdvance) return;
     if (isLast) {
       onSave?.();
     } else {
@@ -88,11 +86,12 @@ export function Stepper({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.defaultPrevented && !e.nativeEvent.isComposing && !hideFooter) {
       const target = e.target as HTMLElement;
-      // Don't intercept Enter when the user is in a textarea/select; let the
-      // native behaviour win there.
-      if (target.tagName === "TEXTAREA") return;
+      // Forms and interactive controls own Enter. Only plain text inputs in a
+      // wizard without a form use the stepper's keyboard shortcut.
+      if (target.tagName !== "INPUT" || target.closest("form") ||
+          ["checkbox", "radio", "file", "button", "submit"].includes((target as HTMLInputElement).type)) return;
       if (canAdvance && !isSaving) {
         e.preventDefault();
         handlePrimaryClick();
@@ -107,25 +106,11 @@ export function Stepper({
       : t("common.next");
 
   return (
-    <div className="flex flex-col gap-6" onKeyDown={handleKeyDown}>
-      {/* Step rail
-       *
-       * Mobile (default): 6-column CSS grid that splits the steps into two
-       * tidy rows. `topCount = ceil(N/2)` chips share the top row and
-       * `N - topCount` chips share the bottom row, each chip spanning
-       * `6 / rowCount` columns so the rows are evenly divided. For our 5-step
-       * fiscal flow that lands 3 chips on top + 2 chips on the bottom (each
-       * top chip span 2, each bottom chip span 3). No horizontal scroll, no
-       * dangling connectors.
-       *
-       * ≥640px: the outer container switches to `flex flex-wrap` and the
-       * `gridColumn` inline style on each chip becomes a no-op, so the chips
-       * revert to the inline single-row layout with connector segments.
-       *
-       * `stackedRail` opts out of that switch and keeps the grid at every width.
-       */}
+    <div ref={railRef} className="flex flex-col gap-6 scroll-mt-20" onKeyDown={handleKeyDown}>
+      {/* Equal columns keep each number centered above its complete label.
+          Longer wizards use balanced rows without dangling connectors. */}
       {!hideRail && visibleSteps.length > 1 && (() => {
-        const topCount = Math.ceil(visibleSteps.length / 2);
+        const topCount = visibleSteps.length <= 3 ? visibleSteps.length : Math.ceil(visibleSteps.length / 2);
         const bottomCount = visibleSteps.length - topCount;
         const topSpan = Math.max(1, Math.floor(6 / topCount));
         const bottomSpan = bottomCount > 0 ? Math.max(1, Math.floor(6 / bottomCount)) : 6;
@@ -133,77 +118,52 @@ export function Stepper({
         return (
           <nav
             aria-label={t("common.steps")}
-            className={`grid grid-cols-6 gap-2 pb-1 ${
-              stackedRail ? "" : "sm:flex sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-2"
-            }`}
           >
+            <ol className="grid grid-cols-6 gap-x-2 gap-y-4 pb-1">
             {visibleSteps.map((step, idx) => {
               const isActive = idx === visibleIndex;
               const isComplete = idx < visibleIndex;
-              const isUpcoming = idx > visibleIndex;
               const isTopRow = idx < topCount;
               const span = isTopRow ? topSpan : bottomSpan;
 
               return (
-                <div
+                <li
                   key={step.id}
-                  className="flex items-center gap-2 min-w-0 sm:flex-shrink-0"
+                  className="min-w-0 flex flex-col items-center gap-2 text-center"
                   style={{ gridColumn: `span ${span} / span ${span}` }}
                   aria-current={isActive ? "step" : undefined}
                 >
-                  <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors w-full justify-center ${
-                      stackedRail ? "" : "sm:w-auto sm:justify-start"
-                    } ${
-                      isActive
-                        ? "border-primary bg-primary/10 text-primary"
-                        : isComplete
-                          ? "border-success/40 bg-success/10 text-success"
-                          : "border-border bg-muted/30 text-muted-foreground"
-                    }`}
-                  >
                     <span
-                      className={`flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-semibold flex-shrink-0 ${
+                      className={`flex items-center justify-center w-8 h-8 rounded-full border t-sm font-semibold flex-shrink-0 ${
                         isActive
-                          ? "bg-primary text-primary-foreground"
+                          ? "border-primary bg-primary text-primary-foreground"
                           : isComplete
-                            ? "bg-success text-success-foreground"
-                            : "bg-muted text-muted-foreground"
+                            ? "border-success bg-success text-success-foreground"
+                            : "border-border bg-muted text-muted-foreground"
                       }`}
                       aria-label={`${t("common.step")} ${idx + 1}`}
                     >
                       {isComplete ? (
-                        <Icon name="check" size={12} strokeWidth={3} />
+                        <Icon name="check" size={14} strokeWidth={3} aria-hidden="true" />
                       ) : (
                         idx + 1
                       )}
                     </span>
                     <span
-                      className={`t-sm font-medium truncate ${
-                        stackedRail ? "" : "sm:whitespace-nowrap"
-                      }`}
+                      className={`t-sm font-medium max-w-full break-words ${isActive ? "text-primary" : isComplete ? "text-success" : "text-muted-foreground"}`}
                     >
                       {t(step.titleKey)}
                     </span>
-                  </div>
-
-                  {!stackedRail && idx < visibleSteps.length - 1 && (
-                    <div
-                      className={`hidden sm:block h-px w-6 flex-shrink-0 ${
-                        isUpcoming ? "bg-border" : "bg-success/40"
-                      }`}
-                      aria-hidden="true"
-                    />
-                  )}
-                </div>
+                </li>
               );
             })}
+            </ol>
           </nav>
         );
       })()}
 
       {/* Step body */}
-      <div ref={bodyRef} className="fade-in">
+      <div ref={bodyRef} tabIndex={-1} className="fade-in focus:outline-none">
         {children}
       </div>
 
@@ -212,7 +172,7 @@ export function Stepper({
         <div className="flex items-center justify-between gap-3 pt-5 border-t border-border">
           <button
             type="button"
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline min-h-11"
             onClick={onPrev}
             disabled={isFirst || isSaving}
           >
@@ -222,7 +182,7 @@ export function Stepper({
 
           <button
             type="button"
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary min-h-11"
             onClick={handlePrimaryClick}
             disabled={!canAdvance || isSaving}
           >

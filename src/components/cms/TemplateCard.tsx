@@ -3,6 +3,7 @@ import { Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
 import { templateCategoryIcon } from "./templateCategory";
+import { TemplateThumbnail } from "./TemplateThumbnail";
 import type { Template } from "@/types";
 
 interface TemplateCardProps {
@@ -41,17 +42,7 @@ export function TemplateCard({
     >
       {/* Thumbnail (fallback placeholder when none) */}
       <div className="relative aspect-[16/10] bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border">
-        {template.thumbnail_url ? (
-          <img
-            src={template.thumbnail_url}
-            alt={template.display_name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="icon-pill icon-pill-lg icon-pill-muted w-14 h-14">
-            <Icon name={templateCategoryIcon(template.category)} size={26} strokeWidth={1.5} />
-          </span>
-        )}
+        <TemplateThumbnail template={template} />
 
         {isSelected && (
           <span className="absolute top-2.5 right-2.5 icon-pill icon-pill-primary-soft w-7 h-7">

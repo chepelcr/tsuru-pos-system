@@ -1,4 +1,5 @@
 import { CountryISO } from "@/lib/enums";
+import { z } from "zod";
 import type {
   RegisteredOrganization,
   RegisteredOrganizationPayload,
@@ -42,7 +43,7 @@ export interface FiscalInfoFormState {
   address: string;
 
   activities: RegisteredOrgActivity[];
-  /** Subset of activity codes the user wants to persist. */
+  /** Legacy selection state for existing readers; all activities are persisted. */
   selectedActivityCodes: Set<string>;
 
   /** Which sections were pre-filled by the Hacienda lookup (lock read-only). */
@@ -70,7 +71,7 @@ export const EMPTY_FISCAL_FORM: FiscalInfoFormState = {
   taxAdministration: "",
 
   email: "",
-  phoneCountryCode: "506",
+  phoneCountryCode: CountryISO.COSTA_RICA,
   phoneAreaCode: "",
   phoneNumber: "",
   phoneDescription: "",
@@ -93,6 +94,24 @@ export const EMPTY_FISCAL_FORM: FiscalInfoFormState = {
   },
 };
 
+export function fiscalPhoneCountryIso(code?: string | null): string {
+  return code && /^\d{3}$/.test(code) && code !== "506" ? code : CountryISO.COSTA_RICA;
+}
+
+export function isFiscalEmailValid(email: string): boolean {
+  return !email.trim() || z.string().email().max(255).safeParse(email.trim()).success;
+}
+
+/** Clear lookup-derived identity immediately when the taxpayer ID changes. */
+export function emptyHaciendaInfo(): Partial<FiscalInfoFormState> {
+  return {
+    name: "", regimeCode: "", regimeDescription: "", situationStatus: "",
+    isDebtor: false, isNonCompliant: false, taxAdministration: "",
+    activities: [], selectedActivityCodes: new Set<string>(),
+    fromHacienda: { name: false, regime: false, situation: false, activities: false },
+  };
+}
+
 /** Hydrate the form state from a persisted RegisteredOrganization. */
 export function fromRegisteredOrganization(reg: RegisteredOrganization): FiscalInfoFormState {
   const activities = reg.activities ?? [];
@@ -113,7 +132,7 @@ export function fromRegisteredOrganization(reg: RegisteredOrganization): FiscalI
 
     email: reg.email ?? "",
     // The ISO key (188) the country select holds — not the dialing code.
-    phoneCountryCode: reg.phone?.country_code ?? CountryISO.COSTA_RICA,
+    phoneCountryCode: fiscalPhoneCountryIso(reg.phone?.country_code),
     phoneAreaCode: reg.phone?.area_code ?? "",
     phoneNumber: reg.phone?.number ?? "",
     phoneDescription: reg.phone?.description ?? "",
@@ -140,7 +159,7 @@ export function fromRegisteredOrganization(reg: RegisteredOrganization): FiscalI
 /** Convert the form state into the BE payload (no masking on the wire). */
 export function toPayload(form: FiscalInfoFormState): RegisteredOrganizationPayload {
   // We persist every activity that came back from Hacienda — the user sees
-  // them on the activities step but doesn't toggle a subset. The
+  // them in the review but doesn't toggle a subset. The
   // `selectedActivityCodes` field is kept on the form state for backwards
   // compatibility with the read flow but is no longer consulted here.
   return {
@@ -164,13 +183,13 @@ export function toPayload(form: FiscalInfoFormState): RegisteredOrganizationPayl
           tax_administration: form.taxAdministration || null,
         }
       : null,
-    email: form.email || null,
-    phone: form.phoneNumber || form.phoneCountryCode || form.phoneAreaCode || form.phoneDescription
+    email: form.email.trim() || null,
+    phone: form.phoneNumber.trim() || form.phoneAreaCode.trim() || form.phoneDescription.trim()
       ? {
-          country_code: form.phoneCountryCode || null,
-          area_code: form.phoneAreaCode || null,
-          number: form.phoneNumber || null,
-          description: form.phoneDescription || null,
+          country_code: fiscalPhoneCountryIso(form.phoneCountryCode),
+          area_code: form.phoneAreaCode.trim() || null,
+          number: form.phoneNumber.replace(/\D/g, "") || null,
+          description: form.phoneDescription.trim() || null,
         }
       : null,
     residence: form.address || form.stateId || form.countyId || form.districtId || form.neighborhoodId

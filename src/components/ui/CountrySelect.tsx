@@ -15,6 +15,7 @@ interface CountrySelectProps {
   /** Tailwind width for the trigger button. */
   className?: string;
   id?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -30,6 +31,7 @@ export function CountrySelect({
   disabled,
   className = "w-full",
   id,
+  ariaLabel,
 }: CountrySelectProps) {
   const { t } = useLanguage();
   const { data: countries = [], isLoading } = useAllCountries({ status: "1" });
@@ -80,6 +82,8 @@ export function CountrySelect({
       <button
         type="button"
         id={id}
+        aria-label={ariaLabel ?? (display === "dial" ? t("form.phoneCountry") : t("location.selectCountry"))}
+        aria-expanded={open}
         disabled={disabled || isLoading}
         onClick={() => setOpen((v) => !v)}
         className="pp-input w-full flex items-center gap-2 text-left disabled:opacity-60"
@@ -94,6 +98,7 @@ export function CountrySelect({
           <div className="p-2 border-b border-border">
             <input
               autoFocus
+              aria-label={t("location.searchCountry")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t("location.searchCountry")}

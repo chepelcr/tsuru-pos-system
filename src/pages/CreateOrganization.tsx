@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -9,8 +10,8 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { ROUTES } from "@/routePaths";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
-import { Card, CardBody, Icon, Input, LocationSelect, PhoneField, Spinner } from "@/components/ui";
+import { AuthLayout } from "@/components/layout/AuthLayout";
+import { Card, CardBody, Icon, Input, LocationSelect, PhoneField, WhatsAppField, Spinner } from "@/components/ui";
 import { CountryISO } from "@/lib/enums";
 import { OrganizationLogoPicker } from "@/components/org-settings/OrganizationLogoPicker";
 import { FadeIn } from "@/components/ui/FadeIn";
@@ -79,6 +80,8 @@ export default function CreateOrganization() {
   const [subdomainTouched, setSubdomainTouched] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  const [checkedSlug, setCheckedSlug] = useState<string | null>(null);
+  const [slugCheckFailed, setSlugCheckFailed] = useState(false);
   // Business identity (TSR-150). Defaults keep step 1 valid for anyone who
   // ignores it — `general` grants no vertical module, so nothing changes.
   const [identity, setIdentity] = useState<BusinessIdentityValue>({
@@ -129,6 +132,7 @@ export default function CreateOrganization() {
     }
 
     setCreatedOrgId(org.id);
+    setIdentity({ business_type: org.business_type ?? "general", is_retail_supplier: org.is_retail_supplier ?? false, is_pyme: org.is_pyme ?? false });
     setName(org.name ?? "");
     setSlug(org.slug ?? "");
     setSlugTouched(true);
@@ -177,31 +181,41 @@ export default function CreateOrganization() {
   // ─── Debounced slug availability check ────────────────────────────────────
   useEffect(() => {
     if (createdOrgId) return; // org already created — slug is fixed
+    let cancelled = false;
+    setSlugAvailable(null);
+    setCheckedSlug(null);
+    setSlugCheckFailed(false);
     if (!slug || slug.length < 3) {
-      setSlugAvailable(null);
+      setCheckingSlug(false);
       return;
     }
     setCheckingSlug(true);
     const timer = setTimeout(async () => {
-      const available = await checkSlugAvailable(slug);
-      setSlugAvailable(available);
-      setCheckingSlug(false);
+      try {
+        const available = await checkSlugAvailable(slug);
+        if (!cancelled) { setSlugAvailable(available); setCheckedSlug(slug); }
+      } catch {
+        if (!cancelled) setSlugCheckFailed(true);
+      } finally {
+        if (!cancelled) setCheckingSlug(false);
+      }
     }, 500);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [slug, createdOrgId, checkSlugAvailable]);
 
   // ─── Step validation gates ────────────────────────────────────────────────
   const step1Valid =
     name.trim().length >= 3 &&
     slug.length >= 3 &&
-    (createdOrgId ? true : slugAvailable === true) &&
+    (createdOrgId ? true : checkedSlug === slug && slugAvailable === true && !checkingSlug) &&
     (subdomain === "" || subdomain.length >= 3);
 
+  const emailValid = !email.trim() || z.string().email().safeParse(email.trim()).success;
   const canAdvance =
     stepIndex === 0
       ? step1Valid
       : stepIndex === 1
-        ? !logoUploading
+        ? !logoUploading && emailValid
         : selectedTemplateId !== null && !templatesLoading;
 
   const isSaving =
@@ -214,6 +228,7 @@ export default function CreateOrganization() {
 
   // ─── Step handlers ────────────────────────────────────────────────────────
   const handleNext = async () => {
+    if (isSaving || !canAdvance) return;
     setFormError(null);
     if (!userId) {
       setFormError(t("orgs.create.error.noUser"));
@@ -235,6 +250,7 @@ export default function CreateOrganization() {
             ...identity,
           });
           setCreatedOrgId(org.id);
+          sessionStorage.setItem("resumeOrgId", org.id);
         }
         setStepIndex(1);
       } catch {
@@ -252,12 +268,13 @@ export default function CreateOrganization() {
         await updateGeneral.mutateAsync({
           name: name.trim(),
           logo_url: logoUrl || null,
+          ...identity,
         });
         await completeOnboardingStep2.mutateAsync({
           organizationId: createdOrgId,
           userId,
-          email: email || undefined,
-          phone_country_code: phone || whatsapp ? phoneCountryCode : undefined,
+          email: email.trim() || undefined,
+          phone_country_code: phone ? phoneCountryCode : undefined,
           phone: phone || undefined,
           whatsapp_number: whatsapp || undefined,
           address: address || undefined,
@@ -328,16 +345,14 @@ export default function CreateOrganization() {
   // ─── Loading gate (resume) ────────────────────────────────────────────────
   if (orgsLoading && sessionStorage.getItem("resumeOrgId")) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6">
-        <AuthNavbar />
+      <AuthLayout maxWidthClassName="max-w-2xl">
         <Spinner size={28} label={t("orgs.create.loadingResume")} />
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center px-4 py-10 sm:py-16">
-      <AuthNavbar />
+    <AuthLayout maxWidthClassName="max-w-2xl">
 
       <FadeIn duration={0.3} className="w-full max-w-2xl">
         <div className="text-center mb-8">
@@ -362,8 +377,11 @@ export default function CreateOrganization() {
               {/* ── Step 1: Basic info ── */}
               {stepIndex === 0 && (
                 <div className="flex flex-col gap-5">
-                  <FormField label={t("orgs.create.fields.name")} required>
+                  <FormField htmlFor="organization-name" label={t("orgs.create.fields.name")} required>
                     <Input
+                      id="organization-name"
+                      autoComplete="organization"
+                      aria-required="true"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder={t("orgs.create.fields.namePlaceholder")}
@@ -372,6 +390,7 @@ export default function CreateOrganization() {
                   </FormField>
 
                   <FormField
+                    htmlFor="organization-slug"
                     label={t("orgs.create.fields.slug")}
                     required
                     error={
@@ -382,6 +401,11 @@ export default function CreateOrganization() {
                   >
                     <div className="relative">
                       <Input
+                        id="organization-slug"
+                        className="pr-10"
+                        aria-required="true"
+                        aria-invalid={slugAvailable === false}
+                        aria-describedby="organization-slug-status"
                         value={slug}
                         disabled={!!createdOrgId}
                         onChange={(e) => {
@@ -400,12 +424,17 @@ export default function CreateOrganization() {
                         )}
                       </span>
                     </div>
+                    <p id="organization-slug-status" role="status" className="t-xs text-muted-foreground mt-1.5">
+                      {createdOrgId ? t("orgs.create.fields.slugSaved") : checkingSlug ? t("orgs.create.fields.slugChecking") : slugCheckFailed ? t("orgs.create.fields.slugCheckFailed") : slugAvailable === true ? t("orgs.create.fields.slugAvailable") : slugAvailable === false ? t("orgs.create.fields.slugTaken") : t("orgs.create.fields.slugHint")}
+                    </p>
                   </FormField>
 
-                  <FormField label={t("orgs.create.fields.subdomain")}>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
+                  <FormField htmlFor="organization-subdomain" label={t("orgs.create.fields.subdomain")}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex-1 min-w-0 basis-40">
                         <Input
+                          id="organization-subdomain"
+                          maxLength={63}
                           value={subdomain}
                           disabled={!!createdOrgId}
                           onChange={(e) => {
@@ -419,7 +448,7 @@ export default function CreateOrganization() {
                         .{BASE_DOMAIN}
                       </span>
                     </div>
-                    <p className="t-xs text-muted-foreground mt-1.5">
+                    <p className="t-xs text-muted-foreground mt-1.5 [overflow-wrap:anywhere]">
                       {t("orgs.create.fields.subdomainHint", {
                         url: `${slugPreview}.${BASE_DOMAIN}`,
                       })}
@@ -460,16 +489,21 @@ export default function CreateOrganization() {
                       {t("orgSettings.general.logoDesc")}
                     </span>
                   </FormField>
-                  <FormField label={t("orgs.create.fields.email")}>
+                  <FormField htmlFor="organization-email" label={t("orgs.create.fields.email")} error={!emailValid ? t("auth.validation.emailRequired") : undefined}>
                     <Input
+                      id="organization-email"
+                      autoComplete="email"
+                      aria-invalid={!emailValid}
+                      aria-describedby={!emailValid ? "organization-email-error" : undefined}
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder={t("orgs.create.fields.emailPlaceholder")}
                     />
                   </FormField>
-                  <FormField label={t("common.phone")}>
+                  <FormField htmlFor="organization-phone" label={t("common.phone")}>
                     <PhoneField
+                      numberId="organization-phone"
                       countryCode={phoneCountryCode}
                       number={phone}
                       onChange={({ countryCode, number }) => {
@@ -478,21 +512,19 @@ export default function CreateOrganization() {
                       }}
                     />
                   </FormField>
-                  <FormField label={t("orgSettings.contact.whatsapp")}>
-                    {/* Shares the phone's country; the store sends orders here. */}
-                    <Input
-                      type="tel"
-                      inputMode="numeric"
+                  <FormField htmlFor="organization-whatsapp" label={t("orgSettings.contact.whatsapp")}>
+                    <WhatsAppField
+                      numberId="organization-whatsapp"
                       value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value.replace(/\D+/g, "").slice(0, 20))}
-                      placeholder={t("orgSettings.contact.whatsappPlaceholder")}
+                      onChange={setWhatsapp}
+                      fallbackCountryCode={phoneCountryCode}
                     />
                     <span className="block t-xs text-muted-foreground mt-1">
                       {t("orgs.create.fields.whatsappHint")}
                     </span>
                   </FormField>
                   <div className="flex flex-col gap-2">
-                    <h3 className="t-h4 !mb-0">{t("orgs.create.fields.location")}</h3>
+                    <h2 className="t-h4 !mb-0">{t("orgs.create.fields.location")}</h2>
                     {/* CR default isoCode; LocationSelect's own "otras señas"
                         textarea is the single address field (matches the
                         org-settings contact form). */}
@@ -520,7 +552,7 @@ export default function CreateOrganization() {
               {stepIndex === 2 && (
                 <div className="flex flex-col gap-4">
                   <div>
-                    <h3 className="t-h4 mb-1">{t("orgs.create.template.title")}</h3>
+                    <h2 className="t-h4 mb-1">{t("orgs.create.template.title")}</h2>
                     <p className="t-sm text-muted-foreground">
                       {t("orgs.create.template.subtitle")}
                     </p>
@@ -566,7 +598,7 @@ export default function CreateOrganization() {
                               )}
                             </div>
 
-                            <span className="t-h4 !mb-0 truncate">
+                            <span className="t-h4 !mb-0 break-words">
                               {template.display_name}
                             </span>
                             <span className="t-sm text-muted-foreground line-clamp-2">
@@ -591,6 +623,6 @@ export default function CreateOrganization() {
       </FadeIn>
 
       <ConfirmModal />
-    </div>
+    </AuthLayout>
   );
 }

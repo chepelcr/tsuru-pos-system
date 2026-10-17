@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Select, type SelectChangeEvent } from "./Input";
 import { FormLabel } from "./FormLabel";
 import type { LocationData } from "@/types/location";
+import { useId } from "react";
 
 interface LocationSelectProps {
   value: LocationData;
@@ -15,6 +16,7 @@ interface LocationSelectProps {
   /** Optional header (used by the fiscal-info residence step in full mode). */
   title?: string;
   subtitle?: string;
+  addressMaxLength?: number;
 }
 
 /**
@@ -24,7 +26,8 @@ interface LocationSelectProps {
  * and fiscal-info residence. When `isoCode` is not Costa Rica the cascade hides
  * (the catalogs don't apply) and only the address textarea shows.
  */
-export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RICA, title, subtitle }: LocationSelectProps) {
+export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RICA, title, subtitle, addressMaxLength }: LocationSelectProps) {
+  const fieldId = useId();
   const { t } = useLanguage();
   const isCR = isoCode === CountryISO.COSTA_RICA;
 
@@ -81,10 +84,10 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
       )}
 
       {isCR && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-3">
           <div>
-            <FormLabel>{t("location.province")}</FormLabel>
-            <Select value={stateId?.toString() ?? ""} onChange={handleState} disabled={statesLoading}>
+            <FormLabel htmlFor={`${fieldId}-province`}>{t("location.province")}</FormLabel>
+            <Select id={`${fieldId}-province`} value={stateId?.toString() ?? ""} onChange={handleState} disabled={statesLoading}>
               <option value="">{selectPlaceholder(statesLoading)}</option>
               {states.slice().sort((a, b) => a.state_id - b.state_id).map((s) => (
                 <option key={s.state_id} value={s.state_id}>{s.state_name}</option>
@@ -93,8 +96,8 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
           </div>
 
           <div>
-            <FormLabel>{t("location.canton")}</FormLabel>
-            <Select value={countyId?.toString() ?? ""} onChange={handleCounty} disabled={!stateId || countiesLoading}>
+            <FormLabel htmlFor={`${fieldId}-canton`}>{t("location.canton")}</FormLabel>
+            <Select id={`${fieldId}-canton`} value={countyId?.toString() ?? ""} onChange={handleCounty} disabled={!stateId || countiesLoading}>
               <option value="">{selectPlaceholder(countiesLoading)}</option>
               {counties.map((c) => (
                 <option key={c.county_id} value={c.county_id}>{c.county_name}</option>
@@ -103,8 +106,8 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
           </div>
 
           <div>
-            <FormLabel>{t("location.district")}</FormLabel>
-            <Select value={districtId?.toString() ?? ""} onChange={handleDistrict} disabled={!countyId || districtsLoading}>
+            <FormLabel htmlFor={`${fieldId}-district`}>{t("location.district")}</FormLabel>
+            <Select id={`${fieldId}-district`} value={districtId?.toString() ?? ""} onChange={handleDistrict} disabled={!countyId || districtsLoading}>
               <option value="">{selectPlaceholder(districtsLoading)}</option>
               {districts.map((d) => (
                 <option key={d.district_id} value={d.district_id}>{d.district_name}</option>
@@ -113,8 +116,8 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
           </div>
 
           <div>
-            <FormLabel>{t("location.neighborhood")}</FormLabel>
-            <Select value={(value.neighborhood_id ?? neighborhoods.find((n) => n.neighborhood_name === value.neighborhood_name)?.neighborhood_id)?.toString() ?? ""} onChange={handleNeighborhood} disabled={!districtId || nbLoading}>
+            <FormLabel htmlFor={`${fieldId}-neighborhood`}>{t("location.neighborhood")}</FormLabel>
+            <Select id={`${fieldId}-neighborhood`} value={(value.neighborhood_id ?? neighborhoods.find((n) => n.neighborhood_name === value.neighborhood_name)?.neighborhood_id)?.toString() ?? ""} onChange={handleNeighborhood} disabled={!districtId || nbLoading}>
               <option value="">{selectPlaceholder(nbLoading)}</option>
               {neighborhoods.map((n) => (
                 <option key={n.neighborhood_id} value={n.neighborhood_id}>{n.neighborhood_name}</option>
@@ -125,8 +128,11 @@ export function LocationSelect({ value, onChange, isoCode = CountryISO.COSTA_RIC
       )}
 
       <div>
-        <FormLabel>{t("location.address")}</FormLabel>
+        <FormLabel htmlFor={`${fieldId}-address`}>{t("location.address")}</FormLabel>
         <textarea
+          id={`${fieldId}-address`}
+          autoComplete="street-address"
+          maxLength={addressMaxLength}
           className="input w-full resize-y text-sm"
           rows={2}
           value={value.address ?? ""}

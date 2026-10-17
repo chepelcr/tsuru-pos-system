@@ -44,6 +44,7 @@ export interface OrgContactSettings {
   facebook_url?: string;
   instagram_url?: string;
   twitter_url?: string;
+  /** International number (+country prefix + digits); legacy local numbers remain readable. */
   whatsapp_number?: string;
   business_hours?: string;
 }

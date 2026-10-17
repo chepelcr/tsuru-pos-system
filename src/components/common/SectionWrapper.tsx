@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { type LucideIcon, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -29,6 +30,7 @@ export function SectionWrapper({
   className,
 }: SectionWrapperProps) {
   const { t } = useLanguage();
+  const contentId = useId();
 
   if (!visible) return null;
 
@@ -42,6 +44,9 @@ export function SectionWrapper({
       <button
         type="button"
         disabled={disabled}
+        data-section-toggle
+        aria-expanded={onToggle ? isExpanded : undefined}
+        aria-controls={onToggle ? contentId : undefined}
         onClick={disabled ? undefined : onToggle}
         className={`w-full flex items-center gap-2.5 px-3.5 py-[11px] bg-muted/35 border-0 text-left ${
           isExpanded ? "border-b border-border/60" : ""
@@ -49,6 +54,7 @@ export function SectionWrapper({
       >
         <SectionIcon
           size={15}
+          aria-hidden="true"
           className={`flex-shrink-0 ${disabled ? "text-muted-foreground" : "text-primary"}`}
         />
         <span
@@ -79,7 +85,7 @@ export function SectionWrapper({
       </button>
 
       {/* Content */}
-      <div className="section-collapse" data-open={isExpanded}>
+      <div id={contentId} className="section-collapse" data-open={isExpanded}>
         <div className="section-collapse-content">
           <div className="min-w-0 px-4 py-3.5 flex flex-col gap-3 [&>*]:min-w-0">
             {loading && (

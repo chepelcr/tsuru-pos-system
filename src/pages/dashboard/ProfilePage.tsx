@@ -272,7 +272,7 @@ export default function ProfilePage() {
                         {user?.first_name || placeholder}
                       </p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 sm:text-right">
                       <div className="t-label">{t("profile.lastName")}</div>
                       <p className="t-body font-medium text-foreground break-words">
                         {user?.last_name || placeholder}
@@ -284,7 +284,7 @@ export default function ProfilePage() {
                         {user?.email || placeholder}
                       </p>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 sm:text-right">
                       <div className="t-label">{t("profile.username")}</div>
                       <p className="t-body font-medium text-foreground break-words">
                         {user?.username || placeholder}
@@ -323,13 +323,14 @@ export default function ProfilePage() {
                     </FormField>
                     <FormField
                       label={t("profile.lastName")}
+                      className="sm:text-right"
                       required
                       error={tErr(profileForm.formState.errors.last_name?.message)}
                     >
                       <Controller
                         control={profileForm.control}
                         name="last_name"
-                        render={({ field }) => <Input {...field} />}
+                        render={({ field }) => <Input {...field} className="sm:text-right" />}
                       />
                     </FormField>
 
@@ -340,13 +341,14 @@ export default function ProfilePage() {
 
                     <FormField
                       label={t("profile.username")}
+                      className="sm:text-right"
                       required
                       error={tErr(profileForm.formState.errors.username?.message)}
                     >
                       <Controller
                         control={profileForm.control}
                         name="username"
-                        render={({ field }) => <Input {...field} />}
+                        render={({ field }) => <Input {...field} className="sm:text-right" />}
                       />
                     </FormField>
                   </div>

@@ -54,6 +54,7 @@ interface SignUpArgs {
   email: string;
   /** Cognito locale attribute (language preference). Defaults to "es". */
   locale?: string;
+  gender?: string;
 }
 
 interface CompleteVerificationArgs {
@@ -202,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             family_name: args.lastName,
             preferred_username: args.preferredUsername,
             locale: args.locale || "es",
+            ...(args.gender ? { gender: args.gender } : {}),
           },
         },
       });
@@ -277,11 +279,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sync verified Cognito user to the backend and refresh the cached profile.
   const completeVerification = useCallback(
     async (args: CompleteVerificationArgs) => {
-      const profile = await api.post<AuthUser>(
+      const result = await api.post<{ user: AuthUser }>(
         userPath(args.userId, "/verify-email-complete"),
         {}
       );
-      const synced = { ...profile, userId: args.userId };
+      const synced = { ...result.user, userId: args.userId };
       setUser(synced);
       return synced;
     },

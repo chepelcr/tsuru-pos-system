@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
+import { useDrawerSectionScroll } from "@/hooks/useDrawerSectionScroll";
 import { Icon } from "./Icon";
 import { OverlayPortal } from "./OverlayPortal";
 
@@ -37,7 +38,9 @@ export function Drawer({
   const [isClosing, setIsClosing] = useState(false);
   const [shouldRender, setShouldRender] = useState(open);
   const panelRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  useDrawerSectionScroll(bodyRef, open && shouldRender);
 
   useEffect(() => {
     if (open) {
@@ -136,7 +139,8 @@ export function Drawer({
 
         {/* Body */}
         <div
-          className={`flex-1 overflow-y-auto transition-opacity duration-100 ${
+          ref={bodyRef}
+          className={`flex-1 overflow-y-auto scroll-pt-3 transition-opacity duration-100 ${
             isClosing ? "opacity-0" : "opacity-100"
           }`}
         >

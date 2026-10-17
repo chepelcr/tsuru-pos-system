@@ -11,10 +11,12 @@ export function BrandStoryPanel() {
 
   return (
     <aside className="rounded-2xl bg-primary text-primary-foreground p-8 lg:p-10 shadow-card h-full flex flex-col justify-center">
-      <div className="mb-5 w-11 h-11 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
-        <Sprout className="w-5 h-5" />
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-11 h-11 shrink-0 rounded-xl bg-primary-foreground/10 flex items-center justify-center">
+          <Sprout className="w-5 h-5" aria-hidden="true" />
+        </div>
+        <h2 className="t-h3 !mb-0">{t("auth.story.title")}</h2>
       </div>
-      <h2 className="t-h3 mb-4">{t("auth.story.title")}</h2>
       <div className="flex flex-col gap-3 text-primary-foreground/90 t-sm leading-relaxed text-justify hyphens-auto">
         <p>{t("auth.story.p1")}</p>
         <p>{t("auth.story.p2")}</p>

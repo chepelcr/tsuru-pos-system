@@ -27,10 +27,10 @@ interface SelectProps
   onChange?: (e: SelectChangeEvent) => void;
 }
 
-export function Input({ inputSize = "md", className = "", style, ...rest }: InputProps) {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input({ inputSize = "md", className = "", style, ...rest }, ref) {
   const szClass = inputSize === "md" ? "input" : `input input-${inputSize}`;
-  return <input className={`${szClass} w-full ${className}`} style={style} {...rest} />;
-}
+  return <input ref={ref} className={`${szClass} w-full ${className}`} style={style} {...rest} />;
+});
 
 /** Read `<option>` / `<optgroup>` children into SelectField's options array. */
 function optionsFromChildren(children: React.ReactNode): SelectFieldOption[] {

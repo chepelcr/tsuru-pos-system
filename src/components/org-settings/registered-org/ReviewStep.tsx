@@ -4,6 +4,7 @@ import { useAllCountries } from "@/hooks/useDataApi";
 import { formatIdentification } from "@/lib/identification";
 import { useLocationNames } from "./useLocationNames";
 import type { FiscalInfoFormState } from "./types";
+import { fiscalPhoneCountryIso } from "./types";
 
 interface ReviewStepProps {
   form: FiscalInfoFormState;
@@ -11,9 +12,9 @@ interface ReviewStepProps {
 
 function Row({ label, value, mono = false }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2 border-b border-border last:border-0">
-      <span className="t-sm text-muted-foreground flex-shrink-0">{label}</span>
-      <span className={`t-sm font-medium text-right ${mono ? "font-mono" : ""}`}>{value || "—"}</span>
+    <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-1 sm:gap-3 py-2 border-b border-border last:border-0">
+      <span className="t-sm text-muted-foreground sm:shrink-0">{label}</span>
+      <span className={`min-w-0 max-w-full t-sm font-medium sm:text-right [overflow-wrap:anywhere] ${mono ? "font-mono" : ""}`}>{value || "—"}</span>
     </div>
   );
 }
@@ -44,7 +45,7 @@ export function ReviewStep({ form }: ReviewStepProps) {
   // dialing code comes from the countries catalog the country select on the
   // previous step already loaded (same query, served from cache).
   const { data: countries = [] } = useAllCountries({ status: "1" });
-  const dialCode = countries.find((c) => c.iso_code === form.phoneCountryCode)?.phone_code;
+  const dialCode = countries.find((c) => c.iso_code === fiscalPhoneCountryIso(form.phoneCountryCode))?.phone_code;
   const phoneDisplay = form.phoneNumber
     ? `${dialCode ? `${dialCode} ` : ""}${form.phoneAreaCode ? `${form.phoneAreaCode} ` : ""}· ${form.phoneNumber}`
     : "";
@@ -53,9 +54,7 @@ export function ReviewStep({ form }: ReviewStepProps) {
     .filter(Boolean)
     .join(" / ");
 
-  const selectedActivities = form.activities.filter((a) =>
-    form.selectedActivityCodes.has(a.code),
-  );
+  const selectedActivities = form.activities;
 
   return (
     <div className="space-y-5">

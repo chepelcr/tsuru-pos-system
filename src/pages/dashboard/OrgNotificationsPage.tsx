@@ -10,6 +10,7 @@ import { Icon } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { NotificationsTab } from "@/components/org-settings/tabs/NotificationsTab";
 import { NotificationsDrawer } from "@/components/org-settings/NotificationsDrawer";
+import { FiscalInfoRequired } from "@/components/org-settings/FiscalInfoRequired";
 import { ROUTES } from "@/routePaths";
 
 export default function OrgNotificationsPage() {
@@ -45,21 +46,22 @@ export default function OrgNotificationsPage() {
           <p className="t-body text-muted-foreground">{t("orgSettings.notifications.empty.desc")}</p>
         </div>
 
-        <NotificationsTab
-          config={config}
-          isLoading={isLoading}
-          onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
-        />
+        <FiscalInfoRequired orgId={org?.id}>
+          <NotificationsTab
+            config={config}
+            isLoading={isLoading}
+            onEdit={canUpdate ? () => setDrawerOpen(true) : undefined}
+          />
+          {org && canUpdate && (
+            <NotificationsDrawer
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              config={config}
+              orgId={org.id}
+            />
+          )}
+        </FiscalInfoRequired>
       </FadeIn>
-
-      {org && canUpdate && (
-        <NotificationsDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          config={config}
-          orgId={org.id}
-        />
-      )}
     </div>
   );
 }

@@ -323,6 +323,8 @@ Use this pattern for any new multi-step form.
 
 Most edit/create flows use `<Drawer>` from `components/ui/Drawer.tsx` (right-side, 450ms slide animation). It accepts `title`, `subtitle`, `icon`, `iconBg`, `iconColor`, `width`, `footer`, `children`, required localized `closeLabel`, and optional `dismissible`. It portals to `document.body`, uses the shared overlay stack (`useOverlayLayer`) for reference-counted body locking, topmost-only Escape/backdrop dismissal, focus trapping/restoration, and `role="dialog"` semantics. Never render a page-local fixed drawer or duplicate body-lock logic.
 
+`Drawer` also owns section navigation through `useDrawerSectionScroll`. `SectionWrapper` marks its header with `data-section-toggle`, `aria-expanded` and `aria-controls`. Manually opening a card waits for the cards' CSS transitions, then aligns it inside the drawer body with the shared scroll padding. Automatic expansion and closing cards do not trigger scrolling; further input, closing/unmounting the drawer, and rapid toggles cancel stale requests. Reduced motion disables the section transition and uses instant positioning. Reuse this behavior; do not add page-specific timers or `scrollIntoView` calls that can move the background or a parent overlay.
+
 Mobile-specific drawers: `DashboardMobileDrawer` (left, main nav) and `DocumentsMobileDrawer` (right, doc tabs). They also portal through `OverlayPortal` and join the shared overlay stack. They share the animation keyframes defined in `index.css` — never re-declare keyframes inside `<style>` blocks in components.
 
 ---
@@ -410,6 +412,50 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 ---
 
 ## 6. State management
+
+Signup/onboarding (2026-10-16): `Stepper` uses equal centered number columns
+with wrapping labels; forms, buttons, selects and textareas retain their own
+Enter behavior. Step changes focus the body and scroll the rail below the auth
+header. Account creation shares `ACCOUNT_CREATION_STEPS`: **Información / Clave /
+Verificación** (Information / Pass / Verification). Organization creation has
+its own three-stage rail starting at 1. Email verification opts into segmented
+`OtpInput` with six boxes; user edits/paste/autofill trigger `onComplete` only
+when all six slots contain digits. A synchronous operation guard prevents
+overlapping confirmation/resend requests. `completeVerification` unwraps `{ message, user }`
+before caching the profile. Verification retries profile sync without consuming
+the accepted code a second time. Welcome mail is owned by Cognito
+PostConfirmation in `be/cognito-templates`, independent of browser sign-in;
+the hook rollout is tracked separately from the local implementation.
+AuthNavbar and DashboardHeader share `LanguageToggle`, which renders bundled
+rectangular 3:2 CR/US SVG flags without corner clipping.
+
+Initial fiscal setup has an unnumbered welcome, then three shared `Stepper`
+stages: Hacienda info, Contact & residence, Review. Review lists every activity
+that will be saved. Editing the taxpayer identification clears only Hacienda
+data and stale lookup results cannot repopulate it. Optional contact email is
+validated; phone country values are ISO numeric (188), with legacy 506 normalized.
+Saving updates the registered-organization cache before invalidation so the
+summary appears immediately even while refresh is pending.
+
+Organization onboarding completion publishes the returned organization to the
+owner's membership cache, preserving existing embedded details, then awaits
+refresh before navigating. The signup handoff must cache the nested profile,
+including identity and `onboarding_tour_completed_at`, so the tutorial can offer
+welcome on the first overview visit without switching organizations or reloading.
+Profile cards remain 50/50 on desktop; last name and username align right in
+the two-column identity grid (stacked mobile fields remain left aligned).
+
+`WhatsAppField` captures its own country and local digits in signup/contact
+settings. It saves `whatsapp_number` as an international `+`-prefixed string;
+legacy local values use the contact phone's country until edited. The public
+management API maps international values as full digits with a null `dial_code`,
+so storefront order links do not prepend the regular phone country again.
+Deploy that mapping together with the POS field. No database migration needed.
+
+`FormField` accepts `htmlFor` and names its error `${htmlFor}-error`; callers
+should supply matching control IDs and `aria-describedby` for errors. `Input`
+forwards refs so React Hook Form can focus invalid fields. `PhoneField` keeps
+`id` for the country control and accepts `numberId` for the phone input.
 
 | Concern | Where |
 |---|---|
@@ -821,7 +867,25 @@ If you write a helper component or render function that produces user-visible te
 
 ---
 
+Organization General/Branding/Contact/Payment/Shipping/Appearance pages open with
+saved summaries. `SettingsDetailCard` / `SettingsDetailRow` and
+`SettingsEditDrawer` provide the common read view and explicit edit action.
+Mount forms only inside an open, permission-gated drawer; use its fixed footer
+with native `form` submission. Keep pending saves/uploads nondismissible and
+retain entered values after failures. General feature visibility and appearance
+choices are drafts until Save, so Cancel does not change those preferences.
+The template gallery stays a gallery. `TemplateThumbnail` shares gallery/modal
+images; the nine built-in previews ship in `public/templates/*.jpg` and unknown
+or failed images use a full-sized fallback rather than a broken image.
+
 ## 13.1 Notifications — one hydrate, then pure server push
+
+Organization settings always shows its permitted cards, even without fiscal identity.
+The first-time fiscal welcome and wizard live on `OrgRegisteredOrgPage` at
+`/dashboard/organization/fiscal-info`; the missing-fiscal-info notification links
+there directly. Keep fiscal setup optional for organizations using manual orders.
+Hacienda API and notification cards stay locked until fiscal identity is saved;
+`FiscalInfoRequired` enforces the same prerequisite on direct page visits.
 
 The bell has **two** sources, and they are not interchangeable:
 

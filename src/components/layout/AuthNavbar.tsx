@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { useLanguageSwitch } from "@/hooks/useLanguageSwitch";
+import { LanguageToggle } from "@/components/common/LanguageToggle";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -33,7 +33,6 @@ export function AuthNavbar({
   hideNavButton = true,
   showBothButtons = false,
 }: AuthNavbarProps) {
-  const { language, toggle: toggleLanguage } = useLanguageSwitch();
   const { dark, toggle: toggleDark } = useDarkMode();
   const { t } = useLanguage();
   const { logout } = useAuthContext();
@@ -76,18 +75,7 @@ export function AuthNavbar({
       </div>
 
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={toggleLanguage}
-          className="btn btn-ghost btn-sm btn-icon"
-          aria-label={t("auth.toggleLanguage")}
-        >
-          <img
-            src={language === "es" ? "https://flagcdn.com/w20/cr.png" : "https://flagcdn.com/w20/us.png"}
-            alt={language === "es" ? "Costa Rica" : "United States"}
-            className="w-5 h-auto rounded-sm"
-          />
-        </button>
+        <LanguageToggle />
         <button
           type="button"
           onClick={toggleDark}

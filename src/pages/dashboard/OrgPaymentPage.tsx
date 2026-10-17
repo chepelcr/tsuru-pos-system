@@ -6,117 +6,65 @@ import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdatePaymentSettings } from "@/hooks/useOrgSettings";
-import { Icon } from "@/components/ui";
-import { FadeIn } from "@/components/ui/FadeIn";
+import { Icon, FadeIn } from "@/components/ui";
 import { PaymentSettingsForm } from "@/components/org-settings/PaymentSettingsForm";
-import { ROUTES } from "@/routePaths";
+import { SettingsDetailCard } from "@/components/org-settings/SettingsDetailCard";
+import { SettingsEditDrawer } from "@/components/org-settings/SettingsEditDrawer";
+import { OrganizationSettingsSummary } from "@/components/org-settings/OrganizationSettingsSummary";
 import type { OrgPaymentSettings } from "@/types";
+import { ROUTES } from "@/routePaths";
 
-/**
- * Storefront checkout-payment settings. GET hydrate + PUT save.
- *
- * Endpoint verified: PUT /settings/payment (PaymentSettingsController upsert
- * on tsuru-platform-api; full payment_settings table — currency, COD, bank
- * transfer + details, Stripe fields).
- */
 export default function OrgPaymentPage() {
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
-  const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
+  const { data: org, isLoading } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
-  usePageTitle([t("shell.orgSettings"), t("orgSettings.tab.payment")]);
   const [, navigate] = useLocation();
-
-  const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
-
-  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
   const { can } = usePermissions();
   const canUpdate = can("organization", "update", "payment");
-
-  const updateMutation = useUpdatePaymentSettings(user?.userId, org?.id);
+  const update = useUpdatePaymentSettings(user?.userId, org?.id);
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  usePageTitle([t("shell.orgSettings"), t("orgSettings.tab.payment")]);
 
   const handleSave = async (data: OrgPaymentSettings) => {
-    setSavedNoticeVisible(false);
-    await updateMutation.mutateAsync(data);
-    setSavedNoticeVisible(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!org || !canUpdate) return;
+    try {
+      await update.mutateAsync(data);
+      setEditingOrgId(null);
+      setSaved(true);
+    } catch {
+      // Keep the editor and its entered values open; the drawer shows the error.
+    }
   };
 
-  if (orgLoading || !org) {
-    return (
-      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
-        <div className="mb-6">
-          <div className="skeleton-block animate-pulse h-4 w-32 mb-3 rounded" />
-          <div className="skeleton-block animate-pulse h-7 w-56 mb-2 rounded" />
-          <div className="skeleton-block animate-pulse h-4 w-72 rounded" />
-        </div>
+  if (isLoading || !org) return <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+    <div className="skeleton-block h-8 w-56 max-w-full mb-6 animate-pulse" />
+    <div className="skeleton-block h-64 rounded-lg animate-pulse" />
+  </div>;
 
-        <div className="card p-5 space-y-4">
-          {/* Currency select field */}
-          <div>
-            <div className="skeleton-block animate-pulse h-4 w-24 mb-2 rounded" />
-            <div className="skeleton-block animate-pulse h-10 w-full rounded" />
-            <div className="skeleton-block animate-pulse h-3 w-48 mt-1.5 rounded" />
-          </div>
-
-          {/* Two toggle rows */}
-          {[0, 1].map((i) => (
-            <div key={i} className="flex items-start gap-3 rounded-lg border border-border p-4">
-              <div className="bg-muted/40 animate-pulse h-4 w-4 rounded mt-0.5 flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <div className="skeleton-block animate-pulse h-4 w-40 rounded" />
-                <div className="skeleton-block animate-pulse h-3 w-64 mt-2 rounded" />
-              </div>
-            </div>
-          ))}
-
-          {/* Save button */}
-          <div className="flex justify-end pt-1">
-            <div className="skeleton-block animate-pulse h-8 w-24 rounded" />
-          </div>
-        </div>
+  return <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+    <FadeIn duration={0.3}>
+      <div className="mb-6">
+        <button className="btn btn-ghost btn-sm !pl-0 mb-3 text-muted-foreground" onClick={() => navigate(ROUTES.DASHBOARD_ORG_SETTINGS)}>
+          <Icon name="arrowLeft" size={15} />{t("orgSettings.title")}
+        </button>
+        <h1 className="t-h1 mb-1">{t("orgSettings.payment.title")}</h1>
+        <p className="t-body text-muted-foreground">{t("orgSettings.payment.subtitle")}</p>
       </div>
-    );
-  }
-
-  return (
-    <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
-      <FadeIn duration={0.3}>
-        <div className="mb-6">
-          <button
-            className="btn btn-ghost btn-sm !pl-0 mb-3 text-muted-foreground"
-            onClick={() => navigate(ROUTES.DASHBOARD_ORG_SETTINGS)}
-          >
-            <Icon name="arrowLeft" size={15} />
-            {t("orgSettings.title")}
-          </button>
-          <h1 className="t-h1 mb-1">{t("orgSettings.payment.title")}</h1>
-          <p className="t-body text-muted-foreground">{t("orgSettings.payment.subtitle")}</p>
-        </div>
-
-        {savedNoticeVisible && (
-          <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-success/10 border border-success/30">
-            <Icon name="checkCircle" size={14} className="text-success mt-0.5 flex-shrink-0" />
-            <span className="t-sm">{t("orgSettings.payment.saved")}</span>
-          </div>
-        )}
-
-        {updateMutation.isError && (
-          <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-            <Icon name="alertCircle" size={14} className="text-destructive mt-0.5 flex-shrink-0" />
-            <span className="t-sm text-destructive">{t("orgSettings.payment.saveError")}</span>
-          </div>
-        )}
-
-        <PaymentSettingsForm
-          // Seed from the embedded org.payment section — no separate GET. Writes
-          // invalidate the org list so this reflows after save.
-          initialValues={org.payment ?? undefined}
-          onSubmit={handleSave}
-          isSaving={updateMutation.isPending}
-          canSave={canUpdate}
-        />
-      </FadeIn>
-    </div>
-  );
+      {saved && <div role="status" className="mb-5 flex items-start gap-2 rounded-lg bg-success/10 border border-success/30 p-3">
+        <Icon name="checkCircle" size={14} className="text-success mt-0.5 flex-shrink-0" />
+        <span className="t-sm">{t("orgSettings.payment.saved")}</span>
+      </div>}
+      <SettingsDetailCard title={t("orgSettings.payment.title")} icon="card" configured={!!org.payment}
+        onEdit={canUpdate ? () => { update.reset(); setSaved(false); setEditingOrgId(org.id); } : undefined}>
+        <OrganizationSettingsSummary section="payment" org={org} />
+      </SettingsDetailCard>
+    </FadeIn>
+    {canUpdate && <SettingsEditDrawer key={org.id} open={editingOrgId === org.id} onClose={() => setEditingOrgId(null)}
+      title={t("orgSettings.payment.title")} icon="card" formId="org-payment-edit" isBusy={update.isPending}
+      error={update.isError ? t("orgSettings.payment.saveError") : undefined}>
+      <PaymentSettingsForm formId="org-payment-edit" initialValues={org.payment ?? undefined} isSaving={update.isPending} canSave hideActions onSubmit={handleSave} />
+    </SettingsEditDrawer>}
+  </div>;
 }

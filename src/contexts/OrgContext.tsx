@@ -68,7 +68,7 @@ export function OrgProvider({ orgId, orgName, children }: OrgProviderProps) {
       level: "warning",
       titleKey: "notifications.fiscalInfo.missingTitle",
       bodyKey: "notifications.fiscalInfo.missingBody",
-      actionHref: ROUTES.DASHBOARD_ORG_SETTINGS,
+      actionHref: ROUTES.DASHBOARD_ORG_FISCAL_INFO,
     });
   }, [isRegisteredOrgLoading, registeredOrg, orgId, addNotification, removeNotification]);
 

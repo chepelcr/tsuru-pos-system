@@ -53,7 +53,8 @@ export function useSaveRegisteredOrganization(orgId: string) {
         authOrgPath(orgId, "/registered-organization"),
         body,
       ),
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      qc.setQueryData(["registered-organization", orgId], saved);
       qc.invalidateQueries({ queryKey: ["registered-organization", orgId] });
     },
   });

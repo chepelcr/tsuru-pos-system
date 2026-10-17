@@ -5,6 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { usePermissions } from "@/hooks/useRbac";
 import { templateCategoryIcon } from "./templateCategory";
+import { TemplateThumbnail } from "./TemplateThumbnail";
 import type { Template } from "@/types";
 
 interface TemplatePreviewProps {
@@ -93,23 +94,7 @@ export function TemplatePreview({
         <div className="p-5 flex flex-col gap-5">
           {/* Thumbnail */}
           <div className="aspect-[16/9] rounded-lg bg-muted/40 border border-border flex items-center justify-center overflow-hidden">
-            {template.thumbnail_url ? (
-              <img
-                src={template.thumbnail_url}
-                alt={template.display_name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="text-center text-muted-foreground">
-                <Icon
-                  name={templateCategoryIcon(template.category)}
-                  size={30}
-                  strokeWidth={1.5}
-                  className="mx-auto mb-2"
-                />
-                <p className="t-xs">{t("template.preview.noPreview")}</p>
-              </div>
-            )}
+            <TemplateThumbnail template={template} />
           </div>
 
           {/* About */}

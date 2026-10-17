@@ -1,7 +1,7 @@
-import { useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PhoneField } from "@/components/ui";
 import type { FiscalInfoFormState } from "./types";
+import { fiscalPhoneCountryIso, isFiscalEmailValid } from "./types";
 
 interface ContactStepProps {
   form: FiscalInfoFormState;
@@ -23,14 +23,8 @@ interface ContactStepProps {
 export function ContactStep({ form, patch, compact = false }: ContactStepProps) {
   const { t } = useLanguage();
 
-  // Default to CR if the form still has the legacy "+506" string in state.
-  const isoCountryCode = useMemo(() => {
-    // If the stored value is already a valid 3-char ISO, keep it.
-    if (form.phoneCountryCode && /^\d{3}$/.test(form.phoneCountryCode)) {
-      return form.phoneCountryCode;
-    }
-    return "188";
-  }, [form.phoneCountryCode]);
+  const isoCountryCode = fiscalPhoneCountryIso(form.phoneCountryCode);
+  const emailInvalid = !isFiscalEmailValid(form.email);
 
   return (
     <div className="space-y-5">
@@ -52,17 +46,22 @@ export function ContactStep({ form, patch, compact = false }: ContactStepProps) 
           className="pp-input w-full mt-1"
           type="email"
           autoComplete="email"
+          maxLength={255}
+          aria-invalid={emailInvalid}
+          aria-describedby={emailInvalid ? "reg-org-email-error" : undefined}
           value={form.email}
           onChange={(e) => patch({ email: e.target.value })}
           placeholder={t("orgSettings.fiscalInfo.emailPlaceholder")}
         />
+        {emailInvalid && <p id="reg-org-email-error" role="alert" className="t-xs text-destructive mt-1.5">{t("auth.validation.emailRequired")}</p>}
       </div>
 
       {/* Country (flag + dial code) + phone number — shared PhoneField. */}
       <div>
-        <label className="pp-label">{t("orgSettings.fiscalInfo.phoneNumber")}</label>
+        <label className="pp-label" htmlFor="reg-org-phone-number">{t("orgSettings.fiscalInfo.phoneNumber")}</label>
         <div className="mt-1">
           <PhoneField
+            numberId="reg-org-phone-number"
             countryCode={isoCountryCode}
             number={form.phoneNumber}
             onChange={({ countryCode, number }) =>
@@ -83,6 +82,7 @@ export function ContactStep({ form, patch, compact = false }: ContactStepProps) 
           id="reg-org-phone-desc"
           className="pp-input w-full mt-1"
           type="text"
+          maxLength={50}
           value={form.phoneDescription}
           onChange={(e) => patch({ phoneDescription: e.target.value })}
           placeholder={t("orgSettings.fiscalInfo.phoneDescriptionPlaceholder")}

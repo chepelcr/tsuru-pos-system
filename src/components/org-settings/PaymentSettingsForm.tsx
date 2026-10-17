@@ -20,6 +20,8 @@ const buildSchema = (t: (k: string) => string) =>
 type PaymentValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface PaymentSettingsFormProps {
+  formId?: string;
+  hideActions?: boolean;
   initialValues?: OrgPaymentSettings;
   onSubmit: (data: OrgPaymentSettings) => Promise<void>;
   isSaving?: boolean;
@@ -33,6 +35,8 @@ interface PaymentSettingsFormProps {
  * Re-skinned from the dashboard's shadcn form to POS border-row toggles.
  */
 export function PaymentSettingsForm({
+  formId,
+  hideActions = false,
   initialValues,
   onSubmit,
   isSaving = false,
@@ -62,7 +66,7 @@ export function PaymentSettingsForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="card p-5 space-y-4">
+    <form id={formId} onSubmit={handleSubmit(submit)} className={hideActions ? "space-y-4" : "card p-5 space-y-4"}>
       <FormField
         label={t("orgSettings.payment.currency")}
         required
@@ -125,7 +129,7 @@ export function PaymentSettingsForm({
         </FormField>
       )}
 
-      {canSave && (
+      {canSave && !hideActions && (
         <div className="flex justify-end pt-1">
           <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
             {isSaving ? (

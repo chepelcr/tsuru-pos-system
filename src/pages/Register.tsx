@@ -9,13 +9,14 @@ import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { BrandStoryPanel } from "@/components/common/BrandStoryPanel";
-import { Stepper, type StepperStep } from "@/components/common/Stepper";
+import { Stepper } from "@/components/common/Stepper";
 import { PasswordStrengthIndicator } from "@/components/common/PasswordStrengthIndicator";
 import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Select, Icon, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
 import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
+import { ACCOUNT_CREATION_STEPS } from "@/lib/accountCreationSteps";
 
 // AWS Cognito password policy: min 8 chars, uppercase, lowercase, number, special char.
 // Messages are i18n keys, resolved through t() at the FormField call sites.
@@ -29,13 +30,14 @@ const passwordSchema = z
 
 const step1Schema = z
   .object({
-    firstName: z.string().min(1, "auth.validation.firstNameRequired"),
-    lastName: z.string().min(1, "auth.validation.lastNameRequired"),
+    firstName: z.string().trim().min(1, "auth.validation.firstNameRequired"),
+    lastName: z.string().trim().min(1, "auth.validation.lastNameRequired"),
     username: z
       .string()
+      .trim()
       .min(3, "auth.validation.usernameMinLength")
       .regex(/^[a-zA-Z0-9_-]+$/, "auth.validation.usernamePattern"),
-    email: z.string().email("auth.validation.emailRequired"),
+    email: z.string().trim().email("auth.validation.emailRequired"),
     gender: z.string().optional(),
     genderOther: z.string().optional(),
   })
@@ -61,12 +63,6 @@ const step2Schema = z
 
 type Step1Form = z.infer<typeof step1Schema>;
 type Step2Form = z.infer<typeof step2Schema>;
-
-const MACRO_STEPS: StepperStep[] = [
-  { id: "register", titleKey: "auth.register.steps.personalInfo" },
-  { id: "verify", titleKey: "auth.register.steps.verify" },
-  { id: "organization", titleKey: "auth.register.steps.organization" },
-];
 
 export default function Register() {
   const [, navigate] = useLocation();
@@ -100,6 +96,10 @@ export default function Register() {
   });
 
   const currentPassword = step2Form.watch("password") || "";
+
+  useEffect(() => {
+    if (currentStep === "password") step2Form.setFocus("password");
+  }, [currentStep, step2Form]);
 
   // Pre-populate step1 form if we have data and the user goes back.
   useEffect(() => {
@@ -153,6 +153,7 @@ export default function Register() {
         preferredUsername: step1Data.username,
         email: step1Data.email,
         locale: language,
+        gender: step1Data.gender === "other" ? step1Data.genderOther?.trim() : step1Data.gender,
       });
 
       if (result.needsVerification) {
@@ -197,15 +198,16 @@ export default function Register() {
     <AuthLayout aside={<BrandStoryPanel />}>
       <Card>
         <CardHeader className="text-center pb-2">
-          <CardTitle className="t-h2">{t("auth.register.title")}</CardTitle>
+          <CardTitle as="h1" className="t-h2">{t("auth.register.title")}</CardTitle>
           <CardDescription>{t("auth.register.subtitle")}</CardDescription>
         </CardHeader>
         <CardBody>
-          <Stepper steps={MACRO_STEPS} current={0} hideFooter stackedRail>
+          <Stepper steps={ACCOUNT_CREATION_STEPS} current={currentStep === "info" ? 0 : 1} hideFooter>
             {currentStep === "info" && (
               <form onSubmit={step1Form.handleSubmit(handleStep1Submit)} className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <FormField
+                    htmlFor="register-first-name"
                     label={t("auth.register.firstName")}
                     required
                     error={tErr(step1Form.formState.errors.firstName?.message)}
@@ -214,11 +216,12 @@ export default function Register() {
                       control={step1Form.control}
                       name="firstName"
                       render={({ field }) => (
-                        <Input placeholder={t("auth.register.firstNamePlaceholder")} {...field} />
+                        <Input id="register-first-name" autoComplete="given-name" aria-required="true" aria-invalid={!!step1Form.formState.errors.firstName} aria-describedby={step1Form.formState.errors.firstName ? "register-first-name-error" : undefined} placeholder={t("auth.register.firstNamePlaceholder")} {...field} />
                       )}
                     />
                   </FormField>
                   <FormField
+                    htmlFor="register-last-name"
                     label={t("auth.register.lastName")}
                     required
                     error={tErr(step1Form.formState.errors.lastName?.message)}
@@ -227,24 +230,25 @@ export default function Register() {
                       control={step1Form.control}
                       name="lastName"
                       render={({ field }) => (
-                        <Input placeholder={t("auth.register.lastNamePlaceholder")} {...field} />
+                        <Input id="register-last-name" autoComplete="family-name" aria-required="true" aria-invalid={!!step1Form.formState.errors.lastName} aria-describedby={step1Form.formState.errors.lastName ? "register-last-name-error" : undefined} placeholder={t("auth.register.lastNamePlaceholder")} {...field} />
                       )}
                     />
                   </FormField>
                 </div>
 
-                <FormField label={t("auth.register.email")} required error={tErr(step1Form.formState.errors.email?.message)}>
+                <FormField htmlFor="register-email" label={t("auth.register.email")} required error={tErr(step1Form.formState.errors.email?.message)}>
                   <Controller
                     control={step1Form.control}
                     name="email"
                     render={({ field }) => (
-                      <Input type="email" placeholder={t("auth.register.emailPlaceholder")} {...field} />
+                      <Input id="register-email" autoComplete="email" autoCapitalize="none" spellCheck={false} aria-required="true" aria-invalid={!!step1Form.formState.errors.email} aria-describedby={step1Form.formState.errors.email ? "register-email-error" : undefined} type="email" placeholder={t("auth.register.emailPlaceholder")} {...field} />
                     )}
                   />
                 </FormField>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <FormField
+                    htmlFor="register-username"
                     label={t("auth.register.username")}
                     required
                     error={tErr(step1Form.formState.errors.username?.message)}
@@ -253,13 +257,13 @@ export default function Register() {
                       control={step1Form.control}
                       name="username"
                       render={({ field }) => (
-                        <Input placeholder={t("auth.register.usernamePlaceholder")} {...field} />
+                        <Input id="register-username" autoComplete="username" autoCapitalize="none" spellCheck={false} aria-required="true" aria-invalid={!!step1Form.formState.errors.username} aria-describedby={step1Form.formState.errors.username ? "register-username-error" : undefined} placeholder={t("auth.register.usernamePlaceholder")} {...field} />
                       )}
                     />
                   </FormField>
 
                   {!showGenderInput ? (
-                    <FormField label={t("auth.register.gender")} error={tErr(step1Form.formState.errors.gender?.message)}>
+                    <FormField htmlFor={genderSelectId} label={t("auth.register.gender")} error={tErr(step1Form.formState.errors.gender?.message)}>
                       <Select
                         id={genderSelectId}
                         value={step1Form.watch("gender") || ""}
@@ -283,6 +287,7 @@ export default function Register() {
                     </FormField>
                   ) : (
                     <FormField
+                      htmlFor="register-gender-other"
                       label={t("auth.register.gender")}
                       error={tErr(step1Form.formState.errors.genderOther?.message)}
                     >
@@ -292,6 +297,10 @@ export default function Register() {
                           name="genderOther"
                           render={({ field }) => (
                             <Input
+                              id="register-gender-other"
+                              maxLength={50}
+                              aria-invalid={!!step1Form.formState.errors.genderOther}
+                              aria-describedby={step1Form.formState.errors.genderOther ? "register-gender-other-error" : undefined}
                               placeholder={t("auth.register.gender.otherPlaceholder")}
                               className="pr-10"
                               {...field}
@@ -305,8 +314,7 @@ export default function Register() {
                           * several presses. preventDefault keeps focus put until we move it. */}
                         <button
                           type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
+                          onClick={() => {
                             setShowGenderInput(false);
                             step1Form.setValue("gender", "");
                             step1Form.setValue("genderOther", "");
@@ -331,6 +339,7 @@ export default function Register() {
             {currentStep === "password" && (
               <form onSubmit={step2Form.handleSubmit(handleStep2Submit)} className="flex flex-col gap-4">
                 <FormField
+                  htmlFor="register-password"
                   label={t("auth.register.password")}
                   required
                   error={tErr(step2Form.formState.errors.password?.message)}
@@ -341,6 +350,11 @@ export default function Register() {
                       name="password"
                       render={({ field }) => (
                         <Input
+                          id="register-password"
+                          autoComplete="new-password"
+                          aria-required="true"
+                          aria-invalid={!!step2Form.formState.errors.password}
+                          aria-describedby={step2Form.formState.errors.password ? "register-password-error" : undefined}
                           type={showPassword ? "text" : "password"}
                           placeholder={t("auth.register.passwordPlaceholder")}
                           className="pr-10"
@@ -362,6 +376,7 @@ export default function Register() {
                 {currentPassword && <PasswordStrengthIndicator password={currentPassword} />}
 
                 <FormField
+                  htmlFor="register-confirm-password"
                   label={t("auth.register.confirmPassword")}
                   required
                   error={tErr(step2Form.formState.errors.confirmPassword?.message)}
@@ -372,6 +387,11 @@ export default function Register() {
                       name="confirmPassword"
                       render={({ field }) => (
                         <Input
+                          id="register-confirm-password"
+                          autoComplete="new-password"
+                          aria-required="true"
+                          aria-invalid={!!step2Form.formState.errors.confirmPassword}
+                          aria-describedby={step2Form.formState.errors.confirmPassword ? "register-confirm-password-error" : undefined}
                           type={showConfirmPassword ? "text" : "password"}
                           placeholder={t("auth.register.confirmPasswordPlaceholder")}
                           className="pr-10"

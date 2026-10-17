@@ -23,6 +23,7 @@ export default function OrgRegisteredOrgPage() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
+  const [setupOrgId, setSetupOrgId] = useState<string | null>(null);
 
   const { data: reg, isLoading } = useRegisteredOrganization(org?.id);
 
@@ -31,9 +32,11 @@ export default function OrgRegisteredOrgPage() {
   // (RBAC_ENFORCEMENT=log rollout).
   const { can } = usePermissions();
   const canUpdate = can("organization", "update", "fiscal-info");
+  const setupStarted = org != null && setupOrgId === org.id;
+  const showWelcome = !isLoading && org && !reg && canUpdate && !setupStarted;
 
   return (
-    <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+    <div className="px-4 sm:px-6 pt-6 pb-12 max-w-[900px] mx-auto">
       <FadeIn duration={0.3}>
         {/* Back + header */}
         <div className="mb-6">
@@ -44,10 +47,16 @@ export default function OrgRegisteredOrgPage() {
             <Icon name="arrowLeft" size={15} />
             {t("orgSettings.title")}
           </button>
-          <h1 className="t-h1 mb-1">{t("orgSettings.tab.fiscalInfo")}</h1>
-          <p className="t-body text-muted-foreground">
-            {t("orgSettings.fiscalInfo.empty.desc")}
-          </p>
+          {!showWelcome && (
+            <>
+              <h1 className="t-h1 mb-1">
+                {t(setupStarted && !reg ? "orgSettings.fiscalInfo.setupTitle" : "orgSettings.tab.fiscalInfo")}
+              </h1>
+              <p className="t-body text-muted-foreground">
+                {t(setupStarted && !reg ? "orgSettings.fiscalInfo.setupSubtitle" : "orgSettings.fiscalInfo.empty.desc")}
+              </p>
+            </>
+          )}
         </div>
 
         {savedNoticeVisible && (
@@ -66,8 +75,10 @@ export default function OrgRegisteredOrgPage() {
           </div>
         )}
 
-        {/* Empty → stepper */}
-        {!isLoading && org && !reg && canUpdate && (
+        {/* First-time setup starts here, after explicitly opening fiscal info. */}
+        {showWelcome && <FiscalInfoWelcome onStart={() => setSetupOrgId(org.id)} />}
+
+        {!isLoading && org && !reg && canUpdate && setupStarted && (
           <FiscalInfoStepper
             orgId={org.id}
             onSaved={() => {
@@ -94,6 +105,30 @@ export default function OrgRegisteredOrgPage() {
           reg={reg}
         />
       )}
+    </div>
+  );
+}
+
+function FiscalInfoWelcome({ onStart }: { onStart: () => void }) {
+  const { t } = useLanguage();
+
+  return (
+    <div className="welcome-ghost-enter min-h-[calc(100dvh-220px)] flex items-center justify-center py-6">
+      <div className="text-center max-w-[560px]">
+        <div className="icon-pill icon-pill-lg icon-pill-primary-soft w-24 h-24 mx-auto mb-7">
+          <Icon name="user" size={42} />
+        </div>
+
+        <h1 className="t-h1 mb-3">{t("orgSettings.fiscalInfo.welcome.title")}</h1>
+        <p className="t-body text-muted-foreground leading-relaxed mb-8">
+          {t("orgSettings.fiscalInfo.welcome.subtitle")}
+        </p>
+
+        <button type="button" onClick={onStart} className="btn btn-primary btn-lg">
+          <Icon name="arrowRight" size={16} />
+          {t("orgSettings.fiscalInfo.welcome.cta")}
+        </button>
+      </div>
     </div>
   );
 }

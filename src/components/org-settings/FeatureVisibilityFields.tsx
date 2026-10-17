@@ -8,6 +8,8 @@ import {
 interface FeatureVisibilityFieldsProps {
   orgId: string;
   disabled?: boolean;
+  hiddenModules?: string[];
+  onVisibilityChange?: (hidden: string[]) => void;
 }
 
 /**
@@ -26,10 +28,13 @@ interface FeatureVisibilityFieldsProps {
 export function FeatureVisibilityFields({
   orgId,
   disabled,
+  hiddenModules,
+  onVisibilityChange,
 }: FeatureVisibilityFieldsProps) {
   const { t } = useLanguage();
   const { emphasises } = useBusinessType();
-  const hidden = useOrgFeatureVisibility((s) => s.hidden[orgId] ?? []);
+  const savedHidden = useOrgFeatureVisibility((s) => s.hidden[orgId]);
+  const hidden = hiddenModules ?? savedHidden ?? [];
   const setHidden = useOrgFeatureVisibility((s) => s.setHidden);
 
   return (
@@ -54,7 +59,13 @@ export function FeatureVisibilityFields({
                 className="mt-0.5"
                 checked={isVisible}
                 disabled={disabled}
-                onChange={(e) => setHidden(orgId, module, !e.target.checked)}
+                onChange={(e) => {
+                  if (onVisibilityChange) {
+                    onVisibilityChange(e.target.checked ? hidden.filter((name) => name !== module) : [...hidden, module]);
+                  } else {
+                    setHidden(orgId, module, !e.target.checked);
+                  }
+                }}
               />
               <span className="min-w-0">
                 <span className="block t-sm font-semibold">

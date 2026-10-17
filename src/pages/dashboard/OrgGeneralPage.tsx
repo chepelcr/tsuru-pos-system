@@ -1,241 +1,73 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePermissions } from "@/hooks/useRbac";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useUpdateGeneralSettings } from "@/hooks/useOrgSettings";
-import { Icon, Spinner } from "@/components/ui";
-import { OrganizationLogoPicker } from "@/components/org-settings/OrganizationLogoPicker";
-import type { BusinessType } from "@/types/organization";
-import { FadeIn } from "@/components/ui/FadeIn";
-import { FormField } from "@/components/forms/FormField";
-import {
-  BusinessIdentityFields,
-  type BusinessIdentityValue,
-} from "@/components/org-settings/BusinessIdentityFields";
-import { FeatureVisibilityFields } from "@/components/org-settings/FeatureVisibilityFields";
+import { Icon, FadeIn } from "@/components/ui";
+import { GeneralSettingsForm } from "@/components/org-settings/GeneralSettingsForm";
+import { SettingsDetailCard } from "@/components/org-settings/SettingsDetailCard";
+import { SettingsEditDrawer } from "@/components/org-settings/SettingsEditDrawer";
+import { OrganizationSettingsSummary } from "@/components/org-settings/OrganizationSettingsSummary";
+import type { OrgGeneralSettings } from "@/types";
 import { ROUTES } from "@/routePaths";
+import { HIDEABLE_MODULES, useOrgFeatureVisibility } from "@/store/orgFeatureVisibility";
 
-const buildSchema = (t: (k: string) => string) =>
-  z.object({
-    name: z.string().min(1, t("orgSettings.general.nameRequired")),
-    description: z.string().optional(),
-    logo_url: z.string().url().or(z.literal("")),
-  });
-
-type GeneralValues = z.infer<ReturnType<typeof buildSchema>>;
-
-/**
- * General org-metadata settings — edits ONLY name + description (top-level org
- * fields). email/phone/address moved to the Contact card (contact_settings via
- * PUT /settings/contact) per the de-dup rule.
- *
- * Simple inline card form (no drawer). Hydrates from the org object — there is
- * no GET /settings/general. Persists via PATCH /settings/general, which updates
- * the Organization row directly (reflows into receipts/profile/header).
- */
 export default function OrgGeneralPage() {
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
-  const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
+  const { data: org, isLoading } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
-  usePageTitle([t("shell.orgSettings"), t("orgSettings.tab.general")]);
   const [, navigate] = useLocation();
-
-  const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
-  const [logoUploading, setLogoUploading] = useState(false);
-
-  // Business identity is three controlled widgets, not text inputs, so it sits
-  // in plain state rather than react-hook-form.
-  const [identity, setIdentity] = useState<BusinessIdentityValue>({
-    business_type: "general",
-    is_retail_supplier: false,
-    is_pyme: false,
-  });
-
-  // Hydrate once the org arrives (same pattern as the RHF `values` prop above).
-  useEffect(() => {
-    if (!org) return;
-    setIdentity({
-      business_type: (org.business_type ?? "general") as BusinessType,
-      is_retail_supplier: org.is_retail_supplier ?? false,
-      is_pyme: org.is_pyme ?? false,
-    });
-  }, [org?.business_type, org?.is_retail_supplier, org?.is_pyme, org]);
-
-  // Fail-open while my-permissions resolves (RBAC_ENFORCEMENT=log rollout).
   const { can } = usePermissions();
   const canUpdate = can("organization", "update", "general");
+  const update = useUpdateGeneralSettings(user?.userId, org?.id);
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  usePageTitle([t("shell.orgSettings"), t("orgSettings.tab.general")]);
 
-  const updateMutation = useUpdateGeneralSettings(user?.userId, org?.id);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<GeneralValues>({
-    resolver: zodResolver(buildSchema(t)),
-    values: {
-      name: org?.name ?? "",
-      description: org?.description ?? "",
-      logo_url: org?.logo_url ?? "",
-    },
-  });
-
-  const onSubmit = async (data: GeneralValues) => {
-    setSavedNoticeVisible(false);
+  const handleSave = async (data: OrgGeneralSettings, hidden: string[]) => {
+    if (!org || !canUpdate) return;
     try {
-      await updateMutation.mutateAsync({
-        name: data.name,
-        description: data.description,
-        logo_url: data.logo_url,
-        ...identity,
-      });
-      setSavedNoticeVisible(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      await update.mutateAsync(data);
+      HIDEABLE_MODULES.forEach((module) => useOrgFeatureVisibility.getState().setHidden(org.id, module, hidden.includes(module)));
+      setEditingOrgId(null);
+      setSaved(true);
     } catch {
-      // surfaced via updateMutation.isError banner
+      // Keep the editor and its entered values open; the drawer shows the error.
     }
   };
 
-  if (orgLoading || !org) {
-    return (
-      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
-        {/* Back + header */}
-        <div className="mb-6">
-          <div className="skeleton-block animate-pulse h-4 w-32 mb-4 rounded" />
-          <div className="skeleton-block animate-pulse h-8 w-56 mb-2 rounded" />
-          <div className="skeleton-block animate-pulse h-4 w-72 rounded" />
-        </div>
+  if (isLoading || !org) return <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+    <div className="skeleton-block h-8 w-56 max-w-full mb-6 animate-pulse" />
+    <div className="skeleton-block h-64 rounded-lg animate-pulse" />
+  </div>;
 
-        {/* Form card */}
-        <div className="card p-5 space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="skeleton-block animate-pulse h-3.5 w-28 rounded" />
-              <div className="skeleton-block animate-pulse h-9 w-full rounded" />
-            </div>
-          ))}
-
-          <div className="flex justify-end pt-1">
-            <div className="bg-muted/40 animate-pulse h-9 w-24 rounded-md" />
-          </div>
-        </div>
+  return <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
+    <FadeIn duration={0.3}>
+      <div className="mb-6">
+        <button className="btn btn-ghost btn-sm !pl-0 mb-3 text-muted-foreground" onClick={() => navigate(ROUTES.DASHBOARD_ORG_SETTINGS)}>
+          <Icon name="arrowLeft" size={15} />{t("orgSettings.title")}
+        </button>
+        <h1 data-tour="organization" className="t-h1 mb-1">{t("orgSettings.general.title")}</h1>
+        <p className="t-body text-muted-foreground">{t("orgSettings.general.subtitle")}</p>
       </div>
-    );
-  }
-
-  return (
-    <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
-      <FadeIn duration={0.3}>
-        {/* Back + header */}
-        <div className="mb-6">
-          <button
-            className="btn btn-ghost btn-sm !pl-0 mb-3 text-muted-foreground"
-            onClick={() => navigate(ROUTES.DASHBOARD_ORG_SETTINGS)}
-          >
-            <Icon name="arrowLeft" size={15} />
-            {t("orgSettings.title")}
-          </button>
-          <h1 data-tour="organization" className="t-h1 mb-1">{t("orgSettings.general.title")}</h1>
-          <p className="t-body text-muted-foreground">
-            {t("orgSettings.general.subtitle")}
-          </p>
-        </div>
-
-        {savedNoticeVisible && (
-          <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-success/10 border border-success/30">
-            <Icon name="checkCircle" size={14} className="text-success mt-0.5 flex-shrink-0" />
-            <span className="t-sm">{t("orgSettings.general.saved")}</span>
-          </div>
-        )}
-
-        {updateMutation.isError && (
-          <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-            <Icon name="alertCircle" size={14} className="text-destructive mt-0.5 flex-shrink-0" />
-            <span className="t-sm text-destructive">{t("orgSettings.general.saveError")}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit(onSubmit)} className="card p-5 space-y-4">
-          <FormField label={t("common.name")} required error={errors.name?.message}>
-            <input
-              className="pp-input w-full"
-              type="text"
-              placeholder={t("orgSettings.general.namePlaceholder")}
-              {...register("name")}
-            />
-          </FormField>
-
-          <FormField label={t("common.description")} error={errors.description?.message}>
-            <textarea
-              className="pp-input w-full"
-              rows={4}
-              placeholder={t("orgSettings.general.descriptionPlaceholder")}
-              {...register("description")}
-            />
-          </FormField>
-
-          <FormField label={t("orgSettings.general.logo")} error={errors.logo_url?.message}>
-            <Controller
-              control={control}
-              name="logo_url"
-              render={({ field }) => (
-                <OrganizationLogoPicker
-                  userId={user!.userId}
-                  orgId={org.id}
-                  value={field.value}
-                  onChange={field.onChange}
-                  onUploadingChange={setLogoUploading}
-                  disabled={!canUpdate}
-                />
-              )}
-            />
-            <span className="block t-xs text-muted-foreground mt-1">
-              {t("orgSettings.general.logoDesc")}
-            </span>
-          </FormField>
-
-          <div className="pt-1 border-t border-border" />
-
-          <BusinessIdentityFields
-            value={identity}
-            onChange={(patch) => setIdentity((prev) => ({ ...prev, ...patch }))}
-            disabled={!canUpdate}
-          />
-
-          <div className="pt-1 border-t border-border" />
-
-          {/* Visibility is a preference, not part of the org record: it saves
-              as you toggle rather than on submit, so it does not ride along
-              with the name/description PATCH. */}
-          <FeatureVisibilityFields orgId={org.id} disabled={!canUpdate} />
-
-          {canUpdate && (
-            <div className="flex justify-end pt-1">
-              <button
-                type="submit"
-                className="btn btn-primary btn-sm"
-                disabled={updateMutation.isPending || logoUploading}
-              >
-                {updateMutation.isPending ? (
-                  <>
-                    <Spinner size={14} /> {t("common.saving")}
-                  </>
-                ) : (
-                  t("common.save")
-                )}
-              </button>
-            </div>
-          )}
-        </form>
-      </FadeIn>
-    </div>
-  );
+      {saved && <div role="status" className="mb-5 flex items-start gap-2 rounded-lg bg-success/10 border border-success/30 p-3">
+        <Icon name="checkCircle" size={14} className="text-success mt-0.5 flex-shrink-0" />
+        <span className="t-sm">{t("orgSettings.general.saved")}</span>
+      </div>}
+      <SettingsDetailCard title={t("orgSettings.general.title")} icon="settings" configured={true}
+        onEdit={canUpdate ? () => { update.reset(); setSaved(false); setEditingOrgId(org.id); } : undefined}>
+        <OrganizationSettingsSummary section="general" org={org} />
+      </SettingsDetailCard>
+    </FadeIn>
+    {canUpdate && <SettingsEditDrawer key={org.id} open={editingOrgId === org.id} onClose={() => setEditingOrgId(null)}
+      title={t("orgSettings.general.title")} icon="settings" formId="org-general-edit" isBusy={update.isPending || logoUploading}
+      error={update.isError ? t("orgSettings.general.saveError") : undefined}>
+      <GeneralSettingsForm formId="org-general-edit" org={org} userId={user!.userId} onUploadingChange={setLogoUploading} onSubmit={handleSave} />
+    </SettingsEditDrawer>}
+  </div>;
 }

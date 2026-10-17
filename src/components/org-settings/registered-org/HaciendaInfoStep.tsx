@@ -14,6 +14,7 @@ import {
   isIdentificationLengthValid,
 } from "@/lib/identification";
 import type { FiscalInfoFormState } from "./types";
+import { emptyHaciendaInfo } from "./types";
 import type { TaxpayerResponse } from "@/services/data-api/dtos/consumer-identifications";
 
 interface HaciendaInfoStepProps {
@@ -81,16 +82,19 @@ export function HaciendaInfoStep({
   );
 
   useEffect(() => {
-    if (taxpayerQuery.isSuccess && taxpayerQuery.data && onHaciendaLookup) {
-      lastLookupKey.current = `${form.idCode}:${form.idNumber}`;
+    const key = `${form.idCode}:${form.idNumber}`;
+    if (validLength && debouncedNumber === form.idNumber &&
+        lastLookupKey.current !== key && taxpayerQuery.isSuccess && taxpayerQuery.data &&
+        unmaskIdentification(taxpayerQuery.data.identification.number) === unmaskIdentification(form.idNumber) && onHaciendaLookup) {
+      lastLookupKey.current = key;
       onHaciendaLookup(taxpayerQuery.data);
     }
-  }, [taxpayerQuery.isSuccess, taxpayerQuery.data, onHaciendaLookup, form.idCode, form.idNumber]);
+  }, [taxpayerQuery.isSuccess, taxpayerQuery.data, onHaciendaLookup, form.idCode, form.idNumber, validLength, debouncedNumber]);
 
   // ── Field handlers ────────────────────────────────────────────────────────
   const handleCodeChange = useCallback(
     (e: SelectChangeEvent) => {
-      patch({ idCode: e.target.value, idNumber: "" });
+      patch({ ...emptyHaciendaInfo(), idCode: e.target.value, idNumber: "" });
       lastLookupKey.current = "";
     },
     [patch],
@@ -100,9 +104,12 @@ export function HaciendaInfoStep({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const raw = unmaskIdentification(e.target.value);
       const { max } = expectedLengthForCode(form.idCode);
-      patch({ idNumber: raw.slice(0, max) });
+      const nextNumber = raw.slice(0, max);
+      if (nextNumber === form.idNumber) return;
+      lastLookupKey.current = "";
+      patch({ ...emptyHaciendaInfo(), idNumber: nextNumber });
     },
-    [patch, form.idCode],
+    [patch, form.idCode, form.idNumber],
   );
 
   // ── Derived gate state for the inline hint ────────────────────────────────
@@ -123,8 +130,8 @@ export function HaciendaInfoStep({
   return (
     <div className="space-y-5">
       {!compact && (
-        <header className="flex items-start justify-between gap-3">
-          <div>
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 basis-48">
             <h2 className="t-h3 mb-1">
               {t("orgSettings.fiscalInfo.haciendaInfo.title")}
             </h2>
@@ -200,6 +207,8 @@ export function HaciendaInfoStep({
               type="text"
               inputMode="numeric"
               autoComplete="off"
+              aria-invalid={!!helperText || taxpayerQuery.isError}
+              aria-describedby={helperText ? "reg-org-id-error" : undefined}
               value={formatIdentification(form.idCode, form.idNumber)}
               onChange={handleNumberChange}
               placeholder={formatIdentification(
@@ -214,24 +223,25 @@ export function HaciendaInfoStep({
             )}
           </div>
           {helperText && (
-            <p className="t-xs text-warning mt-1.5">{helperText}</p>
+            <p id="reg-org-id-error" role="alert" className="t-xs text-warning mt-1.5">{helperText}</p>
           )}
         </div>
       </div>
 
       {/* Lookup result feedback */}
       {taxpayerQuery.isFetching && (
-        <div className="flex items-center gap-2 t-sm text-muted-foreground">
+        <div role="status" className="flex items-center gap-2 t-sm text-muted-foreground">
           <Spinner size={14} />
           <span>{t("orgSettings.fiscalInfo.idLookupLoading")}</span>
         </div>
       )}
       {taxpayerQuery.isError && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+        <div role="alert" className="flex flex-wrap items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
           <Icon name="alertCircle" size={14} className="text-warning mt-0.5 flex-shrink-0" />
           <span className="t-sm text-foreground/80">
             {t("orgSettings.fiscalInfo.idLookupNotFound")}
           </span>
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => { void taxpayerQuery.refetch(); }} disabled={taxpayerQuery.isFetching || !validLength || debouncedNumber !== form.idNumber}>{t("common.retry")}</button>
         </div>
       )}
 
@@ -291,7 +301,7 @@ export function HaciendaInfoStep({
 
       {/* Gate message — the user can't continue if the org isn't actually registered. */}
       {blocked && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+        <div role="alert" className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
           <Icon name="alertCircle" size={14} className="text-destructive mt-0.5 flex-shrink-0" />
           <span className="t-sm text-foreground/80">
             {isUnregisteredRegime
@@ -314,9 +324,9 @@ function ReadOnlyRow({
   tail?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-b-0">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 py-2 border-b border-border last:border-b-0">
       <span className="t-sm text-muted-foreground">{label}</span>
-      <span className="t-sm font-medium text-right flex items-center gap-2">
+      <span className="min-w-0 max-w-full t-sm font-medium sm:text-right flex flex-wrap items-center gap-2 [overflow-wrap:anywhere]">
         {value}
         {tail}
       </span>

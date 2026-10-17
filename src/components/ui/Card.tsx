@@ -61,11 +61,11 @@ export function CardFooter({ children, className = "", style, onClick }: CardFoo
   );
 }
 
-export function CardTitle({ children, className = "", style }: CardSectionProps) {
+export function CardTitle({ children, className = "", style, as: Tag = "h3" }: CardSectionProps & { as?: "h1" | "h2" | "h3" }) {
   return (
-    <h3 className={`t-h4 mb-1 ${className}`} style={style}>
+    <Tag className={`t-h4 mb-1 ${className}`} style={style}>
       {children}
-    </h3>
+    </Tag>
   );
 }
 

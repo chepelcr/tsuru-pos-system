@@ -24,6 +24,7 @@ export function ResidenceStep({ form, patch, compact = false }: ResidenceStepPro
       isoCode={iso}
       title={compact ? undefined : t("orgSettings.fiscalInfo.residence.title")}
       subtitle={compact ? undefined : t("orgSettings.fiscalInfo.residence.subtitle")}
+      addressMaxLength={1000}
       value={{
         state_id: form.stateId,
         county_id: form.countyId,

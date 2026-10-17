@@ -1,25 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNotifications } from "@/contexts/NotificationsContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { AuthLayout } from "@/components/layout/AuthLayout";
-import { Stepper, type StepperStep } from "@/components/common/Stepper";
+import { Stepper } from "@/components/common/Stepper";
 import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Icon, Spinner } from "@/components/ui";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { FormField } from "@/components/forms/FormField";
 import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
+import { ACCOUNT_CREATION_STEPS } from "@/lib/accountCreationSteps";
 
 const RESEND_COOLDOWN_SECONDS = 60;
-
-const MACRO_STEPS: StepperStep[] = [
-  { id: "register", titleKey: "auth.register.steps.personalInfo" },
-  { id: "verify", titleKey: "auth.register.steps.verify" },
-  { id: "organization", titleKey: "auth.register.steps.organization" },
-];
 
 export default function VerifyEmail() {
   const {
@@ -39,6 +34,10 @@ export default function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [signedInAfterConfirmation, setSignedInAfterConfirmation] = useState(false);
+  const [resendSucceeded, setResendSucceeded] = useState(false);
+  const operationInFlight = useRef(false);
 
   usePageTitle([t("auth.verifyEmail.title")]);
 
@@ -61,8 +60,9 @@ export default function VerifyEmail() {
     return () => window.clearTimeout(id);
   }, [cooldown]);
 
-  const handleVerify = async () => {
-    if (!code || code.length !== 6) {
+  const handleVerify = async (verificationCode = code) => {
+    if (operationInFlight.current || resending || !email) return;
+    if (!confirmed && !/^\d{6}$/.test(verificationCode)) {
       setAuthError({
         messageKey: "auth.verifyEmail.invalidCodeDescription",
         name: "",
@@ -77,16 +77,23 @@ export default function VerifyEmail() {
       return;
     }
 
+    operationInFlight.current = true;
     setVerifying(true);
     setAuthError(null);
+    let confirmationSucceeded = confirmed;
     try {
-      await confirmSignUp({ username: email, confirmationCode: code });
+      if (!confirmed) {
+        await confirmSignUp({ username: email, confirmationCode: verificationCode });
+        setConfirmed(true);
+        confirmationSucceeded = true;
+      }
 
       const verificationOrigin = sessionStorage.getItem("verificationOrigin");
-      let signedIn = false;
-      if (verificationOrigin === "register") {
+      let signedIn = signedInAfterConfirmation;
+      if (!signedIn && verificationOrigin === "register") {
         try {
           signedIn = await completeAutoSignIn();
+          setSignedInAfterConfirmation(signedIn);
         } catch {
           // Confirmation succeeded; normal login remains a safe fallback.
           signedIn = false;
@@ -130,7 +137,9 @@ export default function VerifyEmail() {
       // Was three hand-rolled name checks plus a raw-message fallback, all sent
       // to a bell this layout does not render (TSR-309). describeAuthError knows
       // the same two code errors and every other Cognito case besides.
-      const info = describeAuthError(error, "auth.verifyEmail.error");
+      const info = confirmationSucceeded
+        ? { messageKey: "auth.verifyEmail.syncError", name: "", action: null }
+        : describeAuthError(error, "auth.verifyEmail.error");
       setAuthError(info);
       add({
         source: "fe",
@@ -139,16 +148,20 @@ export default function VerifyEmail() {
         bodyKey: info.messageKey,
       });
     } finally {
+      operationInFlight.current = false;
       setVerifying(false);
     }
   };
 
   const handleResendCode = async () => {
+    if (operationInFlight.current || resending || cooldown > 0 || confirmed) return;
+    operationInFlight.current = true;
     setResending(true);
     setAuthError(null);
     try {
       await resendSignUpCode({ username: email });
       setCooldown(RESEND_COOLDOWN_SECONDS);
+      setResendSucceeded(true);
       add({
         source: "fe",
         level: "info",
@@ -165,6 +178,7 @@ export default function VerifyEmail() {
         bodyKey: info.messageKey,
       });
     } finally {
+      operationInFlight.current = false;
       setResending(false);
     }
   };
@@ -178,16 +192,27 @@ export default function VerifyEmail() {
           <div className="mx-auto mb-3 icon-pill icon-pill-lg icon-pill-primary-soft">
             <Icon name="lock" size={24} />
           </div>
-          <CardTitle className="t-h2">{t("auth.verifyEmail.title")}</CardTitle>
+          <CardTitle as="h1" className="t-h2">{t("auth.verifyEmail.title")}</CardTitle>
           <CardDescription>
-            {t("auth.verifyEmail.subtitle")} <span className="font-medium text-primary">{email}</span>
+            {t("auth.verifyEmail.subtitle")} <span className="font-medium text-primary [overflow-wrap:anywhere]">{email}</span>
           </CardDescription>
         </CardHeader>
         <CardBody>
-          <Stepper steps={MACRO_STEPS} current={1} hideFooter>
-            <div className="flex flex-col gap-5">
-              <FormField label={t("auth.verifyEmail.code")}>
-                <OtpInput value={code} onChange={setCode} autoFocus disabled={isBusy} />
+          <Stepper steps={ACCOUNT_CREATION_STEPS} current={2} hideFooter>
+            <form onSubmit={(event) => { event.preventDefault(); void handleVerify(); }} className="flex flex-col gap-5">
+              <FormField htmlFor="verification-code" label={t("auth.verifyEmail.code")}>
+                <OtpInput
+                  id="verification-code"
+                  value={code}
+                  onChange={(value) => { setCode(value); setAuthError(null); }}
+                  onComplete={(value) => { void handleVerify(value); }}
+                  segmented
+                  autoFocus
+                  disabled={isBusy || resending || confirmed}
+                  aria-describedby="verification-code-hint"
+                  aria-invalid={!!authError && !confirmed}
+                />
+                <p id="verification-code-hint" className="t-sm text-muted-foreground mt-2">{t("auth.verifyEmail.codeHint")}</p>
               </FormField>
 
               <AuthErrorAlert
@@ -197,22 +222,23 @@ export default function VerifyEmail() {
 
               <Button
                 variant="primary"
+                type="submit"
                 size="lg"
                 className="w-full"
-                onClick={handleVerify}
-                disabled={isBusy || code.length !== 6}
+                disabled={isBusy || resending || (!confirmed && !/^\d{6}$/.test(code))}
               >
                 {isBusy && <Spinner size={16} />}
-                {isBusy ? t("auth.verifyEmail.submitting") : t("auth.verifyEmail.submit")}
+                {isBusy ? t("auth.verifyEmail.submitting") : confirmed ? t("common.continue") : t("auth.verifyEmail.submit")}
               </Button>
 
               <div className="text-center flex flex-col gap-2">
                 <p className="t-sm text-muted-foreground">{t("auth.verifyEmail.didntReceive")}</p>
                 <Button
+                  type="button"
                   variant="outline"
                   className="mx-auto"
                   onClick={handleResendCode}
-                  disabled={resending || cooldown > 0}
+                  disabled={isBusy || resending || cooldown > 0 || confirmed}
                 >
                   <Icon name="refresh" size={16} className={resending ? "animate-spin" : undefined} />
                   {resending
@@ -221,6 +247,7 @@ export default function VerifyEmail() {
                       ? t("auth.verifyEmail.resendCooldown", { seconds: cooldown })
                       : t("auth.verifyEmail.resendCode")}
                 </Button>
+                {resendSucceeded && <p role="status" className="t-sm text-success">{t("auth.verifyEmail.resendSuccessDescription")}</p>}
               </div>
 
               <div className="text-center">
@@ -232,7 +259,7 @@ export default function VerifyEmail() {
                   {t("auth.verifyEmail.backToRegister")}
                 </button>
               </div>
-            </div>
+            </form>
           </Stepper>
         </CardBody>
       </Card>

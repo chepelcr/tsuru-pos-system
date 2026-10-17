@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -8,20 +9,12 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import { Icon } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ROUTES } from "@/routePaths";
-import { THEME_LIST, type ThemeDef } from "@/theme/themes";
+import { SettingsDetailCard, SettingsDetailRow } from "@/components/org-settings/SettingsDetailCard";
+import { SettingsEditDrawer } from "@/components/org-settings/SettingsEditDrawer";
+import { THEME_LIST } from "@/theme/themes";
 
-/**
- * Organization theme gallery.
- *
- * Shows every available POS theme as a swatch card (3 colour dots +
- * font sample). The active theme is highlighted. Selecting a theme:
- *   1. calls `setThemeId` for an INSTANT live re-paint, and
- *   2. persists the choice on the org via `useUpdateOrgTheme`.
- *
- * The colour dots interpolate the theme's own HSL triples into `hsl(...)` at
- * render time — a data-driven inline style, which the design system permits
- * (see CLAUDE.md §3.6 case 4). No static colour literals are introduced.
- */
+/** Appearance opens with a saved-theme summary. Theme choices stay in the
+ * drawer as a draft and apply to the shell only after a successful save. */
 export default function OrgThemePage() {
   const { user } = useAuthContext();
   const { useDefaultOrganization, useUpdateOrgTheme } = useOrganization();
@@ -32,6 +25,9 @@ export default function OrgThemePage() {
   usePageTitle([t("theme.title")]);
 
   const updateTheme = useUpdateOrgTheme();
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState(themeId);
+  const [saved, setSaved] = useState(false);
 
   // Each swatch persists the theme on click, so the grid is a write surface.
   // Without update permission the swatches stay visible (read view) but
@@ -69,13 +65,18 @@ export default function OrgThemePage() {
     );
   }
 
-  const handleSelect = (theme: ThemeDef) => {
-    if (!canUpdate || theme.id === themeId) return;
-    setThemeId(theme.id); // instant live apply
-    updateTheme.mutate(
-      { orgId: org.id, theme: theme.id },
-      { onSuccess: () => navigate(ROUTES.DASHBOARD_ORG_SETTINGS) }
-    );
+  const activeTheme = THEME_LIST.find((theme) => theme.id === themeId) ?? THEME_LIST[0];
+  const handleSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!canUpdate || updateTheme.isPending) return;
+    try {
+      if (selectedId !== themeId) await updateTheme.mutateAsync({ orgId: org.id, theme: selectedId });
+      setThemeId(selectedId);
+      setEditingOrgId(null);
+      setSaved(true);
+    } catch {
+      // Keep the selected draft and the persisted appearance unchanged on failure.
+    }
   };
 
   return (
@@ -93,55 +94,73 @@ export default function OrgThemePage() {
           <p className="t-body text-muted-foreground">{t("theme.subtitle")}</p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {THEME_LIST.map((theme) => {
-            const active = theme.id === themeId;
-            return (
-              <button
-                key={theme.id}
-                type="button"
-                onClick={() => handleSelect(theme)}
-                aria-pressed={active}
-                disabled={updateTheme.isPending}
-                className={`card card-hover text-left w-full p-4 flex flex-col gap-3 group ${
-                  active ? "card-primary ring-2 ring-primary/40" : ""
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="t-h4 !mb-0 truncate">{theme.name}</span>
-                  {active && (
-                    <span className="icon-pill icon-pill-primary-soft w-7 h-7 flex-shrink-0">
-                      <Icon name="check" size={16} />
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2" aria-hidden="true">
-                  <span
-                    className="w-7 h-7 rounded-full border border-border"
-                    style={{ background: `hsl(${theme.light.primary})` }}
-                  />
-                  <span
-                    className="w-7 h-7 rounded-full border border-border"
-                    style={{ background: `hsl(${theme.light.secondary})` }}
-                  />
-                  <span
-                    className="w-7 h-7 rounded-full border border-border"
-                    style={{ background: `hsl(${theme.light.accent})` }}
-                  />
-                </div>
-
-                <div
-                  className="t-body text-muted-foreground leading-snug"
-                  style={{ fontFamily: theme.fonts.display }}
-                >
-                  {t("theme.fontSample")}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {saved && <p role="status" className="t-sm text-success mb-4">{t("theme.saved")}</p>}
+        <SettingsDetailCard title={t("theme.title")} icon="sparkles" onEdit={canUpdate ? () => {
+          updateTheme.reset(); setSelectedId(themeId); setSaved(false); setEditingOrgId(org.id);
+        } : undefined}>
+          <dl>
+            <SettingsDetailRow label={t("common.name")} value={activeTheme.name} />
+            <SettingsDetailRow label={t("orgSettings.branding.fontFamily")} value={activeTheme.fonts.display} />
+            <SettingsDetailRow label={t("orgSettings.branding.primaryColor")} value={<span className="inline-block h-8 w-8 rounded-full border border-border" style={{ background: `hsl(${activeTheme.light.primary})` }} />} />
+            <SettingsDetailRow label={t("theme.fontSample")} value={<span style={{ fontFamily: activeTheme.fonts.display }}>{t("theme.fontSample")}</span>} />
+          </dl>
+        </SettingsDetailCard>
       </FadeIn>
+      {canUpdate && <SettingsEditDrawer key={org.id} open={editingOrgId === org.id} onClose={() => setEditingOrgId(null)}
+        title={t("theme.title")} icon="sparkles" formId="org-theme-edit" isBusy={updateTheme.isPending}
+        error={updateTheme.isError ? t("theme.saveError") : undefined}>
+        <form id="org-theme-edit" onSubmit={handleSave}>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {THEME_LIST.map((theme) => {
+              const active = theme.id === selectedId;
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => setSelectedId(theme.id)}
+                  aria-pressed={active}
+                  disabled={updateTheme.isPending}
+                  className={`card card-hover text-left w-full p-4 flex flex-col gap-3 group ${
+                    active ? "card-primary ring-2 ring-primary/40" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="t-h4 !mb-0 truncate">{theme.name}</span>
+                    {active && (
+                      <span className="icon-pill icon-pill-primary-soft w-7 h-7 flex-shrink-0">
+                        <Icon name="check" size={16} />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2" aria-hidden="true">
+                    <span
+                      className="w-7 h-7 rounded-full border border-border"
+                      style={{ background: `hsl(${theme.light.primary})` }}
+                    />
+                    <span
+                      className="w-7 h-7 rounded-full border border-border"
+                      style={{ background: `hsl(${theme.light.secondary})` }}
+                    />
+                    <span
+                      className="w-7 h-7 rounded-full border border-border"
+                      style={{ background: `hsl(${theme.light.accent})` }}
+                    />
+                  </div>
+
+                  <div
+                    className="t-body text-muted-foreground leading-snug"
+                    style={{ fontFamily: theme.fonts.display }}
+                  >
+                    {t("theme.fontSample")}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </form>
+      </SettingsEditDrawer>}
+
     </div>
   );
 }

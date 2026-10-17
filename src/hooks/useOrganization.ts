@@ -149,14 +149,10 @@ export function useOrganization() {
   // ─── Slug availability (public endpoint) ─────────────────────────────────
   // Memoized to prevent infinite loops when used in useEffect dependencies.
   const checkSlugAvailable = useCallback(async (slug: string): Promise<boolean> => {
-    try {
       const data = await api.get<{ available: boolean }>(
         `/api/organizations/check-slug/${slug}`
       );
       return !!data.available;
-    } catch {
-      return false;
-    }
   }, []);
 
   // ─── Onboarding / create ─────────────────────────────────────────────────
@@ -168,7 +164,7 @@ export function useOrganization() {
       return api.post<Organization>(userPath(ownerId, '/organizations'), body);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+      return queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
     },
   });
 
@@ -194,8 +190,15 @@ export function useOrganization() {
       );
     },
     // Invalidate only after final step completes
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-organizations'] });
+    onSuccess: (org, { userId }) => {
+      // Publish the completed org before navigation so the shell and tutorial
+      // don't wait for an org switch or a later membership-list refresh.
+      queryClient.setQueryData<Organization[]>(['user-organizations', userId], (previous = []) =>
+        previous.some((item) => item.id === org.id)
+          ? previous.map((item) => item.id === org.id ? { ...item, ...org } : item)
+          : [...previous, org],
+      );
+      return queryClient.invalidateQueries({ queryKey: ['user-organizations', userId] });
     },
   });
 

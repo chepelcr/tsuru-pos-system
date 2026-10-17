@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -10,21 +9,12 @@ import { useRegisteredOrganization } from "@/hooks/useRegisteredOrganization";
 import { Icon, Badge } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { ROUTES } from "@/routePaths";
-import { FiscalInfoStepper } from "@/components/org-settings/registered-org/FiscalInfoStepper";
 
 /**
  * Organization settings landing.
  *
- * Behaviour depends on whether the org has its Hacienda taxpayer profile
- * configured yet:
- *   • Loading       → skeleton.
- *   • No reg-org    → Windows-setup style welcome ghost takes over the main
- *                     content area. On "Comenzar", the FiscalInfoStepper
- *                     renders inline (no separate route). The dashboard
- *                     sidebar/header stay accessible — the welcome only
- *                     replaces the page body. Cards are HIDDEN until
- *                     fiscal info is saved.
- *   • Reg-org set   → Hacienda / Notifications / Fiscal-info cards as before.
+ * Settings remain accessible before fiscal setup. Hacienda credentials and
+ * notifications unlock after fiscal identity is saved through its own page.
  */
 export default function OrgSettingsPage() {
   const { user } = useAuthContext();
@@ -45,18 +35,9 @@ export default function OrgSettingsPage() {
   const { can } = usePermissions();
   const sectionVisible = (sectionId: string): boolean => can("organization", "read", sectionId);
 
-  // Whether the user has dismissed the welcome ghost and is now inside the
-  // inline stepper. Resets back to welcome on every page mount.
-  const [setupStarted, setSetupStarted] = useState(false);
-
   // ── Initial loading ──────────────────────────────────────────────────────
-  // Wait until we actually know whether the org has a registered_organization
-  // row before deciding between welcome-ghost and cards. Otherwise the welcome
-  // ghost flashes for a frame on every page mount before the queries resolve.
-  //
-  // We also wait for `configLoading` so the cards (which depend on
-  // `config.notification_settings`) don't flicker their "Pendiente" badges
-  // into "Configurado".
+  // Wait for fiscal identity and configuration so card badges don't briefly
+  // show "Pending" before their saved status is known.
   //
   // `useRegisteredOrganization` / `useOrgConfigurations` are gated by
   // `enabled: !!orgId`, so before `org` resolves their `isLoading` is `false`
@@ -70,7 +51,7 @@ export default function OrgSettingsPage() {
           <div className="skeleton-block h-8 w-56 mb-2 animate-pulse" />
           <div className="skeleton-block h-4 w-80 max-w-full animate-pulse" />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="card p-5 flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-muted/40 flex-shrink-0 animate-pulse" />
@@ -89,46 +70,7 @@ export default function OrgSettingsPage() {
     );
   }
 
-  // ── Onboarding: no fiscal info yet ───────────────────────────────────────
-  // The cards stay hidden until the org has a registered_organization row.
-  if (!reg) {
-    if (!setupStarted) {
-      return (
-        <WelcomeGhost
-          onStart={() => setSetupStarted(true)}
-          title={t("orgSettings.fiscalInfo.welcome.title")}
-          subtitle={t("orgSettings.fiscalInfo.welcome.subtitle")}
-          cta={t("orgSettings.fiscalInfo.welcome.cta")}
-        />
-      );
-    }
-    return (
-      <div className="px-6 pt-6 pb-12 max-w-[900px] mx-auto">
-        <FadeIn duration={0.35}>
-          <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="t-h2 mb-1">{t("orgSettings.fiscalInfo.setupTitle")}</h1>
-              <p className="t-sm text-muted-foreground">
-                {t("orgSettings.fiscalInfo.setupSubtitle")}
-              </p>
-            </div>
-          </div>
-          {org && (
-            <FiscalInfoStepper
-              orgId={org.id}
-              onSaved={() => {
-                // The query invalidates and `reg` flips truthy on the next
-                // render → cards take over automatically.
-                setSetupStarted(false);
-              }}
-            />
-          )}
-        </FadeIn>
-      </div>
-    );
-  }
-
-  // ── Configured: card grid ────────────────────────────────────────────────
+  // ── Settings card grid ───────────────────────────────────────────────────
   const cards = [
     {
       id: "fiscal-info",
@@ -136,7 +78,7 @@ export default function OrgSettingsPage() {
       iconClass: "icon-pill-primary-soft",
       title: t("orgSettings.tab.fiscalInfo"),
       description: t("orgSettings.fiscalInfo.empty.desc"),
-      configured: true,
+      configured: !!reg,
       loading: false,
       route: ROUTES.DASHBOARD_ORG_FISCAL_INFO,
     },
@@ -149,6 +91,7 @@ export default function OrgSettingsPage() {
       configured: config !== null && config !== undefined,
       loading: configLoading,
       route: ROUTES.DASHBOARD_ORG_HACIENDA,
+      locked: !reg,
     },
     {
       id: "notifications",
@@ -159,6 +102,7 @@ export default function OrgSettingsPage() {
       configured: !!(config?.notification_settings),
       loading: configLoading,
       route: ROUTES.DASHBOARD_ORG_NOTIFICATIONS,
+      locked: !reg,
     },
     {
       id: "theme",
@@ -248,12 +192,14 @@ export default function OrgSettingsPage() {
           <p className="t-body text-muted-foreground">{t("orgSettings.subtitle")}</p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {cards.filter((card) => sectionVisible(card.id)).map((card) => (
             <button
               key={card.id}
-              className="card card-hover text-left w-full p-5 flex items-start gap-4 group"
+              className={`card text-left w-full p-5 flex items-start gap-4 ${card.locked ? "opacity-60 cursor-not-allowed" : "card-hover group"}`}
               onClick={() => navigate(card.route)}
+              disabled={card.locked}
+              aria-describedby={card.locked ? `${card.id}-fiscal-required` : undefined}
             >
               <div className={`icon-pill icon-pill-lg w-12 h-12 flex-shrink-0 ${card.iconClass}`}>
                 <Icon name={card.icon} size={22} />
@@ -263,8 +209,10 @@ export default function OrgSettingsPage() {
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="t-h4 !mb-0 truncate min-w-0 flex-1">{card.title}</span>
                   {!card.loading && (
-                    <Badge variant={card.configured ? "success" : "warning"} className="flex-shrink-0">
-                      {card.configured
+                    <Badge variant={card.locked ? "secondary" : card.configured ? "success" : "warning"} className="flex-shrink-0">
+                      {card.locked
+                        ? t("orgSettings.badge.locked")
+                        : card.configured
                         ? t("orgSettings.badge.configured")
                         : t("orgSettings.badge.pending")}
                     </Badge>
@@ -274,6 +222,12 @@ export default function OrgSettingsPage() {
                   )}
                 </div>
                 <p className="t-sm text-muted-foreground leading-relaxed">{card.description}</p>
+                {card.locked && (
+                  <p id={`${card.id}-fiscal-required`} className="t-sm mt-2 flex items-center gap-1.5">
+                    <Icon name="lock" size={13} />
+                    {t("orgSettings.fiscalInfo.requiredFirst")}
+                  </p>
+                )}
               </div>
 
               <div className="text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 mt-0.5">
@@ -283,51 +237,6 @@ export default function OrgSettingsPage() {
           ))}
         </div>
       </FadeIn>
-    </div>
-  );
-}
-
-/**
- * Windows-setup-style welcome takeover for the org-settings page body. No back
- * button — the dashboard chrome (sidebar/header) remains for navigating away,
- * but inside the main panel there's no escape: the user either starts setup
- * or leaves via the global nav.
- *
- * Slow fade-in + scale-up gives the "ghost arriving" feel.
- */
-function WelcomeGhost({
-  onStart,
-  title,
-  subtitle,
-  cta,
-}: {
-  onStart: () => void;
-  title: string;
-  subtitle: string;
-  cta: string;
-}) {
-  return (
-    <div className="welcome-ghost-enter min-h-[calc(100vh-64px)] flex items-center justify-center px-6 py-12">
-      <div className="text-center max-w-[560px]">
-        <div className="icon-pill icon-pill-lg icon-pill-primary-soft w-24 h-24 mx-auto mb-7">
-          <Icon name="user" size={42} />
-        </div>
-
-        <h1 className="t-h1 mb-3">{title}</h1>
-        <p className="t-body text-muted-foreground leading-relaxed mb-8">
-          {subtitle}
-        </p>
-
-        <button
-          type="button"
-          onClick={onStart}
-          className="btn btn-primary btn-lg"
-        >
-          <Icon name="arrowRight" size={16} />
-          {cta}
-        </button>
-      </div>
-
     </div>
   );
 }
