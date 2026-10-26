@@ -28,7 +28,7 @@ Parameters:
     AllowedValues: [spa, static]
     Description: >-
       spa: extensionless paths serve /index.html (client-side router).
-      static: prerendered pages; /path serves /path/index.html.
+      static: prerendered pages; /path serves /path.html, /path/ serves /path/index.html.
   GitHubRepo:
     Type: String
     Default: chepelcr/tsuru-pos-system
@@ -113,7 +113,9 @@ Resources:
             if ('${RoutingMode}' === 'spa') {
               request.uri = '/index.html';
             } else {
-              request.uri = uri.endsWith('/') ? uri + 'index.html' : uri + '/index.html';
+              // Prerendered pages are <route>.html; <route>/index.html holds the
+              // trailing-slash redirect (the GitHub Pages lookup order).
+              request.uri = uri.endsWith('/') ? uri + 'index.html' : uri + '.html';
             }
           }
           return request;
