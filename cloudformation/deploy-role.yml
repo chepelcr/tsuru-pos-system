@@ -29,7 +29,9 @@ Parameters:
 
   GitHubRef:
     Type: String
-    Default: refs/heads/main
+    # dev builds run on develop (main deploys prod with its own role in
+    # cloudformation/hosting.yml).
+    Default: refs/heads/develop
     Description: >-
       Git ref allowed to assume the role. THIS REPOSITORY IS PUBLIC, so the
       trust is pinned to the deploy branch rather than the repo as a whole

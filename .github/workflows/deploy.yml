@@ -1,14 +1,14 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
-# Builds the Tsuru POS SPA and deploys it to GitHub Pages at the custom domain
-# app.tsuru.jcampos.dev (set via public/CNAME + repo Pages config).
-# Replaces the old S3 + CloudFront deploy (the J-CAMPOS account is retired).
+# Builds the Tsuru POS SPA for the branch's environment:
+#   develop -> dev  -> GitHub Pages at app.tsuru.jcampos.dev (public/CNAME + repo Pages config)
+#   main    -> prod -> S3 + CloudFront at app.tsuru.lat (cloudformation/hosting.yml)
 # Public VITE_* build params are inlined below (they are baked into the static
 # bundle anyway — the Cognito client id is a public SPA identifier).
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -18,20 +18,21 @@ permissions:
 
 # One concurrent production deploy; don't cancel an in-progress one.
 concurrency:
-  group: pages
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      ENVIRONMENT: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
       VITE_AWS_REGION: us-east-1
       # The API URLs, the Cognito ids and the events endpoint are NOT here.
       # They are infrastructure outputs, owned by CloudFormation stacks in
       # other repos, and they are resolved from SSM in the "Resolve build
       # configuration" step below. Only values this repo actually owns — its
       # own branding and the region — stay literal.
-      VITE_BASE_DOMAIN: tsuru.jcampos.dev
+      VITE_BASE_DOMAIN: ${{ github.ref_name == 'main' && 'tsuru.lat' || 'tsuru.jcampos.dev' }}
       VITE_TEMPLATE_NAME: pos-system
       VITE_TEMPLATE_DISPLAY_NAME: Tsuru POS
       VITE_TEMPLATE_INDUSTRY: pos
@@ -60,7 +61,7 @@ jobs:
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ github.ref_name == 'main' && secrets.AWS_PROD_DEPLOY_ROLE_ARN || secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
 
       - name: Resolve build configuration from SSM
@@ -107,7 +108,7 @@ jobs:
             echo "VITE_SUPPORT_API_URL=${value}" >> "$GITHUB_ENV"
             echo "  VITE_SUPPORT_API_URL <- ${base}/api/support-url"
           else
-            echo "VITE_SUPPORT_API_URL=https://support.tsuru.jcampos.dev" >> "$GITHUB_ENV"
+            echo "VITE_SUPPORT_API_URL=https://support.${VITE_BASE_DOMAIN}" >> "$GITHUB_ENV"
             echo "::warning::No ${base}/api/support-url — using the support API custom-domain target."
           fi
 
@@ -153,11 +154,25 @@ jobs:
         run: cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
+        if: env.ENVIRONMENT == 'dev'
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
+      # prod: bucket and distribution are outputs of the tsuru-prod-pos-system-hosting
+      # stack (SiteBucketName / SiteDistributionId), stored as repo variables.
+      # Hashed assets are cached for a year; everything else revalidates.
+      - name: Publish to S3 + invalidate CloudFront
+        if: env.ENVIRONMENT == 'prod'
+        run: |
+          set -euo pipefail
+          bucket="s3://${{ vars.PROD_SITE_BUCKET }}"
+          aws s3 sync dist "$bucket" --delete --exclude "assets/*" --cache-control "no-cache"
+          aws s3 sync dist/assets "$bucket/assets" --delete --cache-control "public,max-age=31536000,immutable"
+          aws cloudfront create-invalidation --distribution-id "${{ vars.PROD_DISTRIBUTION_ID }}" --paths "/*" >/dev/null
+
   deploy:
+    if: github.ref_name == 'develop'
     needs: build
     runs-on: ubuntu-latest
     environment:

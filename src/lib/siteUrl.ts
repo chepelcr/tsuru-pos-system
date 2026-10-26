@@ -16,12 +16,14 @@ export interface DomainConfig {
  *
  * Priority:
  * 1. If customDomain exists AND domainVerified is true: return https://{customDomain}
- * 2. Otherwise, if subdomain exists: return https://{subdomain}.stores.tsuru.jcampos.dev
+ * 2. Otherwise, if subdomain exists: return https://{subdomain}.stores.{VITE_BASE_DOMAIN}
  * 3. Otherwise: return null
  *
  * @param config - Domain configuration object
  * @returns The constructed site URL or null if no valid configuration exists
  */
+const BASE_DOMAIN = (import.meta.env.VITE_BASE_DOMAIN as string | undefined) || "tsuru.jcampos.dev";
+
 export function constructSiteUrl(config: DomainConfig): string | null {
   // Priority 1: Verified custom domain
   if (config.customDomain && config.domainVerified) {
@@ -30,7 +32,7 @@ export function constructSiteUrl(config: DomainConfig): string | null {
 
   // Priority 2: Subdomain fallback
   if (config.subdomain) {
-    return `https://${config.subdomain}.stores.tsuru.jcampos.dev`;
+    return `https://${config.subdomain}.stores.${BASE_DOMAIN}`;
   }
 
   // No valid domain configuration

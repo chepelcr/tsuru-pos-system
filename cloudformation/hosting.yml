@@ -1,0 +1,305 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Private S3 + CloudFront hosting for a Tsuru static frontend in an AWS-hosted
+  environment (prod). Dev keeps GitHub Pages; this stack serves the same build
+  on the environment's domain. Mirrors the admin dashboard's hosting stack.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, stag, prod]
+  SiteName:
+    Type: String
+    Default: pos-system
+    Description: Short site id used in resource names
+  DomainName:
+    Type: String
+    Description: Primary domain served by the distribution
+  RedirectDomainName:
+    Type: String
+    Default: ""
+    Description: Optional second domain that 301-redirects to DomainName (e.g. www)
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+  RoutingMode:
+    Type: String
+    Default: spa
+    AllowedValues: [spa, static]
+    Description: >-
+      spa: extensionless paths serve /index.html (client-side router).
+      static: prerendered pages; /path serves /path/index.html.
+  GitHubRepo:
+    Type: String
+    Default: chepelcr/tsuru-pos-system
+    Description: owner/name allowed to assume the deploy role (main branch only)
+  ConfigNamespace:
+    Type: String
+    Default: platform
+    Description: SSM namespace under /tsuru/<env>/ the build reads
+
+Conditions:
+  HasRedirectDomain: !Not [!Equals [!Ref RedirectDomainName, ""]]
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "tsuru-${Environment}-${SiteName}-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  SiteOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "tsuru-${Environment}-${SiteName}"
+        Description: Signed CloudFront access to the private site bucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  SiteCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames: !If [HasRedirectDomain, [!Ref RedirectDomainName], !Ref "AWS::NoValue"]
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+        - !If
+          - HasRedirectDomain
+          - DomainName: !Ref RedirectDomainName
+            HostedZoneId: !Ref HostedZoneId
+          - !Ref "AWS::NoValue"
+
+  # Viewer-request routing: redirect the secondary domain, then map clean URLs
+  # onto objects (GitHub Pages did both for free).
+  SiteRouterFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "tsuru-${Environment}-${SiteName}-router"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: !Sub "Redirect + clean-URL routing for ${DomainName}"
+        Runtime: cloudfront-js-2.0
+      FunctionCode: !Sub |
+        function handler(event) {
+          var request = event.request;
+          var host = request.headers.host ? request.headers.host.value : '';
+          if ('${RedirectDomainName}' && host === '${RedirectDomainName}') {
+            var qs = Object.keys(request.querystring).map(function (k) { return k + '=' + request.querystring[k].value; }).join('&');
+            return { statusCode: 301, statusDescription: 'Moved Permanently',
+              headers: { location: { value: 'https://${DomainName}' + request.uri + (qs ? '?' + qs : '') } } };
+          }
+          var uri = request.uri;
+          var last = uri.split('/').pop();
+          if (last.indexOf('.') === -1) {
+            if ('${RoutingMode}' === 'spa') {
+              request.uri = '/index.html';
+            } else {
+              request.uri = uri.endsWith('/') ? uri + 'index.html' : uri + '/index.html';
+            }
+          }
+          return request;
+        }
+
+  SiteResponseHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "tsuru-${Environment}-${SiteName}-security"
+        SecurityHeadersConfig:
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: SAMEORIGIN
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Override: true
+
+  SiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases: !If
+          - HasRedirectDomain
+          - [!Ref DomainName, !Ref RedirectDomainName]
+          - [!Ref DomainName]
+        Comment: !Sub "Tsuru ${Environment} ${SiteName}"
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: site-s3
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !Ref SiteOriginAccessControl
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: site-s3
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: !Ref SiteResponseHeaders
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt SiteRouterFunction.FunctionMetadata.FunctionARN
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+        ViewerCertificate:
+          AcmCertificateArn: !Ref SiteCertificate
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${SiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${SiteDistribution}"
+
+  SiteAliasA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt SiteDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  SiteAliasAAAA:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt SiteDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  RedirectAliasA:
+    Type: AWS::Route53::RecordSet
+    Condition: HasRedirectDomain
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref RedirectDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt SiteDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  RedirectAliasAAAA:
+    Type: AWS::Route53::RecordSet
+    Condition: HasRedirectDomain
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref RedirectDomainName
+      Type: AAAA
+      AliasTarget:
+        DNSName: !GetAtt SiteDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+  # GitHub Actions deploy role for the AWS-hosted environment: read the build
+  # configuration, publish the bundle, invalidate the CDN. The trust is pinned
+  # to the deploy branch, and it has no other AWS access.
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tsuru-${SiteName}-${Environment}-github-deploy"
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              # Accepts both subject forms GitHub may present (plain names, or
+              # names with immutable ids appended), always on the main ref.
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub "repo:${GitHubRepo}:ref:refs/heads/main"
+                  - !Sub
+                    - "repo:${Owner}@*/${Repo}@*:ref:refs/heads/main"
+                    - Owner: !Select [0, !Split ["/", !Ref GitHubRepo]]
+                      Repo: !Select [1, !Split ["/", !Ref GitHubRepo]]
+      Policies:
+        - PolicyName: build-config-read
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [ssm:GetParameter, ssm:GetParameters, ssm:GetParametersByPath]
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/${ConfigNamespace}"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/tsuru/${Environment}/${ConfigNamespace}/*"
+        - PolicyName: site-publish
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [s3:ListBucket, s3:GetBucketLocation]
+                Resource: !GetAtt SiteBucket.Arn
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:DeleteObject]
+                Resource: !Sub "${SiteBucket.Arn}/*"
+              - Effect: Allow
+                Action: [cloudfront:CreateInvalidation, cloudfront:GetInvalidation]
+                Resource: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${SiteDistribution}"
+
+Outputs:
+  SiteBucketName:
+    Value: !Ref SiteBucket
+  SiteDistributionId:
+    Value: !Ref SiteDistribution
+  SiteUrl:
+    Value: !Sub "https://${DomainName}"
+  DeployRoleArn:
+    Description: Store as the repository secret AWS_PROD_DEPLOY_ROLE_ARN
+    Value: !GetAtt DeployRole.Arn
