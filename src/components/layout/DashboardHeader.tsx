@@ -17,6 +17,7 @@ import { useNotifications } from "@/contexts/NotificationsContext";
 import { syncPendingSales } from "@/services/pendingSalesSync";
 import { BookOpen } from "lucide-react";
 import { useTutorial } from "@/components/onboarding/TutorialProvider";
+import { StagingBadge } from "@/components/common/StagingBadge";
 
 interface DashboardHeaderProps {
   /** Mobile hamburger → opens left sidebar drawer */
@@ -119,6 +120,7 @@ export function DashboardHeader({
           <Icon name="menu" size={18} />
         </button>
 
+        <StagingBadge className="absolute left-4 top-full -translate-y-1/2" />
         {/* Desktop-only documents toolbar (Documentos tab + open tab strip) */}
         <div className="documents-toolbar-desktop">
           <DocumentsToolbar />

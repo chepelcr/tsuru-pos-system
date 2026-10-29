@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Icon, Logo, Button } from "@/components/ui";
 import { ROUTES } from "@/routePaths";
+import { StagingBadge } from "@/components/common/StagingBadge";
 
 interface AuthNavbarProps {
   /** Custom left-side content. Defaults to the POS <Logo />. */
@@ -51,6 +52,7 @@ export function AuthNavbar({
     <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2.5 bg-background/85 backdrop-blur-md border-b border-border">
       <div className="flex items-center gap-2">
         {leftSlot ?? <Logo size={32} />}
+        <StagingBadge />
 
         {renderNavButton && showBothButtons && (
           <div className="flex items-center gap-1 ml-1">

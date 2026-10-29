@@ -7,6 +7,7 @@ import {
   useSaveOrgConfigurations,
 } from "@/hooks/useOrgConfigurations";
 import type { HaciendaFormState } from "@/types/orgConfigurations";
+import { IS_STAGING } from "@/lib/environment";
 
 interface HaciendaCredentialsStepperProps {
   orgId: string;
@@ -152,7 +153,7 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
                 type="text"
                 value={form.username}
                 onChange={(e) => handleCredentialChange({ username: e.target.value })}
-                placeholder="3101234567@stag.comprobanteselectronicos.go.cr"
+                placeholder={IS_STAGING ? "3101234567@stag.comprobanteselectronicos.go.cr" : "3101234567@comprobanteselectronicos.go.cr"}
               />
             </div>
 

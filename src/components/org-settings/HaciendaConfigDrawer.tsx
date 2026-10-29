@@ -10,6 +10,8 @@ import {
 } from "@/hooks/useOrgConfigurations";
 import { downloadBlob } from "@/lib/downloadUtils";
 import type { OrgConfiguration, HaciendaFormState } from "@/types/orgConfigurations";
+import { StagingCredentialsNotice } from "./hacienda/StagingCredentialsNotice";
+import { IS_STAGING } from "@/lib/environment";
 
 interface HaciendaConfigDrawerProps {
   open: boolean;
@@ -170,6 +172,7 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
       }
     >
       <div className="p-6 space-y-4">
+        <StagingCredentialsNotice />
         {/* Credentials section */}
         <SectionWrapper
           title="Credenciales Hacienda"
@@ -185,7 +188,7 @@ export function HaciendaConfigDrawer({ open, onClose, config, orgId }: HaciendaC
                 type="text"
                 value={form.username}
                 onChange={(e) => handleCredentialChange({ username: e.target.value })}
-                placeholder="3101234567@stag.comprobanteselectronicos.go.cr"
+                placeholder={IS_STAGING ? "3101234567@stag.comprobanteselectronicos.go.cr" : "3101234567@comprobanteselectronicos.go.cr"}
               />
             </div>
 

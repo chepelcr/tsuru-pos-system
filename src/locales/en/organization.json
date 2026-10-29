@@ -294,6 +294,7 @@
   "orgSettings.hacienda.review.subtitle": "Confirm the information before saving.",
   "orgSettings.hacienda.review.title": "Review your data",
   "orgSettings.hacienda.status": "Status",
+  "orgSettings.hacienda.stagingNotice": "Only credentials for Hacienda’s STAG environment are accepted.",
   "orgSettings.hacienda.statusActive": "Active",
   "orgSettings.hacienda.statusInactive": "Inactive",
   "orgSettings.hacienda.steps.certificate": "Certificate",

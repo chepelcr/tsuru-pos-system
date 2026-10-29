@@ -13,6 +13,8 @@ import { HaciendaConfigDrawer } from "@/components/org-settings/HaciendaConfigDr
 import { HaciendaCredentialsStepper } from "@/components/org-settings/hacienda/HaciendaCredentialsStepper";
 import { FiscalInfoRequired } from "@/components/org-settings/FiscalInfoRequired";
 import { ROUTES } from "@/routePaths";
+import { StagingCredentialsNotice } from "@/components/org-settings/hacienda/StagingCredentialsNotice";
+import { IS_STAGING } from "@/lib/environment";
 
 export default function OrgHaciendaPage() {
   const { user } = useAuthContext();
@@ -55,6 +57,7 @@ export default function OrgHaciendaPage() {
           </p>
         </div>
 
+        {IS_STAGING && <div className="mb-5"><StagingCredentialsNotice /></div>}
         <FiscalInfoRequired orgId={org?.id}>
           {savedNoticeVisible && (
             <div className="mb-5 flex items-start gap-2 p-3 rounded-lg bg-success/10 border border-success/30">

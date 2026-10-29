@@ -1,6 +1,7 @@
 import type { SyncStatus } from "@/hooks/useSync";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Logo, SyncPill, Button, Icon } from "@/components/ui";
+import { StagingBadge } from "@/components/common/StagingBadge";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface POSLayoutProps {
@@ -25,7 +26,7 @@ export default function POSLayout({
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
       <div className="nav-bar flex items-center justify-between px-4 py-2.5 flex-shrink-0">
-        <Logo />
+        <div className="flex items-center gap-2"><Logo /><StagingBadge /></div>
         <div className="flex items-center gap-3">
           <SyncPill state={syncStatus} />
           <Button variant="ghost" size="sm" icon="logOut" onClick={logout}>

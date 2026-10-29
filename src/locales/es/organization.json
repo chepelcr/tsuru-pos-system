@@ -294,6 +294,7 @@
   "orgSettings.hacienda.review.subtitle": "Confirmá la información antes de guardar.",
   "orgSettings.hacienda.review.title": "Revisá los datos",
   "orgSettings.hacienda.status": "Estado",
+  "orgSettings.hacienda.stagingNotice": "Solo se aceptan credenciales del ambiente STAG de Hacienda.",
   "orgSettings.hacienda.statusActive": "Activo",
   "orgSettings.hacienda.statusInactive": "Inactivo",
   "orgSettings.hacienda.steps.certificate": "Certificado",

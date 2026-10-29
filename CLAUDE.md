@@ -194,6 +194,7 @@ beneath the badge on the right. Keep the badge no taller than the line height.
 
 ### 3.3 Component classes (defined in `src/index.css` — prefer these over recomposing)
 
+- **Environment marker:** `src/lib/environment.ts` detects the dev domain (including app subdomains), using `VITE_BASE_DOMAIN` for local previews. `StagingBadge` marks auth/POS/dashboard chrome; `StagingCredentialsNotice` is shown on Hacienda setup and its edit drawer. Both render only in STAG.
 - **Typography**: `.t-h1 .t-h2 .t-h3 .t-h4 .t-body .t-sm .t-xs .t-label .t-num .t-stat .t-stat-xl`
 - **Buttons**: `.btn` (base) + variant `.btn-primary/secondary/outline/ghost/destructive/success` + size `.btn-sm/xs/lg/xl` + `.btn-icon`. Soft variants: `.btn-primary-soft / .btn-success-soft / .btn-warning-soft / .btn-destructive-soft`. Icon aliases: `.btn-icon-ghost / .btn-icon-ghost-sm / .btn-icon-ghost-xs`
 - **Cards**: `.card .card-hover .card-muted .card-primary .card-stat .card-surface-muted`
