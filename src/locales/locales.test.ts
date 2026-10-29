@@ -81,6 +81,14 @@ describe('locale dictionaries', () => {
         filePath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
       );
       const visit = (node: ts.Node) => {
+        if (ts.isPropertyAssignment(node)
+          && ['titleKey', 'bodyKey', 'ctaKey'].includes(node.name.getText(sourceFile))
+          && ts.isStringLiteralLike(node.initializer)
+          && /^[a-z][\w-]*\.[\w.]+$/.test(node.initializer.text)
+          && !Object.prototype.hasOwnProperty.call(translations.es, node.initializer.text)) {
+          const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+          missingKeys.push(`${path.relative(sourceRoot, filePath)}:${line} ${node.initializer.text}`);
+        }
         if (
           ts.isCallExpression(node)
           && node.expression.getText(sourceFile) === 't'

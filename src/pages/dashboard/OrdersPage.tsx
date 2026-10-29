@@ -16,7 +16,7 @@ import { ListToolbar } from '@/components/common/ListToolbar';
 import { Card, Icon, Badge, Pagination, EmptyState, FadeIn, Button } from '@/components/ui';
 import { OrderStatusBadge } from '@/components/orders/OrderStatusBadge';
 import { ReportColorChip } from '@/components/orders/ReportColorSelector';
-import { OrderExcelUpload } from '@/components/orders/OrderExcelUpload';
+import { useOrderImportStore } from '@/hooks/useOrderImport';
 import {
   OrdersFiltersModal,
   EMPTY_ORDERS_FILTERS,
@@ -153,7 +153,7 @@ export default function OrdersPage() {
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [filters, setFilters] = useState<OrdersAdvancedFilters>({ ...EMPTY_ORDERS_FILTERS });
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
+  const openImport = useOrderImportStore(state => state.openDrawer);
 
   const debouncedTerm = useDebounce(term, 500);
 
@@ -227,7 +227,7 @@ export default function OrdersPage() {
             <Button
               variant={canCreateManual ? 'outline' : 'primary'}
               icon="upload"
-              onClick={() => setImportOpen(true)}
+              onClick={openImport}
             >
               {t('orders.excel.import')}
             </Button>
@@ -309,7 +309,6 @@ export default function OrdersPage() {
         onClose={() => setFiltersOpen(false)}
       />
 
-      <OrderExcelUpload open={importOpen} onClose={() => setImportOpen(false)} orgId={orgId} />
     </div>
   );
 }

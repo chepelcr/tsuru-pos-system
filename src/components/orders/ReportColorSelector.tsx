@@ -31,6 +31,7 @@ export function ReportColorSelector({ value, onChange }: ReportColorSelectorProp
           <button
             key={option.value}
             type="button"
+            aria-pressed={isSelected}
             onClick={() => onChange(option.value)}
             className={`flex flex-col items-center gap-1.5 p-2 rounded-md border transition-colors ${
               isSelected ? 'border-primary bg-primary/[0.06]' : 'border-border hover:bg-muted/50'
@@ -66,6 +67,7 @@ export function ReportColorChip({ color }: { color: ReportColorScheme }) {
       style={{ background: option.hex }}
       title={t(option.label)}
       aria-label={t(option.label)}
+      role="img"
     />
   );
 }

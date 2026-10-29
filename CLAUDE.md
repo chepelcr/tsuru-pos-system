@@ -313,6 +313,8 @@ Note: `session/` (singular) and `sessions/` (plural) are distinct. **session/** 
 
 ### 4.1 Section-based form pattern
 
+**Order spreadsheet imports:** `useOrderImportStore` owns an in-memory batch queue, pins each file to its selecting organization, validates Excel extensions/10 MB and active duplicates, and processes up to three files concurrently. `OrderImportTray` mounts the drawer once in `DashboardLayout`, retains per-file results/retry while navigating, warns before unloading an active batch, and stacks above the XML tray. `lib/orderImport.ts` owns the one-file API request. Cross-docking's single-file picker and XML imports keep their existing flows.
+
 Big forms (product, client, branch, line-detail) are composed of `<SectionWrapper>` (in `src/components/common/`) — a collapsible card with an icon, title, optional badge/loading/error, and `isExpanded`/`onToggle` controlled by the parent. Each "section" lives in its own file under `sections/`. The parent owns:
 - The form state (a single `useState` object + a `patch` updater)
 - The expansion map (one boolean per section)
@@ -711,6 +713,8 @@ const updateMutation = useMutation({
 ## 10. Internationalization
 
 **Hard rule: every user-visible string goes through `t()`.** Spanish literals in JSX/props are bugs — they'll show up untranslated when the user switches language. Treat hardcoded user text the same way you treat a hardcoded hex color.
+
+Notification `titleKey`, `bodyKey` and `ctaKey` literals must also exist in both dictionaries; the locale source audit checks them even though the bell resolves these keys later. Keep temporary upload progress on the active control, rather than adding a permanent “uploading” notification to the bell.
 
 ### 10.1 The basics
 

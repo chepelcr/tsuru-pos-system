@@ -14,6 +14,7 @@ import {
   type OrderSearchFilters,
 } from "@/lib/search";
 import { fileToBase64, XLSX_MIME } from '@/lib/downloadUtils';
+import { uploadOrderFile } from '@/lib/orderImport';
 
 /**
  * STORE / MARKETPLACE ORDERS — distinct from POS electronic invoices (sales).
@@ -243,15 +244,7 @@ export function useReprocessOrder(orgId: string | undefined, documentNumber: str
 export function useUploadOrdersExcel(orgId: string | undefined) {
   const qc = useQueryClient();
   return useMutation<unknown, Error, File>({
-    mutationFn: async (file) => {
-      const data = await fileToBase64(file);
-      // TODO(verify-endpoint): confirm POST /orders/parse { data, name, contentType }.
-      return ordersStoreApi.post(ordersStoreOrgPath(orgId!, '/orders/parse'), {
-        data,
-        name: file.name,
-        contentType: file.type || XLSX_MIME,
-      });
-    },
+    mutationFn: file => uploadOrderFile(orgId!, file),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
   });
 }
