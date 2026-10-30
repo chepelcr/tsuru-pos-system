@@ -107,10 +107,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (!org) {
-    // A loaded membership list with no organization means a brand-new account:
-    // send it to org creation instead of an empty dashboard. The blog is the one
+    // A loaded membership list with no organization: org selection decides
+    // between pending invitations and org creation. The blog is the one
     // dashboard page that works without an organization.
-    if (orgsLoaded && active !== "blog") return <Redirect to={ROUTES.CREATE_ORG} />;
+    if (orgsLoaded && active !== "blog") return <Redirect to={ROUTES.SELECT_ORG} />;
     // Org still loading — shell renders with empty content. Notifications are
     // mounted here so the bell stays available even before the org resolves.
     return (

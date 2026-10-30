@@ -22,6 +22,17 @@ export interface Invitation {
   invited_by_user?: { id: string; email: string; username: string };
 }
 
+/** An invitation addressed to the signed-in user (GET /users/{id}/invitations/pending). */
+export interface PendingInvitation {
+  id: string;
+  organization_id: string;
+  organization_name: string;
+  token: string;
+  role_display_name: string | null;
+  invited_by_name: string | null;
+  expires_at: string;
+}
+
 export interface OrgMember {
   id: string;
   user_id: string;
@@ -217,6 +228,29 @@ export function useOrganization() {
 
   // ─── Invitations ─────────────────────────────────────────────────────────
 
+  // Invitations waiting for the signed-in user. Checked before sending a user
+  // with no organization to org creation, and listed when switching orgs.
+  const usePendingInvitations = (userId: string | undefined) => {
+    return useQuery({
+      queryKey: ['pending-invitations', userId],
+      queryFn: async () => api.get<PendingInvitation[]>(userPath(userId!, '/invitations/pending')),
+      enabled: !!userId,
+      staleTime: 30_000,
+    });
+  };
+
+  const acceptInvitation = useMutation({
+    mutationFn: async ({ token, userId }: { token: string; userId: string }) =>
+      api.post(`/api/invitations/accept/${token}`, { user_id: userId }),
+    onSuccess: async (_, { userId }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['user-organizations', userId] }),
+        queryClient.invalidateQueries({ queryKey: ['pending-invitations', userId] }),
+      ]);
+    },
+  });
+
+
   const useOrgInvitations = (userId: string | undefined, orgId: string | undefined) => {
     return useQuery({
       queryKey: ['org-invitations', userId, orgId],
@@ -322,11 +356,13 @@ export function useOrganization() {
     useOrgTheme,
     useOrgMembers,
     useOrgInvitations,
+    usePendingInvitations,
 
     // Checks
     checkSlugAvailable,
 
     // Mutations
+    acceptInvitation,
     createOrganization,
     completeOnboardingStep2,
     completeOnboardingStep3,

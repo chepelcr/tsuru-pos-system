@@ -92,7 +92,6 @@ export default function VerifyEmail() {
         confirmationSucceeded = true;
       }
 
-      const verificationOrigin = sessionStorage.getItem("verificationOrigin");
 
       if (signedIn) {
         const amplifyUser = await getCurrentUser();
@@ -126,7 +125,9 @@ export default function VerifyEmail() {
         bodyKey: "auth.verifyEmail.successDescription",
       });
 
-      navigate(signedIn ? (verificationOrigin === "register" ? ROUTES.CREATE_ORG : ROUTES.SELECT_ORG) : ROUTES.LOGIN);
+      // Org selection shows any invitation waiting for this address before
+      // offering org creation, which it opens directly when there is none.
+      navigate(signedIn ? ROUTES.SELECT_ORG : ROUTES.LOGIN);
     } catch (error: unknown) {
       // Was three hand-rolled name checks plus a raw-message fallback, all sent
       // to a bell this layout does not render (TSR-309). describeAuthError knows

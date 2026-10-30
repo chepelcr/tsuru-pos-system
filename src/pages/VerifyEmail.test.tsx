@@ -25,7 +25,7 @@ describe("email confirmation recovery", () => {
     fireEvent.paste(screen.getByLabelText("Digit 1 of 6"), { clipboardData: { getData: () => "123456" } });
     await screen.findByRole("button", { name: "Continue" });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/organizations/new"));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/organizations/select"));
     expect(mocks.confirmSignUp).toHaveBeenCalledOnce();
     expect(mocks.completeVerification).toHaveBeenCalledTimes(2);
   });
@@ -69,7 +69,7 @@ describe("email confirmation recovery", () => {
     expect(mocks.confirmSignUp).toHaveBeenCalledWith({ username: "owner@example.com", confirmationCode: "123456" });
     expect(screen.getAllByRole("textbox").every(input => (input as HTMLInputElement).disabled)).toBe(true);
     await act(async () => finish());
-    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/organizations/new"));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/organizations/select"));
   });
 
   it("keeps a rejected code editable without automatically retrying in a loop", async () => {
@@ -81,7 +81,7 @@ describe("email confirmation recovery", () => {
     expect(mocks.confirmSignUp).toHaveBeenCalledOnce();
     expect(screen.getByLabelText("Digit 6 of 6")).toHaveProperty("disabled", false);
     fireEvent.change(screen.getByLabelText("Digit 6 of 6"), { target: { value: "7" } });
-    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/organizations/new"));
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/organizations/select"));
     expect(mocks.confirmSignUp).toHaveBeenLastCalledWith({ username: "owner@example.com", confirmationCode: "123457" });
   });
 

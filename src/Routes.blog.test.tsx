@@ -41,7 +41,7 @@ vi.mock("@/contexts/ExchangeRateContext", () => ({ ExchangeRateProvider: ({ chil
 vi.mock("@/components/documents/DocumentImportTray", () => ({ DocumentImportTray: () => null }));
 vi.mock("@/lib/blogApi", () => ({ blogApi: { list: state.list } }));
 vi.mock("@/pages/Login", () => ({ default: () => <h1>Sign in</h1> }));
-vi.mock("@/pages/CreateOrganization", () => ({ default: () => <h1>Create your organization</h1> }));
+vi.mock("@/pages/SelectOrganization", () => ({ default: () => <h1>Choose your organization</h1> }));
 vi.mock("@/pages/dashboard/TutorialGuidePage", () => ({ default: () => <h1>Getting started</h1> }));
 
 function openBlog(path = "/dashboard/blog") {
@@ -85,10 +85,10 @@ describe("blog deep link and dashboard providers", () => {
     expect(await screen.findByRole("heading", { name: "My articles" })).toBeTruthy();
     expect(state.bootstrap).not.toHaveBeenCalled();
   });
-  it("sends a signed-in user without an organization to organization creation", async () => {
+  it("sends a signed-in user without an organization to org selection (invitations, then creation)", async () => {
     state.org = null;
     openBlog("/dashboard/guide");
-    expect(await screen.findByRole("heading", { name: "Create your organization" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Choose your organization" })).toBeTruthy();
   });
   it("retains the provider chain when navigating between the guide and blog", async () => {
     const view = openBlog("/dashboard/guide");
