@@ -20,7 +20,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuthContext: () => ({ user: state.user, isLoading: false }) }));
-vi.mock("@/hooks/useOrganization", () => ({ useOrganization: () => ({ useDefaultOrganization: () => ({ data: state.org }) }) }));
+vi.mock("@/hooks/useOrganization", () => ({ useOrganization: () => ({ useDefaultOrganization: () => ({ data: state.org, isSuccess: true }) }) }));
 vi.mock("@/hooks/useDataApi", () => ({ useAllDocumentVersions: () => ({ data: state.versions, isLoading: state.versionsLoading, isError: state.versionsError }) }));
 vi.mock("@/services/data-api", () => ({ dataApiClient: { setDocumentVersionId: state.setVersion } }));
 // Keep the real useOfflineBootstrap hook and DocumentVersionProvider: their
@@ -41,6 +41,7 @@ vi.mock("@/contexts/ExchangeRateContext", () => ({ ExchangeRateProvider: ({ chil
 vi.mock("@/components/documents/DocumentImportTray", () => ({ DocumentImportTray: () => null }));
 vi.mock("@/lib/blogApi", () => ({ blogApi: { list: state.list } }));
 vi.mock("@/pages/Login", () => ({ default: () => <h1>Sign in</h1> }));
+vi.mock("@/pages/CreateOrganization", () => ({ default: () => <h1>Create your organization</h1> }));
 vi.mock("@/pages/dashboard/TutorialGuidePage", () => ({ default: () => <h1>Getting started</h1> }));
 
 function openBlog(path = "/dashboard/blog") {
@@ -83,6 +84,11 @@ describe("blog deep link and dashboard providers", () => {
     openBlog();
     expect(await screen.findByRole("heading", { name: "My articles" })).toBeTruthy();
     expect(state.bootstrap).not.toHaveBeenCalled();
+  });
+  it("sends a signed-in user without an organization to organization creation", async () => {
+    state.org = null;
+    openBlog("/dashboard/guide");
+    expect(await screen.findByRole("heading", { name: "Create your organization" })).toBeTruthy();
   });
   it("retains the provider chain when navigating between the guide and blog", async () => {
     const view = openBlog("/dashboard/guide");
