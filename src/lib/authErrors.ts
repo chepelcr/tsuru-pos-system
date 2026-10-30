@@ -118,6 +118,9 @@ function resolveName(error: unknown, message: string): string {
 export function describeAuthError(error: unknown, fallbackKey: string): AuthErrorInfo {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   const name = resolveName(error, message);
+  if (message.includes("VerificationCodeRateLimited")) {
+    return { messageKey: "auth.errors.verificationRateLimited", name, action: null };
+  }
 
   const mapping =
     name === "InvalidParameterException" ? mapInvalidParameter(message) : BY_NAME[name];

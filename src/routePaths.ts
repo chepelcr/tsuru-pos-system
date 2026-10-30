@@ -4,6 +4,7 @@ export const ROUTES = {
   VERIFY_EMAIL: "/verify-email",
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD: "/reset-password",
+  MAGIC_LINK: "/auth/magic",
   SELECT_ORG: "/organizations/select",
   CREATE_ORG: "/organizations/new",
   ACCEPT_INVITE: "/join/:token",

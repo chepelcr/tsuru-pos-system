@@ -11,6 +11,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { AuthErrorAlert } from "@/components/common/AuthErrorAlert";
 import { Card, CardBody, CardHeader, CardTitle, CardDescription, Button, Input, Icon, Spinner } from "@/components/ui";
 import { FormField } from "@/components/forms/FormField";
+import { PasswordlessForm, type PasswordlessMethod } from "@/components/auth/PasswordlessForm";
 import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 
@@ -26,6 +27,7 @@ export default function Login() {
   const { user, login, isLoading } = useAuthContext();
   const { add } = useNotifications();
   const [, navigate] = useLocation();
+  const [method, setMethod] = useState<"password" | PasswordlessMethod>("password");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState<AuthErrorInfo | null>(null);
@@ -115,7 +117,15 @@ export default function Login() {
           <CardDescription>{t("auth.login.subtitle")}</CardDescription>
         </CardHeader>
         <CardBody>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          {method !== "password" ? (
+            <PasswordlessForm
+              key={method}
+              method={method}
+              initialEmail={form.getValues("email")}
+              onUsePassword={() => setMethod("password")}
+              onNeedsVerification={goToVerification}
+            />
+          ) : <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <FormField label={t("auth.login.email")} error={tErr(form.formState.errors.email?.message)}>
               <Controller
                 control={form.control}
@@ -167,8 +177,18 @@ export default function Login() {
               {isBusy && <Spinner size={16} />}
               {isBusy ? t("auth.login.submitting") : t("auth.login.submit")}
             </Button>
-          </form>
+          </form>}
 
+          {method === "password" && (
+            <div className="mt-3 flex flex-col gap-2">
+              <Button type="button" variant="outline" className="w-full" onClick={() => { setAuthError(null); setMethod("link"); }}>
+                {t("auth.login.useMagicLink")}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => { setAuthError(null); setMethod("code"); }}>
+                {t("auth.login.useEmailCode")}
+              </Button>
+            </div>
+          )}
           <div className="mt-5 text-center t-sm flex flex-col gap-2">
             <button
               type="button"

@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -92,7 +92,7 @@ const NAV_PATHS: Record<NavId, string> = {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext();
   const { useDefaultOrganization } = useOrganization();
-  const { data: org } = useDefaultOrganization(user?.userId);
+  const { data: org, isSuccess: orgsLoaded } = useDefaultOrganization(user?.userId);
   const [location, navigate] = useLocation();
 
   const active = getActiveNav(location);
@@ -107,6 +107,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (!org) {
+    // A loaded membership list with no organization means a brand-new account:
+    // send it to org creation instead of an empty dashboard. The blog is the one
+    // dashboard page that works without an organization.
+    if (orgsLoaded && active !== "blog") return <Redirect to={ROUTES.CREATE_ORG} />;
     // Org still loading — shell renders with empty content. Notifications are
     // mounted here so the bell stays available even before the org resolves.
     return (

@@ -21,6 +21,11 @@ export default function SelectOrganization() {
     (org.onboarding_step ?? 3) < 3;
 
   useEffect(() => {
+    if (!isLoading && !error && orgs.length === 0) {
+      sessionStorage.removeItem("resumeOrgId");
+      navigate(ROUTES.CREATE_ORG);
+      return;
+    }
     // Auto-enter only when the single org is fully onboarded.
     if (
       !isLoading &&
@@ -32,7 +37,7 @@ export default function SelectOrganization() {
       const role = user?.role;
       navigate(role === "cajero" ? "/pos" : ROUTES.DASHBOARD);
     }
-  }, [isLoading, orgs, user?.role, navigate]);
+  }, [isLoading, error, orgs, user?.role, navigate]);
 
   const goToCreate = () => {
     sessionStorage.removeItem("resumeOrgId");

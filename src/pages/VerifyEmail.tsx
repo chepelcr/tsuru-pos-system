@@ -1,3 +1,4 @@
+import { recordVerificationCodeSent, verificationCooldownSeconds } from "@/lib/verificationCooldown";
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -14,12 +15,10 @@ import { describeAuthError, type AuthErrorInfo } from "@/lib/authErrors";
 import { ROUTES } from "@/routePaths";
 import { ACCOUNT_CREATION_STEPS } from "@/lib/accountCreationSteps";
 
-const RESEND_COOLDOWN_SECONDS = 60;
-
 export default function VerifyEmail() {
   const {
     confirmSignUp,
-    completeAutoSignIn,
+    logout,
     getCurrentUser,
     completeVerification,
     resendSignUpCode,
@@ -46,6 +45,7 @@ export default function VerifyEmail() {
     const storedEmail = sessionStorage.getItem("verificationEmail");
     if (storedEmail) {
       setEmail(storedEmail);
+      setCooldown(verificationCooldownSeconds(storedEmail));
       // Remove credentials left by versions prior to the secure auto-sign-in flow.
       sessionStorage.removeItem("verificationPassword");
     } else {
@@ -56,9 +56,9 @@ export default function VerifyEmail() {
   // Resend cooldown timer.
   useEffect(() => {
     if (cooldown <= 0) return;
-    const id = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    const id = window.setTimeout(() => setCooldown(verificationCooldownSeconds(email)), 1000);
     return () => window.clearTimeout(id);
-  }, [cooldown]);
+  }, [cooldown, email]);
 
   const handleVerify = async (verificationCode = code) => {
     if (operationInFlight.current || resending || !email) return;
@@ -82,23 +82,17 @@ export default function VerifyEmail() {
     setAuthError(null);
     let confirmationSucceeded = confirmed;
     try {
+      // Confirmation also opens the session (no password kept anywhere), so a
+      // reload on this step no longer sends the user back to the login page.
+      let signedIn = signedInAfterConfirmation;
       if (!confirmed) {
-        await confirmSignUp({ username: email, confirmationCode: verificationCode });
+        ({ signedIn } = await confirmSignUp({ username: email, confirmationCode: verificationCode }));
         setConfirmed(true);
+        setSignedInAfterConfirmation(signedIn);
         confirmationSucceeded = true;
       }
 
       const verificationOrigin = sessionStorage.getItem("verificationOrigin");
-      let signedIn = signedInAfterConfirmation;
-      if (!signedIn && verificationOrigin === "register") {
-        try {
-          signedIn = await completeAutoSignIn();
-          setSignedInAfterConfirmation(signedIn);
-        } catch {
-          // Confirmation succeeded; normal login remains a safe fallback.
-          signedIn = false;
-        }
-      }
 
       if (signedIn) {
         const amplifyUser = await getCurrentUser();
@@ -132,7 +126,7 @@ export default function VerifyEmail() {
         bodyKey: "auth.verifyEmail.successDescription",
       });
 
-      navigate(signedIn ? ROUTES.CREATE_ORG : ROUTES.LOGIN);
+      navigate(signedIn ? (verificationOrigin === "register" ? ROUTES.CREATE_ORG : ROUTES.SELECT_ORG) : ROUTES.LOGIN);
     } catch (error: unknown) {
       // Was three hand-rolled name checks plus a raw-message fallback, all sent
       // to a bell this layout does not render (TSR-309). describeAuthError knows
@@ -154,13 +148,14 @@ export default function VerifyEmail() {
   };
 
   const handleResendCode = async () => {
-    if (operationInFlight.current || resending || cooldown > 0 || confirmed) return;
+    if (operationInFlight.current || resending || !email || verificationCooldownSeconds(email) > 0 || confirmed) return;
     operationInFlight.current = true;
     setResending(true);
     setAuthError(null);
     try {
       await resendSignUpCode({ username: email });
-      setCooldown(RESEND_COOLDOWN_SECONDS);
+      recordVerificationCodeSent(email);
+      setCooldown(verificationCooldownSeconds(email));
       setResendSucceeded(true);
       add({
         source: "fe",
@@ -254,9 +249,9 @@ export default function VerifyEmail() {
                 <button
                   type="button"
                   className="text-primary font-medium hover:underline t-sm"
-                  onClick={() => navigate(ROUTES.REGISTER)}
+                  onClick={async () => { await logout(); ["verificationEmail", "verificationOrigin", "verificationUsername", "verificationFirstName", "verificationLastName", "verificationGender", "verificationGenderOther"].forEach((key) => sessionStorage.removeItem(key)); navigate(ROUTES.LOGIN); }}
                 >
-                  {t("auth.verifyEmail.backToRegister")}
+                  {t("auth.logout")}
                 </button>
               </div>
             </form>

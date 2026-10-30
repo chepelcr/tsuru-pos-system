@@ -8,20 +8,20 @@ import {
 } from "react";
 import {
   signIn,
+  confirmSignIn,
   signOut,
   signUp,
-  confirmSignUp,
   resendSignUpCode,
   resetPassword,
   confirmResetPassword,
   updatePassword,
   getCurrentUser,
   fetchAuthSession,
-  autoSignIn,
 } from "aws-amplify/auth";
 import "../lib/amplify";
 import { api, userPath } from "../lib/api";
 import { clearSelectedOrgId } from "@/lib/selectedOrg";
+import { completeMagicLink, confirmSignUpAndSignIn, requestMagicLink } from "@/lib/passwordless";
 
 // "customer" is the default role the markets-api assigns on first Cognito sync;
 // org/POS roles (cajero/gerente/supervisor) are assigned later via RBAC.
@@ -70,13 +70,18 @@ interface AuthContextValue {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<{ needsVerification: boolean }>;
+  requestEmailCode: (email: string) => Promise<boolean>;
+  confirmEmailCode: (code: string) => Promise<void>;
+  /** Mail a single-use sign-in link; false when the account still needs its email confirmed. */
+  requestMagicLink: (email: string) => Promise<boolean>;
+  signInWithMagicLink: (username: string, token: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Best-effort global sign-out used to clear any stale Cognito session before auth flows. */
   forceLogout: () => Promise<void>;
   // aws-amplify/auth thin wrappers (mirror dashboard useAuth)
   signUp: (args: SignUpArgs) => Promise<{ needsVerification: boolean; userId?: string }>;
-  confirmSignUp: (args: { username: string; confirmationCode: string }) => Promise<void>;
-  completeAutoSignIn: () => Promise<boolean>;
+  /** Confirms the code and signs in without the password, even after a reload. */
+  confirmSignUp: (args: { username: string; confirmationCode: string }) => Promise<{ signedIn: boolean }>;
   resendSignUpCode: (args: { username: string }) => Promise<void>;
   resetPassword: (args: { username: string }) => Promise<void>;
   confirmResetPassword: (args: {
@@ -156,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (result.isSignedIn) {
+        clearSelectedOrgId();
         const cognitoUser = await getCurrentUser();
         const profile = await api.get<AuthUser>(
           userPath(cognitoUser.userId, "/profile")
@@ -171,6 +177,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+
+  const requestEmailCode = useCallback(async (email: string) => {
+    try { await signOut(); } catch { /* no active session */ }
+    const result = await signIn({ username: email, options: { authFlowType: "USER_AUTH", preferredChallenge: "EMAIL_OTP" } });
+    if (result.nextStep.signInStep === "CONFIRM_SIGN_UP") return false;
+    if (result.nextStep.signInStep !== "CONFIRM_SIGN_IN_WITH_EMAIL_CODE") throw new Error("Unsupported sign-in challenge");
+    return true;
+  }, []);
+
+  // Every passwordless sign-in ends the same way: a fresh org choice and the profile.
+  const loadSignedInUser = useCallback(async () => {
+    const current = await getCurrentUser();
+    const profile = await api.get<AuthUser>(userPath(current.userId, "/profile"));
+    clearSelectedOrgId();
+    setUser({ ...profile, userId: current.userId });
+  }, []);
+
+  const confirmEmailCode = useCallback(async (code: string) => {
+    const result = await confirmSignIn({ challengeResponse: code });
+    if (!result.isSignedIn) throw new Error("Unsupported sign-in challenge");
+    await loadSignedInUser();
+  }, [loadSignedInUser]);
+
+  const signInWithMagicLink = useCallback(async (username: string, token: string) => {
+    await completeMagicLink(username, token);
+    await loadSignedInUser();
+  }, [loadSignedInUser]);
 
   const logout = useCallback(async () => {
     await signOut();
@@ -196,7 +229,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: args.username,
         password: args.password,
         options: {
-          autoSignIn: true,
           userAttributes: {
             email: args.email,
             given_name: args.firstName,
@@ -217,18 +249,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const confirmSignUpWrapper = useCallback(
     async (args: { username: string; confirmationCode: string }) => {
-      await confirmSignUp({
-        username: args.username,
-        confirmationCode: args.confirmationCode,
-      });
+      const signedIn = await confirmSignUpAndSignIn(args.username, args.confirmationCode);
+      if (signedIn) clearSelectedOrgId();
+      return { signedIn };
     },
     []
   );
-
-  const completeAutoSignIn = useCallback(async () => {
-    const result = await autoSignIn();
-    return result.isSignedIn;
-  }, []);
 
   const resendSignUpCodeWrapper = useCallback(
     async (args: { username: string }) => {
@@ -297,11 +323,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         error,
         login,
+        requestEmailCode,
+        confirmEmailCode,
+        requestMagicLink,
+        signInWithMagicLink,
         logout,
         forceLogout,
         signUp: signUpWrapper,
         confirmSignUp: confirmSignUpWrapper,
-        completeAutoSignIn,
         resendSignUpCode: resendSignUpCodeWrapper,
         resetPassword: resetPasswordWrapper,
         confirmResetPassword: confirmResetPasswordWrapper,

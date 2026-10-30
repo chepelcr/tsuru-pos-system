@@ -19,6 +19,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
 const VerifyEmail = lazy(() => import("@/pages/VerifyEmail"));
 const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const MagicLink = lazy(() => import("@/pages/MagicLink"));
 const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
 const SelectOrganization = lazy(() => import("@/pages/SelectOrganization"));
 const CreateOrganization = lazy(() => import("@/pages/CreateOrganization"));
@@ -157,7 +158,7 @@ function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
     // then clear it, or it would hijack the next visit too.
     const intended = sessionStorage.getItem("redirectAfterLogin");
     sessionStorage.removeItem("redirectAfterLogin");
-    return <Redirect to={intended && intended !== ROUTES.LOGIN ? intended : ROUTES.DASHBOARD} />;
+    return <Redirect to={intended && intended !== ROUTES.LOGIN ? intended : ROUTES.SELECT_ORG} />;
   }
 
   return <>{children}</>;
@@ -510,6 +511,7 @@ export default function Routes() {
       </Route>
       <Route path={ROUTES.VERIFY_EMAIL} component={VerifyEmail} />
       <Route path={ROUTES.FORGOT_PASSWORD} component={ForgotPassword} />
+      <Route path={ROUTES.MAGIC_LINK} component={MagicLink} />
       <Route path={ROUTES.RESET_PASSWORD} component={ResetPassword} />
       <Route path={ROUTES.ACCEPT_INVITE} component={AcceptInvitation} />
       <Route

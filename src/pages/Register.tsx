@@ -1,3 +1,4 @@
+import { recordVerificationCodeSent } from "@/lib/verificationCooldown";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm, Controller } from "react-hook-form";
@@ -157,6 +158,7 @@ export default function Register() {
       });
 
       if (result.needsVerification) {
+        recordVerificationCodeSent(step1Data.email);
         stashVerificationHandoff(step1Data);
 
         add({
