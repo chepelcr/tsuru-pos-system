@@ -122,6 +122,11 @@ export function useNotificationMutations() {
     });
     const saleId = incoming.payload?.sale_id;
     const organizationId = incoming.organization_id;
+    if (incoming.event_type === 'order.created') {
+      void qc.invalidateQueries({ queryKey: ['orders', organizationId] });
+      const orderId = incoming.payload?.order_id;
+      if (typeof orderId === 'string') void qc.invalidateQueries({ queryKey: ['order', organizationId, orderId] });
+    }
     if (incoming.event_type.startsWith(IMPORT_EVENT_PREFIX)) {
       // An imported XML landed (or failed): the documents list and the
       // historical catalog both gained a row, and an open upload dialog is

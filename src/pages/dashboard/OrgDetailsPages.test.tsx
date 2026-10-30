@@ -43,6 +43,7 @@ vi.mock("@/hooks/useBusinessType", () => ({ useBusinessType: () => ({ emphasises
 vi.mock("@/components/org-settings/OrganizationLogoPicker", () => ({ OrganizationLogoPicker: () => <div /> }));
 vi.mock("@/components/ui", async () => ({ ...await vi.importActual<object>("@/components/ui"), MediaPicker: () => <div /> }));
 vi.mock("@/hooks/useDataApi", () => ({
+  useAllCurrencies: () => ({ data: [{ code: "CRC", currency_name_es: "Colón costarricense", currency_name_en: "Costa Rican colón", currency_symbol: "₡" }], isPending: false, isError: false }),
   useStates: () => ({ data: [{ state_id: 1, state_name: "San José" }] }),
   useCounties: () => ({ data: [{ county_id: 2, county_name: "Escazú" }] }),
   useDistricts: () => ({ data: [{ district_id: 3, district_name: "San Rafael" }] }),

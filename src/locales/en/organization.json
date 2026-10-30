@@ -462,5 +462,7 @@
   "branchTypes.icon.tent": "Market stall",
   "branchTypes.icon.basket": "Grocery store",
   "branchTypes.default": "Default type",
-  "orgSettings.fiscalInfo.steps.contactResidence": "Contact & residence"
+  "orgSettings.fiscalInfo.steps.contactResidence": "Contact & residence",
+  "orgSettings.payment.currencyPlaceholder": "Select a currency",
+  "orgSettings.payment.currencyLoadError": "Could not load or validate the currency catalog. Try again."
 }

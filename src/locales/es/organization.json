@@ -462,5 +462,7 @@
   "branchTypes.icon.tent": "Puesto de feria",
   "branchTypes.icon.basket": "Pulpería",
   "branchTypes.default": "Tipo predeterminado",
-  "orgSettings.fiscalInfo.steps.contactResidence": "Contacto y domicilio"
+  "orgSettings.fiscalInfo.steps.contactResidence": "Contacto y domicilio",
+  "orgSettings.payment.currencyPlaceholder": "Seleccioná una moneda",
+  "orgSettings.payment.currencyLoadError": "No se pudo cargar o validar el catálogo de monedas. Volvé a intentar."
 }
