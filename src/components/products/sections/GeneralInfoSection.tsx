@@ -142,6 +142,25 @@ export function GeneralInfoSection({
 
       <div className="flex flex-col gap-2">
         <ToggleRow
+          label={t("products.acceptsBarter")}
+          description={t("products.acceptsBarterDescription")}
+          checked={form.accepts_barter}
+          onChange={(accepts_barter) => onChange({ accepts_barter })}
+        />
+        {form.accepts_barter && (
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            {t("products.barterWants")}
+            <textarea
+              className="pp-input"
+              value={form.barter_wants}
+              maxLength={500}
+              onChange={(event) => onChange({ barter_wants: event.target.value })}
+              placeholder={t("products.barterWantsPlaceholder")}
+            />
+          </label>
+        )}
+
+        <ToggleRow
           label={t("products.isProgram")}
           description={t("products.isProgramDesc")}
           checked={form.type === "program"}

@@ -70,6 +70,8 @@ export function productSavePayload(
     price: Number(form.price),
     category_id: form.category_id || undefined,
     track_inventory: form.track_inventory,
+    accepts_barter: form.accepts_barter,
+    barter_wants: form.barter_wants.trim(),
     low_stock_threshold:
       form.track_inventory && form.low_stock_threshold
         ? Number(form.low_stock_threshold)
@@ -183,6 +185,8 @@ export function productFormFromProduct(p: any): ProductFormState {
     price: String(p.price),
     category_id: p.category_id ?? "",
     track_inventory: p.track_inventory ?? false,
+    accepts_barter: p.accepts_barter ?? false,
+    barter_wants: p.barter_wants ?? "",
     has_fiscal_info: hasCabys || hasTaxes,
     // 1 is what an unpackaged product is saved with (see `packUnits`), not a box.
     has_package_info: !!(p.units_per_box && p.units_per_box > 1),

@@ -1,3 +1,4 @@
+import {CustomerPaymentsPanel} from '@/components/orders/CustomerPaymentsPanel';
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ROUTES, documentDetailPath } from '@/routePaths';
@@ -838,6 +839,7 @@ export default function OrderDetailPage({ orderId }: Props) {
           order={order}
         />
       )}
+      {order.order_type === "storefront" && <CustomerPaymentsPanel orgId={orgId} orderId={order.order_id} canReview={canUpdate} />}
       <ConfirmModal />
     </div>
   );

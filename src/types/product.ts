@@ -75,6 +75,8 @@ export interface ProductDiscount {
 export type ProductType = "product" | "service" | "program";
 
 export interface Product {
+  accepts_barter?: boolean;
+  barter_wants?: string | null;
   product_id: string;
   /** Storefront classification; programs share the product API and permissions. */
   type?: ProductType;

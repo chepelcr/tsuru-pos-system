@@ -79,6 +79,8 @@ export interface CodeFormEntry {
 }
 
 export interface ProductFormState {
+  accepts_barter: boolean;
+  barter_wants: string;
   // General Info
   type: ProductType;
   name: string;
@@ -188,6 +190,8 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   description: "",
   category_id: "",
   track_inventory: false,
+  accepts_barter: false,
+  barter_wants: "",
   has_fiscal_info: false,
   has_package_info: false,
   low_stock_threshold: "",

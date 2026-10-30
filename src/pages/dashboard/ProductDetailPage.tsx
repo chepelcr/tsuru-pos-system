@@ -1,3 +1,4 @@
+import {BarterProposalsPanel} from '@/components/products/BarterProposalsPanel';
 import { useState } from "react";
 import { productFormFromProduct, productSavePayload } from "@/lib/productFormMapping";
 import { useLocation } from "wouter";
@@ -399,6 +400,7 @@ export default function ProductDetailPage({ productId }: Props) {
       />
 
       {/* Confirmation Modal */}
+      {org?.id && <BarterProposalsPanel orgId={org.id} productId={productId} />}
       <ConfirmModal />
     </div>
   );
