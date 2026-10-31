@@ -21,4 +21,15 @@ export interface Template {
   preview_url?: string;
   is_active: boolean;
   sort_order: number;
+  /** Gallery copy per language (`es`, `en`, …); see `localizeTemplate`. */
+  translations?: Partial<Record<string, TemplateTranslation>> | null;
+}
+
+export interface TemplateTranslation {
+  display_name?: string;
+  category_label?: string;
+  tagline?: string;
+  description?: string;
+  ideal_for?: string[];
+  features?: string[];
 }

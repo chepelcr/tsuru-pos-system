@@ -4,6 +4,7 @@ import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { usePermissions } from "@/hooks/useRbac";
+import { localizeTemplate } from "./localizeTemplate";
 import { templateCategoryIcon } from "./templateCategory";
 import { TemplateThumbnail } from "./TemplateThumbnail";
 import type { Template } from "@/types";
@@ -46,7 +47,7 @@ export function TemplatePreview({
   isSelected,
   disabled,
 }: TemplatePreviewProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { isTopLayer } = useOverlayLayer({ active: open && !!template, panelRef, dismissible: true, onClose });
@@ -55,6 +56,9 @@ export function TemplatePreview({
   const canApply = can("storefront", "update", "templates");
 
   if (!open || !template) return null;
+  const copy = localizeTemplate(template, language);
+  // The template's own features when it lists them; the generic list otherwise.
+  const features = copy.features.length ? copy.features : FEATURE_KEYS.map((key) => t(key));
 
   return (
     <OverlayPortal>
@@ -77,7 +81,7 @@ export function TemplatePreview({
             <Icon name={templateCategoryIcon(template.category)} size={20} />
           </span>
           <div className="flex-1 min-w-0">
-            <h3 id={titleId} className="t-h3 !mb-0.5 truncate">{template.display_name}</h3>
+            <h3 id={titleId} className="t-h3 !mb-0.5 truncate">{copy.displayName}</h3>
             <p className="t-xs text-muted-foreground">{t("template.preview.title")}</p>
           </div>
           <button
@@ -100,7 +104,8 @@ export function TemplatePreview({
           {/* About */}
           <div>
             <h4 className="label-section mb-1.5">{t("template.preview.about")}</h4>
-            <p className="t-sm text-muted-foreground">{template.description}</p>
+            {copy.tagline && <p className="t-sm font-medium text-foreground mb-1">{copy.tagline}</p>}
+            <p className="t-sm text-muted-foreground">{copy.description}</p>
           </div>
 
           {/* Live demo */}
@@ -121,10 +126,10 @@ export function TemplatePreview({
           <div>
             <h4 className="label-section mb-2">{t("template.preview.whatsIncluded")}</h4>
             <ul className="flex flex-col gap-1.5">
-              {FEATURE_KEYS.map((key) => (
-                <li key={key} className="flex items-center gap-2 t-sm text-muted-foreground">
-                  <Icon name="check" size={15} className="text-success flex-shrink-0" />
-                  {t(key)}
+              {features.map((feature) => (
+                <li key={feature} className="flex items-start gap-2 t-sm text-muted-foreground">
+                  <Icon name="check" size={15} className="text-success flex-shrink-0 mt-0.5" />
+                  {feature}
                 </li>
               ))}
             </ul>

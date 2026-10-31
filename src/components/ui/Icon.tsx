@@ -1,6 +1,6 @@
 import React from "react";
 import { Building2, Warehouse, Factory, Truck, UtensilsCrossed, Coffee, Hotel, Hospital,
-  BriefcaseBusiness, Wrench, Scissors, Tent, ShoppingBasket, type LucideIcon } from "lucide-react";
+  BriefcaseBusiness, Wrench, Scissors, Tent, ShoppingBasket, Croissant, type LucideIcon } from "lucide-react";
 
 type IconName =
   | "menu" | "close" | "check" | "plus" | "minus"
@@ -25,6 +25,7 @@ const additionalIcons: Record<string, LucideIcon> = {
   building: Building2, warehouse: Warehouse, factory: Factory, truck: Truck,
   utensils: UtensilsCrossed, coffee: Coffee, hotel: Hotel, hospital: Hospital,
   briefcase: BriefcaseBusiness, wrench: Wrench, scissors: Scissors, tent: Tent, basket: ShoppingBasket,
+  croissant: Croissant,
 };
 
 interface IconProps {

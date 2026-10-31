@@ -13,6 +13,7 @@ import {
   TemplateCard,
   TemplatePreview,
   TemplatePlaygroundCard,
+  localizeTemplate,
 } from "@/components/cms";
 import { ROUTES } from "@/routePaths";
 import type { Template } from "@/types";
@@ -34,7 +35,7 @@ const ALL = "__all__";
  */
 export default function TemplatesPage() {
   const { user } = useAuthContext();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { useDefaultOrganization } = useOrganization();
   const { data: org, isLoading: orgLoading } = useDefaultOrganization(user?.userId);
   const [, navigate] = useLocation();
@@ -67,13 +68,11 @@ export default function TemplatesPage() {
       const matchesCategory = category === ALL || tpl.category === category;
       if (!matchesCategory) return false;
       if (!term) return true;
-      return (
-        tpl.display_name.toLowerCase().includes(term) ||
-        tpl.description.toLowerCase().includes(term) ||
-        tpl.category.toLowerCase().includes(term)
-      );
+      const copy = localizeTemplate(tpl, language);
+      return [copy.displayName, copy.tagline, copy.description, tpl.category, t(`storefront.category.${tpl.category}`)]
+        .some((text) => text?.toLowerCase().includes(term));
     });
-  }, [templates, search, category]);
+  }, [templates, search, category, language, t]);
 
   const activeTemplateId = (templates ?? []).find(
     (tpl) => tpl.id === org?.template_id || tpl.name === org?.template_id,

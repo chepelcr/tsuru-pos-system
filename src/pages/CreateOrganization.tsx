@@ -23,6 +23,7 @@ import {
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { DEFAULT_THEME_ID, isKnownThemeId } from "@/theme/themes";
 import { setSelectedOrgId } from "@/lib/selectedOrg";
+import { localizeTemplate, TemplateThumbnail } from "@/components/cms";
 
 const BASE_DOMAIN =
   (import.meta.env.VITE_BASE_DOMAIN as string | undefined) || "tsuru.jcampos.dev";
@@ -45,7 +46,7 @@ const STEPS: StepperStep[] = [
 
 export default function CreateOrganization() {
   const { user } = useAuthContext();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [, navigate] = useLocation();
   const { setThemeId } = useThemeContext();
   const { confirm, ConfirmModal } = useConfirmModal();
@@ -570,6 +571,7 @@ export default function CreateOrganization() {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {templates.map((template) => {
                         const active = template.id === selectedTemplateId;
+                        const copy = localizeTemplate(template, language);
                         return (
                           <button
                             key={template.id}
@@ -582,15 +584,7 @@ export default function CreateOrganization() {
                             }`}
                           >
                             <div className="relative aspect-[16/10] -m-4 mb-0 bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border">
-                              {template.thumbnail_url ? (
-                                <img
-                                  src={template.thumbnail_url}
-                                  alt={template.display_name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <Icon name="store" size={28} className="text-muted-foreground" />
-                              )}
+                              <TemplateThumbnail template={template} />
                               {active && (
                                 <span className="absolute top-2 right-2 icon-pill icon-pill-primary-soft w-7 h-7">
                                   <Icon name="check" size={16} />
@@ -599,10 +593,13 @@ export default function CreateOrganization() {
                             </div>
 
                             <span className="t-h4 !mb-0 break-words">
-                              {template.display_name}
+                              {copy.displayName}
                             </span>
-                            <span className="t-sm text-muted-foreground line-clamp-2">
-                              {template.description}
+                            {copy.tagline && (
+                              <span className="t-sm font-medium text-foreground">{copy.tagline}</span>
+                            )}
+                            <span className="t-sm text-muted-foreground">
+                              {copy.description}
                             </span>
                           </button>
                         );

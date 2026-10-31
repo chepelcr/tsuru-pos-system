@@ -123,4 +123,4 @@ export type { Member, MemberListResponse } from "./member";
 // Dashboard
 
 // Storefront templates (CMS template gallery)
-export type { Template } from "./storefront";
+export type { Template, TemplateTranslation } from "./storefront";

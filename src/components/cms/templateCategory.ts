@@ -13,6 +13,7 @@ const CATEGORY_ICON: Record<string, string> = {
   demo: "store",
   marketplace: "store",
   electronics: "smartphone",
+  technology: "smartphone",
   fashion: "bag",
   crafts: "sparkles",
   food: "drink",
@@ -23,6 +24,9 @@ const CATEGORY_ICON: Record<string, string> = {
   pet: "users",
   beauty: "sparkles",
   cosmetics: "sparkles",
+  bakery: "croissant",
+  hardware: "wrench",
+  restaurant: "utensils",
 };
 
 export function templateCategoryIcon(category: string): string {

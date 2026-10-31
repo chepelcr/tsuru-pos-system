@@ -2,6 +2,7 @@ import { Icon } from "@/components/ui";
 import { Button } from "@/components/ui";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePermissions } from "@/hooks/useRbac";
+import { localizeTemplate } from "./localizeTemplate";
 import { templateCategoryIcon } from "./templateCategory";
 import { TemplateThumbnail } from "./TemplateThumbnail";
 import type { Template } from "@/types";
@@ -29,7 +30,8 @@ export function TemplateCard({
   onSelect,
   disabled,
 }: TemplateCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const copy = localizeTemplate(template, language);
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can } = usePermissions();
   const canApply = can("storefront", "update", "templates");
@@ -56,12 +58,13 @@ export function TemplateCard({
           <span className="icon-pill icon-pill-primary-soft w-8 h-8 flex-shrink-0">
             <Icon name={templateCategoryIcon(template.category)} size={16} />
           </span>
-          <h3 className="t-h4 !mb-0 truncate flex-1">{template.display_name}</h3>
+          <h3 className="t-h4 !mb-0 truncate flex-1">{copy.displayName}</h3>
         </div>
 
-        <p className="t-sm text-muted-foreground line-clamp-2 flex-1">
-          {template.description}
-        </p>
+        <div className="flex flex-col gap-1 flex-1">
+          {copy.tagline && <p className="t-sm font-medium text-foreground">{copy.tagline}</p>}
+          <p className="t-sm text-muted-foreground">{copy.description}</p>
+        </div>
 
         <div className="flex gap-2 mt-1">
           <Button

@@ -6,7 +6,7 @@ import type { Template } from "@/types";
 
 export const BUNDLED_TEMPLATE_PREVIEWS = [
   "tsuru-demo", "beauty-essentials", "tech-gadgets", "vintage-fashion", "artisan-crafts",
-  "gourmet-foods", "fitness-hub", "pet-care", "pollo-porteno",
+  "gourmet-foods", "fitness-hub", "pet-care", "pollo-porteno", "panaderia",
 ] as const;
 
 export function templateThumbnailUrl(template: Pick<Template, "name" | "thumbnail_url">): string | undefined {

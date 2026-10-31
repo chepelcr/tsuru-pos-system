@@ -879,9 +879,14 @@ Mount forms only inside an open, permission-gated drawer; use its fixed footer
 with native `form` submission. Keep pending saves/uploads nondismissible and
 retain entered values after failures. General feature visibility and appearance
 choices are drafts until Save, so Cancel does not change those preferences.
-The template gallery stays a gallery. `TemplateThumbnail` shares gallery/modal
-images; the nine built-in previews ship in `public/templates/*.jpg` and unknown
-or failed images use a full-sized fallback rather than a broken image.
+The template gallery stays a gallery. `TemplateThumbnail` shares gallery, modal
+and onboarding images; the ten built-in previews ship in `public/templates/*.jpg`
+and unknown or failed images use a full-sized fallback rather than a broken image.
+Template copy comes from `localizeTemplate` (the reader's language, then Spanish,
+then the base columns): cards show the tagline and the whole description, never
+clamped, and the preview lists the template's own features when it has them.
+Category chips use `storefront.category.<key>`, so a new template category needs
+those labels in both dictionaries and an icon in `templateCategory.ts`.
 
 ## 13.1 Notifications — one hydrate, then pure server push
 
