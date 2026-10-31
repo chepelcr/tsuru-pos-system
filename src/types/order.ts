@@ -78,6 +78,7 @@ export type { ReportColorOption, ReportColorPalette, ReportColorScheme } from '@
 // ─── Sub-types matching backend DTOs ────────────────────────────────────────
 
 export interface OrderParty {
+  email?: string;
   name: string;
   gln: string;
   internal_code?: string;

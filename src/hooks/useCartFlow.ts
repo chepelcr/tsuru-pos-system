@@ -716,6 +716,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
         client_id: selectedClient?.client_id ?? null,
         client: {
           name: clientName,
+          email: invoiceData.receiver?.email || selectedClient?.email || undefined,
           gln: selectedClient?.client_gln ?? "",
           internal_code: selectedClient?.identification?.number ?? undefined,
         },
