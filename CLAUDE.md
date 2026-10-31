@@ -880,7 +880,7 @@ with native `form` submission. Keep pending saves/uploads nondismissible and
 retain entered values after failures. General feature visibility and appearance
 choices are drafts until Save, so Cancel does not change those preferences.
 The template gallery stays a gallery. `TemplateThumbnail` shares gallery, modal
-and onboarding images; the ten built-in previews ship in `public/templates/*.jpg`
+and onboarding images; the eleven built-in previews ship in `public/templates/*.jpg`
 and unknown or failed images use a full-sized fallback rather than a broken image.
 Template copy comes from `localizeTemplate` (the reader's language, then Spanish,
 then the base columns): cards show the tagline and the whole description, never
