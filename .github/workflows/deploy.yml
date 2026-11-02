@@ -115,6 +115,12 @@ jobs:
           if value=$(get "api/blog-url"); then
             echo "VITE_BLOG_API_URL=${value}" >> "$GITHUB_ENV"
           fi
+          if value=$(get "api/partner-url"); then
+            echo "VITE_PARTNER_API_URL=${value}" >> "$GITHUB_ENV"
+          fi
+          if value=$(get "partners/ditso-callback-origin"); then
+            echo "VITE_DITSO_CALLBACK_ORIGIN=${value}" >> "$GITHUB_ENV"
+          fi
           if value=$(get "features/blog-enabled"); then
             case "$value" in true|false) echo "VITE_BLOG_ENABLED=${value}" >> "$GITHUB_ENV" ;; *)
               echo "::error::Invalid blog feature flag"; exit 1 ;;

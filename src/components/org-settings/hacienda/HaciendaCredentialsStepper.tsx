@@ -6,12 +6,14 @@ import {
   useValidateCredentials,
   useSaveOrgConfigurations,
 } from "@/hooks/useOrgConfigurations";
-import type { HaciendaFormState } from "@/types/orgConfigurations";
+import type { HaciendaFormState, OrgConfiguration } from "@/types/orgConfigurations";
 import { IS_STAGING } from "@/lib/environment";
 
 interface HaciendaCredentialsStepperProps {
   orgId: string;
   onSaved: () => void;
+  pending?: 'credentials' | 'certificate';
+  existing?: OrgConfiguration | null;
 }
 
 const EMPTY_FORM: HaciendaFormState = {
@@ -32,12 +34,12 @@ const EMPTY_FORM: HaciendaFormState = {
  * Mirrors the editor drawer's mutation surface so once saved, the page swaps
  * to the existing HaciendaTab summary + drawer for edits.
  */
-export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentialsStepperProps) {
+export function HaciendaCredentialsStepper({ orgId, onSaved, pending, existing }: HaciendaCredentialsStepperProps) {
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<HaciendaFormState>(EMPTY_FORM);
-  const [credentialsValid, setCredentialsValid] = useState(false);
+  const [form, setForm] = useState<HaciendaFormState>({ ...EMPTY_FORM, username: existing?.username ?? '' });
+  const [credentialsValid, setCredentialsValid] = useState(pending === 'certificate');
   const [verifyError, setVerifyError] = useState("");
   const [current, setCurrent] = useState(0);
 
@@ -86,9 +88,10 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
   const handleSave = async () => {
     const payload: Record<string, unknown> = {
       username: form.username,
-      password: form.password,
       status: form.status,
     };
+    if (form.password) payload.password = form.password;
+    if (!form.certData && form.certPin && existing?.certificate) payload.certificate_pin = form.certPin;
     if (form.certData) {
       payload.certificate = {
         data: form.certData,
@@ -108,15 +111,16 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
     { id: "credentials", titleKey: "orgSettings.hacienda.steps.credentials" },
     { id: "certificate", titleKey: "orgSettings.hacienda.steps.certificate" },
     { id: "review", titleKey: "orgSettings.hacienda.steps.review" },
-  ];
+  ].filter(step => !pending || step.id === pending || step.id === 'review');
+  const stage = steps[current].id;
 
   const canAdvance = (() => {
-    switch (current) {
-      case 0:
+    switch (stage) {
+      case 'credentials':
         return credentialsValid;
-      case 1:
-        return true; // certificate optional during initial setup
-      case 2:
+      case 'certificate':
+        return pending ? !!form.certPin && (!!form.certData || (!!existing?.certificate && new Date(existing.certificate.expiration_date).getTime() > Date.now())) : true;
+      case 'review':
         return credentialsValid;
       default:
         return true;
@@ -134,7 +138,7 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
         onNext={() => setCurrent((c) => Math.min(steps.length - 1, c + 1))}
         onSave={handleSave}
       >
-        {current === 0 && (
+        {stage === 'credentials' && (
           <div className="space-y-5">
             <header>
               <h2 className="t-h3 mb-1">{t("orgSettings.hacienda.steps.credentials")}</h2>
@@ -208,7 +212,7 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
           </div>
         )}
 
-        {current === 1 && (
+        {stage === 'certificate' && (
           <div className="space-y-5">
             <header>
               <h2 className="t-h3 mb-1">{t("orgSettings.hacienda.certificate")}</h2>
@@ -233,7 +237,7 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Icon name="upload" size={14} />
-                  {form.certName || t("orgSettings.hacienda.certFile")}
+                  {form.certName || existing?.certificate?.name || t("orgSettings.hacienda.certFile")}
                 </button>
               </div>
             </div>
@@ -254,7 +258,7 @@ export function HaciendaCredentialsStepper({ orgId, onSaved }: HaciendaCredentia
           </div>
         )}
 
-        {current === 2 && (
+        {stage === 'review' && (
           <div className="space-y-5">
             <header>
               <h2 className="t-h3 mb-1">{t("orgSettings.hacienda.review.title")}</h2>
