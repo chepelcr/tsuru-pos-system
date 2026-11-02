@@ -75,14 +75,14 @@ describe("product catalog type filtering", () => {
     fireEvent.click(await screen.findByRole("option", { name: "Programs" }));
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
     await waitFor(() => expect(requestedSearches()).toContain("type:program,status:1"));
-    expect(router.history?.at(-1)).toBe("/dashboard/products?type=program");
+    expect(router.history?.slice(-1)[0]).toBe("/dashboard/products?type=program");
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     fireEvent.click(await screen.findByLabelText("Catalog type"));
     fireEvent.click(await screen.findByRole("option", { name: "All types" }));
     fireEvent.click(screen.getByRole("button", { name: "Apply filters" }));
-    await waitFor(() => expect(router.history?.at(-1)).toBe("/dashboard/products"));
-    expect(requestedSearches().at(-1)).toBe("status:1");
+    await waitFor(() => expect(router.history?.slice(-1)[0]).toBe("/dashboard/products"));
+    expect(requestedSearches().slice(-1)[0]).toBe("status:1");
   });
 });
