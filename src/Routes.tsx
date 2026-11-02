@@ -12,6 +12,8 @@ import {
   type PermissionRequirement,
 } from "@/components/routing/PermissionBoundary";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { partnerReturnPath } from '@/lib/partnerReturn';
+const PartnerConnection = lazy(() => import('@/pages/PartnerConnection'));
 
 // Every page is a dynamic import. React only invokes a loader after the
 // matching route — and, for dashboard pages, its permission boundary — renders.
@@ -185,6 +187,7 @@ function RequireAuth({
   }
 
   if (!user) {
+    if (/^\/integraciones\/ditso\/[A-Za-z0-9_-]{43}$/.test(location)) sessionStorage.setItem('ditsoPartnerReturn', location);
     sessionStorage.setItem("redirectAfterLogin", location);
     return <Redirect to={ROUTES.LOGIN} />;
   }
@@ -502,6 +505,9 @@ export default function Routes() {
   return (
     <Suspense fallback={<RouteLoading fullScreen />}>
       <Switch>
+      <Route path="/integraciones/ditso/:context">
+        <RequireAuth><DocumentVersionProvider isoCode={CountryISO.COSTA_RICA}><PartnerConnection /></DocumentVersionProvider></RequireAuth>
+      </Route>
       {/* Public */}
       <Route path={ROUTES.LOGIN}>
         <RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>
@@ -518,7 +524,7 @@ export default function Routes() {
         path={ROUTES.SELECT_ORG}
         component={() => (
           <RequireAuth>
-            <SelectOrganization />
+            {partnerReturnPath() ? <Redirect to={partnerReturnPath()!} /> : <SelectOrganization />}
           </RequireAuth>
         )}
       />
