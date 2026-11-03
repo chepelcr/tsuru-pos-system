@@ -13,8 +13,8 @@ interface OrganizationLogoPickerProps {
 }
 
 interface PresignedUpload {
-  uploadUrl: string;
-  fileUrl: string;
+  upload_url: string;
+  file_url: string;
 }
 
 /** The shared upload bucket is available before a store bucket is provisioned. */
@@ -44,18 +44,18 @@ export function OrganizationLogoPicker({
       const target = await api.post<PresignedUpload>(
         orgSettingsPath(userId, orgId, "/upload/presigned"),
         {
-          fileName: `logo-${Date.now()}.${extension}`,
-          fileType: file.type,
+          file_name: `logo-${Date.now()}.${extension}`,
+          file_type: file.type,
           folder: `organization-logos/${orgId}`,
         },
       );
-      const response = await fetch(target.uploadUrl, {
+      const response = await fetch(target.upload_url, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
       });
       if (!response.ok) throw new Error(`Upload failed (${response.status})`);
-      onChange(target.fileUrl);
+      onChange(target.file_url);
     } catch {
       setError(t("orgSettings.general.logoUploadError"));
     } finally {
