@@ -1,4 +1,4 @@
-import { useId, useRef } from "react";
+import { useId, useRef, useState } from "react";
 import { Icon, Button } from "@/components/ui";
 import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -7,6 +7,7 @@ import { usePermissions } from "@/hooks/useRbac";
 import { localizeTemplate } from "./localizeTemplate";
 import { templateCategoryIcon } from "./templateCategory";
 import { TemplateThumbnail } from "./TemplateThumbnail";
+import { TemplateSitePreview } from "./TemplateSitePreview";
 import type { Template } from "@/types";
 
 interface TemplatePreviewProps {
@@ -17,11 +18,6 @@ interface TemplatePreviewProps {
   onUse: (template: Template) => void;
   isSelected: boolean;
   disabled?: boolean;
-}
-
-/** Live demo URL for a deployed storefront template. */
-function demoUrl(name: string): string {
-  return `https://${name}.examples.tsuru.jcampos.dev`;
 }
 
 const FEATURE_KEYS = [
@@ -48,6 +44,7 @@ export function TemplatePreview({
   disabled,
 }: TemplatePreviewProps) {
   const { t, language } = useLanguage();
+  const [siteOpen, setSiteOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const { isTopLayer } = useOverlayLayer({ active: open && !!template, panelRef, dismissible: true, onClose });
@@ -111,15 +108,13 @@ export function TemplatePreview({
           {/* Live demo */}
           <div>
             <h4 className="label-section mb-1.5">{t("template.preview.liveDemo")}</h4>
-            <a
-              href={template.preview_url ?? demoUrl(template.name)}
-              target="_blank"
-              rel="noreferrer noopener"
+            <button type="button"
+              onClick={() => setSiteOpen(true)}
               className="btn btn-outline btn-sm w-full"
             >
               <Icon name="eye" size={15} />
               {t("template.preview.visitDemo")}
-            </a>
+            </button>
           </div>
 
           {/* What's included */}
@@ -155,6 +150,7 @@ export function TemplatePreview({
         </div>
       </div>
     </div>
+    {siteOpen && <TemplateSitePreview template={template} onClose={() => setSiteOpen(false)} />}
     </OverlayPortal>
   );
 }

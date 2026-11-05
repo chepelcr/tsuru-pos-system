@@ -1,3 +1,4 @@
+import { useOrgContext } from "@/contexts/OrgContext";
 import { useLocation } from "wouter";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { ROUTES, documentEditorPath } from "@/routePaths";
@@ -32,6 +33,7 @@ function ActionButton({ label, icon, accentClass, onClick }: ActionButtonProps) 
 
 export function QuickDocActionsCard() {
   const { addDocumentTab } = useDocumentStore();
+  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   const [, setLocation] = useLocation();
   const { t } = useLanguage();
   // Which editor types this org+role may create. In `orders-only` mode this is
@@ -91,12 +93,12 @@ export function QuickDocActionsCard() {
           onClick={() => openNewDoc('04')}
         />
         )}
-        <ActionButton
+        {hasFiscalInfo && <ActionButton
           label={t("quickDoc.viewDocuments")}
           icon="layers"
           accentClass="hover:border-primary [&_.action-icon]:bg-primary"
           onClick={() => setLocation(ROUTES.DASHBOARD_DOCUMENTS)}
-        />
+        />}
       </div>
     </Card>
   );

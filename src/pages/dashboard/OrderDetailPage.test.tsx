@@ -15,7 +15,7 @@ vi.mock('@/contexts/LanguageContext', () => ({
 }));
 vi.mock('@/contexts/NotificationsContext', () => ({ useNotifications: () => ({ add: vi.fn() }) }));
 vi.mock('@/hooks/usePageTitle', () => ({ usePageTitle: vi.fn() }));
-vi.mock('@/hooks/useConfirmModal', () => ({ useConfirmModal: () => ({ confirm: vi.fn(), ConfirmModal: () => null }) }));
+vi.mock('@/hooks/useConfirmModal', () => ({ useConfirmModal: () => ({ confirm: vi.fn(), confirmModal: null }) }));
 vi.mock('@/hooks/useRbac', () => ({ usePermissions: () => ({ can: (_module: string, action: string) => action !== 'export' || state.export }) }));
 vi.mock('@/hooks/useSale', () => ({ useSale: () => ({}) }));
 vi.mock('@/hooks/useFiscalMode', () => ({ useFiscalMode: () => ({ isElectronic: state.electronic }) }));

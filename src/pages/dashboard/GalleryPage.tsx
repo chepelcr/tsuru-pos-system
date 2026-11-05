@@ -29,7 +29,7 @@ export default function GalleryPage() {
   const { t } = useLanguage();
   usePageTitle([t("gallery.title")]);
   const { listQuery, upload, addExternal, remove } = useMediaLibrary(orgId);
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can } = usePermissions();
@@ -243,7 +243,7 @@ export default function GalleryPage() {
         </OverlayPortal>
       )}
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

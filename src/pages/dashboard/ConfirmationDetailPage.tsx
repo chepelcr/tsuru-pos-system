@@ -43,7 +43,7 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
   const { add } = useNotifications();
   const [, navigate] = useLocation();
   const locale = language === 'es' ? 'es-CR' : 'en-US';
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   const { data: confirmation, isLoading, error } = useConfirmation(orgId, confirmationNumber);
   const updateStatus = useUpdateConfirmationStatus(orgId, confirmationNumber);
@@ -319,7 +319,7 @@ export default function ConfirmationDetailPage({ confirmationNumber }: Props) {
         orgId={orgId}
         confirmationNumber={confirmationNumber}
       />
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

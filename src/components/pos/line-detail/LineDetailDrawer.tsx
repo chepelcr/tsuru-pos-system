@@ -110,7 +110,7 @@ export function LineDetailDrawer({
   const { data: taxRates } = useAllTaxRates({ iso_code: CountryISO.COSTA_RICA });
   const { data: taxFactors } = useAllTaxFactors({ iso_code: CountryISO.COSTA_RICA });
   const { data: factoryTaxCharges } = useAllFactoryTaxCharges({ iso_code: CountryISO.COSTA_RICA } as GetAllFactoryTaxChargesParams);
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   const { t } = useLanguage();
 
   const { expanded, setExpanded, toggle } = useAccordionSections<keyof SectionExpanded>({
@@ -573,7 +573,7 @@ export function LineDetailDrawer({
     </Drawer>
 
     {/* Confirmation Modal */}
-    <ConfirmModal />
+    {confirmModal}
   </>
   );
 }

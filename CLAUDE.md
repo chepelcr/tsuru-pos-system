@@ -472,7 +472,7 @@ forwards refs so React Hook Form can focus invalid fields. `PhoneField` keeps
 | POS session context (branch+terminal) | `zustand` `src/store/sessionContext.ts`. **Nothing gates on it any more** (TSR-237): `useSessionSelection` resolves it automatically (assignment → still-valid current → first branch that has a terminal) and the checkout drawer's `BranchTerminalSection` shows/overrides it *on the document*. The old full-screen `SessionSetupScreen` is deleted — do not reintroduce a "start your shift" gate in front of the workspace. |
 | Per-org feature visibility (which optional surfaces the org shows) | `zustand` `src/store/orgFeatureVisibility.ts`. A **preference**, not a permission — nothing on the backend reads it. See §13 "Gate a feature by business type". |
 | Document editor tabs | `zustand` `src/store/documentStore.ts` (`open_documents`, `is_received`, `addDocumentTab`, `removeDocumentTab`, `newDocTabId`) |
-| Confirm modals | `useConfirmModal()` hook → returns `{ confirm, ConfirmModal }`. Always render `<ConfirmModal/>` at the end of the page |
+| Confirm modals | `useConfirmModal()` hook → returns `{ confirm, confirmModal }`. Always render `{confirmModal}` at the end of the page |
 | Server state | React Query (`@tanstack/react-query`). Query keys convention: `[resource, orgId, ...filters]` |
 | Offline data | 4 layers — SW app shell, React Query→localStorage (reference catalogs + account context), IndexedDB mirrors (org catalog), IndexedDB outbox (unsent sales/orders). Warmed once per org per day by `useOfflineBootstrap()`. **`org-configurations` is never persisted** (certificate + PIN) — only a derived boolean; `registered-organization` IS persisted, the POS checkout reads its economic activities. `docs/OFFLINE.md` |
 
@@ -497,7 +497,7 @@ forwards refs so React Hook Form can focus invalid fields. `PhoneField` keeps
 | `useCartFlow()` | full POS checkout state machine |
 | `useAssignment()` | current cashier assignment |
 | `useSync()` | online/offline sync status (for SyncPill) |
-| `useConfirmModal()` | `{ confirm({title,message,variant,onConfirm,...}), ConfirmModal }` |
+| `useConfirmModal()` | `{ confirm({title,message,variant,onConfirm,...}), confirmModal }` |
 
 ---
 
@@ -644,7 +644,7 @@ page boundaries, size reset, localized labels and the sales adapter.
 
 ### Confirm modal
 ```tsx
-const { confirm, ConfirmModal } = useConfirmModal();
+const { confirm, confirmModal } = useConfirmModal();
 confirm({
   title: "Eliminar",
   message: `¿Eliminar "${name}"?`,
@@ -654,7 +654,7 @@ confirm({
   onConfirm: async () => { await mutation.mutateAsync(id); },
 });
 // ...
-<ConfirmModal />
+{confirmModal}
 ```
 
 ### Drawer with footer
@@ -1025,3 +1025,9 @@ inert until the dialog closes. `--z-tutorial` is the tutorial's shared layer tok
 Regression tests live beside the provider, spotlight and workflow model. When adding
 a step, add both locales' title/body/example/result, its actual page anchor, permission
 filtering and meaningful workflow coverage.
+
+### Confirmation and fiscal surfaces (TSR-431, 2026-11-04)
+
+`useConfirmModal` returns `{ confirm, confirmModal }`; render `{confirmModal}` as an element. Do not wrap it in a component created inside the hook: state updates remount the dialog and restart its entry animation/focus. `Modal` keeps its title beside its icon and blocks dismissal during an active confirmation.
+
+Dashboard navigation, document summaries and fiscal reports use `OrgContext.isRegisteredOrgConfigured`. Fiscal identity unlocks those surfaces; Hacienda credentials remain a separate transmission requirement. Manual pedido creation stays available through the editor. `TemplateSitePreview` embeds the live example with the shared overlay stack and preserves gallery selection.

@@ -19,7 +19,7 @@ interface ClientStoresListProps {
 
 export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   const { searchQuery, page, pageSize, sortBy, sortOrder, setSearchQuery, setPage, setPageSize } =
     useStoreListStore();
 
@@ -165,7 +165,7 @@ export function ClientStoresList({ orgId, clientId }: ClientStoresListProps) {
 
       <StoreUploadModal open={uploadOpen} onClose={() => setUploadOpen(false)} onUpload={handleUpload} />
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

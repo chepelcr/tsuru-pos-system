@@ -1,3 +1,4 @@
+import { useOrgContext } from "@/contexts/OrgContext";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +35,7 @@ export function DashboardHeader({
   docsOpen = false,
 }: DashboardHeaderProps) {
   const { dark, toggle: toggleDark } = useDarkMode();
+  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   const { t } = useLanguage();
   const tutorial = useTutorial();
   const openCount = useDocumentStore((s) => s.open_documents.length);
@@ -123,7 +125,7 @@ export function DashboardHeader({
         <StagingBadge className="absolute left-4 top-full -translate-y-1/2" />
         {/* Desktop-only documents toolbar (Documentos tab + open tab strip) */}
         <div className="documents-toolbar-desktop">
-          <DocumentsToolbar />
+          <DocumentsToolbar showDocumentsLink={hasFiscalInfo} />
         </div>
 
       </div>
@@ -158,7 +160,7 @@ export function DashboardHeader({
             - Mobile (<769px): always visible — the drawer is the only access to docs.
             - Desktop/tablet (≥769px): only visible when there are MORE than
               `maxVisible` open docs (overflow). Shows a count badge. */}
-        {onDocsClick && (
+        {(hasFiscalInfo || openCount > 0) && onDocsClick && (
           <button
             className={`btn ${docsOpen ? "btn-primary-soft" : "btn-ghost"} btn-sm btn-icon documents-drawer-toggle relative ${hasOverflow ? "has-overflow" : ""}`}
             onClick={onDocsClick}

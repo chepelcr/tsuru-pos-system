@@ -2,6 +2,7 @@ import React, { useId, useRef } from "react";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
+import { Spinner } from "./Spinner";
 import { OverlayPortal } from "./OverlayPortal";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -57,10 +58,11 @@ export function Modal({
   const iconName = icon ?? variantDefaultIcon[variant];
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const busy = !!confirm?.loading;
   const { isTopLayer } = useOverlayLayer({
     active: open,
     panelRef,
-    dismissible: true,
+    dismissible: !busy,
     onClose,
   });
 
@@ -70,25 +72,30 @@ export function Modal({
     <OverlayPortal>
     <div
       className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
-      onClick={() => { if (isTopLayer()) onClose(); }}
+      onClick={() => { if (!busy && isTopLayer()) onClose(); }}
     >
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-busy={busy}
         tabIndex={-1}
-        className="w-full max-w-[400px] bg-card border border-border rounded-xl shadow-modal p-6 fade-up"
+        className="w-full max-w-[400px] max-h-[90dvh] overflow-y-auto bg-card border border-border rounded-xl shadow-modal p-6 fade-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={`icon-pill icon-pill-lg mx-auto mb-4 w-14 h-14 ${variantPillClass[variant]}`}>
-          <Icon name={iconName} size={24} />
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`icon-pill icon-pill-lg shrink-0 w-11 h-11 ${variantPillClass[variant]}`} aria-hidden="true">
+            <Icon name={iconName} size={22} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 id={titleId} className="t-h3 !mb-0">{title}</h3>
+          </div>
+          <Button type="button" variant="ghost" size="sm" icon="close" className="shrink-0" aria-label={t("common.close")} onClick={onClose} disabled={busy} />
         </div>
 
-        <h3 id={titleId} className={`t-h3 text-center ${description ? "mb-2" : ""}`}>{title}</h3>
-
         {description && (
-          <p className={`t-sm text-center text-muted-foreground ${children ? "mb-4" : ""}`}>
+          <p className={`t-sm text-muted-foreground ${children ? "mb-4" : ""}`}>
             {description}
           </p>
         )}
@@ -109,8 +116,10 @@ export function Modal({
                 variant={confirm.variant ?? "primary"}
                 onClick={confirm.onClick}
                 disabled={confirm.disabled || confirm.loading}
+                aria-busy={confirm.loading}
               >
                 {confirm.loading ? (confirm.loadingLabel ?? t("common.loading")) : confirm.label}
+                {confirm.loading && <Spinner size={14} className="text-current" />}
               </Button>
             )}
           </div>

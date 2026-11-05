@@ -1,3 +1,4 @@
+import { useOrgContext } from "@/contexts/OrgContext";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -31,6 +32,7 @@ interface ReportePageProps {
 
 export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   const { user } = useAuthContext();
+  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
@@ -56,7 +58,8 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
   // it silently defaulted to Pedidos and never reported on electronic documents
   // even though the dashboard beside it could. Shares the dashboard's stored
   // preference, so the two pages agree about what the user is looking at.
-  const [source, setSource] = useState<DashboardSource>(readSourcePreference);
+  const [preferredSource, setSource] = useState<DashboardSource>(readSourcePreference);
+  const source: DashboardSource = hasFiscalInfo ? preferredSource : "orders";
 
   const scopeOptions = {
     sessionId,
@@ -157,7 +160,7 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
           ))}
         </div>
         <div className="tabs" role="tablist" aria-label={t("dash.source")}>
-          {(["orders", "documents"] as const).map((option) => (
+          {(hasFiscalInfo ? ["orders", "documents"] as const : ["orders"] as const).map((option) => (
             <button
               key={option}
               type="button"
@@ -383,7 +386,7 @@ export default function ReportePage({ sessionId }: ReportePageProps = {}) {
       {/* Hacienda historical ledger. Its own card because it summarises a
           different corpus than the session report above — everything the
           taxpayer has ever emitted, including before Tsuru. */}
-      {org?.id && <HistoricalDocumentsReport orgId={org.id} />}
+      {hasFiscalInfo && org?.id && <HistoricalDocumentsReport orgId={org.id} />}
     </div>
   );
 }

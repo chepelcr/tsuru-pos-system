@@ -23,6 +23,8 @@ import {
 import { Stepper, type StepperStep } from "@/components/common/Stepper";
 import { DEFAULT_THEME_ID, isKnownThemeId } from "@/theme/themes";
 import { setSelectedOrgId } from "@/lib/selectedOrg";
+import { TemplateSitePreview } from "@/components/cms/TemplateSitePreview";
+import type { Template } from "@/types";
 import { localizeTemplate, TemplateThumbnail } from "@/components/cms";
 
 const BASE_DOMAIN =
@@ -49,7 +51,7 @@ export default function CreateOrganization() {
   const { t, language } = useLanguage();
   const [, navigate] = useLocation();
   const { setThemeId } = useThemeContext();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   usePageTitle([t("orgs.create.title")]);
 
   const {
@@ -115,6 +117,7 @@ export default function CreateOrganization() {
   const [neighborhood_id, setNeighborhoodId] = useState<number | null>(null);
 
   // Step 3
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
 
@@ -446,12 +449,12 @@ export default function CreateOrganization() {
                         />
                       </div>
                       <span className="t-sm text-muted-foreground whitespace-nowrap">
-                        .{BASE_DOMAIN}
+                        .stores.{BASE_DOMAIN}
                       </span>
                     </div>
                     <p className="t-xs text-muted-foreground mt-1.5 [overflow-wrap:anywhere]">
                       {t("orgs.create.fields.subdomainHint", {
-                        url: `${slugPreview}.${BASE_DOMAIN}`,
+                        url: `${slugPreview}.stores.${BASE_DOMAIN}`,
                       })}
                     </p>
                   </FormField>
@@ -573,15 +576,13 @@ export default function CreateOrganization() {
                         const active = template.id === selectedTemplateId;
                         const copy = localizeTemplate(template, language);
                         return (
+                          <div key={template.id} className={`card overflow-hidden flex flex-col ${active ? "card-primary ring-2 ring-primary/40" : ""}`}>
                           <button
-                            key={template.id}
                             type="button"
                             onClick={() => setSelectedTemplateId(template.id)}
                             aria-pressed={active}
                             disabled={isSaving}
-                            className={`card card-hover text-left w-full p-4 flex flex-col gap-3 group ${
-                              active ? "card-primary ring-2 ring-primary/40" : ""
-                            }`}
+                            className="text-left w-full p-4 flex flex-col gap-3 group flex-1 hover:bg-muted/20"
                           >
                             <div className="relative aspect-[16/10] -m-4 mb-0 bg-muted/40 flex items-center justify-center overflow-hidden border-b border-border">
                               <TemplateThumbnail template={template} />
@@ -602,6 +603,11 @@ export default function CreateOrganization() {
                               {copy.description}
                             </span>
                           </button>
+                          <button type="button" className="btn btn-outline btn-sm m-3 mt-0" disabled={isSaving}
+                            onClick={() => setPreviewTemplate(template)} aria-label={`${t("template.card.preview")}: ${copy.displayName}`}>
+                            <Icon name="eye" size={15} />{t("template.card.preview")}
+                          </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -619,7 +625,8 @@ export default function CreateOrganization() {
         </Card>
       </FadeIn>
 
-      <ConfirmModal />
+      {previewTemplate && <TemplateSitePreview template={previewTemplate} onClose={() => setPreviewTemplate(null)} />}
+      {confirmModal}
     </AuthLayout>
   );
 }
