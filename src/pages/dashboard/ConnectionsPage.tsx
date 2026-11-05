@@ -5,9 +5,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useOrganization } from '@/hooks/useOrganization';
 import { usePermissions } from '@/hooks/useRbac';
-import { useConfirmModal } from '@/hooks/useConfirmModal';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Badge, Button, Icon } from '@/components/ui';
+import { Badge, Button, Icon, Modal } from '@/components/ui';
 import { Spinner } from '@/components/ui/Spinner';
 import { partnerConnections, type PartnerConnectionSummary } from '@/lib/partnerConnections';
 import { ROUTES } from '@/routePaths';
@@ -35,11 +34,12 @@ function OrganizationConnections({ orgId, orgName }: { orgId: string; orgName: s
   const { t, language } = useLanguage();
   const [, navigate] = useLocation();
   const qc = useQueryClient();
-  const { confirm, confirmModal } = useConfirmModal();
+  const [selected, setSelected] = useState<PartnerConnectionSummary | null>(null);
   const [saved, setSaved] = useState(false);
   const queryKey = ['partner-connections', orgId];
   const list = useQuery({ queryKey, queryFn: () => partnerConnections<{ data: PartnerConnectionSummary[] }>(orgId), retry: false, staleTime: 0 });
   const revoke = useMutation({ mutationFn: (id: string) => partnerConnections(orgId, id), onSuccess: async () => {
+    setSelected(null);
     setSaved(true);
     await Promise.all([
       qc.invalidateQueries({ queryKey }),
@@ -57,7 +57,7 @@ function OrganizationConnections({ orgId, orgName }: { orgId: string; orgName: s
       <p className="t-sm mt-2">{orgName}</p>
     </header>
     {saved && <p role="status" className="card border-success/30 p-4">{t('connections.saved')}</p>}
-    {error && <div role="alert" className="card border-destructive p-4 space-y-3"><p>{t(errorKey)}</p>
+    {error && !selected && <div role="alert" className="card border-destructive p-4 space-y-3"><p>{t(errorKey)}</p>
       <Button variant="outline" disabled={list.isFetching || revoke.isPending} onClick={() => { revoke.reset(); void list.refetch(); }}>{t('partner.retry')}</Button></div>}
     {list.isPending && <div className="card p-6" role="status"><Spinner label={t('common.loading')} /></div>}
     {list.isSuccess && !list.data.data.length && <section className="card p-6 space-y-3">
@@ -78,13 +78,17 @@ function OrganizationConnections({ orgId, orgName }: { orgId: string; orgName: s
         <p className="t-sm text-muted-foreground">{t(connection.revoked_at ? 'connections.disabledOn' : 'connections.expiresOn')} {date(connection.revoked_at ?? connection.expires_at)}</p>
         {connection.status !== 'revoked' ? <Button variant="outline" disabled={revoke.isPending || list.isFetching || list.isError} onClick={() => {
           revoke.reset(); setSaved(false);
-          confirm({ title: t('connections.confirmTitle', { app: connection.application_name }), message: t('connections.confirmDescription'),
-            variant: 'destructive', confirmLabel: t('connections.disable'), cancelLabel: t('common.cancel'),
-            onConfirm: async () => { await revoke.mutateAsync(connection.id); } });
+          setSelected(connection);
         }}>{t('connections.disable')}</Button> : <p className="t-sm text-muted-foreground">{t('connections.reconnect')}</p>}
       </section>)}
     </div>
     <p className="t-sm text-muted-foreground">{t('connections.retained')}</p>
-    {confirmModal}
+    {selected && <Modal open onClose={() => { if (!revoke.isPending) setSelected(null); }}
+      title={t('connections.confirmTitle', { app: selected.application_name })} description={t('connections.confirmDescription')} variant="destructive"
+      confirm={{ label: t('connections.disable'), loading: revoke.isPending, disabled: revoke.isPending,
+        variant: 'destructive', onClick: () => revoke.mutate(selected.id) }}
+      cancel={{ label: t('common.cancel'), disabled: revoke.isPending, onClick: () => setSelected(null) }}>
+      {revoke.isError && <p role="alert" className="t-sm text-destructive">{t(errorKey)}</p>}
+    </Modal>}
   </div>;
 }
