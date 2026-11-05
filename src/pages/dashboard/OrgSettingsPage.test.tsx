@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
   regLoading: false,
   orgId: "org-1",
   writable: true,
+  owner: false,
   visibleSections: null as string[] | null,
   navigate: vi.fn(),
   setActiveOrganization: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock("@/hooks/useOrgConfigurations", () => ({
 }));
 vi.mock("@/hooks/useRbac", () => ({
   usePermissions: () => ({
+    is_owner: state.owner,
     can: (_module: string, action: string, section: string) =>
       (!state.visibleSections || state.visibleSections.includes(section)) &&
       (action === "read" || state.writable),
@@ -94,11 +96,21 @@ beforeEach(() => {
   state.regLoading = false;
   state.orgId = "org-1";
   state.writable = true;
+  state.owner = false;
   state.visibleSections = null;
   window.scrollTo = vi.fn();
 });
 
 describe("organization settings without fiscal setup", () => {
+  it("offers third-party connections only to the owner without requiring fiscal setup", () => {
+    state.owner = true;
+    const view = showSettings();
+    fireEvent.click(screen.getByRole('button', { name: /^Third-party connections/ }));
+    expect(state.navigate).toHaveBeenCalledWith(ROUTES.DASHBOARD_ORG_CONNECTIONS);
+    state.owner = false;
+    view.rerender(<LanguageProvider><OrgSettingsPage /></LanguageProvider>);
+    expect(screen.queryByRole('button', { name: /^Third-party connections/ })).toBeNull();
+  });
   it("shows organization settings on the first visit and on return without completing fiscal setup", () => {
     const firstVisit = showSettings();
     expect(screen.getByRole("button", { name: /^General/ })).toBeTruthy();

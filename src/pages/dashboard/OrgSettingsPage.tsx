@@ -32,7 +32,7 @@ export default function OrgSettingsPage() {
   // `organization` module (see rbac-seed.ts in tsuru-platform-api). Cards hide
   // when the role lacks read on the section; fail-closed like every other
   // gate (TSR-332) — the route boundary already waited for permissions.
-  const { can } = usePermissions();
+  const { can, is_owner: isOwner } = usePermissions();
   const sectionVisible = (sectionId: string): boolean => can("organization", "read", sectionId);
 
   // ── Initial loading ──────────────────────────────────────────────────────
@@ -193,6 +193,10 @@ export default function OrgSettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {isOwner && <button className="card card-hover text-left w-full p-5 flex items-start gap-4" onClick={() => navigate(ROUTES.DASHBOARD_ORG_CONNECTIONS)}>
+            <div aria-hidden="true" className="icon-pill icon-pill-lg w-12 h-12 flex-shrink-0 icon-pill-info"><Icon name="shield" size={22} /></div>
+            <div className="min-w-0"><h2 className="t-h4 mb-1">{t('connections.title')}</h2><p className="t-sm text-muted-foreground">{t('connections.cardDescription')}</p></div>
+          </button>}
           {cards.filter((card) => sectionVisible(card.id)).map((card) => (
             <button
               key={card.id}

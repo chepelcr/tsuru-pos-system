@@ -16,6 +16,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { partnerReturnPath } from '@/lib/partnerReturn';
 const PartnerConnection = lazy(() => import('@/pages/PartnerConnection'));
+const ConnectionsPage = lazy(() => import('@/pages/dashboard/ConnectionsPage'));
 
 // Every page is a dynamic import. React only invokes a loader after the
 // matching route — and, for dashboard pages, its permission boundary — renders.
@@ -444,6 +445,8 @@ function DashboardRoutes() {
       />
 
       {/* Storefront / org-settings sub-pages — more-specific paths before the hub */}
+      <Route path={ROUTES.DASHBOARD_ORG_CONNECTIONS}
+        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.organization}><ConnectionsPage /></DashboardPage>} />
       <Route
         path={ROUTES.DASHBOARD_ORG_GENERAL}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.orgGeneral}><OrgGeneralPage /></DashboardPage>}
