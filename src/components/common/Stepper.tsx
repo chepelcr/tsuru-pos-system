@@ -185,19 +185,14 @@ export function Stepper({
             className="btn btn-primary min-h-11"
             onClick={handlePrimaryClick}
             disabled={!canAdvance || isSaving}
+            aria-busy={isSaving}
           >
-            {isSaving ? (
-              <>
-                <Spinner size={14} />
-                {t("common.saving")}
-              </>
-            ) : (
-              <>
-                {primaryLabel}
-                {!isLast && <Icon name="arrowRight" size={14} />}
-                {isLast && <Icon name="check" size={14} />}
-              </>
-            )}
+            <span className="inline-grid">
+              <span className="invisible col-start-1 row-start-1" aria-hidden="true">{primaryLabel}</span>
+              <span className="invisible col-start-1 row-start-1" aria-hidden="true">{t("common.saving")}</span>
+              <span className="col-start-1 row-start-1 text-center">{isSaving ? t("common.saving") : primaryLabel}</span>
+            </span>
+            {isSaving ? <Spinner size={14} className="text-current" /> : <Icon name={isLast ? "check" : "arrowRight"} size={14} />}
           </button>
         </div>
       )}

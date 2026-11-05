@@ -1,3 +1,5 @@
+import { useOrgContext } from "@/contexts/OrgContext";
+import { FiscalInfoRequired } from "@/components/org-settings/FiscalInfoRequired";
 import { lazy, Suspense, type ReactNode } from "react";
 import { Route, Switch, Redirect, useLocation, useParams, useSearch } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -203,13 +205,16 @@ function RequireAuth({
 function DashboardPage({
   children,
   permissions,
+  fiscal = false,
 }: {
   children: ReactNode;
   permissions?: readonly PermissionRequirement[];
+  fiscal?: boolean;
 }) {
+  const { orgId } = useOrgContext();
   const page = (
     <Suspense fallback={<RouteLoading />}>
-      {children}
+      {fiscal ? <FiscalInfoRequired orgId={orgId}>{children}</FiscalInfoRequired> : children}
     </Suspense>
   );
 
@@ -266,7 +271,7 @@ function ConfirmationDetailRoute() {
 function DocumentDetailRoute() {
   const { saleId } = useParams<{ saleId: string }>();
   return (
-    <DashboardPage permissions={ROUTE_PERMISSIONS.documentDetail}>
+    <DashboardPage fiscal permissions={ROUTE_PERMISSIONS.documentDetail}>
       <DocumentDetailPage saleId={saleId ?? ""} />
     </DashboardPage>
   );
@@ -275,7 +280,7 @@ function DocumentDetailRoute() {
 function HistoricalDocumentDetailRoute() {
   const { clave } = useParams<{ clave: string }>();
   return (
-    <DashboardPage permissions={ROUTE_PERMISSIONS.historicalDocuments}>
+    <DashboardPage fiscal permissions={ROUTE_PERMISSIONS.historicalDocuments}>
       <HistoricalDocumentDetailPage clave={clave ?? ""} />
     </DashboardPage>
   );
@@ -285,8 +290,9 @@ function HistoricalDocumentDetailRoute() {
 // and editor (/dashboard/documents/new/:tabId) under one mounted component
 // so the nav stays persistent and content can animate internally.
 function DocumentsRoute() {
+  const [location] = useLocation();
   return (
-    <DashboardPage permissions={ROUTE_PERMISSIONS.documents}>
+    <DashboardPage fiscal={!location.startsWith("/dashboard/documents/new/")} permissions={ROUTE_PERMISSIONS.documents}>
       <DocumentsPage />
     </DashboardPage>
   );
@@ -376,7 +382,7 @@ function DashboardRoutes() {
           so the more specific path wins. */}
       <Route
         path={ROUTES.DASHBOARD_REPORTS_IVA}
-        component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.reportsIva}><IvaReportPage /></DashboardPage>}
+        component={() => <DashboardPage fiscal permissions={ROUTE_PERMISSIONS.reportsIva}><IvaReportPage /></DashboardPage>}
       />
       <Route
         path={ROUTES.DASHBOARD_REPORTS}
@@ -391,7 +397,7 @@ function DashboardRoutes() {
       {/* Documents — single wildcard route covers both list and editor sub-paths.
           The DocumentsContainer reads useLocation directly and animates content swaps. */}
       <Route path={`${ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS}/:clave`} component={HistoricalDocumentDetailRoute} />
-      <Route path={ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS} component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.historicalDocuments}><HistoricalDocumentsPage /></DashboardPage>} />
+      <Route path={ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS} component={() => <DashboardPage fiscal permissions={ROUTE_PERMISSIONS.historicalDocuments}><HistoricalDocumentsPage /></DashboardPage>} />
       <Route path={ROUTES.DASHBOARD_DOCUMENTS} component={DocumentsRoute} />
       <Route path="/dashboard/documents/new/:tabId" component={DocumentsRoute} />
       {/* Detail LAST: `/documents/new/:tabId` is more specific and must match

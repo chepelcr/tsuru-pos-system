@@ -35,7 +35,7 @@ export default function MembersPage() {
   const { user } = useAuthContext();
   const userId = user?.userId;
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   const {
     useOrgMembers,
@@ -586,7 +586,7 @@ export default function MembersPage() {
         </div>
       </Drawer>
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

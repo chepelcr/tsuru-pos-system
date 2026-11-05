@@ -6,7 +6,7 @@ import { memoryLocation } from 'wouter/memory-location';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import Routes from './Routes';
 
-const state = vi.hoisted(() => ({ canRead: true, deniedModule: '' }));
+const state = vi.hoisted(() => ({ canRead: true, deniedModule: '', fiscal: true }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuthContext: () => ({ user: { userId: 'user-1', role: 'customer', first_name: 'Test' }, isLoading: false }) }));
 vi.mock('@/hooks/useOrganization', () => ({ useOrganization: () => ({ useDefaultOrganization: () => ({ data: { id: 'org-1', name: 'Test organization' } }) }) }));
 vi.mock('@/hooks/useRbac', () => ({
@@ -20,7 +20,7 @@ vi.mock('@/contexts/DocumentVersionContext', () => ({ DocumentVersionProvider: (
 vi.mock('@/hooks/useOfflineBootstrap', () => ({ useOfflineBootstrap: () => {} }));
 vi.mock('@/hooks/useCatalogInvalidationFeed', () => ({ useCatalogInvalidationFeed: () => {} }));
 vi.mock('@/hooks/usePermissionsLiveSync', () => ({ usePermissionsLiveSync: () => {} }));
-vi.mock('@/contexts/OrgContext', () => ({ OrgProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
+vi.mock('@/contexts/OrgContext', () => ({ useOrgContext: () => ({ orgId: 'org-1', isRegisteredOrgConfigured: state.fiscal }), OrgProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock('@/contexts/ExchangeRateContext', () => ({ ExchangeRateProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock('@/components/documents/DocumentImportTray', () => ({ DocumentImportTray: () => null }));
 // Exercise the actual sidebar and layout route mapping, while omitting unrelated
@@ -55,12 +55,25 @@ beforeEach(() => {
   vi.stubEnv('VITE_BLOG_ENABLED', 'true');
   localStorage.setItem('language', 'en');
   state.canRead = true;
+  state.fiscal = true;
   state.deniedModule = '';
 });
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe('persistent sidebar accordion across dashboard navigation', () => {
+  it('hides fiscal modules until fiscal identity exists and restores them without remounting', async () => {
+    state.fiscal = false;
+    const view = openPage('/dashboard/products');
+    await screen.findByRole('heading', { name: 'Products page' });
+    expect(screen.queryByRole('button', { name: 'Documents' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'VAT Declaration' })).toBeNull();
+    state.fiscal = true;
+    act(() => view.router.navigate('/dashboard/categories'));
+    await screen.findByRole('heading', { name: 'Categories page' });
+    expect(screen.getByRole('button', { name: 'Documents' })).toBeTruthy();
+  });
+
   it('opens legacy Programs links in Products using commercial permissions and removes duplicate navigation', async () => {
     state.deniedModule = 'programs';
     openPage('/dashboard/programs');

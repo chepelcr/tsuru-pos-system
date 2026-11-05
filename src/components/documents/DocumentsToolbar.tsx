@@ -21,7 +21,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
  * Centralized `text-doc-*` classes make `border-current` and `bg-current/5`
  * inherit each document type's semantic accent.
  */
-export function DocumentsToolbar() {
+export function DocumentsToolbar({ showDocumentsLink = true }: { showDocumentsLink?: boolean }) {
   const { open_documents, removeDocumentTab, promoteTabToVisible } = useDocumentStore();
   const maxVisible = useMaxVisibleTabs();
   const setFittingTabs = useUIStore((s) => s.setFittingTabs);
@@ -51,7 +51,8 @@ export function DocumentsToolbar() {
     const available = strip.clientWidth;
     const children = Array.from(strip.children) as HTMLElement[];
     // The first child is the "Documentos" link, which is always shown.
-    const [docsLink, ...tabs] = children;
+    const docsLink = showDocumentsLink ? children[0] : null;
+    const tabs = showDocumentsLink ? children.slice(1) : children;
     let used = docsLink?.offsetWidth ?? 0;
 
     let fits = 0;
@@ -63,7 +64,7 @@ export function DocumentsToolbar() {
       fits += 1;
     }
     setFittingTabs(fits);
-  }, [setFittingTabs]);
+  }, [setFittingTabs, showDocumentsLink]);
 
   // Layout effect so the measurement happens before paint — the clipped frame is
   // never shown.
@@ -112,7 +113,7 @@ export function DocumentsToolbar() {
       // Route reconcile: switch to the next remaining tab, or back to the list
       const remaining = open_documents.filter((d) => d.id !== id);
       if (remaining.length === 0) {
-        setLocation(ROUTES.DASHBOARD_DOCUMENTS);
+        setLocation(showDocumentsLink ? ROUTES.DASHBOARD_DOCUMENTS : ROUTES.DASHBOARD_ORDERS);
       } else {
         setLocation(documentEditorPath(remaining[remaining.length - 1].id));
       }
@@ -134,7 +135,7 @@ export function DocumentsToolbar() {
     <div ref={stripRef} className="flex items-stretch min-w-0 overflow-hidden">
       {/* Documentos — first tab in the strip, always visible.
           Same square shape as document tabs; active when on the list route. */}
-      <div
+      {showDocumentsLink && <div
         onClick={() => setLocation(ROUTES.DASHBOARD_DOCUMENTS)}
         className={cn(
           'relative flex items-center gap-2 px-3 py-2 cursor-pointer select-none shrink-0',
@@ -147,7 +148,7 @@ export function DocumentsToolbar() {
       >
         <span className="text-[14px]" aria-hidden>📄</span>
         <span className="text-[12px] font-display font-bold">{t('documents.title')}</span>
-      </div>
+      </div>}
 
       {/* Open document tab chips — same square style. The container clips past
           what fits, which is what stops the last tab from sliding under the

@@ -19,7 +19,7 @@ vi.mock("@/hooks/useOrganization", () => ({ useOrganization: () => ({
 }) }));
 vi.mock("@/hooks/useOrgSettings", () => ({ useUpdateGeneralSettings: () => ({ isPending: false, mutateAsync: mocks.general }) }));
 vi.mock("@/hooks/useTemplates", () => ({ useTemplates: () => ({ useTemplateList: () => ({ data: [], isLoading: false }) }) }));
-vi.mock("@/hooks/useConfirmModal", () => ({ useConfirmModal: () => ({ confirm: vi.fn(), ConfirmModal: () => null }) }));
+vi.mock("@/hooks/useConfirmModal", () => ({ useConfirmModal: () => ({ confirm: vi.fn(), confirmModal: null }) }));
 vi.mock("@/components/org-settings/OrganizationLogoPicker", () => ({ OrganizationLogoPicker: () => null }));
 vi.mock("@/components/org-settings/BusinessIdentityFields", () => ({ BusinessIdentityFields: ({ value }: { value: { business_type: string } }) => <p>{value.business_type}</p> }));
 vi.mock("@/components/ui", async (importOriginal) => ({ ...await importOriginal<object>(), LocationSelect: () => null, PhoneField: () => null,

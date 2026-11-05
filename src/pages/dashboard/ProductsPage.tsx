@@ -38,7 +38,7 @@ export default function ProductsPage() {
   const { data: org } = useDefaultOrganization(user?.userId);
   const qc = useQueryClient();
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   const [, navigate] = useLocation();
   const search = useSearch();
   const queryType = new URLSearchParams(search).get("type");
@@ -414,7 +414,7 @@ export default function ProductsPage() {
       </Drawer>
 
       {/* Confirmation Modal */}
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

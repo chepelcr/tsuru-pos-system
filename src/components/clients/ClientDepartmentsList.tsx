@@ -18,7 +18,7 @@ interface ClientDepartmentsListProps {
 
 export function ClientDepartmentsList({ orgId, clientId }: ClientDepartmentsListProps) {
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   const { searchQuery, page, pageSize, sortBy, sortOrder, setSearchQuery, setPage, setPageSize } =
     useDepartmentListStore();
 
@@ -147,7 +147,7 @@ export function ClientDepartmentsList({ orgId, clientId }: ClientDepartmentsList
         saving={saving}
       />
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

@@ -28,7 +28,7 @@ const CLIENT_STATUS_OPTIONS: readonly StatusOption<ClientStatusValue>[] = [
 export default function ClientsPage() {
   const { orgId } = useOrgContext();
   const [, navigate] = useLocation();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   const { t } = useLanguage();
   const statusMutation = useUpdateClientStatus(orgId);
 
@@ -178,7 +178,7 @@ export default function ClientsPage() {
       />
 
       {/* Confirmation Modal */}
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }
