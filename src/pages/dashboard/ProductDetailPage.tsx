@@ -53,7 +53,7 @@ export default function ProductDetailPage({ productId }: Props) {
   const [, navigate] = useLocation();
   const qc = useQueryClient();
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can } = usePermissions();
@@ -401,7 +401,7 @@ export default function ProductDetailPage({ productId }: Props) {
 
       {/* Confirmation Modal */}
       {org?.id && <BarterProposalsPanel orgId={org.id} productId={productId} />}
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

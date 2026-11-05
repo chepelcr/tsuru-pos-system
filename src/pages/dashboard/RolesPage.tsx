@@ -35,7 +35,7 @@ export default function RolesPage() {
   const { user } = useAuthContext();
   const userId = user?.userId;
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   const { can, isReady } = usePermissions();
   const rolesQuery = useOrgRoles(userId, orgId);
@@ -320,7 +320,7 @@ export default function RolesPage() {
         }
       />
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

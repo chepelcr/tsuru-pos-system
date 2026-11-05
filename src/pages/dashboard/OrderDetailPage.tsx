@@ -295,7 +295,7 @@ export default function OrderDetailPage({ orderId }: Props) {
   const { add } = useNotifications();
   const [, navigate] = useLocation();
   const locale = language === 'es' ? 'es-CR' : 'en-US';
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   const { data: order, isLoading, error } = useOrder(orgId, orderId);
   const updateStatus = useUpdateOrderStatus(orgId, orderId);
@@ -840,7 +840,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         />
       )}
       {order.order_type === "storefront" && <CustomerPaymentsPanel orgId={orgId} orderId={order.order_id} canReview={canUpdate} />}
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

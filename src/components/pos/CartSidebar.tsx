@@ -60,7 +60,7 @@ export function CartSidebar({
   const { doc_type } = useCart();
   const docInfo = getDocumentTypeInfo(doc_type);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
   const { t } = useLanguage();
   const { fmtConverted: fmt } = useDocumentCurrencyOptional();
   const editingItem = editingId ? items[editingId] : null;
@@ -277,7 +277,7 @@ export function CartSidebar({
       />
       
       {/* Confirmation Modal */}
-      <ConfirmModal />
+      {confirmModal}
     </>
   );
 }

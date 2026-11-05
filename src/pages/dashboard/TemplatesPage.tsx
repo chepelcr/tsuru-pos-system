@@ -44,7 +44,7 @@ export default function TemplatesPage() {
   const { data: templates, isLoading: templatesLoading } = useTemplateList(true);
   const applyTemplate = useApplyTemplate(user?.userId);
 
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can } = usePermissions();
@@ -274,7 +274,7 @@ export default function TemplatesPage() {
         disabled={applyTemplate.isPending}
       />
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

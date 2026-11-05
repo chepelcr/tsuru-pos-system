@@ -2,14 +2,15 @@ import { Loader2 } from "lucide-react";
 
 interface SpinnerProps {
   size?: number;
+  className?: string;
   label?: string;
   fullHeight?: boolean;
 }
 
-export function Spinner({ size = 28, label, fullHeight = false }: SpinnerProps) {
+export function Spinner({ size = 28, label, fullHeight = false, className = "text-primary" }: SpinnerProps) {
   const inner = (
     <>
-      <Loader2 size={size} className="animate-spin text-primary flex-shrink-0" />
+      <Loader2 size={size} className={`animate-spin flex-shrink-0 ${className}`} aria-hidden="true" />
       {label && <span className="text-[13px] text-muted-foreground">{label}</span>}
     </>
   );

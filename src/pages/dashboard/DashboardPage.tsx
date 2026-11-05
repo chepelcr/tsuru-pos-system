@@ -1,3 +1,4 @@
+import { useOrgContext } from "@/contexts/OrgContext";
 import { lazy, Suspense, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -38,6 +39,7 @@ const QrShareModal = lazy(() =>
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
+  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
@@ -51,7 +53,8 @@ export default function DashboardPage() {
   // unless they are an admin. The server resolves this independently and narrows
   // anything it will not answer, so this is about asking the right question.
   const scope = useDashboardScope();
-  const [source, setSource] = useState<DashboardSource>(readSourcePreference);
+  const [preferredSource, setSource] = useState<DashboardSource>(readSourcePreference);
+  const source: DashboardSource = hasFiscalInfo ? preferredSource : "orders";
   const [granularity, setGranularity] = useState<DashboardGranularity>("day");
 
   const queryOptions = {
@@ -136,8 +139,8 @@ export default function DashboardPage() {
   return (
     <div className="px-6 pt-6 pb-10 max-w-[1500px] mx-auto">
       {/* Welcome */}
-      <div className="fade-up flex justify-between items-start mb-5 gap-4 flex-wrap">
-        <div>
+      <div className="fade-up flex justify-between items-start mb-5 gap-4 flex-wrap lg:flex-nowrap">
+        <div className="min-w-0 flex-1">
           <h1 className="t-h1 mb-1.5">
             {(() => {
               const hour = new Date().getHours();
@@ -161,11 +164,11 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap shrink-0 max-w-full">
           {/* Orders or documents — not the same population. An order may never be
               billed, and a document may have no order behind it. */}
           <div className="tabs" role="tablist" aria-label={t("dash.source")} data-tour="overview">
-            {(["orders", "documents"] as const).map((option) => (
+            {(hasFiscalInfo ? ["orders", "documents"] as const : ["orders"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
@@ -194,7 +197,11 @@ export default function DashboardPage() {
             {t("qr.shareStore")}
           </Button>
           <Button variant="outline" size="sm" icon="refresh" onClick={() => void refetch()} disabled={isRefetching}>
-            {isRefetching ? t("dash.refreshing") : t("common.refresh")}
+            <span className="inline-grid">
+              <span className="invisible col-start-1 row-start-1" aria-hidden="true">{t("common.refresh")}</span>
+              <span className="invisible col-start-1 row-start-1" aria-hidden="true">{t("dash.refreshing")}</span>
+              <span className="col-start-1 row-start-1 text-center">{isRefetching ? t("dash.refreshing") : t("common.refresh")}</span>
+            </span>
           </Button>
         </div>
       </div>

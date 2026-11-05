@@ -22,7 +22,7 @@ interface ConfirmModalState extends ConfirmModalOptions {
  * 
  * @example
  * ```tsx
- * const { confirm, ConfirmModal } = useConfirmModal();
+ * const { confirm, confirmModal } = useConfirmModal();
  * 
  * const handleDelete = () => {
  *   confirm({
@@ -38,7 +38,7 @@ interface ConfirmModalState extends ConfirmModalOptions {
  * return (
  *   <>
  *     <button onClick={handleDelete}>Delete</button>
- *     <ConfirmModal />
+ *     {confirmModal}
  *   </>
  * );
  * ```
@@ -84,10 +84,9 @@ export function useConfirmModal() {
     }
   }, [state.onConfirm]);
 
-  const ConfirmModal = useCallback(() => {
-    if (!state.open) return null;
-
-    return (
+  // Return an element of a stable component type. A component function created
+  // in this hook remounts its dialog on every loading/parent update.
+  const confirmModal = state.open ? (
       <Modal
         open={state.open}
         onClose={handleClose}
@@ -109,12 +108,11 @@ export function useConfirmModal() {
           disabled: state.loading,
         }}
       />
-    );
-  }, [state, handleClose, handleConfirm]);
+    ) : null;
 
   return {
     confirm,
-    ConfirmModal,
+    confirmModal,
     isOpen: state.open,
     isLoading: state.loading,
   };

@@ -16,7 +16,7 @@ export default function CategoriesPage() {
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
-  const { confirm, ConfirmModal } = useConfirmModal();
+  const { confirm, confirmModal } = useConfirmModal();
 
   // RBAC action gating — fail-open while my-permissions resolves (§5.1).
   const { can } = usePermissions();
@@ -219,7 +219,7 @@ export default function CategoriesPage() {
         />
       )}
 
-      <ConfirmModal />
+      {confirmModal}
     </div>
   );
 }

@@ -36,7 +36,7 @@ vi.mock("@/hooks/useCatalogInvalidationFeed", () => ({ useCatalogInvalidationFee
 vi.mock("@/hooks/usePermissionsLiveSync", () => ({ usePermissionsLiveSync: () => {} }));
 vi.mock("@/hooks/useRbac", () => ({ usePermissions: () => ({ can: () => false, isReady: false }) }));
 vi.mock("@/components/layout/DashboardShell", () => ({ default: ({ children }: { children: ReactNode }) => <div data-testid="dashboard-shell">{children}</div> }));
-vi.mock("@/contexts/OrgContext", () => ({ OrgProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
+vi.mock("@/contexts/OrgContext", () => ({ useOrgContext: () => ({ orgId: "org-1", isRegisteredOrgConfigured: false }), OrgProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock("@/contexts/ExchangeRateContext", () => ({ ExchangeRateProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock("@/components/documents/DocumentImportTray", () => ({ DocumentImportTray: () => null }));
 vi.mock("@/lib/blogApi", () => ({ blogApi: { list: state.list } }));

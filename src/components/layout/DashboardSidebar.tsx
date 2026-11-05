@@ -1,3 +1,4 @@
+import { useOrgContext } from "@/contexts/OrgContext";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -101,6 +102,7 @@ function sectionOf(active: NavId): SectionId | null {
 
 export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarProps) {
   const { user } = useAuthContext();
+  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   // RBAC nav gating (my-permissions, O1). Fail-closed (TSR-332): the nav is
   // built from the caller's available modules + read grants only.
   const {
@@ -164,6 +166,7 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   // AND the caller's active role can read the pair. Fail-closed: unknown
   // permissions, or an item with no RBAC pair, render nothing.
   const itemVisible = (id: NavId): boolean => {
+    if (["documents", "ivaReport", "historicalDocuments"].includes(id) && !hasFiscalInfo) return false;
     if (id === "guide") return true;
     if (id === "blog") return import.meta.env.VITE_BLOG_ENABLED === "true";
     const perm = NAV_PERMISSION[id];

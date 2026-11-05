@@ -10,6 +10,7 @@ import { NewDocumentButton } from "@/components/documents/NewDocumentButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
+import { useOrgContext } from "@/contexts/OrgContext";
 
 interface DocumentsMobileDrawerProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function DocumentsMobileDrawer({
   shouldRender,
   onClose,
 }: DocumentsMobileDrawerProps) {
+  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   const { open_documents, removeDocumentTab, promoteTabToVisible } = useDocumentStore();
   const [location, setLocation] = useLocation();
   const isDesktop = useIsDesktop(769);
@@ -81,7 +83,7 @@ export function DocumentsMobileDrawer({
     if (activeTabId === id) {
       const remaining = open_documents.filter((d) => d.id !== id);
       if (remaining.length === 0) {
-        setLocation(ROUTES.DASHBOARD_DOCUMENTS);
+        setLocation(hasFiscalInfo ? ROUTES.DASHBOARD_DOCUMENTS : ROUTES.DASHBOARD_ORDERS);
         onClose();
       } else {
         setLocation(documentEditorPath(remaining[remaining.length - 1].id));
@@ -90,7 +92,7 @@ export function DocumentsMobileDrawer({
   };
 
   const goToDocsList = () => {
-    setLocation(ROUTES.DASHBOARD_DOCUMENTS);
+    setLocation(hasFiscalInfo ? ROUTES.DASHBOARD_DOCUMENTS : ROUTES.DASHBOARD_ORDERS);
     onClose();
   };
 
@@ -121,8 +123,8 @@ export function DocumentsMobileDrawer({
             onClick={goToDocsList}
             className="btn btn-outline btn-sm flex-1 min-w-0 justify-start gap-2"
           >
-            <Icon name="fileText" size={16} />
-            <span className="font-display font-bold">{t('documents.title')}</span>
+            <Icon name={hasFiscalInfo ? "fileText" : "package"} size={16} />
+            <span className="font-display font-bold">{t(hasFiscalInfo ? 'documents.title' : 'shell.orders')}</span>
           </button>
           <button
             onClick={onClose}
