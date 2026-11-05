@@ -61,8 +61,11 @@ function OrganizationConnections({ orgId, orgName }: { orgId: string; orgName: s
       <Button variant="outline" disabled={list.isFetching || revoke.isPending} onClick={() => { revoke.reset(); void list.refetch(); }}>{t('partner.retry')}</Button></div>}
     {list.isPending && <div className="card p-6" role="status"><Spinner label={t('common.loading')} /></div>}
     {list.isSuccess && !list.data.data.length && <section className="card p-6 space-y-3">
-      <div aria-hidden="true" className="icon-pill icon-pill-info"><Icon name="shield" size={22} /></div>
-      <h2 className="t-h3">{t('connections.empty')}</h2><p className="t-body text-muted-foreground">{t('connections.start')}</p>
+      <div className="flex items-center gap-3">
+        <div aria-hidden="true" className="icon-pill icon-pill-info"><Icon name="shield" size={22} /></div>
+        <h2 className="t-h3 min-w-0">{t('connections.empty')}</h2>
+      </div>
+      <p className="t-body text-muted-foreground">{t('connections.start')}</p>
     </section>}
     <div className="space-y-4">
       {list.data?.data.map(connection => <section key={connection.id} className="card p-5 sm:p-6 space-y-5" aria-label={connection.application_name}>
