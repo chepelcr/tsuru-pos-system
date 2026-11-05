@@ -32,6 +32,7 @@ export const ROUTES = {
   DASHBOARD_HISTORICAL_DOCUMENTS: "/dashboard/documents/historical",
   DASHBOARD_CLIENTS: "/dashboard/clients",
   DASHBOARD_ORG_SETTINGS: "/dashboard/organization",
+  DASHBOARD_ORG_CONNECTIONS: "/dashboard/organization/connections",
   DASHBOARD_ORG_GENERAL: "/dashboard/organization/general",
   DASHBOARD_ORG_BRANDING: "/dashboard/organization/branding",
   DASHBOARD_ORG_CONTACT: "/dashboard/organization/contact",
