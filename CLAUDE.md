@@ -16,7 +16,7 @@ The split is **finished**. A working copy sits at `fe/pos-system/` inside the `T
 monorepo, but it is gitignored there and **untracked** (0 files) — this repo is the only home
 for POS changes, and there are no mirror commits to make. Never `git add -f` it back.
 
-> 📍 **Roadmap tracking:** The Tsuru ecosystem roadmap lives in Pacific Code Labs Admin, project `tsuru` (https://admin.jcampos.dev/projects/tsuru/roadmap), through the `pcl-admin` MCP. When you start, finish or decide work here, update its task in the same session (`roadmap_list_tasks` search by old `TSR-NNN` → `roadmap_update_task` with the current version; append evidence, never renumber; new work → `roadmap_add_task`). The monorepo's `docs/roadmap/tsuru_roadmap.md` is retired (archived 2026-11-05).
+> 📍 **Roadmap tracking:** The Tsuru ecosystem roadmap lives in Pacific Code Labs Admin, project `tsuru` (https://admin.jcampos.dev/projects/tsuru/roadmap), through the `pcl-admin` MCP. When you start, finish or decide work here, update its task in the same session (from the monorepo: `pnpm run roadmap:task -- get|update|add …`, which accepts old `TSR-NNN` ids; the raw MCP write tools echo the whole ~1 MB roadmap, so avoid them; append evidence, never renumber). The monorepo's `docs/roadmap/tsuru_roadmap.md` is retired (archived 2026-11-05).
 
 ### Deployment — GitHub Pages
 
