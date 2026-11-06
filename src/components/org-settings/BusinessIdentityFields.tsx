@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Icon, SelectField, type SelectFieldOption } from "@/components/ui";
 import { BUSINESS_TYPES, type BusinessType } from "@/types/organization";
+import { BUSINESS_TYPE_FEATURES_ENABLED } from "@/config/features";
 
 export interface BusinessIdentityValue {
   business_type: BusinessType;
@@ -45,7 +46,9 @@ export function BusinessIdentityFields({
       BUSINESS_TYPES.map((code) => ({
         value: code,
         label: t(`businessType.${code}`),
-        hint: t(`businessType.${code}.hint`),
+        // The per-type hints list vertical features (mesas, lotes, agenda…)
+        // the POS does not offer yet — see `OFFERED_VERTICAL_MODULES`.
+        hint: BUSINESS_TYPE_FEATURES_ENABLED ? t(`businessType.${code}.hint`) : undefined,
       })),
     [t],
   );
@@ -54,7 +57,7 @@ export function BusinessIdentityFields({
   // list, so the summary can never drift from what the picker promises.
   const summary = useMemo(() => {
     const parts = [t("businessType.summary.base")];
-    if (value.business_type !== "general") {
+    if (BUSINESS_TYPE_FEATURES_ENABLED && value.business_type !== "general") {
       parts.push(t(`businessType.${value.business_type}.hint`).toLowerCase());
     }
     return parts.join(" · ");
@@ -80,7 +83,8 @@ export function BusinessIdentityFields({
           searchThreshold={0}
           onChange={(next) => onChange({ business_type: next as BusinessType })}
         />
-        <p className="t-xs text-muted-foreground">{t("businessType.help")}</p>
+        <p className="t-xs text-muted-foreground">{t(BUSINESS_TYPE_FEATURES_ENABLED ? "businessType.help" : "businessType.help.neutral")}
+        </p>
       </div>
 
       {showToggles && (

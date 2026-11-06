@@ -1,5 +1,5 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { HIDEABLE_MODULES, useOrgFeatureVisibility } from "@/store/orgFeatureVisibility";
+import { VISIBLE_HIDEABLE_MODULES, useOrgFeatureVisibility } from "@/store/orgFeatureVisibility";
 import { useLocationNames } from "./registered-org/useLocationNames";
 import { SettingsDetailRow as Row } from "./SettingsDetailCard";
 import type { Organization, OrgContactSettings } from "@/types/organization";
@@ -45,7 +45,7 @@ export function OrganizationSettingsSummary({ org, section }: { org: Organizatio
 function GeneralSummary({ org }: { org: Organization }) {
   const { t } = useLanguage();
   const hidden = useOrgFeatureVisibility((state) => state.hidden[org.id]);
-  const visible = HIDEABLE_MODULES.filter((module) => !hidden?.includes(module));
+  const visible = VISIBLE_HIDEABLE_MODULES.filter((module) => !hidden?.includes(module));
   return <dl>
     <Row label={t("common.name")} value={org.name} />
     <Row label={t("common.description")} value={org.description} />
