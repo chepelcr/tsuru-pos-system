@@ -17,6 +17,7 @@
   "businessType.general": "General",
   "businessType.general.hint": "Sin funciones adicionales",
   "businessType.help": "Define qué funciones ve tu equipo en el POS.",
+  "businessType.help.neutral": "Nos ayuda a adaptar Tsuru a tu negocio. Las funciones por tipo de negocio llegarán pronto.",
   "businessType.label": "Tipo de negocio",
   "businessType.minisuper": "Minisúper o pulpería",
   "businessType.minisuper.hint": "Peso en el código, verificador de precio, productos restringidos",

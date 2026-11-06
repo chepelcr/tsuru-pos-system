@@ -1,7 +1,7 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useBusinessType } from "@/hooks/useBusinessType";
 import {
-  HIDEABLE_MODULES,
+  VISIBLE_HIDEABLE_MODULES,
   useOrgFeatureVisibility,
 } from "@/store/orgFeatureVisibility";
 
@@ -37,6 +37,8 @@ export function FeatureVisibilityFields({
   const hidden = hiddenModules ?? savedHidden ?? [];
   const setHidden = useOrgFeatureVisibility((s) => s.setHidden);
 
+  if (VISIBLE_HIDEABLE_MODULES.length === 0) return null;
+
   return (
     <div className="flex flex-col gap-3">
       <div>
@@ -47,7 +49,7 @@ export function FeatureVisibilityFields({
       </div>
 
       <div className="grid-form">
-        {HIDEABLE_MODULES.map((module) => {
+        {VISIBLE_HIDEABLE_MODULES.map((module) => {
           const isVisible = !hidden.includes(module);
           return (
             <label

@@ -5,6 +5,8 @@ import { Icon } from "@/components/ui";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { SectionWrapper } from "@/components/common/SectionWrapper";
 import { actionLabel, moduleLabel, submoduleLabel } from "@/lib/rbacI18n";
+import { isVerticalOffered } from "@/config/features";
+import { HIDEABLE_MODULES } from "@/store/orgFeatureVisibility";
 import type {
   AvailableMatrixDto,
   MatrixModule,
@@ -19,6 +21,9 @@ import type {
  * each pick serializes to a documents/<type> create grant.
  */
 const DOC_TYPE_SUBS = new Set(["fe", "te", "nc", "nd", "fc", "fexp"]);
+
+const VERTICAL_MODULE_NAMES: ReadonlySet<string> = new Set(HIDEABLE_MODULES);
+const isVertical = (name: string) => VERTICAL_MODULE_NAMES.has(name);
 
 /** Internal grant key — one selected (module, submodule, action) cell. */
 export function grantKey(
@@ -93,6 +98,10 @@ export function PermissionMatrix({
   const modules = useMemo(
     () =>
       (matrix?.modules ?? [])
+        // Vertical modules with no POS screens yet are not offered (see
+        // `OFFERED_VERTICAL_MODULES`). Display-only: `grants` still comes from
+        // the full matrix, so a role's existing grants on them are preserved.
+        .filter((m) => !isVertical(m.name) || isVerticalOffered(m.name))
         .slice()
         .sort((a, b) => a.sort_order - b.sort_order),
     [matrix]

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isVerticalOffered } from "@/config/features";
 
 /**
  * Per-organization visibility preferences for the app's optional surfaces.
@@ -67,3 +68,13 @@ export const HIDEABLE_MODULES = [
   "workshop",
   "b2b-supply",
 ] as const;
+
+/**
+ * The hideable surfaces the product currently offers (see
+ * `OFFERED_VERTICAL_MODULES`). Show these in settings; keep using
+ * `HIDEABLE_MODULES` when persisting so saved preferences for not-yet-offered
+ * verticals survive until they come back.
+ */
+export const VISIBLE_HIDEABLE_MODULES = HIDEABLE_MODULES.filter((module) =>
+  isVerticalOffered(module),
+);
