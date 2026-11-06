@@ -17,6 +17,7 @@
   "businessType.general": "General",
   "businessType.general.hint": "No extra features",
   "businessType.help": "Decides which features your team sees in the POS.",
+  "businessType.help.neutral": "Helps us tailor Tsuru to your business. Features specific to each business type are coming soon.",
   "businessType.label": "Business type",
   "businessType.minisuper": "Minimarket or corner shop",
   "businessType.minisuper.hint": "Weight-embedded codes, price checker, restricted products",

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useOrgFeatureVisibility } from "@/store/orgFeatureVisibility";
+import { isVerticalOffered } from "@/config/features";
 import type { BusinessType } from "@/types/organization";
 
 /**
@@ -50,8 +51,8 @@ export interface UseBusinessTypeResult {
   /** Descriptive label only — never gate on this; it grants nothing. */
   is_pyme: boolean;
   /**
-   * Is this surface shown? True for every vertical unless the ORG itself chose
-   * to hide it. Never false because of the business type.
+   * Is this surface shown? True for every OFFERED vertical unless the ORG
+   * itself chose to hide it. Never false because of the business type.
    */
   hasVertical: (module: string) => boolean;
   /** Does this business type lead with the surface? Use for ordering/promotion. */
@@ -93,7 +94,9 @@ export function useBusinessType(): UseBusinessTypeResult {
   }, [business_type]);
 
   const hasVertical = useMemo(
-    () => (module: string) => !isHidden(org?.id, module),
+    // A vertical the product does not offer yet (features.ts) is never shown,
+    // whatever the org's own preference says.
+    () => (module: string) => isVerticalOffered(module) && !isHidden(org?.id, module),
     [isHidden, org?.id],
   );
 
