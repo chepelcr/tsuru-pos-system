@@ -114,7 +114,7 @@ describe("per-document-type restrictions", () => {
 
 describe("when references are mandatory", () => {
   it("always for a debit note, a credit note and a REP", () => {
-    expect([...DOC_TYPES_REQUIRING_REFERENCE].sort()).toEqual(["02", "03", "10"]);
+    expect([...DOC_TYPES_REQUIRING_REFERENCE].sort()).toEqual(["02", "03", "08", "10"]);
   });
 
   it("not for an ordinary Factura or Tiquete", () => {

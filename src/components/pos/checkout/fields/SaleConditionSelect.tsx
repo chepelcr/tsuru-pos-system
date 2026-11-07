@@ -4,12 +4,15 @@ import { CountryISO } from '@/lib/enums';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Select } from '@/components/ui';
 import { CatalogFeedback } from './CatalogFeedback';
+import { isSaleConditionAllowedOn } from '@/lib/docTypeRules';
 
 interface SaleConditionSelectProps {
   value: string;
   onChange: (code: string) => void;
   id?: string;
   disabled?: boolean;
+  /** Hide the conditions this Hacienda document type does not accept. */
+  documentType?: string;
 }
 
 /**
@@ -24,6 +27,7 @@ export function SaleConditionSelect({
   onChange,
   id = 'sale-condition',
   disabled,
+  documentType,
 }: SaleConditionSelectProps) {
   const { t } = useLanguage();
   const { data: saleConditions, isLoading, isError, refetch } = useAllSaleConditions({
@@ -42,7 +46,11 @@ export function SaleConditionSelect({
         onChange={(e) => onChange(e.target.value)}
         className="pp-input w-full"
       >
-        {(saleConditions ?? []).map((sc: any) => (
+        {(saleConditions ?? [])
+          .filter((sc: any) =>
+            isSaleConditionAllowedOn(sc.code ?? String(sc.id).padStart(2, '0'), documentType),
+          )
+          .map((sc: any) => (
           <option key={sc.code ?? sc.id} value={sc.code ?? String(sc.id).padStart(2, '0')}>
             {sc.description}
           </option>

@@ -1,4 +1,5 @@
 import { buildDocumentReceiver } from '@/lib/documentReceiver';
+import { conformTaxesToDocType } from '@/lib/docTypeRules';
 import { useMemo } from "react";
 import { useCart, type CartItem as CartLineItem } from "@/store/cart";
 import { useInventory } from "@/store/inventory";
@@ -435,6 +436,12 @@ export interface UseCartFlowOptions {
    * cart to empty, and emptying the cashier's would lose their open sale.
    */
   items?: Record<string, CartLineItem>;
+  /**
+   * Hacienda document type the lines are being billed on. Defaults to the cart's
+   * own `doc_type`; a caller billing external lines passes it explicitly.
+   * Decides how the taxes are filed — see `conformTaxesToDocType`.
+   */
+  documentType?: string;
 }
 
 export function useCartFlow(options: UseCartFlowOptions = {}) {
@@ -461,6 +468,7 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
   const externalItems = options.items;
   const items = externalItems ?? cart.items;
   const { add, remove, updateLine } = cart;
+  const documentType = options.documentType ?? cart.doc_type;
   // With external lines there is no cart to clear or count — see
   // `UseCartFlowOptions.items`.
   const clear = externalItems ? () => {} : cart.clear;
@@ -516,8 +524,13 @@ export function useCartFlow(options: UseCartFlowOptions = {}) {
     const ld = item.lineDetail;
     const discounts = (ld?.discounts as LineDiscount[] | undefined)
       ?? (discountsFromProduct(item.product, discountTypes) as LineDiscount[]);
-    const taxes = (ld?.taxes as LineTax[] | undefined)
-      ?? (taxesFromProduct(item.product) as LineTax[]);
+    // Filed the way THIS document type must file them (an export is exempt),
+    // here, once — so the total on screen is the total the document declares.
+    const taxes = conformTaxesToDocType(
+      (ld?.taxes as LineTax[] | undefined)
+        ?? (taxesFromProduct(item.product) as LineTax[]),
+      documentType,
+    );
 
     const gross = item.netPrice * item.qty;
     // An ad-hoc discount the cashier typed on the line is a COMMERCIAL discount

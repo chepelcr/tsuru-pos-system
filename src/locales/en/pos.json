@@ -344,5 +344,15 @@
   "checkout.otherCharges.type": "Charge type",
   "checkout.catalog.empty": "No options available.",
   "checkout.catalog.error": "Could not load the options.",
-  "checkout.catalog.loading": "Loading options…"
+  "checkout.catalog.loading": "Loading options…",
+  "checkout.tab.supplier": "Supplier",
+  "checkout.rules.fecSupplierIntro": "On a purchase invoice this is the supplier you are buying from, who appears as the document's issuer.",
+  "checkout.rules.nonTaxpayerFecOnly": "Identification type 06 (Non-taxpayer) is only used on a purchase invoice.",
+  "checkout.rules.saleConditionNotAllowed": "This sale condition is not valid for this document type.",
+  "checkout.rules.usedGoodsNeedsNonTaxpayer": "Condition 13 (used goods from a non-taxpayer) requires a supplier identified as 06 Non-taxpayer.",
+  "checkout.rules.fecSupplierMustBeRegistered": "Hacienda rejects (-37) a supplier with a cédula, DIMEX or NITE who is not registered. If the supplier is not a taxpayer, record them with identification 06 (Non-taxpayer) and condition 13; a non-domiciled foreigner uses 05.",
+  "checkout.rules.customsPartRequired": "the tariff heading (12 digits) is missing; exported goods require it",
+  "checkout.rules.customsPartFormat": "the tariff heading must be exactly 12 digits",
+  "checkout.rules.exportRateExempt": "on an export the IVA must be rate 10 (exempt)",
+  "checkout.rules.lineProblem": "Line {n} ({name}): {problem}. Open it to fix it."
 }

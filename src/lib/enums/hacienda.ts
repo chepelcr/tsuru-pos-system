@@ -128,6 +128,9 @@ export function isRateCodeAllowedFor(
   rateCode: string,
   docType: string | undefined,
 ): boolean {
+  // An export is exempt: Hacienda rejects 01 on an FEE (-101), and a taxed rate
+  // would declare IVA on a sale that by law carries none. Only 10 is offered.
+  if (docType === "09") return rateCode === TaxRateCode.EXEMPT;
   if (!NC_ND_ONLY_RATE_CODES.includes(rateCode)) return true;
   return docType !== undefined && NC_ND_DOC_TYPES.includes(docType);
 }
@@ -319,8 +322,15 @@ export const REFERENCE_TYPE_DOC_TYPES: Readonly<Record<string, readonly string[]
   [ReferenceDocType.MERCHANDISE_RETURN]: ["02", "03"],     // NC/ND only
 };
 
-/** Document types that always require at least one reference. */
-export const DOC_TYPES_REQUIRING_REFERENCE: readonly string[] = ["02", "03", "10"];
+/**
+ * Document types that always require at least one reference.
+ *
+ * FEC (08) is here because its XSD makes `InformacionReferencia` minOccurs=1 —
+ * the analysis doc calls it conditional, Hacienda answers -1 without one
+ * (sandbox run 2026-11-07, TSR-R03-68). Mirrors sales-be
+ * `UNCONDITIONALLY_REQUIRES_REFERENCE`.
+ */
+export const DOC_TYPES_REQUIRING_REFERENCE: readonly string[] = ["02", "03", "08", "10"];
 
 /** `"Repeticiones": "1 a 10"` on InformacionReferencia. */
 export const MAX_REFERENCES = 10;

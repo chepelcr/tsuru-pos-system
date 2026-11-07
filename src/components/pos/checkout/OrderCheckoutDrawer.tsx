@@ -94,7 +94,7 @@ export function OrderCheckoutDrawer({
       }
     : undefined;
 
-  const flow = useCartFlow({ items, currency });
+  const flow = useCartFlow({ items, currency, documentType: docType });
 
   const handleConfirm = async (invoiceData: InvoiceCheckoutData) => {
     if (!user || !orgId) throw new Error(t('checkout.error.sessionIncomplete'));
