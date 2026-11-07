@@ -142,6 +142,12 @@ export function GeneralInfoSection({
 
       <div className="flex flex-col gap-2">
         <ToggleRow
+          label={t("products.isPublic")}
+          description={t("products.isPublicDescription")}
+          checked={form.is_public}
+          onChange={(is_public) => onChange({ is_public })}
+        />
+        <ToggleRow
           label={t("products.acceptsBarter")}
           description={t("products.acceptsBarterDescription")}
           checked={form.accepts_barter}

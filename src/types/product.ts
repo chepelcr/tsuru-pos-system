@@ -77,6 +77,8 @@ export type ProductType = "product" | "service" | "program";
 
 export interface Product {
   accepts_barter?: boolean;
+  /** Storefront visibility: the public store lists only active + public products. */
+  is_public?: boolean;
   barter_wants?: string | null;
   product_id: string;
   /** Storefront classification; programs share the product API and permissions. */

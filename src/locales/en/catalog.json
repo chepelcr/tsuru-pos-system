@@ -31,6 +31,8 @@
 
   "products.acceptsBarter": "Accept barter proposals",
   "products.acceptsBarterDescription": "Show this product on your store’s barter page. Sales and pricing remain available.",
+  "products.isPublic": "Visible on the online store",
+  "products.isPublicDescription": "Your store only lists active, visible products. Turn it off to sell it only at the POS.",
   "products.barterWants": "What I would like in return",
   "products.barterWantsPlaceholder": "Describe what you need or leave it open to proposals.",
 

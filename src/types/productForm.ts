@@ -79,6 +79,8 @@ export interface CodeFormEntry {
 }
 
 export interface ProductFormState {
+  /** Shown on the online store (only when the product is also active). */
+  is_public: boolean;
   accepts_barter: boolean;
   barter_wants: string;
   // General Info
@@ -190,6 +192,7 @@ export const EMPTY_PRODUCT_FORM: ProductFormState = {
   description: "",
   category_id: "",
   track_inventory: false,
+  is_public: true,
   accepts_barter: false,
   barter_wants: "",
   has_fiscal_info: false,
