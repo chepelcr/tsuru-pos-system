@@ -16,6 +16,13 @@ interface ReceiverSectionProps {
   onSelectClient: (c: ClientSearchResult | null) => void;
   onEditReceiver: () => void;
   needsReceiver: boolean;
+  /**
+   * An FEC: the counterparty is the SUPPLIER the organization buys from, and
+   * becomes the XML's Emisor — the card says so instead of "Receptor".
+   */
+  isPurchase?: boolean;
+  /** Document-type rules about this counterparty (lib/docTypeRules), translated. */
+  issues?: { level: 'error' | 'hint'; text: string }[];
 }
 
 export function ReceiverSection({
@@ -27,6 +34,8 @@ export function ReceiverSection({
   onSelectClient,
   onEditReceiver,
   needsReceiver,
+  isPurchase = false,
+  issues = [],
 }: ReceiverSectionProps) {
   const { t } = useLanguage();
 
@@ -34,11 +43,12 @@ export function ReceiverSection({
   const receiverId = resolveReceiverId(receiver, selectedClient);
   const hasReceiver = !!receiverName;
 
-  const badge = hasReceiver ? '✓' : needsReceiver ? '*' : undefined;
+  const hasError = issues.some((i) => i.level === 'error');
+  const badge = hasError ? '!' : hasReceiver ? '✓' : needsReceiver ? '*' : undefined;
 
   return (
     <SectionWrapper
-      title={t('checkout.tab.receiver')}
+      title={isPurchase ? t('checkout.tab.supplier') : t('checkout.tab.receiver')}
       icon={User}
       isExpanded={isExpanded}
       onToggle={onToggle}
@@ -77,6 +87,20 @@ export function ReceiverSection({
             </div>
           </div>
         </div>
+
+        {/* Document-type rules for this counterparty */}
+        {hasReceiver && issues.map((issue, i) => (
+          <div
+            key={i}
+            role={issue.level === 'error' ? 'alert' : undefined}
+            className={`text-[11px] mb-3 ${issue.level === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
+          >
+            {issue.text}
+          </div>
+        ))}
+        {isPurchase && !hasReceiver && (
+          <div className="text-[11px] text-muted-foreground mb-3">{t('checkout.rules.fecSupplierIntro')}</div>
+        )}
 
         {/* Required notice */}
         {needsReceiver && !hasReceiver && (

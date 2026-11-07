@@ -344,5 +344,15 @@
   "checkout.otherCharges.type": "Tipo de cargo",
   "checkout.catalog.empty": "No hay opciones disponibles.",
   "checkout.catalog.error": "No se pudieron cargar las opciones.",
-  "checkout.catalog.loading": "Cargando opciones…"
+  "checkout.catalog.loading": "Cargando opciones…",
+  "checkout.tab.supplier": "Proveedor",
+  "checkout.rules.fecSupplierIntro": "En una factura de compra este es el proveedor a quien le compra, y figura como emisor del comprobante.",
+  "checkout.rules.nonTaxpayerFecOnly": "El tipo de identificación 06 (No contribuyente) solo se usa en la factura electrónica de compra.",
+  "checkout.rules.saleConditionNotAllowed": "Esta condición de venta no es válida para este tipo de documento.",
+  "checkout.rules.usedGoodsNeedsNonTaxpayer": "La condición 13 (bienes usados de no contribuyente) requiere un proveedor identificado como 06 No contribuyente.",
+  "checkout.rules.fecSupplierMustBeRegistered": "Hacienda rechaza (-37) un proveedor con cédula, DIMEX o NITE que no esté inscrito. Si el proveedor no es contribuyente, regístrelo con identificación 06 (No contribuyente) y condición 13; si es extranjero no domiciliado, con 05.",
+  "checkout.rules.customsPartRequired": "falta la partida arancelaria (12 dígitos), obligatoria en mercancías exportadas",
+  "checkout.rules.customsPartFormat": "la partida arancelaria debe tener exactamente 12 dígitos",
+  "checkout.rules.exportRateExempt": "en una exportación el IVA debe ser tarifa 10 (exenta)",
+  "checkout.rules.lineProblem": "Línea {n} ({name}): {problem}. Ábrala para corregirla."
 }

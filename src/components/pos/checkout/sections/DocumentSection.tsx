@@ -30,6 +30,8 @@ interface DocumentSectionProps {
   manualOrder?: ManualOrderFields;
   onManualOrderChange?: (patch: Partial<ManualOrderFields>) => void;
   orgId?: string;
+  /** Hacienda document type — narrows the sale conditions to the ones it accepts. */
+  documentType?: string;
   /** The client has registered delivery points (a retail chain, typically). */
 }
 
@@ -64,6 +66,7 @@ export function DocumentSection({
   manualOrder,
   onManualOrderChange,
   orgId,
+  documentType,
 }: DocumentSectionProps) {
   const { t } = useLanguage();
   // Whether this organization has a registered Hacienda profile at all.
@@ -96,6 +99,7 @@ export function DocumentSection({
     >
       <SaleConditionSelect
         value={saleCondition}
+        documentType={documentType}
         onChange={(sale_condition) =>
           isManualOrder
             ? onManualOrderChange!({ sale_condition })

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { conformTaxesToDocType, counterpartyIssues, FEC_DOC_TYPE, lineIssues } from '@/lib/docTypeRules';
 import { Drawer } from '@/components/ui/Drawer';
 import { ErrorToast } from '@/components/ui/ErrorToast';
 import { useAccordionSections } from '@/hooks/useAccordionSections';
@@ -69,6 +70,17 @@ interface CartItem {
    * exemption — and a Factura granting one MUST reference the authorization.
    */
   lineDetail?: Partial<LineDetail>;
+  /** The catalog product's CABYS (string or `{code}`), for lines never opened in the drawer. */
+  cabys?: unknown;
+  /** The catalog product — its unit of measure classifies a line with no CABYS. */
+  product?: { unit_measure?: string | null };
+}
+
+/** A line's CABYS code, from the drawer's detail or the catalog product. */
+function lineCabys(item: CartItem): string | undefined {
+  if (item.lineDetail?.cabys) return item.lineDetail.cabys;
+  const c = item.cabys as { code?: string } | string | undefined;
+  return typeof c === 'string' ? c : c?.code;
 }
 
 interface CheckoutDrawerProps {
@@ -274,6 +286,30 @@ export function CheckoutDrawer({
   const chainInfo: ChainClientInfo = data.chain_info ?? {};
   const hasLines = cartItems.length > 0;
 
+  // ─── What this document type demands of the counterparty and the lines ──
+  // (lib/docTypeRules — each rule was a Hacienda rejection after a consecutive
+  // had been spent). On an FEC the "receiver" is the supplier.
+  const receiverIdType =
+    receiver.identification?.code?.trim() || selectedClient?.identification?.code?.trim() || undefined;
+  const partyIssues = isManualOrder
+    ? []
+    : counterpartyIssues(doc_type, needsReceiver ? receiverIdType : undefined, docData.sale_condition);
+  const partyErrors = partyIssues.filter((i) => i.level === 'error');
+  const partyHints = partyIssues.filter((i) => i.level === 'hint');
+  const lineProblems = isManualOrder
+    ? []
+    : cartItems.flatMap((item, index) =>
+        lineIssues(
+          {
+            cabys: lineCabys(item),
+            unit_measure: item.lineDetail?.unit_measure ?? item.product?.unit_measure,
+            customs_part: item.lineDetail?.customs_part,
+            taxes: conformTaxesToDocType((item.lineDetail?.taxes ?? []) as LineTax[], doc_type),
+          },
+          doc_type,
+        ).map((key) => ({ key, line: index + 1, name: item.name })),
+      );
+
   // ─── Section expansion (drawer is orchestrator only) ───────────────────
   const { expanded, toggle } = useAccordionSections<SectionId>({
     // A manual order has no payment to take — it is settled later — so that
@@ -318,6 +354,11 @@ export function CheckoutDrawer({
     }
     if (!docData.activity_code) return t('checkout.error.activityRequired');
     if (needsReceiver && !hasReceiver) return t('checkout.error.receiverRequired');
+    if (partyErrors.length) return t(partyErrors[0].key);
+    if (lineProblems.length) {
+      const first = lineProblems[0];
+      return t('checkout.rules.lineProblem', { n: first.line, name: first.name, problem: t(first.key) });
+    }
     if (referencesRequired && references.length === 0) return t('checkout.error.referencesRequired');
     // The reference fields the backend requires but the form used to leave
     // optional. Each of these is otherwise caught only when the XML is built —
@@ -463,6 +504,8 @@ export function CheckoutDrawer({
             onSelectClient={onSelectClient}
             onEditReceiver={onEditReceiver}
             needsReceiver={needsReceiver}
+            isPurchase={doc_type === FEC_DOC_TYPE}
+            issues={[...partyErrors, ...partyHints].map((i) => ({ level: i.level, text: t(i.key) }))}
           />
 
           {/* One Documento card for both kinds. A PM used to hide this and
@@ -483,6 +526,7 @@ export function CheckoutDrawer({
                 : undefined
             }
             orgId={orgId}
+            documentType={isManualOrder ? undefined : doc_type}
           />
 
           {/* Shown for a pedido too. It was hidden on the grounds that a pedido

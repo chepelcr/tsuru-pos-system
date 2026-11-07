@@ -119,7 +119,7 @@ export function GeneralTab({ detail, onChange, isExpanded, onToggle, isExportInv
           )}
           {isExportInvoice && (
             <div>
-              <FormLabel>{t('lineDetail.tariffItem')}</FormLabel>
+              <FormLabel required>{t('lineDetail.tariffItem')}</FormLabel>
               <input
                 className="pp-input"
                 value={detail.customs_part || ''}
