@@ -10,7 +10,7 @@ import { NewDocumentButton } from "@/components/documents/NewDocumentButton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { OverlayPortal } from "@/components/ui/OverlayPortal";
 import { useOverlayLayer } from "@/hooks/useOverlayLayer";
-import { useOrgContext } from "@/contexts/OrgContext";
+import { useOptionalOrgContext } from "@/contexts/OrgContext";
 
 interface DocumentsMobileDrawerProps {
   open: boolean;
@@ -40,7 +40,7 @@ export function DocumentsMobileDrawer({
   shouldRender,
   onClose,
 }: DocumentsMobileDrawerProps) {
-  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
+  const hasFiscalInfo = useOptionalOrgContext()?.isRegisteredOrgConfigured ?? false;
   const { open_documents, removeDocumentTab, promoteTabToVisible } = useDocumentStore();
   const [location, setLocation] = useLocation();
   const isDesktop = useIsDesktop(769);

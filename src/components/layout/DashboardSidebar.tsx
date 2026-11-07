@@ -1,4 +1,4 @@
-import { useOrgContext } from "@/contexts/OrgContext";
+import { useOptionalOrgContext } from "@/contexts/OrgContext";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -102,7 +102,7 @@ function sectionOf(active: NavId): SectionId | null {
 
 export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarProps) {
   const { user } = useAuthContext();
-  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
+  const hasFiscalInfo = useOptionalOrgContext()?.isRegisteredOrgConfigured ?? false;
   // RBAC nav gating (my-permissions, O1). Fail-closed (TSR-332): the nav is
   // built from the caller's available modules + read grants only.
   const {
