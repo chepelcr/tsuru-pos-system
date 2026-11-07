@@ -31,6 +31,8 @@
 
   "products.acceptsBarter": "Acepto propuestas de trueque",
   "products.acceptsBarterDescription": "Muestra este producto en la página de trueque de tu tienda. La venta y el precio se conservan.",
+  "products.isPublic": "Visible en la tienda en línea",
+  "products.isPublicDescription": "Tu tienda solo muestra productos activos y visibles. Desactívalo para venderlo únicamente en el POS.",
   "products.barterWants": "Qué me gustaría recibir",
   "products.barterWantsPlaceholder": "Describí lo que buscás o dejá abierto a propuestas.",
 

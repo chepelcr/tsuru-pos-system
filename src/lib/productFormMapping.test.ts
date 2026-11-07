@@ -32,6 +32,18 @@ describe("product catalog classification", () => {
   });
 });
 
+describe("storefront visibility", () => {
+  it("is public by default for new and legacy products", () => {
+    expect(productSavePayload(EMPTY_PRODUCT_FORM).is_public).toBe(true);
+    expect(productFormFromProduct({ name: "Item", price: 100 }).is_public).toBe(true);
+  });
+
+  it("keeps a hidden product hidden across edits", () => {
+    const form = productFormFromProduct({ name: "Item", price: 100, is_public: false });
+    expect(productSavePayload({ ...form, name: "Renamed" }).is_public).toBe(false);
+  });
+});
+
 /** A product configured the way the fiscal form allows — every field populated. */
 const FULLY_CONFIGURED = {
   name: "Cerveza artesanal 355ml",

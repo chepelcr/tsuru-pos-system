@@ -70,6 +70,7 @@ export function productSavePayload(
     price: Number(form.price),
     category_id: form.category_id || undefined,
     track_inventory: form.track_inventory,
+    is_public: form.is_public,
     accepts_barter: form.accepts_barter,
     barter_wants: form.barter_wants.trim(),
     low_stock_threshold:
@@ -185,6 +186,7 @@ export function productFormFromProduct(p: any): ProductFormState {
     price: String(p.price),
     category_id: p.category_id ?? "",
     track_inventory: p.track_inventory ?? false,
+    is_public: p.is_public ?? true,
     accepts_barter: p.accepts_barter ?? false,
     barter_wants: p.barter_wants ?? "",
     has_fiscal_info: hasCabys || hasTaxes,
