@@ -1,4 +1,4 @@
-import { useOrgContext } from "@/contexts/OrgContext";
+import { useOptionalOrgContext } from "@/contexts/OrgContext";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,7 +35,7 @@ export function DashboardHeader({
   docsOpen = false,
 }: DashboardHeaderProps) {
   const { dark, toggle: toggleDark } = useDarkMode();
-  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
+  const hasFiscalInfo = useOptionalOrgContext()?.isRegisteredOrgConfigured ?? false;
   const { t } = useLanguage();
   const tutorial = useTutorial();
   const openCount = useDocumentStore((s) => s.open_documents.length);

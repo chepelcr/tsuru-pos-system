@@ -61,8 +61,17 @@ const DEFAULTS: FormData = {
   sort_order: 0,
 };
 
+// Accents fold to their base letter ("Bebé" → "bebe"): stripping them made
+// different names collide on one slug, and the unique (org, slug) rejected the save.
 const slugify = (name: string) =>
-  name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").trim();
+  name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+export { slugify };
 
 export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: CategoryDrawerFormProps) {
   const { t } = useLanguage();
@@ -91,8 +100,8 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
         description: category.description ?? "",
         background_color: category.background_color ?? DEFAULTS.background_color,
         button_color: category.button_color ?? DEFAULTS.button_color,
-        image1_url: category.image1_url ?? "",
-        image2_url: category.image2_url ?? "",
+        image1_url: category.image_1_url ?? "",
+        image2_url: category.image_2_url ?? "",
         sort_order: category.sort_order ?? 0,
       });
     } else {

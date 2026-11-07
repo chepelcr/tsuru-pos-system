@@ -19,8 +19,9 @@ export interface Category {
   description?: string;
   background_color?: string;
   button_color?: string;
-  image1_url?: string | null;
-  image2_url?: string | null;
+  /** store-be serializes these with the underscore before the digit. */
+  image_1_url?: string | null;
+  image_2_url?: string | null;
   sort_order?: number;
   status?: number;
 }

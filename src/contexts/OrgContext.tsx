@@ -98,6 +98,16 @@ export function OrgProvider({ orgId, orgName, children }: OrgProviderProps) {
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
 
+/**
+ * The org context, or null while DashboardLayout is still resolving the
+ * organization. The shell (header, sidebar, mobile drawer) renders during that
+ * window, so it must not use the throwing {@link useOrgContext}: doing so
+ * crashed the whole dashboard on every slow or org-less load.
+ */
+export function useOptionalOrgContext(): OrgContextValue | null {
+  return useContext(OrgContext);
+}
+
 export function useOrgContext(): OrgContextValue {
   const ctx = useContext(OrgContext);
   if (!ctx) throw new Error("useOrgContext must be used inside DashboardLayout");

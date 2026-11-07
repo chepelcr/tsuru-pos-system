@@ -20,7 +20,7 @@ vi.mock('@/contexts/DocumentVersionContext', () => ({ DocumentVersionProvider: (
 vi.mock('@/hooks/useOfflineBootstrap', () => ({ useOfflineBootstrap: () => {} }));
 vi.mock('@/hooks/useCatalogInvalidationFeed', () => ({ useCatalogInvalidationFeed: () => {} }));
 vi.mock('@/hooks/usePermissionsLiveSync', () => ({ usePermissionsLiveSync: () => {} }));
-vi.mock('@/contexts/OrgContext', () => ({ useOrgContext: () => ({ orgId: 'org-1', isRegisteredOrgConfigured: state.fiscal }), OrgProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
+vi.mock('@/contexts/OrgContext', () => ({ useOrgContext: () => ({ orgId: 'org-1', isRegisteredOrgConfigured: state.fiscal }), useOptionalOrgContext: () => ({ orgId: 'org-1', isRegisteredOrgConfigured: state.fiscal }), OrgProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock('@/contexts/ExchangeRateContext', () => ({ ExchangeRateProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
 vi.mock('@/components/documents/DocumentImportTray', () => ({ DocumentImportTray: () => null }));
 // Exercise the actual sidebar and layout route mapping, while omitting unrelated
