@@ -20,6 +20,12 @@ for POS changes, and there are no mirror commits to make. Never `git add -f` it 
 
 ### Deployment — GitHub Pages
 
+> **Current targets (checked 2026-11-07, `.github/workflows/deploy.yml`):** a push to
+> **`main` deploys PROD** — the build job syncs `dist/` to S3 and invalidates CloudFront for
+> **`app.tsuru.lat`** (`cloudformation/hosting.yml`). A push to **`develop`** deploys **dev** to
+> GitHub Pages at `app.tsuru.jcampos.dev` (the `deploy` job runs only on develop). Ship a change
+> by pushing main, then merge main into develop. Parts of the section below predate this split.
+
 **Package manager: pnpm** (enforced by `preinstall: npx only-allow pnpm`; the `packageManager`
 field pins the version). Use `pnpm install` / `pnpm run <script>` / `pnpm add`. The committed
 lockfile is `pnpm-lock.yaml` — there is no `package-lock.json`, and CI runs
