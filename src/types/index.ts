@@ -99,6 +99,9 @@ export type {
   CreateAssignmentRequest,
   UpdateAssignmentRequest,
   AssignmentListResponse,
+  ClosingPreview,
+  ClosingBreakdownRow,
+  ClosingResult,
 } from "./assignment";
 
 // Location

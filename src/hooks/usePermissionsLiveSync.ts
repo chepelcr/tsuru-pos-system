@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNotifications } from "@/contexts/NotificationsContext";
-import { onRealtimeControlEvent } from "@/lib/realtimeBus";
+import { onRealtimeControlEvent, PERMISSIONS_CHANGED_KIND } from "@/lib/realtimeBus";
 
 /**
  * Makes a role / grant change immediate (TSR-331).
@@ -30,7 +30,7 @@ export function usePermissionsLiveSync(orgId: string | undefined) {
         queryClient.invalidateQueries({ queryKey: ["rbac", "my-permissions", orgId] });
         return;
       }
-      if (event.organization_id !== orgId) return;
+      if (event.kind !== PERMISSIONS_CHANGED_KIND || event.organization_id !== orgId) return;
       queryClient.invalidateQueries({ queryKey: ["rbac"] });
       queryClient.invalidateQueries({ queryKey: ["org-members"] });
       // Switching roles yourself already says so on screen; everything else

@@ -180,5 +180,6 @@
   "session.itemName": "sessions",
   "assignments.itemName": "assignments",
   "documents.itemName": "documents",
-  "shell.branchTypes": "Branch types"
+  "shell.branchTypes": "Branch types",
+  "shell.closeSession": "Close till"
 }

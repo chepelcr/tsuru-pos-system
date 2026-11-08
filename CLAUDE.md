@@ -356,11 +356,32 @@ DASHBOARD_HISTORICAL_DOCUMENTS /dashboard/documents/historical → HistoricalDoc
                    (navigated to from the Reportes section)
 DASHBOARD_CLIENTS  /dashboard/clients  → ClientsPage (+ /:id ClientDetailPage)
 
-POS standalone flow (cashier device):
-/pos/opening   → InventoryOpening     (count starting inventory + cash)
-/pos/payment   → PaymentScreen
-/pos/success   → SuccessScreen
+DASHBOARD_SESSION_CLOSE /dashboard/sessions/close → CloseSessionPage (close the caller's own till)
 ```
+
+The standalone `/pos/*` cashier flow is **retired** (its pages and `ClosingFlow` were deleted,
+2026-11-08): selling happens on the documents-integrated POS page.
+
+### 5.0 Cash sessions (TSR-R01-05)
+
+Sessions are **optional**. With an active assignment (`useCashSession`, `hooks/useCashSession.ts`)
+the checkout's branch/terminal are pinned to it; without one they are free.
+- An active assignment with `opened_at == null` is waiting for the opening count:
+  `components/session/OpeningCashModal.tsx` (mounted in `DashboardLayout`) blocks the app with a
+  non-dismissible `Modal` (`dismissible={false}`) until `POST .../assignments/{id}/open` is sent.
+  It is derived from the server's assignment, so re-login shows it again until submitted.
+- A manager assigning someone pushes `pos.assignment_assigned` on the user's AppSync channel
+  (store-be → user-notifications Lambda); `useAssignmentLiveSync` refetches and the modal appears live.
+- Opened till: the panel shows `ActiveSessionCard`, and the Admin sidebar section shows
+  **Cerrar caja** (`closeSession`) — gated by ownership, not by a module grant.
+- `CloseSessionPage` counts the drawer with `CashCounter` (01 = opening cash + cash taken),
+  takes a declared amount per other Hacienda payment code, compares with
+  `GET .../assignments/{id}/closing-preview` (`lib/cashClosing.ts` mirrors store-be's
+  `build_breakdown`) and posts `/closings` with `declared` per code. Closing ends that
+  cashier's assignment; the session ends with its last assignment.
+- Roles: marking `admin/sessions:create` also marks `admin/members:read`; unmarking members:read
+  while sessions:create stays asks to unmark both (`lib/rbacDependencies.ts`). management-be
+  rejects the invalid combination with 422 `RBAC_SESSIONS_REQUIRE_MEMBERS_READ`.
 
 **Adding a new page**: define the route constant in `routePaths.ts`, add the page to `Routes.tsx` with `lazy(() => import(...))`, register the route with its `ROUTE_PERMISSIONS` entry, and add the navigation entry in `DashboardSidebar.tsx` (`ITEM_META` + `SECTIONS`) if it belongs to the dashboard. The `NavId` union lives in **one** place — `src/components/layout/navIds.ts` — and is imported by DashboardLayout/Shell/MobileDrawer/Sidebar; add the id there, then its `NAV_PERMISSION` pair and its `NAV_PATHS` entry. Do not statically import route pages into `Routes.tsx`.
 

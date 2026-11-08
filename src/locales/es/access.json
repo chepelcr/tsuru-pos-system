@@ -180,5 +180,9 @@
   "roles.members.removeRoleTitle": "Quitar rol",
   "roles.members.removeRoleConfirm": "¿Quitar el rol \"{role}\" a {name}? Si era su rol activo, pasará a otro de sus roles.",
   "roles.members.removeRoleAria": "Quitar el rol {role}",
-  "rbac.sub.admin.branch-types": "Tipos de sucursal"
+  "rbac.sub.admin.branch-types": "Tipos de sucursal",
+  "roles.dependency.keepBoth": "Mantener ambos",
+  "roles.dependency.sessionsMessage": "Crear sesiones no funciona sin el permiso de lectura de miembros, porque hay que elegir a quién asignar. ¿Desmarcar ambos permisos?",
+  "roles.dependency.sessionsTitle": "Las sesiones necesitan ver miembros",
+  "roles.dependency.unmarkBoth": "Desmarcar ambos"
 }

@@ -180,5 +180,6 @@
   "session.itemName": "sesiones",
   "assignments.itemName": "asignaciones",
   "documents.itemName": "documentos",
-  "shell.branchTypes": "Tipos de sucursal"
+  "shell.branchTypes": "Tipos de sucursal",
+  "shell.closeSession": "Cerrar caja"
 }

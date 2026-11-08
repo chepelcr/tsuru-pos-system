@@ -22,8 +22,21 @@ export interface PermissionsChangedEvent {
   at: string;
 }
 
+/** A manager assigned this user to a cash session; the POS asks for the opening count. */
+export const ASSIGNMENT_ASSIGNED_KIND = "pos.assignment_assigned";
+
+export interface AssignmentAssignedEvent {
+  kind: typeof ASSIGNMENT_ASSIGNED_KIND;
+  organization_id: string;
+  assignment_id: string;
+  at: string;
+}
+
 /** `reconnected` = the socket came back; anything published meanwhile was lost. */
-export type RealtimeControlEvent = PermissionsChangedEvent | { kind: "reconnected" };
+export type RealtimeControlEvent =
+  | PermissionsChangedEvent
+  | AssignmentAssignedEvent
+  | { kind: "reconnected" };
 
 type Listener = (event: RealtimeControlEvent) => void;
 const listeners = new Set<Listener>();
@@ -48,6 +61,7 @@ export function asControlEvent(payload: unknown): RealtimeControlEvent | null {
   if (!payload || typeof payload !== "object") return null;
   const kind = (payload as { kind?: unknown }).kind;
   if (kind === PERMISSIONS_CHANGED_KIND) return payload as PermissionsChangedEvent;
+  if (kind === ASSIGNMENT_ASSIGNED_KIND) return payload as AssignmentAssignedEvent;
   return null;
 }
 

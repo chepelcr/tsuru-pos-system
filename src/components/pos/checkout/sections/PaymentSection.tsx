@@ -11,6 +11,7 @@ import { SectionWrapper } from '@/components/common/SectionWrapper';
 import type { GetAllPaymentsParams, PaymentResponse } from '@/services/data-api';
 import type { SalePayment } from '@/types/invoice';
 import { moneyInputValue, roundMoney } from '@/lib/money';
+import { PAYMENT_METHOD_ICON, PAYMENT_METHOD_LABEL_KEY } from '@/lib/paymentMethods';
 
 const OTHER_PAYMENT_CODE = '99';
 
@@ -21,29 +22,8 @@ interface PaymentMethodOption {
   icon: string;
 }
 
-// Hacienda payment code → curated Icon name (see src/components/ui/Icon.tsx).
-const ICON_BY_CODE: Record<string, string> = {
-  '01': 'cash',        // Efectivo
-  '02': 'card',        // Tarjeta
-  '03': 'fileText',    // Cheque
-  '04': 'upload',      // Transferencia / depósito bancario
-  '05': 'users',       // Recaudado por terceros
-  '06': 'smartphone',  // SINPE Móvil
-  '07': 'grid',        // Plataforma Digital
-  '99': 'layers',      // Otros
-};
-
-// Hacienda payment code → translation key. Falls back to API `description` when missing.
-const LABEL_KEY_BY_CODE: Record<string, string> = {
-  '01': 'checkout.payment.method.cash',
-  '02': 'checkout.payment.method.card',
-  '03': 'checkout.payment.method.cheque',
-  '04': 'checkout.payment.method.transfer',
-  '05': 'checkout.payment.method.thirdParty',
-  '06': 'checkout.payment.method.sinpe',
-  '07': 'checkout.payment.method.digitalPlatform',
-  '99': 'checkout.payment.method.other',
-};
+const ICON_BY_CODE = PAYMENT_METHOD_ICON;
+const LABEL_KEY_BY_CODE = PAYMENT_METHOD_LABEL_KEY;
 
 // Primary visible methods (in slot order). Others live behind the overflow dropdown.
 const PRIMARY_CODES = ['01', '06', '02'] as const;

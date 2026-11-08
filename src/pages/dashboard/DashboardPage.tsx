@@ -29,6 +29,7 @@ import { QuickDocActionsCard } from "@/components/dashboard/QuickDocActionsCard"
 import { constructSiteUrl } from "@/lib/siteUrl";
 
 import { formatMoney as fmt } from "@/lib/money";
+import { ActiveSessionCard } from "@/components/dashboard/ActiveSessionCard";
 
 const QrShareModal = lazy(() =>
   import("@/components/dashboard/QrShareModal").then((module) => ({
@@ -274,6 +275,9 @@ export default function DashboardPage() {
         </div>
         )}
       </Card>
+
+      {/* The caller's open till, when there is one (sessions are optional). */}
+      {org?.id && <ActiveSessionCard orgId={org.id} />}
 
       {/* Quick document actions */}
       <FadeIn duration={0.4}>

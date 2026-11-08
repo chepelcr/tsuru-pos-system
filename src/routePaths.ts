@@ -19,6 +19,8 @@ export const ROUTES = {
   DASHBOARD_CATEGORIES: "/dashboard/categories",
   DASHBOARD_ORG_THEME: "/dashboard/organization/theme",
   DASHBOARD_SESSIONS: "/dashboard/sessions",
+  /** Close the caller's own open cash assignment (TSR-R01-05). */
+  DASHBOARD_SESSION_CLOSE: "/dashboard/sessions/close",
   DASHBOARD_BRANCHES: "/dashboard/branches",
   DASHBOARD_BRANCH_TYPES: "/dashboard/branch-types",
   LEGACY_DASHBOARD_STATIONS: "/dashboard/stations",

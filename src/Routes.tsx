@@ -30,6 +30,7 @@ const SelectOrganization = lazy(() => import("@/pages/SelectOrganization"));
 const CreateOrganization = lazy(() => import("@/pages/CreateOrganization"));
 const AcceptInvitation = lazy(() => import("@/pages/AcceptInvitation"));
 const DashboardHome = lazy(() => import("@/pages/dashboard/DashboardPage"));
+const CloseSessionPage = lazy(() => import("@/pages/dashboard/CloseSessionPage"));
 const SessionsPage = lazy(() => import("@/pages/dashboard/SessionsPage"));
 const BranchesPage = lazy(() => import("@/pages/dashboard/BranchesPage"));
 const BranchTypesPage = lazy(() => import("@/pages/dashboard/BranchTypesPage"));
@@ -310,6 +311,13 @@ function DashboardRoutes() {
         path={ROUTES.DASHBOARD_BLOG}
         component={() => <DashboardPage><BlogWriterPage /></DashboardPage>}
       />}
+      {/* Ownership is the gate here, not a module grant: the page closes the
+          caller's own assignment, and the backend allows only its owner (or
+          admin:sessions:update). It must precede /dashboard/sessions. */}
+      <Route
+        path={ROUTES.DASHBOARD_SESSION_CLOSE}
+        component={() => <DashboardPage><CloseSessionPage /></DashboardPage>}
+      />
       <Route
         path={ROUTES.DASHBOARD_SESSIONS}
         component={() => <DashboardPage permissions={ROUTE_PERMISSIONS.sessions}><SessionsPage /></DashboardPage>}

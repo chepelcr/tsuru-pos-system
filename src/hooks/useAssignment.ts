@@ -63,6 +63,10 @@ export function useAssignment() {
             role: "cashier",
             start_time: new Date(cached.fetchedAt).toISOString(),
             status: 1,
+            // Opening the till needs the server, so an offline cached
+            // assignment is treated as already opened rather than locking the
+            // POS behind an opening modal it could not submit.
+            opened_at: new Date(cached.fetchedAt).toISOString(),
             created_by: user!.userId,
           } as Assignment;
         }

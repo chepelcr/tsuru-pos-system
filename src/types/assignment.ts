@@ -34,6 +34,10 @@ export interface Assignment {
   start_time: string; // ISO timestamp
   end_time?: string; // ISO timestamp
   status: AssignmentStatus;
+  /** Cash counted at opening; null until the cashier opens the assignment. */
+  opening_cash?: number | null;
+  /** When the opening count was submitted. Active + null = waiting for it. */
+  opened_at?: string | null;
   created_at?: string;
   updated_at?: string;
   created_by: string;
@@ -63,4 +67,33 @@ export interface AssignmentListResponse {
     total_elements: number;
     total_pages: number;
   };
+}
+
+/** What the till should hold now, per Hacienda payment code (01 = drawer incl. opening cash). */
+export interface ClosingPreview {
+  assignment_id: string;
+  session_id: string;
+  opening_cash: number;
+  expected: Record<string, number>;
+  expected_total: number;
+  document_count: number;
+  available: boolean;
+}
+
+export interface ClosingBreakdownRow {
+  expected: number;
+  declared: number;
+  difference: number;
+}
+
+export interface ClosingResult {
+  closing_id: string;
+  assignment_id: string;
+  session_id: string;
+  opening_cash?: number | null;
+  breakdown?: Record<string, ClosingBreakdownRow> | null;
+  expected_total: number;
+  declared_total: number;
+  total_difference: number;
+  status: string;
 }

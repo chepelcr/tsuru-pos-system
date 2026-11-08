@@ -180,5 +180,9 @@
   "roles.members.removeRoleTitle": "Remove role",
   "roles.members.removeRoleConfirm": "Remove the \"{role}\" role from {name}? If it was their active role, they move to another of their roles.",
   "roles.members.removeRoleAria": "Remove the {role} role",
-  "rbac.sub.admin.branch-types": "Branch types"
+  "rbac.sub.admin.branch-types": "Branch types",
+  "roles.dependency.keepBoth": "Keep both",
+  "roles.dependency.sessionsMessage": "Creating sessions can't work without read permission on members, because you have to pick who to assign. Unmark both permissions?",
+  "roles.dependency.sessionsTitle": "Sessions need to read members",
+  "roles.dependency.unmarkBoth": "Unmark both"
 }

@@ -15,6 +15,7 @@ export type NavId =
   | "dashboard"
   | "blog"
   | "config"
+  | "closeSession"
   | "branches"
   | "branchTypes"
   | "consecutives"

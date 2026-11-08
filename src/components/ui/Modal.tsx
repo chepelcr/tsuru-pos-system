@@ -27,6 +27,12 @@ interface ModalProps {
   confirm?: ModalAction;
   cancel?: ModalAction;
   children?: React.ReactNode;
+  /**
+   * False makes the modal blocking: no close button, no backdrop or Escape
+   * dismissal and no cancel action — only `confirm` leaves it. For a step the
+   * user must complete (the cash-session opening count).
+   */
+  dismissible?: boolean;
 }
 
 const variantPillClass: Record<ModalVariant, string> = {
@@ -53,6 +59,7 @@ export function Modal({
   confirm,
   cancel,
   children,
+  dismissible = true,
 }: ModalProps) {
   const { t } = useLanguage();
   const iconName = icon ?? variantDefaultIcon[variant];
@@ -62,7 +69,7 @@ export function Modal({
   const { isTopLayer } = useOverlayLayer({
     active: open,
     panelRef,
-    dismissible: !busy,
+    dismissible: dismissible && !busy,
     onClose,
   });
 
@@ -72,7 +79,7 @@ export function Modal({
     <OverlayPortal>
     <div
       className="fixed inset-0 z-drawer-modal bg-foreground/45 backdrop-blur-[2px] flex items-center justify-center p-4 fade-in"
-      onClick={() => { if (!busy && isTopLayer()) onClose(); }}
+      onClick={() => { if (dismissible && !busy && isTopLayer()) onClose(); }}
     >
       <div
         ref={panelRef}
@@ -91,7 +98,9 @@ export function Modal({
           <div className="min-w-0 flex-1">
             <h3 id={titleId} className="t-h3 !mb-0">{title}</h3>
           </div>
-          <Button type="button" variant="ghost" size="sm" icon="close" className="shrink-0" aria-label={t("common.close")} onClick={onClose} disabled={busy} />
+          {dismissible && (
+            <Button type="button" variant="ghost" size="sm" icon="close" className="shrink-0" aria-label={t("common.close")} onClick={onClose} disabled={busy} />
+          )}
         </div>
 
         {description && (
@@ -102,7 +111,22 @@ export function Modal({
 
         {children && <div className="mb-5">{children}</div>}
 
-        {(confirm || cancel) && (
+        {!dismissible && confirm && (
+          <div className="mt-5">
+            <Button
+              variant={confirm.variant ?? "primary"}
+              className="w-full"
+              onClick={confirm.onClick}
+              disabled={confirm.disabled || confirm.loading}
+              aria-busy={confirm.loading}
+            >
+              {confirm.loading ? (confirm.loadingLabel ?? t("common.loading")) : confirm.label}
+              {confirm.loading && <Spinner size={14} className="text-current" />}
+            </Button>
+          </div>
+        )}
+
+        {dismissible && (confirm || cancel) && (
           <div className="grid grid-cols-2 gap-2 mt-5">
             {cancel ? (
               <Button variant={cancel.variant ?? "outline"} onClick={cancel.onClick} disabled={cancel.disabled}>

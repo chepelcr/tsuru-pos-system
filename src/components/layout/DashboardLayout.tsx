@@ -9,6 +9,8 @@ import { CountryISO } from "@/lib/enums";
 import DashboardShell from "@/components/layout/DashboardShell";
 import { useCatalogInvalidationFeed } from "@/hooks/useCatalogInvalidationFeed";
 import { usePermissionsLiveSync } from "@/hooks/usePermissionsLiveSync";
+import { useAssignmentLiveSync } from "@/hooks/useCashSession";
+import { OpeningCashModal } from "@/components/session/OpeningCashModal";
 import { DocumentImportTray } from "@/components/documents/DocumentImportTray";
 import { OrderImportTray } from "@/components/orders/OrderImportTray";
 
@@ -22,6 +24,8 @@ function NotificationsBridge({ orgId }: { orgId?: string }) {
   useCatalogInvalidationFeed();
   // Role / grant changes pushed over AppSync re-resolve permissions (TSR-331).
   usePermissionsLiveSync(orgId);
+  // A manager assigning this user to a cash session (TSR-R01-05).
+  useAssignmentLiveSync(orgId);
   return null;
 }
 
@@ -30,6 +34,7 @@ import type { NavId } from "./navIds";
 function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_GUIDE)) return "guide";
   if (location.startsWith(ROUTES.DASHBOARD_BLOG)) return "blog";
+  if (location.startsWith(ROUTES.DASHBOARD_SESSION_CLOSE)) return "closeSession";
   if (location.startsWith(ROUTES.DASHBOARD_SESSIONS)) return "config";
   // Includes /branches/:branch/terminals/:terminal (terminal detail).
   if (location.startsWith(ROUTES.DASHBOARD_BRANCH_TYPES)) return "branchTypes";
@@ -66,6 +71,7 @@ const NAV_PATHS: Record<NavId, string> = {
   dashboard: ROUTES.DASHBOARD,
   blog: ROUTES.DASHBOARD_BLOG,
   config:    ROUTES.DASHBOARD_SESSIONS,
+  closeSession: ROUTES.DASHBOARD_SESSION_CLOSE,
   branches:   ROUTES.DASHBOARD_BRANCHES,
   branchTypes: ROUTES.DASHBOARD_BRANCH_TYPES,
   consecutives: ROUTES.DASHBOARD_CONSECUTIVES,
@@ -137,6 +143,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* The XML import queue lives here, not in a page: uploads keep going while the user navigates. */}
           <DocumentImportTray orgId={org.id} />
           <OrderImportTray orgId={org.id} />
+          {/* Blocking until an assigned, unopened till is counted. */}
+          <OpeningCashModal orgId={org.id} />
         </ExchangeRateProvider>
       </OrgProvider>
     </>

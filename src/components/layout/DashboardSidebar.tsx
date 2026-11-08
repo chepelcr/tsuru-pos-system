@@ -5,6 +5,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { usePermissions, useCanOpenCreateMenu, useCreatableDocTypes } from "@/hooks/useRbac";
 import { useActiveSession } from "@/hooks/useActiveSession";
+import { useCashSession } from "@/hooks/useCashSession";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDocumentStore, newDocTabId } from "@/store/documentStore";
 import { documentEditorPath, ROUTES } from "@/routePaths";
@@ -39,6 +40,7 @@ const ITEM_META: Partial<Record<NavId, { icon: string; labelKey: string }>> = {
   members:       { icon: "users",       labelKey: "shell.members" },
   roles:         { icon: "shield",      labelKey: "shell.roles" },
   config:        { icon: "calendar",    labelKey: "shell.sessions" },
+  closeSession:  { icon: "lock",        labelKey: "shell.closeSession" },
   reporte:       { icon: "trending",    labelKey: "shell.reportsGeneral" },
   ivaReport:     { icon: "pie",         labelKey: "shell.reportsIva" },
   content:       { icon: "fileText",    labelKey: "shell.content" },
@@ -90,7 +92,7 @@ const NAV_PERMISSION: Partial<Record<NavId, [string, string]>> = {
 const SECTIONS: { id: SectionId; labelKey: string; icon: string; items: NavId[] }[] = [
   { id: "tsuru",      labelKey: "shell.sectionTsuru", icon: "sparkles", items: ["guide", "blog"] },
   { id: "commercial", labelKey: "shell.sectionCommercial", icon: "cart",     items: ["productos", "categories", "clients", "orders", "confirmations"] },
-  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "branches", "branchTypes", "consecutives", "members", "roles", "config"] },
+  { id: "admin",      labelKey: "shell.sectionAdmin",      icon: "users",    items: ["organization", "branches", "branchTypes", "consecutives", "members", "roles", "config", "closeSession"] },
   { id: "storefront", labelKey: "shell.sectionStorefront", icon: "store",    items: ["content", "gallery", "deployments"] },
   { id: "reports",    labelKey: "shell.reports",           icon: "trending", items: ["reporte", "ivaReport", "historicalDocuments"] },
 ];
@@ -114,6 +116,8 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
     role: orgRole,
   } = usePermissions();
   const activeSession = useActiveSession();
+  // The caller's own opened till — closing it is theirs, whatever their role.
+  const { isOpen: hasOpenTill } = useCashSession();
   // Per-doc-type create gating (documents/<permSub>): the "+" menu only lists
   // the types this role may create — e.g. cashiers see FE/TE, never NC/ND.
   const creatableDocTypes = useCreatableDocTypes();
@@ -168,6 +172,9 @@ export function DashboardSidebar({ active, onNav, onClose }: DashboardSidebarPro
   const itemVisible = (id: NavId): boolean => {
     if (["documents", "ivaReport", "historicalDocuments"].includes(id) && !hasFiscalInfo) return false;
     if (id === "guide") return true;
+    // Closing your own till needs no module grant: ownership is the gate
+    // (store-be accepts only the assigned user or admin:sessions:update).
+    if (id === "closeSession") return hasOpenTill;
     if (id === "blog") return import.meta.env.VITE_BLOG_ENABLED === "true";
     const perm = NAV_PERMISSION[id];
     if (!perm || !permsReady) return false;

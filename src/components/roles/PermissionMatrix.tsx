@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useConfirmModal } from "@/hooks/useConfirmModal";
+import { resolveGrantDependencies } from "@/lib/rbacDependencies";
 import { Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Icon } from "@/components/ui";
@@ -91,6 +93,7 @@ export function PermissionMatrix({
   readOnly = false,
 }: PermissionMatrixProps) {
   const { t } = useLanguage();
+  const { confirm, confirmModal } = useConfirmModal();
   // Accordion: only one module card open at a time (view AND edit modes) so
   // the drawer stays scannable — opening a card collapses the rest.
   const [openModuleId, setOpenModuleId] = useState<string | null>(null);
@@ -133,12 +136,33 @@ export function PermissionMatrix({
     );
   }
 
+  /**
+   * Every change goes through the sessions → members dependency: marking
+   * sessions:create brings members:read; removing members:read while
+   * sessions:create stays asks whether to remove both.
+   */
+  const commit = (next: Set<string>) => {
+    const outcome = resolveGrantDependencies(matrix?.modules ?? [], grants, next);
+    if (outcome.kind === "apply") {
+      onChange(outcome.grants);
+      return;
+    }
+    confirm({
+      title: t("roles.dependency.sessionsTitle"),
+      message: t("roles.dependency.sessionsMessage"),
+      variant: "warning",
+      confirmLabel: t("roles.dependency.unmarkBoth"),
+      cancelLabel: t("roles.dependency.keepBoth"),
+      onConfirm: () => onChange(outcome.withoutBoth),
+    });
+  };
+
   const toggleCell = (key: string) => {
     if (readOnly) return;
     const next = new Set(grants);
     if (next.has(key)) next.delete(key);
     else next.add(key);
-    onChange(next);
+    commit(next);
   };
 
   const setMany = (keys: string[], selected: boolean) => {
@@ -148,7 +172,7 @@ export function PermissionMatrix({
       if (selected) next.add(key);
       else next.delete(key);
     }
-    onChange(next);
+    commit(next);
   };
 
   const moduleKeys = (module: MatrixModule): string[] =>
@@ -183,7 +207,7 @@ export function PermissionMatrix({
       if (turningOn) next.add(typeKey);
       else next.delete(typeKey);
     }
-    onChange(next);
+    commit(next);
   };
 
   return (
@@ -329,6 +353,7 @@ export function PermissionMatrix({
           </SectionWrapper>
         );
       })}
+      {confirmModal}
     </div>
   );
 }
