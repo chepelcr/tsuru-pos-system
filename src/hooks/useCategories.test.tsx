@@ -14,7 +14,7 @@ vi.mock("../lib/api", () => ({
   ordersOrgPath: (orgId: string, path: string) => `/api/organizations/${orgId}${path}`,
 }));
 
-import { isCategoryActive, nextCategorySortOrder, useSetCategoryActive } from "./useCategories";
+import { isCategoryActive, nextCategorySortOrder, useSetCategoryStatus } from "./useCategories";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
@@ -28,19 +28,23 @@ describe("category helpers", () => {
     expect(nextCategorySortOrder([cat({ sort_order: 0 }), cat({ sort_order: 4 }), cat({})])).toBe(5);
   });
 
-  it("treats a missing is_active as active", () => {
+  it("is active only on status 1 (missing counts as active)", () => {
     expect(isCategoryActive(cat({}))).toBe(true);
-    expect(isCategoryActive(cat({ is_active: false }))).toBe(false);
+    expect(isCategoryActive(cat({ status: 1 }))).toBe(true);
+    expect(isCategoryActive(cat({ status: 2 }))).toBe(false);
   });
 });
 
-describe("useSetCategoryActive", () => {
-  it("deactivates through the status PATCH, never DELETE", async () => {
-    const { result } = renderHook(() => useSetCategoryActive("org-1"), { wrapper });
-    await act(() => result.current.mutateAsync({ id: "cat-1", active: false }));
-    expect(patchMock).toHaveBeenCalledWith("/api/organizations/org-1/categories/cat-1", { status: 2 });
-    await act(() => result.current.mutateAsync({ id: "cat-1", active: true }));
-    expect(patchMock).toHaveBeenLastCalledWith("/api/organizations/org-1/categories/cat-1", { status: 1 });
+describe("useSetCategoryStatus", () => {
+  it("activates, deactivates and deletes through the status PATCH, never DELETE", async () => {
+    const { result } = renderHook(() => useSetCategoryStatus("org-1"), { wrapper });
+    const url = "/api/organizations/org-1/categories/cat-1";
+    await act(() => result.current.mutateAsync({ id: "cat-1", status: 2 }));
+    expect(patchMock).toHaveBeenLastCalledWith(url, { status: 2 });
+    await act(() => result.current.mutateAsync({ id: "cat-1", status: 1 }));
+    expect(patchMock).toHaveBeenLastCalledWith(url, { status: 1 });
+    await act(() => result.current.mutateAsync({ id: "cat-1", status: 3 }));
+    expect(patchMock).toHaveBeenLastCalledWith(url, { status: 3 });
     expect(deleteMock).not.toHaveBeenCalled();
   });
 });

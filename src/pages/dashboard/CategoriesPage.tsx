@@ -7,7 +7,13 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { usePermissions } from "@/hooks/useRbac";
-import { isCategoryActive, nextCategorySortOrder, useCategories, useSetCategoryActive } from "@/hooks/useCategories";
+import {
+  CATEGORY_STATUS,
+  isCategoryActive,
+  nextCategorySortOrder,
+  useCategories,
+  useSetCategoryStatus,
+} from "@/hooks/useCategories";
 import { CategoryDrawerForm, getContrastingColor } from "@/components/categories/CategoryDrawerForm";
 import type { Category } from "@/types";
 
@@ -30,7 +36,7 @@ export default function CategoriesPage() {
   const [drawer, setDrawer] = useState<Category | "new" | null>(null);
 
   const { data: response, isLoading } = useCategories(org?.id);
-  const statusMutation = useSetCategoryActive(org?.id);
+  const statusMutation = useSetCategoryStatus(org?.id);
 
   const categories: Category[] = response?.data ?? [];
 
@@ -43,22 +49,25 @@ export default function CategoriesPage() {
     );
   });
 
-  // "Delete" deactivates (PATCH status) — products keep their category and it can be restored.
-  const handleDeactivate = (category: Category) => {
+  // Delete is a status change (3), not a hard delete — products keep their category.
+  const handleDelete = (category: Category) => {
     confirm({
-      title: t("common.deactivate"),
-      message: t("categories.deactivateConfirm", { name: category.name }),
+      title: t("common.delete"),
+      message: t("categories.deleteConfirm", { name: category.name }),
       variant: "destructive",
-      confirmLabel: t("common.deactivate"),
+      confirmLabel: t("common.delete"),
       cancelLabel: t("common.cancel"),
       onConfirm: async () => {
-        await statusMutation.mutateAsync({ id: category.category_id, active: false });
+        await statusMutation.mutateAsync({ id: category.category_id, status: CATEGORY_STATUS.DELETED });
       },
     });
   };
 
-  const handleActivate = (category: Category) =>
-    statusMutation.mutate({ id: category.category_id, active: true });
+  const toggleActive = (category: Category) =>
+    statusMutation.mutate({
+      id: category.category_id,
+      status: isCategoryActive(category) ? CATEGORY_STATUS.INACTIVE : CATEGORY_STATUS.ACTIVE,
+    });
 
   return (
     <div className="px-6 pt-6 pb-10 max-w-[1400px] mx-auto">
@@ -194,32 +203,32 @@ export default function CategoriesPage() {
                   </div>
 
                   {(canUpdate || canDelete) && (
-                    <div className="grid grid-cols-2 gap-2 mt-auto pt-2">
+                    <div className="flex flex-wrap gap-2 mt-auto pt-2 [&>*]:flex-1">
                       {canUpdate && (
                         <Button variant="outline" size="sm" icon="edit" onClick={() => setDrawer(category)}>
                           {t("common.edit")}
                         </Button>
                       )}
-                      {canDelete && active && (
+                      {canUpdate && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          icon={active ? "close" : "check"}
+                          onClick={() => toggleActive(category)}
+                          disabled={statusMutation.isPending}
+                        >
+                          {t(active ? "common.deactivate" : "common.activate")}
+                        </Button>
+                      )}
+                      {canDelete && (
                         <Button
                           variant="destructive"
                           size="sm"
                           icon="trash"
-                          onClick={() => handleDeactivate(category)}
+                          onClick={() => handleDelete(category)}
                           disabled={statusMutation.isPending}
                         >
-                          {t("common.deactivate")}
-                        </Button>
-                      )}
-                      {canDelete && !active && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          icon="check"
-                          onClick={() => handleActivate(category)}
-                          disabled={statusMutation.isPending}
-                        >
-                          {t("common.activate")}
+                          {t("common.delete")}
                         </Button>
                       )}
                     </div>

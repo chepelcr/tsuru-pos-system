@@ -48,7 +48,6 @@
   "categories.backgroundColor": "Color de fondo",
   "categories.buttonColor": "Color del botón",
   "categories.createFirst": "Crear primera",
-  "categories.deactivateConfirm": "¿Desactivar la categoría \"{name}\"? Sus productos la conservan y podés activarla de nuevo.",
   "categories.deleteConfirm": "¿Eliminar la categoría \"{name}\"?",
   "categories.edit": "Editar categoría",
   "categories.empty": "Sin categorias",

@@ -69,7 +69,7 @@ export function GeneralInfoSection({
         >
           <option value="">{t("products.noCategory")}</option>
           {categories
-            .filter((c) => c.is_active !== false || c.category_id === form.category_id)
+            .filter((c) => (c.status ?? 1) === 1 || c.category_id === form.category_id)
             .map((c) => (
             <option key={c.category_id} value={c.category_id}>
               {c.name}
