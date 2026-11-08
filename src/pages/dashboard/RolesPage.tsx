@@ -140,7 +140,7 @@ export default function RolesPage() {
             <Badge variant={is_system ? "secondary" : "primary-soft"}>
               {is_system ? t("roles.systemBadge") : t("roles.customBadge")}
             </Badge>
-            {!role.is_active && (
+            {role.status !== 1 && (
               <Badge variant="warning">{t("common.inactive")}</Badge>
             )}
           </div>

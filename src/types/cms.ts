@@ -55,7 +55,7 @@ export interface PageSection {
   section_type: string;
   name: string;
   sort_order?: number | null;
-  is_active?: boolean | null;
+  status?: number | null; // 1 active · 2 inactive · 3 deleted
   created_at?: string | null;
   updated_at?: string | null;
   /** Present when fetched via `?include_content=true`. */
@@ -73,7 +73,7 @@ export interface Page {
   title?: string | null;
   meta_description?: string | null;
   sort_order?: number | null;
-  is_active?: boolean | null;
+  status?: number | null; // 1 active · 2 inactive · 3 deleted
   created_at?: string | null;
   updated_at?: string | null;
   /** Present when fetched via `?include_content=true`. */

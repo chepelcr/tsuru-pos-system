@@ -52,7 +52,7 @@ export interface MyPermissionsDto {
     name: string;
     display_name: string;
     is_system: boolean;
-    is_active: boolean;
+    status: number; // 1 active · 2 inactive · 3 deleted
   };
   /** role.name === 'owner' */
   is_owner: boolean;
@@ -80,7 +80,7 @@ export interface RoleSummaryDto {
   name: string;
   display_name: string;
   is_system: boolean;
-  is_active: boolean;
+  status: number; // 1 active · 2 inactive · 3 deleted
 }
 
 /** Role row (= Role $inferSelect on the markets-api). */
@@ -90,7 +90,7 @@ export interface RoleDto {
   display_name: string;
   description: string | null;
   is_system: boolean;
-  is_active: boolean;
+  status: number; // 1 active · 2 inactive · 3 deleted
   organization_id: string | null;
   created_at: string;
 }

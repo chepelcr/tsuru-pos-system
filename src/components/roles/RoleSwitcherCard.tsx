@@ -59,7 +59,7 @@ export function RoleSwitcherCard() {
                   <div className="text-[13px] font-semibold truncate">
                     {roleLabel(t, r.name, r.display_name)}
                   </div>
-                  {!r.is_active && (
+                  {r.status !== 1 && (
                     <div className="t-xs text-muted-foreground">{t("profile.roles.inactive")}</div>
                   )}
                 </div>
@@ -71,7 +71,7 @@ export function RoleSwitcherCard() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={!r.is_active || switchRole.isPending}
+                    disabled={r.status !== 1 || switchRole.isPending}
                     onClick={() => handleSwitch(r.id)}
                   >
                     {t("profile.roles.switch")}

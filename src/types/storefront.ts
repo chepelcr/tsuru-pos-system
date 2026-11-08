@@ -19,7 +19,7 @@ export interface Template {
   category: string;
   thumbnail_url?: string;
   preview_url?: string;
-  is_active: boolean;
+  status: number; // 1 active · 2 inactive · 3 deleted
   sort_order: number;
   /** Gallery copy per language (`es`, `en`, …); see `localizeTemplate`. */
   translations?: Partial<Record<string, TemplateTranslation>> | null;

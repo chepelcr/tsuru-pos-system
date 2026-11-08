@@ -80,7 +80,7 @@ export function RoleDrawerForm({
 
   const [display_name, setDisplayName] = useState("");
   const [description, setDescription] = useState("");
-  const [is_active, setIsActive] = useState(true);
+  const [active, setActive] = useState(true);
   const [grants, setGrants] = useState<Set<string>>(new Set());
   const [grantsInitialized, setGrantsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export function RoleDrawerForm({
           : "")
     );
     setDescription(role?.description ?? duplicateFrom?.description ?? "");
-    setIsActive(role?.is_active ?? true);
+    setActive((role?.status ?? 1) === 1);
     setGrants(new Set());
     setGrantsInitialized(!sourceRole); // blank role starts empty, no perms to load
     setError(null);
@@ -143,14 +143,14 @@ export function RoleDrawerForm({
         });
         setCreatedRole(target);
       } else {
-        // O7 — `name` stays stable; only display fields + is_active change.
+        // O7 — `name` stays stable; only display fields + status change.
         await updateRole.mutateAsync({
           userId,
           orgId,
           roleId: target.id,
           display_name: name,
           description: description.trim() || undefined,
-          is_active,
+          status: active ? 1 : 2,
         });
       }
       // O10 — bulk replace; backend subset-validates against the org matrix.
@@ -272,8 +272,8 @@ export function RoleDrawerForm({
                 <input
                   type="checkbox"
                   className="mt-0.5 accent-primary"
-                  checked={is_active}
-                  onChange={(e) => setIsActive(e.target.checked)}
+                  checked={active}
+                  onChange={(e) => setActive(e.target.checked)}
                 />
                 <span>
                   <span className="t-body font-semibold text-foreground block">

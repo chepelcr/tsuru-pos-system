@@ -65,7 +65,7 @@ export default function MembersPage() {
   // Same-org role rule (contract V3): only active, non-platform_admin roles
   // are assignable — filtered defensively here too.
   const roles = useMemo(
-    () => allRoles.filter((r) => r.is_active && r.name !== "platform_admin"),
+    () => allRoles.filter((r) => r.status === 1 && r.name !== "platform_admin"),
     [allRoles]
   );
   const [roleChangeError, setRoleChangeError] = useState<string | null>(null);
@@ -196,7 +196,7 @@ export default function MembersPage() {
     m.roles?.length
       ? [...m.roles].sort((a, b) => Number(b.id === m.role_id) - Number(a.id === m.role_id))
       : m.role
-        ? [{ ...m.role, is_system: false, is_active: true }]
+        ? [{ ...m.role, is_system: false, status: 1 }]
         : [];
 
   const roleErrorMessage = (err: unknown) =>

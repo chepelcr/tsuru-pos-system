@@ -5,7 +5,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { BUNDLED_TEMPLATE_PREVIEWS, TemplateThumbnail, templateThumbnailUrl } from "./TemplateThumbnail";
 import type { Template } from "@/types";
 
-const template: Template = { id: "template-1", name: "tech-gadgets", display_name: "Tech Gadgets", description: "Electronics", category: "technology", is_active: true, sort_order: 1 };
+const template: Template = { id: "template-1", name: "tech-gadgets", display_name: "Tech Gadgets", description: "Electronics", category: "technology", status: 1, sort_order: 1 };
 beforeEach(() => localStorage.setItem("language", "en"));
 
 describe("template previews", () => {

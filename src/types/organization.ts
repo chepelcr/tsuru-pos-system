@@ -153,7 +153,7 @@ export interface Organization {
   is_pyme?: boolean;
   billing_email?: string;
   stripe_customer_id?: string;
-  is_active?: boolean;
+  status?: number; // 1 active · 2 inactive · 3 deleted
 
   // ── Nested sections (each object, or null/absent when not configured) ─────
   contact?: OrgContactSettings | null;

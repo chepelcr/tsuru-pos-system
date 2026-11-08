@@ -122,7 +122,7 @@ export interface UpdateRoleInput {
   name?: string;
   display_name?: string;
   description?: string;
-  is_active?: boolean;
+  status?: number; // 1 active · 2 inactive · 3 deleted
 }
 
 /** O7 — update org role (404 cross-org, 400 system roles). */
