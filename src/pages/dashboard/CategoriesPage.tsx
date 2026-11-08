@@ -7,7 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useConfirmModal } from "@/hooks/useConfirmModal";
 import { usePermissions } from "@/hooks/useRbac";
-import { useCategories, useDeleteCategory } from "@/hooks/useCategories";
+import { isCategoryActive, nextCategorySortOrder, useCategories, useSetCategoryActive } from "@/hooks/useCategories";
 import { CategoryDrawerForm, getContrastingColor } from "@/components/categories/CategoryDrawerForm";
 import type { Category } from "@/types";
 
@@ -30,7 +30,7 @@ export default function CategoriesPage() {
   const [drawer, setDrawer] = useState<Category | "new" | null>(null);
 
   const { data: response, isLoading } = useCategories(org?.id);
-  const deleteMutation = useDeleteCategory(org?.id);
+  const statusMutation = useSetCategoryActive(org?.id);
 
   const categories: Category[] = response?.data ?? [];
 
@@ -43,18 +43,22 @@ export default function CategoriesPage() {
     );
   });
 
-  const handleDelete = (category: Category) => {
+  // "Delete" deactivates (PATCH status) — products keep their category and it can be restored.
+  const handleDeactivate = (category: Category) => {
     confirm({
-      title: t("common.delete"),
-      message: t("categories.deleteConfirm", { name: category.name }),
+      title: t("common.deactivate"),
+      message: t("categories.deactivateConfirm", { name: category.name }),
       variant: "destructive",
-      confirmLabel: t("common.delete"),
+      confirmLabel: t("common.deactivate"),
       cancelLabel: t("common.cancel"),
       onConfirm: async () => {
-        await deleteMutation.mutateAsync(category.category_id);
+        await statusMutation.mutateAsync({ id: category.category_id, active: false });
       },
     });
   };
+
+  const handleActivate = (category: Category) =>
+    statusMutation.mutate({ id: category.category_id, active: true });
 
   return (
     <div className="px-6 pt-6 pb-10 max-w-[1400px] mx-auto">
@@ -148,14 +152,21 @@ export default function CategoriesPage() {
           {/* Existing categories */}
           {filtered.map((category) => {
             const bg = category.background_color ?? "";
+            const active = isCategoryActive(category);
             return (
-              <div key={category.category_id} className="card overflow-hidden flex flex-col p-0">
+              <div
+                key={category.category_id}
+                className={`card overflow-hidden flex flex-col p-0 ${active ? "" : "opacity-60"}`}
+              >
                 {/* Data-driven header color (§3.6 case 4 — caller-supplied data). */}
                 <div
                   className="h-20 px-4 flex items-center font-display font-bold text-lg"
                   style={{ background: bg, color: bg ? getContrastingColor(bg) : undefined }}
                 >
                   <span className="truncate">{category.name}</span>
+                  {!active && (
+                    <span className="ml-auto badge badge-default shrink-0">{t("common.inactive")}</span>
+                  )}
                 </div>
 
                 <div className="p-4 flex-1 flex flex-col gap-3">
@@ -189,15 +200,26 @@ export default function CategoriesPage() {
                           {t("common.edit")}
                         </Button>
                       )}
-                      {canDelete && (
+                      {canDelete && active && (
                         <Button
                           variant="destructive"
                           size="sm"
                           icon="trash"
-                          onClick={() => handleDelete(category)}
-                          disabled={deleteMutation.isPending}
+                          onClick={() => handleDeactivate(category)}
+                          disabled={statusMutation.isPending}
                         >
-                          {t("common.delete")}
+                          {t("common.deactivate")}
+                        </Button>
+                      )}
+                      {canDelete && !active && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          icon="check"
+                          onClick={() => handleActivate(category)}
+                          disabled={statusMutation.isPending}
+                        >
+                          {t("common.activate")}
                         </Button>
                       )}
                     </div>
@@ -215,6 +237,7 @@ export default function CategoriesPage() {
           open={drawer !== null}
           category={drawer && drawer !== "new" ? drawer : undefined}
           orgId={org.id}
+          nextSortOrder={nextCategorySortOrder(categories)}
           onClose={() => setDrawer(null)}
         />
       )}

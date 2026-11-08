@@ -23,7 +23,8 @@ export interface Category {
   image_1_url?: string | null;
   image_2_url?: string | null;
   sort_order?: number;
-  status?: number;
+  /** store-be `is_active`; a "deleted" category is deactivated, never hard-deleted. */
+  is_active?: boolean;
 }
 
 /** Image payload for category create/update (base64 blob, mirrors product upload). */

@@ -18,6 +18,8 @@ interface CategoryDrawerFormProps {
   /** `undefined` while creating; a category object while editing. */
   category?: Category;
   orgId: string;
+  /** Prefilled order for a new category: after the last one (not 0). */
+  nextSortOrder?: number;
   onClose: () => void;
   onSaved?: () => void;
 }
@@ -73,7 +75,7 @@ const slugify = (name: string) =>
 
 export { slugify };
 
-export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: CategoryDrawerFormProps) {
+export function CategoryDrawerForm({ open, category, orgId, nextSortOrder, onClose, onSaved }: CategoryDrawerFormProps) {
   const { t } = useLanguage();
   const isEditing = !!category;
 
@@ -105,8 +107,10 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
         sort_order: category.sort_order ?? 0,
       });
     } else {
-      reset(DEFAULTS);
+      reset({ ...DEFAULTS, sort_order: nextSortOrder ?? DEFAULTS.sort_order });
     }
+    // nextSortOrder is read when the drawer opens; a refetch must not wipe a typed value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, category, reset]);
 
   const bgColor = watch("background_color");
@@ -122,7 +126,8 @@ export function CategoryDrawerForm({ open, category, orgId, onClose, onSaved }: 
       // the resulting absolute URLs (empty string clears the field).
       image1_url: data.image1_url || null,
       image2_url: data.image2_url || null,
-      sort_order: Number(data.sort_order) || 0,
+      // Blank → omitted, and store-be places it after the last category.
+      sort_order: Number.isFinite(data.sort_order) ? Number(data.sort_order) : undefined,
     };
 
     if (isEditing) {
