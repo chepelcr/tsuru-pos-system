@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories, isCategoryActive } from "@/hooks/useCategories";
 import { Pagination } from "@/components/ui/Pagination";
 import { ProductImage } from "@/components/ui/ProductImage";
 import { FadeIn } from "@/components/ui/FadeIn";
@@ -37,7 +37,8 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
 
   const products = productsResp?.data ?? [];
   const pagination = productsResp?.pagination;
-  const categories = categoriesResp?.data ?? [];
+  // Deactivated categories stay off the sale screen.
+  const categories = (categoriesResp?.data ?? []).filter(isCategoryActive);
 
   const handleCategoryChange = useCallback((id: string) => {
     setCategoryId(id);

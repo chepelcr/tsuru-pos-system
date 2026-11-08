@@ -45,6 +45,18 @@ describe("CategoryDrawerForm", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it("prefills a new category's order after the last one", async () => {
+    render(<CategoryDrawerForm open orgId="org-1" nextSortOrder={5} onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByPlaceholderText("categories.form.namePlaceholder"), {
+      target: { value: "Snacks" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "categories.form.create" }));
+
+    await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1));
+    expect(createMock.mock.calls[0][0]).toMatchObject({ sort_order: 5 });
+  });
+
   it("updates an existing category", async () => {
     render(
       <CategoryDrawerForm
