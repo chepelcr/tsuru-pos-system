@@ -372,6 +372,13 @@ export interface Order {
    * financial NC (TSR-340). They never replace `document_id`.
    */
   credit_notes?: OrderCreditNote[] | null;
+  /** Debit notes issued against that invoice; same entry shape. */
+  debit_notes?: OrderCreditNote[] | null;
+  /**
+   * grand_total − accepted credit notes + accepted debit notes. Null while the
+   * order has no notes — read `final_total ?? grand_total`.
+   */
+  final_total?: number | null;
 }
 
 /** A credit note recorded on an order by store-be (TSR-340). */
@@ -387,6 +394,8 @@ export interface OrderCreditNote {
   currency_code?: string;
   /** e.g. `NCprontopago`. */
   tipo_nota?: string;
+  /** Clave of the document the note references. */
+  referenced_document_key?: string;
 }
 
 /**
@@ -715,4 +724,56 @@ export function canEditDeliveryDate(
 ): boolean {
   if (order.document_id) return false;   // billed: the date is on the document
   return DELIVERY_DATE_EDITABLE_STATUSES.includes(order.order_status);
+}
+
+/** A line of the order a chain document would create, as store-be stores it. */
+export interface DocumentOrderLine {
+  line_number: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  codes?: { code_type_id: string; number: string }[];
+}
+
+export interface OrderSuggestionMatch {
+  document_line?: number | null;
+  order_line?: number | null;
+  description?: string | null;
+  document_quantity: number;
+  order_quantity: number;
+  same_quantity: boolean;
+}
+
+/** An unbilled order of the same customer, scored 0–100 against the document. */
+export interface OrderSuggestion {
+  order_document_number: string;
+  order_id: number;
+  order_status?: string | null;
+  creation_date?: string | null;
+  delivery_date?: string | null;
+  grand_total: number;
+  line_count: number;
+  score: number;
+  matched_lines: OrderSuggestionMatch[];
+  unmatched_document_lines: number;
+  unmatched_order_lines: number;
+}
+
+/** A chain document waiting to be mapped to the order it bills. */
+export interface DocumentOrderMapping {
+  document_id: string;
+  status: "pending" | "linked" | "created" | "dismissed";
+  receiver_identification?: string | null;
+  receiver_name?: string | null;
+  document_info: {
+    consecutive_number?: string;
+    document_type?: string;
+    issued_on?: string;
+    total_amount?: number;
+    currency_code?: string;
+  };
+  order_block: { lines?: DocumentOrderLine[]; grand_total?: number };
+  order_document_number?: string | null;
+  suggestions: OrderSuggestion[];
 }

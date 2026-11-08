@@ -5,7 +5,7 @@ import { ROUTES, documentDetailPath } from '@/routePaths';
 import { useSale } from '@/hooks/useSale';
 import { EarlyPaymentDiscountDrawer } from '@/components/documents/EarlyPaymentDiscountDrawer';
 import { canApplyEarlyPaymentDiscount } from '@/lib/earlyPaymentDiscount';
-import { ATV_STATUS } from '@/lib/documentStatus';
+import { OrderNotesCard } from '@/components/orders/OrderNotesCard';
 import { useOrgContext } from '@/contexts/OrgContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
@@ -693,41 +693,7 @@ export default function OrderDetailPage({ orderId }: Props) {
         </div>
       </Card>
 
-      {!!order.credit_notes?.length && (
-        <Card className="p-6 mb-3.5">
-          <div className="flex items-center gap-2 mb-3">
-            <Icon name="layers" size={14} className="text-accent-rose" />
-            <span className="label-section">{t('orders.creditNotes.title')}</span>
-          </div>
-          {order.credit_notes.map((note) => {
-            const status = note.status != null ? ATV_STATUS[note.status] : null;
-            return (
-              <Link
-                key={note.document_id}
-                href={note.document_id ? documentDetailPath(note.document_id) : '#'}
-                className="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-b-0 no-underline"
-              >
-                <div className="min-w-0">
-                  <div className="t-body font-semibold text-foreground font-mono">#{note.consecutive_number ?? '—'}</div>
-                  <div className="t-xs text-muted-foreground">
-                    {note.tipo_nota === 'NCprontopago' ? t('documents.related.earlyPayment') : t('docTypes.03')}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="t-body font-semibold t-num">-{fmt(note.total_amount ?? 0)}</span>
-                  {status && <Badge variant={status.variant}>{t(status.labelKey)}</Badge>}
-                </div>
-              </Link>
-            );
-          })}
-          {invoiceSale && invoiceSale.adjusted_total != null && (
-            <div className="flex items-center justify-between pt-3 mt-1 border-t border-border">
-              <span className="t-sm text-muted-foreground">{t('documents.balance.final')}</span>
-              <span className="t-stat t-num">{fmt(invoiceSale.adjusted_total)}</span>
-            </div>
-          )}
-        </Card>
-      )}
+      <OrderNotesCard order={order} invoiceAdjustedTotal={invoiceSale?.adjusted_total} />
 
       <div className="order-detail-grid">
         {/* Left: line items + timeline */}

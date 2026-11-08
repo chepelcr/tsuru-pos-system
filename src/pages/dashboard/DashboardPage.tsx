@@ -1,4 +1,3 @@
-import { useOrgContext } from "@/contexts/OrgContext";
 import { lazy, Suspense, useState } from "react";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -15,7 +14,6 @@ import type { DashboardGranularity, DashboardSource } from "@/types/dashboard";
 import { Icon, Card, CardTitle, CardDescription, Badge, Button } from "@/components/ui";
 import { FadeIn } from "@/components/ui/FadeIn";
 import { trendWindow } from "@/lib/dashboardPeriod";
-import { readSourcePreference, writeSourcePreference } from "@/lib/dashboardSource";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { TopProductsPanel } from "@/components/dashboard/TopProductsPanel";
@@ -40,7 +38,6 @@ const QrShareModal = lazy(() =>
 
 export default function DashboardPage() {
   const { user } = useAuthContext();
-  const { isRegisteredOrgConfigured: hasFiscalInfo } = useOrgContext();
   const { useDefaultOrganization } = useOrganization();
   const { data: org } = useDefaultOrganization(user?.userId);
   const { t } = useLanguage();
@@ -54,8 +51,10 @@ export default function DashboardPage() {
   // unless they are an admin. The server resolves this independently and narrows
   // anything it will not answer, so this is about asking the right question.
   const scope = useDashboardScope();
-  const [preferredSource, setSource] = useState<DashboardSource>(readSourcePreference);
-  const source: DashboardSource = hasFiscalInfo ? preferredSource : "orders";
+  // Orders only: every accepted document now maps to an order (a walk-in sale
+  // gets a delivered one), so the orders/documents switch is gone and the panel
+  // reads one population. Notes are already netted into each order's final total.
+  const source: DashboardSource = "orders";
   const [granularity, setGranularity] = useState<DashboardGranularity>("day");
 
   const queryOptions = {
@@ -105,24 +104,9 @@ export default function DashboardPage() {
     0,
   );
 
-  // The source toggle has to change the HEADLINE, not just the panels below it.
-  //
-  // `session_sales` is orders-only by definition — a document has no delivery to
-  // still be pending — so with Documentos selected the hero was still showing the
-  // ORDERS session figure under an unchanged label, which read as the toggle
-  // having done nothing. For documents the honest headline is what was billed:
-  // the documents summary, which already excludes anything Hacienda rejected.
-  const isDocuments = source === "documents";
-  const heroLabel = isDocuments ? t("dash.documentsBilled") : t("dash.sessionSales");
-  const heroValue = isDocuments ? totalRevenue : openRevenue;
-  const heroCountLabel = isDocuments
-    ? t("dash.documentsCount", { n: String(totalSales) })
-    : t("dash.sessionOrders", { n: String(openOrderCount) });
-
-  const changeSource = (next: DashboardSource) => {
-    setSource(next);
-    writeSourcePreference(next);
-  };
+  const heroLabel = t("dash.sessionSales");
+  const heroValue = openRevenue;
+  const heroCountLabel = t("dash.sessionOrders", { n: String(openOrderCount) });
 
   // Only the headline figure gates the hero card. A slow product ranking should
   // not hold up the number the operator opened the page to read.
@@ -141,7 +125,7 @@ export default function DashboardPage() {
     <div className="px-6 pt-6 pb-10 max-w-[1500px] mx-auto">
       {/* Welcome */}
       <div className="fade-up flex justify-between items-start mb-5 gap-4 flex-wrap lg:flex-nowrap">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1" data-tour="overview">
           <h1 className="t-h1 mb-1.5">
             {(() => {
               const hour = new Date().getHours();
@@ -166,23 +150,6 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap shrink-0 max-w-full">
-          {/* Orders or documents — not the same population. An order may never be
-              billed, and a document may have no order behind it. */}
-          <div className="tabs" role="tablist" aria-label={t("dash.source")} data-tour="overview">
-            {(hasFiscalInfo ? ["orders", "documents"] as const : ["orders"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                role="tab"
-                className="tab"
-                aria-selected={source === option}
-                onClick={() => changeSource(option)}
-              >
-                {t(`dash.source.${option}`)}
-              </button>
-            ))}
-          </div>
-
           {/* Only an admin inside a session can widen to the whole business. */}
           {scope.canSwitch && (
             <Button
@@ -239,22 +206,16 @@ export default function DashboardPage() {
                     orders — "5 órdenes" beside a Pedidos view showing 4 looked
                     like a bug until the card said which question it answered. */}
                 {heroCountLabel}
-                {/* Only for orders: with Documentos selected the hero IS the
-                    organization total, so repeating it here would state the same
-                    figure twice under two names. */}
-                {!isDocuments &&
-                  ` · ${t("dash.orgTotal", { total: fmt(totalRevenue), n: String(totalSales) })}`}
+                {` · ${t("dash.orgTotal", { total: fmt(totalRevenue), n: String(totalSales) })}`}
               </span>
             </div>
           </div>
           <div className="flex gap-3 flex-wrap">
             {[
               {
-                // "Órdenes" was hardcoded, so the summary tile kept that word
-                // while counting documents.
-                label: isDocuments ? t("dash.documents") : t("dash.orders"),
+                label: t("dash.orders"),
                 value: String(totalSales),
-                icon: isDocuments ? "fileText" : "cart",
+                icon: "cart",
                 color: "icon-pill-info",
               },
               { label: t("dash.avgTicket"), value: fmt(avgTicket), icon: "chart", color: "icon-pill-success" },

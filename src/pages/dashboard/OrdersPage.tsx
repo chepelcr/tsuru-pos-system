@@ -23,6 +23,8 @@ import {
   type OrdersAdvancedFilters,
 } from '@/components/orders/OrdersFiltersModal';
 import { formatOrderDate } from '@/lib/orderDate';
+import { useDocumentOrderMappings } from '@/hooks/useDocumentOrderMappings';
+import { useDocumentOrderMappingModal } from '@/components/orders/DocumentOrderMappingPrompt';
 
 const PAGE_SIZE = 12;
 const SKELETON_COUNT = 6;
@@ -112,6 +114,13 @@ export function OrderListCard({ order, onClick }: { order: Order; onClick: () =>
         <span className="t-xs text-muted-foreground">{t('common.total')}</span>
         <span className="font-display text-[22px] leading-tight font-bold">{fmt(order.grand_total)}</span>
       </div>
+      {/* Credit/debit notes changed what this sale finally came to. */}
+      {order.final_total != null && order.final_total !== order.grand_total && (
+        <div className="flex items-center justify-between gap-2">
+          <span className="t-xs text-muted-foreground">{t('documents.balance.final')}</span>
+          <span className="t-body font-bold text-success t-num">{fmt(order.final_total)}</span>
+        </div>
+      )}
     </button>
   );
 }
@@ -122,6 +131,9 @@ export default function OrdersPage() {
   const [, navigate] = useLocation();
 
   usePageTitle([t('orders.title')]);
+  // Chain documents imported without their purchase order wait here until mapped.
+  const { data: pendingMappings = [] } = useDocumentOrderMappings(orgId);
+  const setMappingOpen = useDocumentOrderMappingModal((state) => state.setOpen);
 
   // RBAC action gating — Excel import creates orders. Fail-open while
   // my-permissions resolves (§5.1).
@@ -207,6 +219,17 @@ export default function OrdersPage() {
 
   return (
     <div className="px-6 pt-6 pb-12 max-w-[1400px] mx-auto fade-in">
+      {pendingMappings.length > 0 && (
+        <div className="card p-3.5 mb-4 flex items-center justify-between gap-3 flex-wrap border-warning/40" role="status">
+          <span className="flex items-center gap-2 t-sm">
+            <Icon name="alertTri" size={16} className="text-warning" />
+            {t('orders.mapping.banner', { n: String(pendingMappings.length) })}
+          </span>
+          <Button variant="outline" size="sm" onClick={() => setMappingOpen(true)}>
+            {t('orders.mapping.review')}
+          </Button>
+        </div>
+      )}
       <div className="flex justify-between items-start mb-5 flex-wrap gap-3">
         <div>
           <h1 className="t-h1 mb-1.5" data-tour="orders">{t('orders.title')}</h1>

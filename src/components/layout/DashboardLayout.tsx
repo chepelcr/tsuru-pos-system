@@ -11,6 +11,7 @@ import { useCatalogInvalidationFeed } from "@/hooks/useCatalogInvalidationFeed";
 import { usePermissionsLiveSync } from "@/hooks/usePermissionsLiveSync";
 import { useAssignmentLiveSync } from "@/hooks/useCashSession";
 import { OpeningCashModal } from "@/components/session/OpeningCashModal";
+import { DocumentOrderMappingPrompt } from "@/components/orders/DocumentOrderMappingPrompt";
 import { DocumentImportTray } from "@/components/documents/DocumentImportTray";
 import { OrderImportTray } from "@/components/orders/OrderImportTray";
 
@@ -143,6 +144,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* The XML import queue lives here, not in a page: uploads keep going while the user navigates. */}
           <DocumentImportTray orgId={org.id} />
           <OrderImportTray orgId={org.id} />
+          {/* Chain invoices imported without their purchase order (TSR doc→order). */}
+          <DocumentOrderMappingPrompt orgId={org.id} />
           {/* Blocking until an assigned, unopened till is counted. */}
           <OpeningCashModal orgId={org.id} />
         </ExchangeRateProvider>
