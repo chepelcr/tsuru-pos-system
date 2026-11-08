@@ -48,7 +48,6 @@
   "categories.backgroundColor": "Background color",
   "categories.buttonColor": "Button color",
   "categories.createFirst": "Create first",
-  "categories.deactivateConfirm": "Deactivate the category \"{name}\"? Its products keep it and you can activate it again.",
   "categories.deleteConfirm": "Delete the category \"{name}\"?",
   "categories.edit": "Edit category",
   "categories.empty": "No categories",

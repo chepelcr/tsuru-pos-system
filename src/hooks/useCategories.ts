@@ -87,24 +87,27 @@ export function useUpdateCategory(orgId: string | undefined) {
   });
 }
 
-/** A category with no explicit `is_active` (older payloads) counts as active. */
-export const isCategoryActive = (category: Category) => category.is_active !== false;
+export const CATEGORY_STATUS = { ACTIVE: 1, INACTIVE: 2, DELETED: 3 } as const;
+export type CategoryStatus = (typeof CATEGORY_STATUS)[keyof typeof CATEGORY_STATUS];
+
+/** A category without a status (older payloads) counts as active. */
+export const isCategoryActive = (category: Category) =>
+  (category.status ?? CATEGORY_STATUS.ACTIVE) === CATEGORY_STATUS.ACTIVE;
 
 /** One past the highest `sort_order`, so a new category lands after the last one. */
 export const nextCategorySortOrder = (categories: Category[]) =>
   categories.reduce((max, c) => Math.max(max, c.sort_order ?? 0), 0) + 1;
 
 /**
- * Deactivate / reactivate through `PATCH /categories/{id}` (`StatusRequestDTO`:
- * 1 = active, 2 = inactive). Deleting a category is a deactivation: products keep
- * their category link and the merchant can bring it back. The hard `DELETE` route
- * is not used from the POS.
+ * Activate (1), deactivate (2) or delete (3) through `PATCH /categories/{id}`.
+ * Delete is soft, like every other entity: products keep their category link and
+ * the category leaves every listing. The hard `DELETE` route is not used.
  */
-export function useSetCategoryActive(orgId: string | undefined) {
+export function useSetCategoryStatus(orgId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
-      ordersApi.patch<Category>(ordersOrgPath(orgId!, `/categories/${id}`), { status: active ? 1 : 2 }),
+    mutationFn: ({ id, status }: { id: string; status: CategoryStatus }) =>
+      ordersApi.patch<Category>(ordersOrgPath(orgId!, `/categories/${id}`), { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories", orgId] }),
   });
 }

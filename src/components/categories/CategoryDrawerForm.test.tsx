@@ -73,7 +73,7 @@ describe("CategoryDrawerForm", () => {
           button_color: "#000000",
           image_1_url: "https://uploads.example/a.png",
           image_2_url: null,
-          is_active: true,
+          status: 1,
           sort_order: 2,
         } as never}
       />,
