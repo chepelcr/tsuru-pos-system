@@ -142,12 +142,10 @@ export default function MembersPage() {
       cancelLabel: t("common.cancel"),
       onConfirm: async () => {
         if (!userId || !orgId) return;
-        // Member removal mirrors the dashboard TeamMembers page: DELETE the
-        // member's membership on the markets-api. The member's own userId is
-        // the path subject (route: /api/users/{userId}/memberships/organization/{orgId}).
-        await api.delete(orgPath(memberUserId, orgId, ""), {
-          removed_by: userId,
-        });
+        // The path user is always the signed-in caller (the platform api
+        // rejects any other id); the member to remove is named after the
+        // organization. Requires admin/members:remove, enforced server-side.
+        await api.delete(orgPath(userId, orgId, `/members/${memberUserId}`));
       },
     });
   };
