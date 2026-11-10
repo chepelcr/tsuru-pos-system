@@ -1,9 +1,16 @@
-import { QueryClient, type Query } from "@tanstack/react-query";
+import { MutationCache, QueryClient, type Query } from "@tanstack/react-query";
 import { persistQueryClient } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { CATALOG_GC_TIME } from "@/hooks/useDataApi";
 
-export const queryClient = new QueryClient({
+export const queryClient: QueryClient = new QueryClient({
+  // Any successful write can change plan usage (a product, a client, a member):
+  // refresh the plan meters instead of wiring an invalidation into every hook.
+  mutationCache: new MutationCache({
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["entitlements"] });
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes

@@ -10,6 +10,7 @@ import { Badge, Button, EmptyState, Icon } from "@/components/ui";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import type { RoleDto } from "@/types/rbac";
 import { roleLabel, roleDescription } from "@/lib/rbacI18n";
+import { useCapabilityGate } from "@/hooks/useEntitlements";
 
 interface DrawerState {
   open: boolean;
@@ -66,6 +67,7 @@ export default function RolesPage() {
   const canUpdate = can("admin", "update", "roles");
   const canDelete = can("admin", "delete", "roles");
 
+  const capabilityGate = useCapabilityGate();
   const openCreate = () => {
     setActionError(null);
     setDrawer({ open: true, role: null, duplicateFrom: null, readOnly: false });
@@ -234,7 +236,7 @@ export default function RolesPage() {
           <p className="t-body text-muted-foreground">{t("roles.subtitle")}</p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="sm" icon="plus" onClick={openCreate}>
+          <Button variant="primary" size="sm" icon="plus" onClick={capabilityGate("rbac.fine_grained", openCreate)}>
             {t("roles.new")}
           </Button>
         )}
@@ -270,7 +272,7 @@ export default function RolesPage() {
               description={t("roles.noCustomRolesDescription")}
               action={
                 canCreate ? (
-                  <Button variant="primary" size="sm" icon="plus" onClick={openCreate}>
+                  <Button variant="primary" size="sm" icon="plus" onClick={capabilityGate("rbac.fine_grained", openCreate)}>
                     {t("roles.new")}
                   </Button>
                 ) : undefined

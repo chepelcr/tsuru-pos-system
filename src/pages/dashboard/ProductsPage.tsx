@@ -23,6 +23,8 @@ import {
   type ProductAdvancedFilters,
 } from "@/components/products/ProductAdvancedFiltersModal";
 import { ListToolbar, type StatusOption } from "@/components/common/ListToolbar";
+import { PlanUsageMeter } from "@/components/plans/PlanUsageMeter";
+import { useLimitGate } from "@/hooks/useEntitlements";
 
 type ProductStatusValue = "1" | "2" | "all";
 const PRODUCT_STATUS_OPTIONS: readonly StatusOption<ProductStatusValue>[] = [
@@ -163,6 +165,7 @@ export default function ProductsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["products", org?.id] }); setDrawerProduct(null); setSelected([]); },
   });
 
+  const gate = useLimitGate();
   const openNew = () => { setForm({ ...EMPTY_FORM, type: advanced.type ?? "product" }); setImageUrl(""); setUnitsPerBox(""); setDrawerProduct("new"); };
 
   const openEdit = (p: Product) => {
@@ -263,6 +266,7 @@ export default function ProductsPage() {
       <div className="flex justify-between items-start mb-7 flex-wrap gap-3">
         <div>
           <h1 className="t-h1 mb-1.5" data-tour="products">{t("products.title")}</h1>
+          <PlanUsageMeter usageKey="products" className="mb-1.5" />
           <p className="t-body text-muted-foreground">
             {pagination ? `${pagination.total_elements} productos registrados` : t("products.subtitle")}
           </p>
@@ -274,7 +278,7 @@ export default function ProductsPage() {
             </Button>
           )}
           {canCreate && (
-            <Button variant="primary" size="sm" icon="plus" onClick={openNew} data-tour="new-product">{t("products.newProduct")}</Button>
+            <Button variant="primary" size="sm" icon="plus" onClick={gate("products", openNew)} data-tour="new-product">{t("products.newProduct")}</Button>
           )}
         </div>
       </div>

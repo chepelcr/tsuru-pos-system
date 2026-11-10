@@ -14,6 +14,7 @@ import esStorefront from './es/storefront.json';
 import esReports from './es/reports.json';
 import esSupport from './es/support.json';
 import esOnboarding from './es/onboarding.json';
+import esPlans from './es/plans.json';
 import enCommon from './en/common.json';
 import enAuth from './en/auth.json';
 import enOrganization from './en/organization.json';
@@ -30,8 +31,9 @@ import enStorefront from './en/storefront.json';
 import enReports from './en/reports.json';
 import enSupport from './en/support.json';
 import enOnboarding from './en/onboarding.json';
+import enPlans from './en/plans.json';
 
-export const LOCALE_NAMESPACES = ["common","auth","organization","access","catalog","inventory","clients","pos","sessions","documents","orders","analytics","storefront","reports","support","onboarding"] as const;
+export const LOCALE_NAMESPACES = ["common","auth","organization","access","catalog","inventory","clients","pos","sessions","documents","orders","analytics","storefront","reports","support","onboarding","plans"] as const;
 export type Language = 'en' | 'es';
 export type TranslationDictionary = Record<string, string>;
 
@@ -52,6 +54,7 @@ export const esNamespaces = {
   reports: esReports,
   support: esSupport,
   onboarding: esOnboarding,
+  plans: esPlans,
 } as const;
 
 export const enNamespaces = {
@@ -71,6 +74,7 @@ export const enNamespaces = {
   reports: enReports,
   support: enSupport,
   onboarding: enOnboarding,
+  plans: enPlans,
 } as const;
 
 function mergeNamespaces(namespaces: Record<string, TranslationDictionary>): TranslationDictionary {

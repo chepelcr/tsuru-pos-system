@@ -31,6 +31,7 @@ function NotificationsBridge({ orgId }: { orgId?: string }) {
 }
 
 import type { NavId } from "./navIds";
+import { PlanLimitHost } from "@/components/plans/UpgradeSheet";
 
 function getActiveNav(location: string): NavId {
   if (location.startsWith(ROUTES.DASHBOARD_GUIDE)) return "guide";
@@ -148,6 +149,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DocumentOrderMappingPrompt orgId={org.id} />
           {/* Blocking until an assigned, unopened till is counted. */}
           <OpeningCashModal orgId={org.id} />
+          {/* Every 402 PLAN_LIMIT_EXCEEDED and every plan-gated button opens this. */}
+          <PlanLimitHost />
         </ExchangeRateProvider>
       </OrgProvider>
     </>

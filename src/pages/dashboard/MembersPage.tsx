@@ -20,6 +20,8 @@ import { SearchInput } from "@/components/forms/SearchInput";
 import { FormField } from "@/components/forms/FormField";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { roleLabel as rbacRoleLabel } from "@/lib/rbacI18n";
+import { PlanUsageMeter } from "@/components/plans/PlanUsageMeter";
+import { useLimitGate } from "@/hooks/useEntitlements";
 
 const PAGE_SIZE = 12;
 
@@ -103,6 +105,7 @@ export default function MembersPage() {
     currentPage * pageSize
   );
 
+  const gate = useLimitGate();
   const openInvite = () => {
     setInviteEmail("");
     setInviteRoleId(roles[0]?.id ?? "");
@@ -262,6 +265,7 @@ export default function MembersPage() {
       <div className="flex justify-between items-start mb-7 flex-wrap gap-3">
         <div>
           <h1 className="t-h1 mb-1.5">{t("members.title")}</h1>
+          <PlanUsageMeter usageKey="team.seats" className="mb-1.5" />
           <p className="t-body text-muted-foreground">
             {members.length
               ? t("members.countSubtitle", { count: members.length })
@@ -269,7 +273,7 @@ export default function MembersPage() {
           </p>
         </div>
         {canInviteMembers && (
-          <Button variant="primary" size="sm" icon="userPlus" onClick={openInvite}>
+          <Button variant="primary" size="sm" icon="userPlus" onClick={gate("team.seats", openInvite)}>
             {t("members.invite")}
           </Button>
         )}
@@ -320,7 +324,7 @@ export default function MembersPage() {
                 variant="primary"
                 size="sm"
                 icon="userPlus"
-                onClick={openInvite}
+                onClick={gate("team.seats", openInvite)}
               >
                 {t("members.invite")}
               </Button>

@@ -20,6 +20,8 @@ import { ListToolbar, type StatusOption } from "@/components/common/ListToolbar"
 import type {
   Branch, BranchListResponse, CreateBranchRequest, CreateTerminalRequest, BranchStatus,
 } from "@/types";
+import { PlanUsageMeter } from "@/components/plans/PlanUsageMeter";
+import { useLimitGate } from "@/hooks/useEntitlements";
 
 type BranchStatusValue = "1" | "2" | "all";
 const BRANCH_STATUS_OPTIONS: readonly StatusOption<BranchStatusValue>[] = [
@@ -49,6 +51,7 @@ export default function BranchesPage() {
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [termDrawer, setTermDrawer] = useState(false);
   const [addTermBranch, setAddTermBranch] = useState<Branch | null>(null);
+  const gate = useLimitGate();
 
   usePageTitle([
     t("shell.stations"),
@@ -128,12 +131,16 @@ export default function BranchesPage() {
       <div className="fade-up flex justify-between items-start mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="t-h1 mb-1">{t("puestos.title")}</h1>
+          <div className="flex flex-wrap gap-x-4 mb-1">
+            <PlanUsageMeter usageKey="branches" />
+            <PlanUsageMeter usageKey="terminals" />
+          </div>
           <p className="t-body text-muted-foreground">
             {total === 0 ? t("puestos.title") : t("puestos.subtitle", { active: String(activeCount), total: String(total) })}
           </p>
         </div>
         {canCreateStations && (
-          <Button variant="primary" icon="plus" onClick={() => { setEditingBranch(null); setBranchDrawer(true); }}>
+          <Button variant="primary" icon="plus" onClick={gate("branches", () => { setEditingBranch(null); setBranchDrawer(true); })}>
             {t("puestos.newStation")}
           </Button>
         )}
@@ -184,7 +191,7 @@ export default function BranchesPage() {
               orgId={org!.id}
               onEdit={(b) => { setEditingBranch(b); setBranchDrawer(true); }}
               onStatusChange={(b, s) => statusMutation.mutate({ code: b.code, status: s })}
-              onAddTerminal={(b) => { setAddTermBranch(b); setTermDrawer(true); }}
+              onAddTerminal={gate("terminals", (b: Branch) => { setAddTermBranch(b); setTermDrawer(true); })}
               delay={i * 0.03}
             />
           ))}

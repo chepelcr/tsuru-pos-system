@@ -17,6 +17,8 @@ import {
 } from "@/components/clients/ClientAdvancedFiltersModal";
 import { ListToolbar, type StatusOption } from "@/components/common/ListToolbar";
 import { Icon, Button, Pagination } from "@/components/ui";
+import { PlanUsageMeter } from "@/components/plans/PlanUsageMeter";
+import { useLimitGate } from "@/hooks/useEntitlements";
 
 type ClientStatusValue = "1" | "2" | "all";
 const CLIENT_STATUS_OPTIONS: readonly StatusOption<ClientStatusValue>[] = [
@@ -74,6 +76,7 @@ export default function ClientsPage() {
   const hasAdvancedFilters = advanced.customerType !== undefined || !!advanced.sort;
 
   const goToDetail = (clientId: string) => navigate(`${ROUTES.DASHBOARD_CLIENTS}/${clientId}`);
+  const gate = useLimitGate();
   const openCreate = () => { setEditingClient(null); setDrawerOpen(true); };
   const openEdit = (c: Client) => { setEditingClient(c); setDrawerOpen(true); };
 
@@ -99,12 +102,13 @@ export default function ClientsPage() {
       <div className="flex justify-between items-start mb-7 flex-wrap gap-3">
         <div>
           <h1 className="t-h1 mb-1.5" data-tour="clients">{t("clients.title")}</h1>
+          <PlanUsageMeter usageKey="customers" className="mb-1.5" />
           <p className="t-body text-muted-foreground">
             {pagination ? `${pagination.total_elements} ${t("clients.registered")}` : t("clients.directory")}
           </p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate} data-tour="new-client">{t("clients.newClient")}</Button>
+          <Button variant="primary" size="sm" icon="userPlus" onClick={gate("customers", openCreate)} data-tour="new-client">{t("clients.newClient")}</Button>
         )}
       </div>
 
@@ -137,7 +141,7 @@ export default function ClientsPage() {
           <div className={`t-body text-muted-foreground ${term ? "" : "mb-5"}`}>
             {term ? t("clients.tryOtherSearch") : t("empty.addFirst")}
           </div>
-          {!term && canCreate && <Button variant="primary" size="sm" icon="userPlus" onClick={openCreate}>{t("clients.addClient")}</Button>}
+          {!term && canCreate && <Button variant="primary" size="sm" icon="userPlus" onClick={gate("customers", openCreate)}>{t("clients.addClient")}</Button>}
         </div>
       ) : (
         <div className="grid-auto-fill-265 gap-3.5">

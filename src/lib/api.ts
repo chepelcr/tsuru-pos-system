@@ -1,4 +1,5 @@
 import { fetchAuthSession } from "aws-amplify/auth";
+import { emitPlanLimit, isPlanLimitDetail, type PlanLimitDetail } from "./planLimitBus";
 
 const API_BASE           = import.meta.env.VITE_API_URL        || "https://api.tsuru.jcampos.dev";
 const CROSS_APP_API_BASE = import.meta.env.VITE_ORDERS_API_URL || "https://orders-api.tsuru.jcampos.dev";
@@ -53,6 +54,8 @@ export class ApiError extends Error {
     message: string,
     public readonly status?: number,
     public readonly retriable = false,
+    /** Set on a 402 PLAN_LIMIT_EXCEEDED: the upgrade sheet has already been opened. */
+    public readonly planLimit?: PlanLimitDetail,
   ) {
     super(message);
     this.name = "ApiError";
@@ -117,8 +120,15 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
+    // 402 = the organization's PLAN does not allow this (not a permission
+    // problem). Open the upgrade sheet once, centrally, then still reject so
+    // the caller stops its own flow.
+    const planLimit = res.status === 402 && isPlanLimitDetail((err as Record<string, unknown>)?.plan_limit)
+      ? (err as { plan_limit: PlanLimitDetail }).plan_limit
+      : undefined;
+    if (planLimit) emitPlanLimit(planLimit);
     const retriable = res.status === 408 || res.status === 429 || res.status >= 500;
-    throw new ApiError(apiErrorMessage(err) || "Request failed", res.status, retriable);
+    throw new ApiError(apiErrorMessage(err) || "Request failed", res.status, retriable, planLimit);
   }
 
   // Tolerate empty / no-content responses (e.g. 204 from DELETE) so callers

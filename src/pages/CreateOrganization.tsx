@@ -26,6 +26,7 @@ import { setSelectedOrgId } from "@/lib/selectedOrg";
 import { TemplateSitePreview } from "@/components/cms/TemplateSitePreview";
 import type { Template } from "@/types";
 import { localizeTemplate, TemplateThumbnail } from "@/components/cms";
+import { ApiError } from "@/lib/api";
 
 const BASE_DOMAIN =
   (import.meta.env.VITE_BASE_DOMAIN as string | undefined) || "tsuru.jcampos.dev";
@@ -257,8 +258,14 @@ export default function CreateOrganization() {
           sessionStorage.setItem("resumeOrgId", org.id);
         }
         setStepIndex(1);
-      } catch {
-        setFormError(t("orgs.create.error.createFailed"));
+      } catch (error) {
+        // 409 ORGANIZATION_PLAN_QUOTA_REACHED is the owner's plan, not a glitch:
+        // "try again" would never work, so say what it is.
+        setFormError(
+          error instanceof ApiError && error.message === "ORGANIZATION_PLAN_QUOTA_REACHED"
+            ? t("orgs.create.error.planQuota")
+            : t("orgs.create.error.createFailed"),
+        );
       }
       return;
     }

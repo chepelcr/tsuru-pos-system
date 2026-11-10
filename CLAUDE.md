@@ -428,6 +428,26 @@ Action gating inside pages uses `can(module, action, submodule)` — e.g. RolesP
 
 **Multiple roles + live changes (TSR-330/331).** A member can hold several roles (`my-permissions.assigned_roles`); only the ACTIVE `role` grants anything. Members switch it on the profile page (`RoleSwitcherCard`, `PUT /rbac/my-active-role`); admins assign/unassign roles as chips on MembersPage. management-be pushes `rbac.permissions_changed` on the user's `/notifications/{sub}` AppSync channel on any role/grant/member-role change; `useRealtimeNotifications` routes it to `lib/realtimeBus.ts` and `usePermissionsLiveSync` (mounted in `DashboardLayout`) drops every `["rbac"]` query so the whole UI re-resolves without a reload.
 
+### 5.1b Plan limits (entitlements, TSR-R07-12)
+
+RBAC says whether THIS USER may act; the organization's **plan** says whether there is
+room. Backends refuse a full plan with **402 `PLAN_LIMIT_EXCEEDED`** + `plan_limit`.
+
+- `src/lib/api.ts` turns every 402 into `emitPlanLimit(...)` (`lib/planLimitBus.ts`);
+  `PlanLimitHost` (mounted once in `DashboardLayout`) opens `UpgradeSheet`. Pages never
+  handle 402 themselves.
+- `useEntitlements()` (`hooks/useEntitlements.ts`) reads `GET …/entitlements`
+  (plan, limits, capabilities, usage). It **fails open** while unresolved — the
+  backend is the authority. The global `MutationCache` refreshes it after any write.
+- Create buttons on a limited resource go through `useLimitGate()` (products,
+  customers, branches, terminals, team seats) or `useCapabilityGate()` (custom roles):
+  at the limit they open the upgrade sheet instead of a form the server will refuse.
+  The button stays enabled.
+- `PlanUsageMeter` shows "12 de 50" only when a limit exists.
+- `DocumentAllowanceBanner` (documents page) warns at 80 % of the monthly document
+  allowance and past 100 % — **emission is never blocked**. Never put a plan check or
+  lock badge on document types, contingency or export (plans spec §1).
+
 ### 5.2 Route bundles and permission-aware loading
 
 - Keep the authenticated dashboard shell eager so navigation remains stable, but load every page through `React.lazy`.

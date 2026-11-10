@@ -6,6 +6,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { ROUTES } from '@/routePaths';
+import { DocumentAllowanceBanner } from "@/components/plans/DocumentAllowanceBanner";
 
 const DocumentsListView = lazy(() =>
   import('@/components/documents/DocumentsListView').then((module) => ({
@@ -85,6 +86,8 @@ export default function DocumentsPage() {
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-background">
       <div className="flex flex-1 flex-col min-h-0 overflow-auto">
+        {/* Informational only: past the monthly allowance emission continues (plans spec §1). */}
+        <div className="px-4 pt-4 empty:hidden"><DocumentAllowanceBanner orgId={org.id} /></div>
         <Suspense
           fallback={(
             <div className="flex items-center justify-center h-[60vh]">

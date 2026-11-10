@@ -17,6 +17,7 @@ vi.mock('@/hooks/useRbac', () => ({
 vi.mock('@/hooks/useActiveSession', () => ({ useActiveSession: () => null }));
 vi.mock('@/hooks/useCashSession', () => ({ useCashSession: () => ({ assignment: null, awaitingOpening: false, isOpen: false, isLoading: false }), useAssignmentLiveSync: () => {} }));
 vi.mock('@/components/session/OpeningCashModal', () => ({ OpeningCashModal: () => null }));
+vi.mock('@/components/plans/UpgradeSheet', () => ({ PlanLimitHost: () => null }));
 vi.mock('@/components/orders/DocumentOrderMappingPrompt', () => ({ DocumentOrderMappingPrompt: () => null, useDocumentOrderMappingModal: () => () => {} }));
 vi.mock('@/components/common/UserAvatar', () => ({ UserAvatar: () => null }));
 vi.mock('@/contexts/DocumentVersionContext', () => ({ DocumentVersionProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
