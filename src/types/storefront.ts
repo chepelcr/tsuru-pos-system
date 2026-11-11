@@ -2,7 +2,7 @@
  * Storefront template types (markets-api `templates` table).
  *
  * A "storefront template" is the PAGE STRUCTURE + SECTION CONTENT of the
- * customer-facing store (the 8 designs deployed to
+ * customer-facing store (the 11 designs deployed to
  * `{name}.examples.tsuru.jcampos.dev`). Selecting one clones page/section
  * content rows server-side and sets `Organization.template_id`.
  *

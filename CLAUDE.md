@@ -1041,7 +1041,7 @@ All `/dashboard` routes share one persistent `DashboardRoutes` boundary in
 Keep the shell outside the child route switch so navigation preserves the sidebar
 and its accordion elements; replacing the layout on each page prevents a closing
 section from animating. The sidebar follows the active route, including collapsing
-all groups for standalone pages (Panel, Profile, Documents, Programs).
+all groups for standalone pages (Panel, Profile, Documents). Legacy Programs links redirect to Products with `?type=program`, using commercial/products permissions. Programs has no separate page or sidebar item.
 `DashboardPage` supplies per-page permissions, Suspense and page transitions.
 
 The blog uses `DashboardPage` without a business-module permission requirement.
@@ -1075,3 +1075,16 @@ filtering and meaningful workflow coverage.
 `useConfirmModal` returns `{ confirm, confirmModal }`; render `{confirmModal}` as an element. Do not wrap it in a component created inside the hook: state updates remount the dialog and restart its entry animation/focus. `Modal` keeps its title beside its icon and blocks dismissal during an active confirmation.
 
 Dashboard navigation, document summaries and fiscal reports use `OrgContext.isRegisteredOrgConfigured`. Fiscal identity unlocks those surfaces; Hacienda credentials remain a separate transmission requirement. Manual pedido creation stays available through the editor. `TemplateSitePreview` embeds the live example with the shared overlay stack and preserves gallery selection.
+
+### Storefront status (TSR-R03-56 / TSR-394, 2026-11-11)
+
+`StorefrontStatusCard` is shared by Organization Settings and Templates. It is
+visible only with `storefront/deployments:read`; content links also require
+`storefront/content:read`. `useStorefrontStatus` reads the existing management
+`/deployments/status` endpoint (infrastructure readiness, selected template and
+active HTTPS store link). Manual deployment history is not infrastructure status.
+The bell's existing `receive` invalidates this org's `storefront-status` query on
+`storefront.*` events; reconnect also refreshes it. Never add polling or a second
+socket. The card shares the bell's notification query to show the latest template
+update independently of store availability. Applying a template merges defaults
+and preserves authored settings/content; it does not overwrite the whole store.
