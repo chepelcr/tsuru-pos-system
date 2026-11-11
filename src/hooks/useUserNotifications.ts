@@ -122,6 +122,9 @@ export function useNotificationMutations() {
     });
     const saleId = incoming.payload?.sale_id;
     const organizationId = incoming.organization_id;
+    if (incoming.event_type.startsWith('storefront.')) {
+      void qc.invalidateQueries({ queryKey: ['storefront-status', organizationId] });
+    }
     if (incoming.event_type === 'order.created') {
       void qc.invalidateQueries({ queryKey: ['orders', organizationId] });
       const orderId = incoming.payload?.order_id;

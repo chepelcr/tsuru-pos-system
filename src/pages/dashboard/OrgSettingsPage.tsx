@@ -1,3 +1,4 @@
+import { StorefrontStatusCard } from "@/components/cms/StorefrontStatusCard";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -191,6 +192,8 @@ export default function OrgSettingsPage() {
           <h1 className="t-h1 mb-1">{t("orgSettings.title")}</h1>
           <p className="t-body text-muted-foreground">{t("orgSettings.subtitle")}</p>
         </div>
+
+        <StorefrontStatusCard userId={user?.userId} orgId={org.id} />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {isOwner && <button className="card card-hover text-left w-full p-5 flex items-start gap-4" onClick={() => navigate(ROUTES.DASHBOARD_ORG_CONNECTIONS)}>

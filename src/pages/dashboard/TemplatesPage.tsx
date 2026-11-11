@@ -1,3 +1,4 @@
+import { StorefrontStatusCard } from "@/components/cms/StorefrontStatusCard";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -25,9 +26,8 @@ const ALL = "__all__";
  *
  * Lists the global storefront templates, lets the user search/filter by
  * category, preview a template (modal + live-demo link), and APPLY one to the
- * current org. "Apply" re-clones storefront content + sets
- * `Organization.template_id` — guarded by a warning confirm because it
- * OVERWRITES the org's existing storefront content (migration 04 §2B).
+ * current org. "Apply" merges template defaults while preserving owner edits and sets
+ * `Organization.template_id`. The confirmation explains the public change.
  *
  * This sets the STOREFRONT design (the published customer-facing store), NOT
  * the POS admin-shell theme (stored by the sales API from the Theme page). The
@@ -46,7 +46,7 @@ export default function TemplatesPage() {
 
   const { confirm, confirmModal } = useConfirmModal();
 
-  // RBAC action gating — fail-open while my-permissions resolves (§5.1).
+  // RBAC action gating — fail closed until grants resolve.
   const { can } = usePermissions();
   const canApplyTemplate = can("storefront", "update", "templates");
 
@@ -158,6 +158,8 @@ export default function TemplatesPage() {
           <h1 className="t-h1 mb-1.5">{t("storefront.title")}</h1>
           <p className="t-body text-muted-foreground">{t("storefront.subtitle")}</p>
         </div>
+
+        <StorefrontStatusCard userId={user?.userId} orgId={org.id} templateName={templates?.find((tpl) => tpl.id === activeTemplateId)?.display_name} />
 
         {/* Theme-vs-storefront hint */}
         <div className="card card-surface-muted flex items-start gap-3 p-4 mb-6">

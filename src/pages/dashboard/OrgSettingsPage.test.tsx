@@ -86,6 +86,8 @@ vi.mock("@/components/org-settings/tabs/NotificationsTab", () => ({
   NotificationsTab: () => <section aria-label="Notification settings" />,
 }));
 
+vi.mock("@/components/cms/StorefrontStatusCard", () => ({ StorefrontStatusCard: () => null }));
+
 function showSettings() {
   return render(<LanguageProvider><OrgSettingsPage /></LanguageProvider>);
 }
