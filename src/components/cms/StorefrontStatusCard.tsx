@@ -41,7 +41,7 @@ export function StorefrontStatusCard({ userId, orgId, templateName }: {
     <section aria-label={t("storefront.status.title")} className="card p-5 mb-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="t-h4 flex items-center gap-2"><Icon name="store" size={20} />{t("storefront.status.title")}</h2>
-        <Badge variant={state === "active" ? "success" : state === "failed" || state === "unavailable" ? "destructive" : "secondary"}>
+        <Badge variant="outline">
           {t(`storefront.status.${state}`)}
         </Badge>
       </div>
@@ -51,7 +51,7 @@ export function StorefrontStatusCard({ userId, orgId, templateName }: {
         {t(`storefront.status.update.${stage}`)}
       </p>}
       <div className="flex flex-wrap gap-2 mt-4">
-        {url && <a className="btn btn-primary min-h-11" href={url} target="_blank" rel="noopener noreferrer">{t("storefront.status.open")}</a>}
+        {url && <a className="btn btn-outline min-h-11 font-semibold" href={url} target="_blank" rel="noopener noreferrer">{t("storefront.status.open")}</a>}
         {can("storefront", "read", "content") && <a className="btn btn-outline min-h-11" href={ROUTES.DASHBOARD_CONTENT}>{t("storefront.status.edit")}</a>}
         <button type="button" className="btn btn-ghost min-h-11" disabled={query.isFetching} onClick={() => void query.refetch()}>
           <Icon name="refresh" size={16} />{t("storefront.status.refresh")}
