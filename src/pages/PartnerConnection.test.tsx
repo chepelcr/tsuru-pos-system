@@ -46,6 +46,20 @@ describe('POS partner onboarding', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     expect(button.disabled).toBe(false);
   });
+  it('shows catalog write permissions before approval and resets consent when scopes change', async () => {
+    const fetcher = open({ ...base, requested_scopes: ['products:read', 'products:create', 'products:update', 'customers:update'],
+      fiscal_readiness: { ready: true, available: true, next_step: 'consent' } });
+    expect(await screen.findByText(/also allows Ditsö to create and edit products/)).toBeTruthy();
+    const button=screen.getByRole('button',{name:'Authorize and return to Ditsö'}) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(screen.getByRole('checkbox'));
+    // Avoid any real callback navigation; inspect the explicit scope snapshot.
+    fetcher.mockResolvedValueOnce(new Response('{}',{status:409}));
+    fireEvent.click(button);
+    await screen.findByRole('alert');
+    const posted=fetcher.mock.calls.find(([,options])=>options?.method==='POST');
+    expect(JSON.parse(posted?.[1].body)).toEqual({consent:true,approved_scopes:['products:read','products:create','products:update','customers:update']});
+  });
   it('allows connecting without fiscal setup after explicit consent', async () => {
     open({ ...base, fiscal_readiness: { registered_organization_complete: false, hacienda_credentials_verified: false,
       certificate_and_pin_validated: false, ready: false, next_step: 'fiscal_profile' } });

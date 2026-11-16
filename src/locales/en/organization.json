@@ -524,5 +524,6 @@
   "connections.permission.prepareInvoices": "Prepare invoices.",
   "connections.permission.submitInvoices": "Issue invoices.",
   "connections.permission.readInvoices": "Read invoices and their status.",
-  "connections.permission.readArtifacts": "Download invoice files."
+  "connections.permission.readArtifacts": "Download invoice files.",
+  "partner.catalogWriteConsent": "This connection also allows Ditsö to create and edit products, and edit customers in the selected organization. Existing catalog records remain owned by this organization."
 }

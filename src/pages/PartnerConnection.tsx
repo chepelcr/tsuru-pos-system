@@ -10,7 +10,7 @@ import { PartnerFiscalProfile } from '@/components/org-settings/registered-org/P
 import { Spinner } from '@/components/ui/Spinner';
 
 type Progress = {
-  display_name: string; organization_id: string | null; organizations: { id: string; name: string }[]; status: string;
+  requested_scopes?: string[]; display_name: string; organization_id: string | null; organizations: { id: string; name: string }[]; status: string;
   fiscal_readiness: null | { available?: boolean; ready: boolean; registered_organization_complete: boolean; hacienda_credentials_verified: boolean;
     certificate_and_pin_validated: boolean; next_step: string; certificate_problem?: string };
 };
@@ -44,7 +44,7 @@ export default function PartnerConnection() {
   const select = useMutation({ mutationFn: (body: { organization_id?: string; create_organization?: boolean }) => partner(context, '/organization', body),
     onSuccess: async () => { setEditing(false); await qc.invalidateQueries({ queryKey: ['user-organizations'] }); await progress.refetch(); } });
   const authorize = useMutation({ mutationFn: async () => {
-    const result = await partner<{ redirect_url: string }>(context, '/authorize', { consent: true });
+    const result = await partner<{ redirect_url: string }>(context, '/authorize', { consent: true, ...(data?.requested_scopes ? { approved_scopes: data.requested_scopes } : {}) });
     const callback = new URL(result.redirect_url);
     const origin = import.meta.env.VITE_DITSO_CALLBACK_ORIGIN;
     if (!origin || callback.origin !== new URL(origin).origin || !callback.pathname.endsWith('/integrations/tsuru/callback')) throw new Error('partner.failed');
@@ -52,6 +52,7 @@ export default function PartnerConnection() {
   }, onSuccess: callback => { sessionStorage.removeItem('ditsoPartnerReturn'); window.location.assign(callback.href); } });
   const error = progress.error ?? select.error ?? authorize.error;
   const ready = data?.fiscal_readiness;
+  useEffect(() => { setConsent(false); }, [context, data?.organization_id, data?.requested_scopes?.join(',')]);
   return <main className="min-h-screen bg-background text-foreground px-4 py-10">
     <section className="mx-auto max-w-3xl space-y-6">
       <header className="space-y-2"><p className="t-label text-primary">Ditsö · Tsuru POS</p>
@@ -87,6 +88,7 @@ export default function PartnerConnection() {
           <button className="btn btn-outline" disabled={progress.isFetching} onClick={() => { setEditing(false); void progress.refetch(); }}>{t('partner.recheck')}</button>
         </div>}
         {data.organization_id && <div className="card p-5 space-y-4"><p>{t('partner.consentDescription')}</p>
+          {data.requested_scopes?.some(scope => ['products:create', 'products:update', 'customers:update'].includes(scope)) && <p className="t-body font-medium">{t('partner.catalogWriteConsent')}</p>}
           <label className="flex items-start gap-3 t-body"><input type="checkbox" className="mt-1" checked={consent} onChange={e => setConsent(e.target.checked)} />{t('partner.consent')}</label>
           <button className="btn btn-primary w-full" disabled={!consent || authorize.isPending} onClick={() => authorize.mutate()}>{t(ready?.ready ? 'partner.authorize' : 'partner.authorizeWithoutFiscal')}</button></div>}
       </>}
