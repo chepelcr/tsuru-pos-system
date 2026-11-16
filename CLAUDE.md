@@ -1088,3 +1088,7 @@ The bell's existing `receive` invalidates this org's `storefront-status` query o
 socket. The card shares the bell's notification query to show the latest template
 update independently of store availability. Applying a template merges defaults
 and preserves authored settings/content; it does not overwrite the whole store.
+
+### Partner catalog consent (TSR-R03-71)
+
+PartnerConnection displays the requested catalog-write permissions and sends the exact `requested_scopes` snapshot as `approved_scopes` when the owner explicitly authorizes. Reset the checkbox when the context, organization or scope snapshot changes. Existing grants and legacy authorization codes never acquire new write scopes through refresh; a fresh owner consent is required. Dev-only catalog integration work is coordinated with Ditsö DTS-R05-05/R06-03.
