@@ -191,7 +191,7 @@ function RequireAuth({
   }
 
   if (!user) {
-    if (/^\/integraciones\/ditso\/[A-Za-z0-9_-]{43}$/.test(location)) sessionStorage.setItem('ditsoPartnerReturn', location);
+    if (/^\/integraciones\/(ditso|partners)\/[A-Za-z0-9_-]{43}$/.test(location)) sessionStorage.setItem('ditsoPartnerReturn', location);
     sessionStorage.setItem("redirectAfterLogin", location);
     return <Redirect to={ROUTES.LOGIN} />;
   }
@@ -523,6 +523,9 @@ export default function Routes() {
     <Suspense fallback={<RouteLoading fullScreen />}>
       <Switch>
       <Route path="/integraciones/ditso/:context">
+        <RequireAuth><DocumentVersionProvider isoCode={CountryISO.COSTA_RICA}><PartnerConnection /></DocumentVersionProvider></RequireAuth>
+      </Route>
+      <Route path="/integraciones/partners/:context">
         <RequireAuth><DocumentVersionProvider isoCode={CountryISO.COSTA_RICA}><PartnerConnection /></DocumentVersionProvider></RequireAuth>
       </Route>
       {/* Public */}

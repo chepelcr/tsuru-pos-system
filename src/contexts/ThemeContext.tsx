@@ -43,6 +43,8 @@ const PRE_ORGANIZATION_ROUTES = [
   ROUTES.RESET_PASSWORD,
   ROUTES.SELECT_ORG,
   "/join",
+  "/integraciones/ditso",
+  "/integraciones/partners",
 ];
 
 export function isPreOrganizationRoute(pathname: string): boolean {
