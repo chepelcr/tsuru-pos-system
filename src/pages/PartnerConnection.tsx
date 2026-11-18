@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'wouter';
+import { useLocation, useParams } from 'wouter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -8,8 +8,11 @@ import { useOrgConfigurations } from '@/hooks/useOrgConfigurations';
 import { HaciendaCredentialsStepper } from '@/components/org-settings/hacienda/HaciendaCredentialsStepper';
 import { PartnerFiscalProfile } from '@/components/org-settings/registered-org/PartnerFiscalProfile';
 import { Spinner } from '@/components/ui/Spinner';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { PartnerPermissions } from '@/components/partners/PartnerPermissions';
 
 type Progress = {
+  application_id: string; application_name: string; callback_uri: string; permissions_approved: boolean;
   requested_scopes?: string[]; display_name: string; organization_id: string | null; organizations: { id: string; name: string }[]; status: string;
   fiscal_readiness: null | { available?: boolean; ready: boolean; registered_organization_complete: boolean; hacienda_credentials_verified: boolean;
     certificate_and_pin_validated: boolean; next_step: string; certificate_problem?: string };
@@ -29,38 +32,43 @@ async function partner<T>(context: string, suffix = '', body?: unknown): Promise
 
 export default function PartnerConnection() {
   const { context = '' } = useParams<{ context: string }>();
+  const [location] = useLocation();
   const { t } = useLanguage();
   const qc = useQueryClient();
-  const [consent, setConsent] = useState(false);
   const [editing, setEditing] = useState(false);
   const progress = useQuery({ queryKey: ['partner-onboarding', context], queryFn: () => partner<Progress>(context), retry: false,
     enabled: /^[A-Za-z0-9_-]{43}$/.test(context), staleTime: 0 });
   const data = progress.data;
-  const config = useOrgConfigurations(data?.organization_id ?? undefined);
+  const approved = data?.permissions_approved === true;
+  const application = data?.application_name || 'Ditsö';
+  const config = useOrgConfigurations(approved ? data?.organization_id ?? undefined : undefined);
   useEffect(() => {
-    if (/^[A-Za-z0-9_-]{43}$/.test(context)) sessionStorage.setItem('ditsoPartnerReturn', `/integraciones/ditso/${context}`);
-    if (data?.organization_id) setSelectedOrgId(data.organization_id);
-  }, [context, data?.organization_id]);
+    if (/^\/integraciones\/(?:ditso|partners)\/[A-Za-z0-9_-]{43}$/.test(location)) sessionStorage.setItem('ditsoPartnerReturn', location);
+    if (approved && data?.organization_id) setSelectedOrgId(data.organization_id);
+  }, [location, approved, data?.organization_id]);
+  const permissions = useMutation({ mutationFn: () => partner(context, '/permissions', { consent: true, approved_scopes: data!.requested_scopes }),
+    onSuccess: () => progress.refetch() });
   const select = useMutation({ mutationFn: (body: { organization_id?: string; create_organization?: boolean }) => partner(context, '/organization', body),
     onSuccess: async () => { setEditing(false); await qc.invalidateQueries({ queryKey: ['user-organizations'] }); await progress.refetch(); } });
   const authorize = useMutation({ mutationFn: async () => {
     const result = await partner<{ redirect_url: string }>(context, '/authorize', { consent: true, ...(data?.requested_scopes ? { approved_scopes: data.requested_scopes } : {}) });
     const callback = new URL(result.redirect_url);
-    const origin = import.meta.env.VITE_DITSO_CALLBACK_ORIGIN;
-    if (!origin || callback.origin !== new URL(origin).origin || !callback.pathname.endsWith('/integrations/tsuru/callback')) throw new Error('partner.failed');
+    const expected = new URL(data!.callback_uri);
+    if (expected.protocol !== 'https:' || callback.origin !== expected.origin || callback.pathname !== expected.pathname) throw new Error('partner.failed');
     return callback;
   }, onSuccess: callback => { sessionStorage.removeItem('ditsoPartnerReturn'); window.location.assign(callback.href); } });
-  const error = progress.error ?? select.error ?? authorize.error;
+  const error = progress.error ?? permissions.error ?? select.error ?? authorize.error;
   const ready = data?.fiscal_readiness;
-  useEffect(() => { setConsent(false); }, [context, data?.organization_id, data?.requested_scopes?.join(',')]);
-  return <main className="min-h-screen bg-background text-foreground px-4 py-10">
-    <section className="mx-auto max-w-3xl space-y-6">
-      <header className="space-y-2"><p className="t-label text-primary">Ditsö · Tsuru POS</p>
-        <h1 className="t-h1">{t('partner.title')}</h1><p className="t-body text-muted-foreground">{t('partner.description')}</p></header>
+  return <AuthLayout maxWidthClassName="max-w-2xl">
+    <section className="space-y-6">
+      <header className="space-y-2 text-center">
+        <h1 className="t-h1">{t('partner.connectApplication', { application })}</h1><p className="t-body text-muted-foreground">{t('partner.connectionSteps', { application })}</p></header>
+      <ol className="flex justify-center gap-4 t-sm" aria-label={t('partner.progress')}><li className={!approved ? 'font-semibold text-primary' : 'text-muted-foreground'} aria-current={!approved ? 'step' : undefined}>{approved ? '✓ ' : '1. '}{t('partner.permissionsTitle')}</li><li aria-hidden="true">→</li><li className={approved ? 'font-semibold text-primary' : 'text-muted-foreground'} aria-current={approved ? 'step' : undefined}>2. {t('partner.organizationTitle')}</li></ol>
       {progress.isFetching && <div role="status"><Spinner size={24} label={t('common.loading')} /></div>}
       {error && <div role="alert" className="card border-destructive p-5 space-y-3"><p>{t(error instanceof Error && error.message.startsWith('partner.') ? error.message : 'partner.failed')}</p>
-        <button className="btn btn-outline" onClick={() => { void progress.refetch(); }}>{t('partner.retry')}</button></div>}
-      {data && <>
+        <button className="btn btn-outline" onClick={() => { permissions.reset(); select.reset(); authorize.reset(); void progress.refetch(); }}>{t('partner.retry')}</button></div>}
+      {data && !approved && <PartnerPermissions key={context} applicationId={data.application_id || 'ditso'} application={application} scopes={data.requested_scopes || []} pending={permissions.isPending || progress.isFetching} onAllow={() => permissions.mutate()} />}
+      {data && approved && <>
         <div className="card p-5 space-y-4"><h2 className="t-h3">{data.display_name}</h2>
           {!data.organization_id ? <div className="space-y-3"><p>{t('partner.choose')}</p>
             {data.organizations.map(org => <button key={org.id} className="btn btn-outline w-full" disabled={select.isPending}
@@ -87,12 +95,10 @@ export default function PartnerConnection() {
                 onSaved={() => { setEditing(false); void progress.refetch(); }} />}
           <button className="btn btn-outline" disabled={progress.isFetching} onClick={() => { setEditing(false); void progress.refetch(); }}>{t('partner.recheck')}</button>
         </div>}
-        {data.organization_id && <div className="card p-5 space-y-4"><p>{t('partner.consentDescription')}</p>
-          {data.requested_scopes?.some(scope => ['products:create', 'products:update', 'customers:update'].includes(scope)) && <p className="t-body font-medium">{t('partner.catalogWriteConsent')}</p>}
-          <label className="flex items-start gap-3 t-body"><input type="checkbox" className="mt-1" checked={consent} onChange={e => setConsent(e.target.checked)} />{t('partner.consent')}</label>
-          <button className="btn btn-primary w-full" disabled={!consent || authorize.isPending} onClick={() => authorize.mutate()}>{t(ready?.ready ? 'partner.authorize' : 'partner.authorizeWithoutFiscal')}</button></div>}
+        {data.organization_id && <div className="card p-5 space-y-4"><p>{t('partner.permissionsAccepted')}</p>
+          <button className="btn btn-primary w-full" disabled={!approved || authorize.isPending} onClick={() => authorize.mutate()}>{t('partner.connectReturn', { application })}</button></div>}
       </>}
       <button className="btn btn-ghost" onClick={() => { sessionStorage.removeItem('ditsoPartnerReturn'); window.location.assign('/'); }}>{t('partner.leave')}</button>
     </section>
-  </main>;
+  </AuthLayout>;
 }

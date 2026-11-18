@@ -19,6 +19,8 @@ describe("isPreOrganizationRoute", () => {
     "/reset-password",
     "/organizations/select",
     "/join/abc123",
+    "/integraciones/ditso/opaque-context",
+    "/integraciones/partners/opaque-context",
   ])("%s renders the default theme", (path) => {
     expect(isPreOrganizationRoute(path)).toBe(true);
   });
