@@ -2,14 +2,15 @@ import type { CSSProperties } from 'react';
 
 /** Shared report palette contract, mirrored from orders-be `report_color.py`. */
 export const REPORT_COLOR_PALETTES = {
+  // Keep the saved/API identifier while presenting this palette as yellow.
   green: {
-    header: '#0e5c23',
-    headerText: '#ffffff',
-    headerMedium: '#2e6b34',
-    headerLight: '#0e5c23',
-    headerLightText: '#ffffff',
-    rowLight: '#d4edda',
-    rowAlternate: '#e8f5e9',
+    header: '#facc15',
+    headerText: '#000000',
+    headerMedium: '#fde047',
+    headerLight: '#fef08a',
+    headerLightText: '#000000',
+    rowLight: '#fef9c3',
+    rowAlternate: '#fefce8',
     rowText: '#000000',
   },
   orange: {

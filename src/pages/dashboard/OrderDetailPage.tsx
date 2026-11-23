@@ -531,7 +531,7 @@ export default function OrderDetailPage({ orderId }: Props) {
       : null,
     isCrossdockingType && canUpdate
       ? {
-          label: t('orders.crossdocking.upload'),
+          label: t('orders.crossdocking.uploadAction'),
           icon: 'upload',
           action: () => setCrossdockUploadOpen(true),
         }
