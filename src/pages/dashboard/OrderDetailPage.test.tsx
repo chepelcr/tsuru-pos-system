@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({ order: {} as Order, electronic: false, export:
 vi.mock('@/hooks/useOrders', () => ({
   useOrder: () => ({ data: state.order }),
   useUpdateOrderStatus: () => ({ mutateAsync: vi.fn() }),
+  useUploadCrossdocking: () => ({ mutateAsync: vi.fn() }),
 }));
 vi.mock('@/contexts/OrgContext', () => ({ useOrgContext: () => ({ orgId: 'test-org' }) }));
 vi.mock('@/contexts/LanguageContext', () => ({
@@ -26,7 +27,6 @@ vi.mock('@/components/documents/EarlyPaymentDiscountDrawer', () => ({ EarlyPayme
 vi.mock('@/components/pos/checkout/OrderCheckoutDrawer', () => ({ OrderCheckoutDrawer: () => null }));
 vi.mock('@/components/orders/DeliveryDateDialog', () => ({ DeliveryDateDialog: () => null }));
 vi.mock('@/components/orders/ReprocessDialog', () => ({ ReprocessDialog: () => null }));
-vi.mock('@/components/orders/CrossdockingUploadDialog', () => ({ CrossdockingUploadDialog: () => null }));
 vi.mock('@/components/orders/CrossdockingDetailsDialog', () => ({ CrossdockingDetailsDialog: () => null }));
 
 function exampleOrder(): Order {
@@ -50,6 +50,22 @@ function exampleOrder(): Order {
 beforeEach(() => { state.electronic = false; state.export = true; });
 
 describe('order detail', () => {
+  it('opens the cross-docking upload from the labeled action and shows the saved yellow palette', async () => {
+    state.order = { ...exampleOrder(), report_color: 'green' };
+    render(<OrderDetailPage orderId={state.order.document_number} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.actions' }));
+    fireEvent.click(screen.getByText('Subir Crossdoking'));
+
+    const dialog = await screen.findByRole('dialog');
+    const fileInput = dialog.querySelector<HTMLInputElement>('input[type="file"]')!;
+    fireEvent.change(fileInput, { target: { files: [new File(['xlsx'], 'crossdocking.xlsx')] } });
+
+    const drawer = within(dialog);
+    expect(drawer.getByRole('button', { name: 'Amarillo' }).getAttribute('aria-pressed')).toBe('true');
+    expect(drawer.getByRole('button', { name: 'Verde claro' }).getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('shows separate gross, discount, net, tax and final totals and removes the CABYS column', () => {
     state.order = exampleOrder();
     render(<OrderDetailPage orderId={state.order.document_number} />);
