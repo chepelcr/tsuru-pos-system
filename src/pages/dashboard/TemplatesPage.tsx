@@ -159,7 +159,7 @@ export default function TemplatesPage() {
           <p className="t-body text-muted-foreground">{t("storefront.subtitle")}</p>
         </div>
 
-        <StorefrontStatusCard userId={user?.userId} orgId={org.id} templateName={templates?.find((tpl) => tpl.id === activeTemplateId)?.display_name} />
+        <StorefrontStatusCard userId={user?.userId} orgId={org.id} templates={templates} />
 
         {/* Theme-vs-storefront hint */}
         <div className="card card-surface-muted flex items-start gap-3 p-4 mb-6">
