@@ -12,18 +12,19 @@ const state = vi.hoisted(() => ({
 vi.mock('@/hooks/useRbac', () => ({ usePermissions: () => ({ can: (_m: string, _a: string, section: string) => section === 'deployments' ? state.allowed : state.edit }) }));
 vi.mock('@/hooks/useStorefrontStatus', () => ({ useStorefrontStatus: (...args: unknown[]) => { state.hook(...args); return state.query; } }));
 vi.mock('@/hooks/useUserNotifications', () => ({ useUserNotifications: () => ({ data: { data: state.notifications } }) }));
-const show = () => render(<LanguageProvider><StorefrontStatusCard userId="user-a" orgId="org-a" templateName="Ferretería" /></LanguageProvider>);
+const templates = [{ id: 'template-a', name: 'ferreteria', display_name: 'Ferretería' }];
+const show = () => render(<LanguageProvider><StorefrontStatusCard userId="user-a" orgId="org-a" templates={templates} /></LanguageProvider>);
 beforeEach(() => {
   localStorage.setItem('language', 'en');
   state.allowed = true; state.edit = true; state.notifications = [];
-  state.query = { data: { infrastructure_status: 'active', infrastructure_updated_at: '2026-11-11T10:00:00Z', store_url: 'https://ddev.cloudfront.net', template_id: 'template-a' }, isError: false, isPending: false, isFetching: false, refetch: vi.fn() };
+  state.query = { data: { infrastructure_status: 'active', infrastructure_updated_at: '2026-11-11T10:00:00Z', store_url: 'https://example-store.stores.tsuru.jcampos.dev', template_id: 'template-a' }, isError: false, isPending: false, isFetching: false, refetch: vi.fn() };
 });
 describe('storefront status card', () => {
   it('shows a confirmed live link, selected design and separate content action', () => {
     show();
     expect(screen.getByText('Published')).toBeTruthy();
     expect(screen.getByText('Selected design: Ferretería')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Visit store' }).getAttribute('href')).toBe('https://ddev.cloudfront.net/');
+    expect(screen.getByRole('link', { name: 'Visit store' }).getAttribute('href')).toBe('https://example-store.stores.tsuru.jcampos.dev/');
     expect(screen.getByRole('link', { name: 'Edit content' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Refresh status' }));
     expect(state.query.refetch).toHaveBeenCalled();
@@ -62,11 +63,23 @@ describe('storefront status card', () => {
     show();
     expect(screen.queryByText(/The latest update failed/)).toBeNull();
   });
+  it('treats a timezone-less failure timestamp as UTC when comparing against a recovery', () => {
+    state.query.data.infrastructure_updated_at = '2026-11-05T02:45:48.899Z';
+    state.query.data.template_id = 'ferreteria';
+    state.notifications = [{ organization_id: 'org-a', event_type: 'storefront.failed', created_on: '2026-11-04T22:54:33.184760', payload: { stage: 'failed' } }];
+    show();
+    expect(screen.getByText('Published')).toBeTruthy();
+    expect(screen.getByText('Selected design: Ferretería')).toBeTruthy();
+    expect(screen.queryByText(/The latest update failed/)).toBeNull();
+  });
   it('shows loading in Spanish without a premature live link', () => {
     localStorage.setItem('language', 'es'); state.query.isPending = true;
+    state.query.data = undefined;
+    state.notifications = [{ organization_id: 'org-a', event_type: 'storefront.failed', created_on: '2026-11-04T22:54:33.184760', payload: { stage: 'failed' } }];
     show();
     expect(screen.getByText('Comprobando estado')).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Visitar tienda' })).toBeNull();
+    expect(screen.queryByText(/La última actualización falló/)).toBeNull();
   });
   it.each(['javascript:alert(1)', 'http://example.com', 'https://user:pass@example.com', '/account'])('rejects unsafe external URL %s', (url) => {
     expect(safeStoreUrl(url)).toBeNull();

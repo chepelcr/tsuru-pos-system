@@ -4,6 +4,7 @@ import { useStorefrontStatus } from "@/hooks/useStorefrontStatus";
 import { useUserNotifications } from "@/hooks/useUserNotifications";
 import { Badge, Icon } from "@/components/ui";
 import { ROUTES } from "@/routePaths";
+import type { Template } from "@/types";
 
 /** Externally supplied links may only open an ordinary HTTPS site. */
 export function safeStoreUrl(value: string | null | undefined): string | null {
@@ -13,8 +14,14 @@ export function safeStoreUrl(value: string | null | undefined): string | null {
   } catch { return null; }
 }
 
-export function StorefrontStatusCard({ userId, orgId, templateName }: {
-  userId: string | undefined; orgId: string; templateName?: string;
+function storefrontTimestamp(value: string | null | undefined): number {
+  if (!value) return NaN;
+  // The notifications API also sends UTC timestamps without a timezone suffix.
+  return Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : `${value}Z`);
+}
+
+export function StorefrontStatusCard({ userId, orgId, templates }: {
+  userId: string | undefined; orgId: string; templates?: Pick<Template, "id" | "name" | "display_name">[];
 }) {
   const { t } = useLanguage();
   const { can } = usePermissions();
@@ -26,14 +33,21 @@ export function StorefrontStatusCard({ userId, orgId, templateName }: {
   if (!allowed) return null;
 
   const data = query.data;
+  const templateName = templates?.find((template) =>
+    template.id === data?.template_id || template.name === data?.template_id,
+  )?.display_name;
   const status = data?.infrastructure_status;
   const known = status && ["not_published", "pending", "provisioning", "active", "failed", "deleting"].includes(status);
   const state = query.isError ? "unavailable" : query.isPending ? "loading" : known ? status : "unknown";
   const url = state === "active" ? safeStoreUrl(data?.store_url) : null;
-  const latest = notifications?.data.filter((n) => n.organization_id === orgId && n.event_type.startsWith("storefront."))
-    .sort((a, b) => Date.parse(b.created_on ?? "") - Date.parse(a.created_on ?? ""))[0];
-  const update = latest && Date.parse(latest.created_on ?? "") >= Date.parse(data?.infrastructure_updated_at ?? "1970-01-01")
-    ? latest : null;
+  const infrastructureTime = storefrontTimestamp(data?.infrastructure_updated_at ?? "1970-01-01T00:00:00Z");
+  const update = data && !query.isError
+    ? notifications?.data
+      .filter((n) => n.organization_id === orgId && n.event_type?.startsWith("storefront."))
+      .map((notification) => ({ notification, time: storefrontTimestamp(notification.created_on) }))
+      .filter(({ time }) => time >= infrastructureTime)
+      .sort((a, b) => b.time - a.time)[0]?.notification
+    : undefined;
   const stage = typeof update?.payload?.stage === "string" && ["provisioning", "applying", "ready", "applied", "failed"].includes(update.payload.stage)
     ? update.payload.stage : null;
 
