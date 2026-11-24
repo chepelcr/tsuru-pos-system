@@ -1,3 +1,5 @@
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { ROUTES } from '@/routePaths';
@@ -10,7 +12,6 @@ import { Card, Pagination, EmptyState, FadeIn, Button } from '@/components/ui';
 import { ConfirmationCard } from '@/components/confirmations/ConfirmationCard';
 import { CreateConfirmationDialog } from '@/components/confirmations/CreateConfirmationDialog';
 
-const PAGE_SIZE = 12;
 const SKELETON_COUNT = 6;
 
 function ConfirmationCardSkeleton() {
@@ -44,8 +45,9 @@ export default function ConfirmationsPage() {
   const { can } = usePermissions();
   const canUpdate = can('commercial', 'update', 'confirmations');
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const listScope = `confirmations:${orgId}`;
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data, isLoading, error, refetch } = useConfirmations({
@@ -53,6 +55,8 @@ export default function ConfirmationsPage() {
     page,
     pageSize,
   });
+
+  useListViewScroll(`${listScope}:${page}`, !isLoading);
 
   const confirmations = data?.data ?? [];
   const pagination = data?.pagination;

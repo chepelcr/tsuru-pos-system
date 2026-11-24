@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useState } from "react";
 import { formatOrderDate } from '@/lib/orderDate';
 import { useLocation } from "wouter";
@@ -40,7 +41,7 @@ export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps
   const locale = language === "es" ? "es-CR" : "en-US";
   const [, navigate] = useLocation();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const { data, isLoading } = useOrders({
     orgId,
@@ -134,7 +135,6 @@ export function ClientOrderHistory({ orgId, clientGln }: ClientOrderHistoryProps
               setPage(1);
             }}
             itemName={t("orders.itemName")}
-            pageSizeOptions={[8, 16, 32]}
           />
         </div>
       )}

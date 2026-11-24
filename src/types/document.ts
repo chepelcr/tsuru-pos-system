@@ -32,6 +32,7 @@ export interface InvoiceValidation {
 export interface DocumentListItem {
   sale_id: string;
   organization_id: string;
+  linked_order_numbers?: string[];
   /** Hacienda document type code as string (was numeric). */
   document_type: DocTypeCode;
   sale_date?: string;

@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -28,7 +29,6 @@ const STATUS_VARIANT: Record<BranchStatus, "success" | "secondary" | "destructiv
   1: "success", 2: "secondary", 3: "destructive",
 };
 
-const DOCS_PAGE_SIZE = 10;
 
 /**
  * One terminal (TSR-327): what it is, the consecutive counter it holds for
@@ -92,7 +92,7 @@ export default function TerminalDetailPage() {
 
   // ── Documents emitted at this terminal ──────────────────────────────────
   const [docsPage, setDocsPage] = useState(0);
-  const [docsPageSize, setDocsPageSize] = useState(DOCS_PAGE_SIZE);
+  const [docsPageSize, setDocsPageSize] = useState(DEFAULT_PAGE_SIZE);
   useEffect(() => setDocsPage(0), [orgId, branchCode, terminalCode]);
   const salesQuery = useSales({
     orgId: orgId ?? "",
@@ -301,7 +301,6 @@ export default function TerminalDetailPage() {
                 pageSize={docsPagination.page_size}
                 onPageChange={(next) => setDocsPage(next - 1)}
                 onPageSizeChange={setDocsPageSize}
-                pageSizeOptions={[10, 20, 50, 100]}
                 itemName={t("documents.itemName")}
               />
             </footer>

@@ -1,3 +1,5 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -51,13 +53,18 @@ export default function ConsecutivesPage() {
   usePageTitle([t("shell.consecutives")]);
 
   const url = new URLSearchParams(searchParams);
-  const filters = parseConsecutiveSearchString(url.get("search"));
-  const page = Math.max(1, Number(url.get("page")) || 1);
-  const [pageSize, setPageSize] = useState(20);
+  const listScope = `consecutives:${orgId}`;
+  const [savedSearch, saveSearch] = useListViewState<string | null>(listScope, "search", null);
+  const [savedPage, savePage] = useListViewState(listScope, "page", 1);
+  const filters = parseConsecutiveSearchString(searchParams ? url.get("search") : savedSearch);
+  const page = searchParams ? Math.max(1, Number(url.get("page")) || 1) : savedPage;
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
 
   const writeUrl = (next: ConsecutiveSearchFilters, nextPage = 1) => {
     const params = new URLSearchParams();
     const search = buildConsecutiveSearchString(next);
+    saveSearch(search || null);
+    savePage(nextPage);
     if (search) params.set("search", search);
     if (nextPage > 1) params.set("page", String(nextPage));
     const qs = params.toString();
@@ -78,6 +85,7 @@ export default function ConsecutivesPage() {
 
   const search = buildConsecutiveSearchString(filters);
   const query = useConsecutives(orgId, { search, page, pageSize });
+  useListViewScroll(`${listScope}:${page}`, !!orgId && !query.isLoading);
   const rows = query.data?.data ?? [];
   const pagination = query.data?.pagination;
   const filtered = hasActiveConsecutiveFilters(filters);
@@ -250,7 +258,6 @@ export default function ConsecutivesPage() {
           onPageChange={(p) => writeUrl(filters, p)}
           onPageSizeChange={(size) => { setPageSize(size); writeUrl(filters); }}
           itemName={t("consecutives.itemName")}
-          pageSizeOptions={[20, 50, 100]}
         />
       )}
 

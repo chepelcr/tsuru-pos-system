@@ -1,10 +1,10 @@
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { DOCUMENT_TYPES } from '@/types/invoice';
 import { usePermissions } from '@/hooks/useRbac';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { documentDetailPath } from '@/routePaths';
+import { documentDetailPath, ROUTES } from '@/routePaths';
 import type { DocumentListItem } from '@/types/document';
 import { formatMoney as fmt } from "@/lib/money";
 import { STATUS_PILL_CLASSES, documentStatusView, hasHaciendaActions } from '@/lib/documentStatus';
@@ -86,6 +86,16 @@ export function DocumentCard({ doc, isReceived, onAction, delay = 0 }: DocumentC
         <div className="flex justify-between items-center">
           <span className="text-[12px] text-muted-foreground">{t('documents.balance.final')}</span>
           <span className="font-mono font-semibold t-num text-success">{fmt(finalAmount)}</span>
+        </div>
+      )}
+      {!!doc.linked_order_numbers?.length && (
+        <div className="flex flex-wrap items-center gap-2 t-xs">
+          <span className="text-muted-foreground">{t('orderInfo.orderNumber')}</span>
+          {doc.linked_order_numbers.map((number) => (
+            <Link key={number} href={`${ROUTES.DASHBOARD_ORDERS}/${encodeURIComponent(number)}`} className="text-primary underline font-mono">
+              {number}
+            </Link>
+          ))}
         </div>
       )}
 

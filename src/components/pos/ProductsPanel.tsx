@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useState, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCategories, isCategoryActive } from "@/hooks/useCategories";
@@ -24,7 +25,7 @@ export function ProductsPanel({ orgId, cartItems, isDesktop, onAdd }: ProductsPa
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(isDesktop ? 24 : 12);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const { data: productsResp, isLoading } = useProducts({
     search,

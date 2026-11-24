@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useState } from "react";
 import { buildClientSearch } from "@/lib/search";
 import { useLocation } from "wouter";
 import { ROUTES } from "@/routePaths";
@@ -38,13 +40,14 @@ export default function ClientsPage() {
   const { can } = usePermissions();
   const canCreate = can("commercial", "create", "clients");
 
-  const [term, setTerm] = useState("");
+  const listScope = `clients:${orgId}`;
+  const [term, setTerm] = useListViewState(listScope, "term", "");
   // Default to status:1 (Active) on first load — matches the products page.
-  const [statusFilter, setStatusFilter] = useState<ClientStatusValue>("1");
-  const [advanced, setAdvanced] = useState<ClientAdvancedFilters>({});
+  const [statusFilter, setStatusFilter] = useListViewState<ClientStatusValue>(listScope, "statusFilter", "1");
+  const [advanced, setAdvanced] = useListViewState<ClientAdvancedFilters>(listScope, "advanced", {});
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
@@ -52,11 +55,6 @@ export default function ClientsPage() {
     t("shell.clients"),
     drawerOpen && (editingClient ? clientDisplayName(editingClient) : t("common.new")),
   ]);
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page]);
 
   const searchFilter = buildClientSearch({
     term,
@@ -70,6 +68,8 @@ export default function ClientsPage() {
     page,
     page_size: pageSize,
   });
+  useListViewScroll(`${listScope}:${page}`, !isLoading);
+
   const clients = listData?.data ?? [];
   const pagination = listData?.pagination;
 

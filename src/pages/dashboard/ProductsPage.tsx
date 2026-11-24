@@ -1,3 +1,5 @@
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { productFormFromProduct, productSavePayload } from "@/lib/productFormMapping";
 import { buildProductSearch } from "@/lib/search";
 import { useState, useEffect } from "react";
@@ -54,15 +56,16 @@ export default function ProductsPage() {
   const canDelete = can("commercial", "delete", "products");
   const canUpload = can("commercial", "upload", "products");
 
-  const [term, setTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
+  const listScope = `products:${org?.id}`;
+  const [term, setTerm] = useListViewState(listScope, "term", "");
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
   // Most-used filters live on the toolbar: status defaults to "1" (Active) so
   // the page lands on the active catalog by default — same UX the documents
   // page provides for issued/received.
-  const [statusFilter, setStatusFilter] = useState<ProductStatusValue>("1");
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [advanced, setAdvanced] = useState<ProductAdvancedFilters>({ type: catalogType });
+  const [statusFilter, setStatusFilter] = useListViewState<ProductStatusValue>(listScope, "statusFilter", "1");
+  const [categoryId, setCategoryId] = useListViewState<string>(listScope, "categoryId", "");
+  const [advanced, setAdvanced] = useListViewState<ProductAdvancedFilters>(listScope, "advanced", { type: catalogType });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -86,15 +89,12 @@ export default function ProductsPage() {
 
   // Includes bookmarked /dashboard/programs links redirected to this catalog.
   useEffect(() => {
-    setAdvanced((current) => ({ ...current, type: catalogType }));
-    setPage(1);
+    if (catalogType && catalogType !== advanced.type) {
+      setAdvanced((current) => ({ ...current, type: catalogType }));
+      setPage(1);
+    }
     setSelected([]);
   }, [catalogType]);
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
 
   // Partial name OR exact code (a scanned barcode finds its product).
   const searchFilter = buildProductSearch({
@@ -131,6 +131,8 @@ export default function ProductsPage() {
     enabled: !!org,
     queryFn: () => ordersApi.get<{ data: Category[] } | Category[]>(ordersOrgPath(org!.id, "/categories")),
   });
+
+  useListViewScroll(`${listScope}:${page}`, !!org && !isLoading);
 
   const products: Product[] = (productsResponse as any)?.data ?? [];
   const pagination = (productsResponse as any)?.pagination;
@@ -351,7 +353,6 @@ export default function ProductsPage() {
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           itemName={t("products.itemName")}
-          pageSizeOptions={[12, 24, 48, 96]}
         />
       )}
 

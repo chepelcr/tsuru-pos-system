@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useState } from "react";
 import { ACTIVE_ONLY } from "@/lib/search";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, orgPath, crossAppApi, crossAppOrgPath } from "@/lib/api";
@@ -62,13 +64,9 @@ export default function AssignmentsPage() {
   const canUpdateSessions = can("admin", "update", "sessions");
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
+  const listScope = `assignments:${org?.id}`;
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
 
   const ROLE_LABEL: Record<Role, string> = {
     cashier: t("assignments.cashier"),
@@ -93,6 +91,8 @@ export default function AssignmentsPage() {
       return crossAppApi.get<{ data: Assignment[]; pagination: any }>(crossAppOrgPath(org!.id, `/assignments?${params}`));
     },
   });
+
+  useListViewScroll(`${listScope}:${page}`, !!org && !isLoading);
 
   const assignments = assignmentsData?.data ?? [];
   const pagination = assignmentsData?.pagination;
@@ -349,7 +349,6 @@ export default function AssignmentsPage() {
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           itemName={t("assignments.itemName")}
-          pageSizeOptions={[12, 24, 48, 96]}
         />
       )}
 

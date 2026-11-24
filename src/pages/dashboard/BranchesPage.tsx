@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useState } from "react";
 import { buildBranchSearch } from "@/lib/search";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -40,13 +42,14 @@ export default function BranchesPage() {
   const { can } = usePermissions();
   const canCreateStations = can("admin", "create", "stations");
 
-  const [term, setTerm] = useState("");
+  const listScope = `branches:${org?.id}`;
+  const [term, setTerm] = useListViewState(listScope, "term", "");
   // Land on active branches by default — mirrors products/clients.
-  const [statusFilter, setStatusFilter] = useState<BranchStatusValue>("1");
-  const [advanced, setAdvanced] = useState<BranchAdvancedFilters>({});
+  const [statusFilter, setStatusFilter] = useListViewState<BranchStatusValue>(listScope, "statusFilter", "1");
+  const [advanced, setAdvanced] = useListViewState<BranchAdvancedFilters>(listScope, "advanced", {});
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
   const [branchDrawer, setBranchDrawer] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [termDrawer, setTermDrawer] = useState(false);
@@ -57,11 +60,6 @@ export default function BranchesPage() {
     t("shell.stations"),
     branchDrawer ? (editingBranch ? editingBranch.name : t("common.new")) : undefined,
   ]);
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
 
   // Name OR code, both partial.
   const searchFilter = buildBranchSearch({
@@ -83,6 +81,8 @@ export default function BranchesPage() {
       return crossAppApi.get<BranchListResponse>(crossAppOrgPath(org!.id, `/branches?${params}`));
     },
   });
+
+  useListViewScroll(`${listScope}:${page}`, !!org && !isLoading);
 
   const branches = branchesData?.data ?? [];
   const hasAdvancedFilters = !!advanced.type || !!advanced.sort;
@@ -208,7 +208,6 @@ export default function BranchesPage() {
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           itemName={t("stations.itemName")}
-          pageSizeOptions={[12, 24, 48, 96]}
         />
       )}
 
