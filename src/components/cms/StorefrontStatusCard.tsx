@@ -4,7 +4,6 @@ import { useStorefrontStatus } from "@/hooks/useStorefrontStatus";
 import { useUserNotifications } from "@/hooks/useUserNotifications";
 import { Badge, Icon } from "@/components/ui";
 import { ROUTES } from "@/routePaths";
-import type { Template } from "@/types";
 
 /** Externally supplied links may only open an ordinary HTTPS site. */
 export function safeStoreUrl(value: string | null | undefined): string | null {
@@ -20,8 +19,8 @@ function storefrontTimestamp(value: string | null | undefined): number {
   return Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : `${value}Z`);
 }
 
-export function StorefrontStatusCard({ userId, orgId, templates }: {
-  userId: string | undefined; orgId: string; templates?: Pick<Template, "id" | "name" | "display_name">[];
+export function StorefrontStatusCard({ userId, orgId }: {
+  userId: string | undefined; orgId: string;
 }) {
   const { t } = useLanguage();
   const { can } = usePermissions();
@@ -33,9 +32,6 @@ export function StorefrontStatusCard({ userId, orgId, templates }: {
   if (!allowed) return null;
 
   const data = query.data;
-  const templateName = templates?.find((template) =>
-    template.id === data?.template_id || template.name === data?.template_id,
-  )?.display_name;
   const status = data?.infrastructure_status;
   const known = status && ["not_published", "pending", "provisioning", "active", "failed", "deleting"].includes(status);
   const state = query.isError ? "unavailable" : query.isPending ? "loading" : known ? status : "unknown";
@@ -60,7 +56,7 @@ export function StorefrontStatusCard({ userId, orgId, templates }: {
         </Badge>
       </div>
       <p className="t-sm text-muted-foreground mt-2" role="status">{t(`storefront.status.${state}Description`)}</p>
-      {data?.template_id && <p className="t-sm mt-2">{t("storefront.status.design", { name: templateName ?? t("storefront.status.selectedDesign") })}</p>}
+      {data?.template_id && <p className="t-sm mt-2">{t("storefront.status.design", { name: data.template_name ?? t("storefront.status.selectedDesign") })}</p>}
       {stage && <p className={`t-sm mt-2 ${stage === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
         {t(`storefront.status.update.${stage}`)}
       </p>}

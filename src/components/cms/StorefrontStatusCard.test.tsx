@@ -12,15 +12,14 @@ const state = vi.hoisted(() => ({
 vi.mock('@/hooks/useRbac', () => ({ usePermissions: () => ({ can: (_m: string, _a: string, section: string) => section === 'deployments' ? state.allowed : state.edit }) }));
 vi.mock('@/hooks/useStorefrontStatus', () => ({ useStorefrontStatus: (...args: unknown[]) => { state.hook(...args); return state.query; } }));
 vi.mock('@/hooks/useUserNotifications', () => ({ useUserNotifications: () => ({ data: { data: state.notifications } }) }));
-const templates = [{ id: 'template-a', name: 'ferreteria', display_name: 'Ferretería' }];
-const show = () => render(<LanguageProvider><StorefrontStatusCard userId="user-a" orgId="org-a" templates={templates} /></LanguageProvider>);
+const show = () => render(<LanguageProvider><StorefrontStatusCard userId="user-a" orgId="org-a" /></LanguageProvider>);
 beforeEach(() => {
   localStorage.setItem('language', 'en');
   state.allowed = true; state.edit = true; state.notifications = [];
-  state.query = { data: { infrastructure_status: 'active', infrastructure_updated_at: '2026-11-11T10:00:00Z', store_url: 'https://example-store.stores.tsuru.jcampos.dev', template_id: 'template-a' }, isError: false, isPending: false, isFetching: false, refetch: vi.fn() };
+  state.query = { data: { infrastructure_status: 'active', infrastructure_updated_at: '2026-11-11T10:00:00Z', store_url: 'https://example-store.stores.tsuru.jcampos.dev', template_id: 'template-a', template_name: 'Ferretería' }, isError: false, isPending: false, isFetching: false, refetch: vi.fn() };
 });
 describe('storefront status card', () => {
-  it('shows a confirmed live link, selected design and separate content action', () => {
+  it('shows the selected design from status without depending on the template gallery', () => {
     show();
     expect(screen.getByText('Published')).toBeTruthy();
     expect(screen.getByText('Selected design: Ferretería')).toBeTruthy();
@@ -28,6 +27,12 @@ describe('storefront status card', () => {
     expect(screen.getByRole('link', { name: 'Edit content' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Refresh status' }));
     expect(state.query.refetch).toHaveBeenCalled();
+  });
+  it('keeps the published link and description when the template name cannot be resolved', () => {
+    state.query.data.template_name = null;
+    show();
+    expect(screen.getByText('Selected design: Organization template')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Visit store' })).toBeTruthy();
   });
   it.each(['pending', 'provisioning', 'failed', 'deleting', 'not_published', 'unexpected'])('withholds the live link when infrastructure is %s', (status) => {
     state.query.data.infrastructure_status = status;
@@ -65,7 +70,6 @@ describe('storefront status card', () => {
   });
   it('treats a timezone-less failure timestamp as UTC when comparing against a recovery', () => {
     state.query.data.infrastructure_updated_at = '2026-11-05T02:45:48.899Z';
-    state.query.data.template_id = 'ferreteria';
     state.notifications = [{ organization_id: 'org-a', event_type: 'storefront.failed', created_on: '2026-11-04T22:54:33.184760', payload: { stage: 'failed' } }];
     show();
     expect(screen.getByText('Published')).toBeTruthy();
