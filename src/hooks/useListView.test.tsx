@@ -44,6 +44,11 @@ it('starts details at the top and leaves returning lists to restore their positi
     scroll.mockClear();
     view.rerender({ path: '/dashboard/orders' });
     expect(scroll).not.toHaveBeenCalled();
+    view.rerender({ path: '/dashboard/documents/historical/5060101' });
+    expect(scroll).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
+    scroll.mockClear();
+    view.rerender({ path: '/dashboard/documents/historical' });
+    expect(scroll).not.toHaveBeenCalled();
   } finally {
     vi.unstubAllGlobals();
     scroll.mockRestore();
