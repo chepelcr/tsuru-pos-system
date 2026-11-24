@@ -47,6 +47,7 @@ export const REPORT_COLOR_PALETTES = {
 
 export type ReportColorScheme = keyof typeof REPORT_COLOR_PALETTES;
 export type ReportColorPalette = (typeof REPORT_COLOR_PALETTES)[ReportColorScheme];
+export const DEFAULT_REPORT_COLOR: ReportColorScheme = 'green_alt';
 
 export interface ReportColorOption {
   value: ReportColorScheme;
@@ -65,7 +66,7 @@ type ReportPaletteProperties = CSSProperties & Record<`--report-${string}`, stri
 
 /** Apply the chosen palette once; report component classes consume these CSS variables. */
 export function getReportPaletteProperties(scheme?: ReportColorScheme): ReportPaletteProperties {
-  const palette = REPORT_COLOR_PALETTES[scheme ?? 'green'];
+  const palette = REPORT_COLOR_PALETTES[scheme ?? DEFAULT_REPORT_COLOR];
   return {
     '--report-header': palette.header,
     '--report-header-text': palette.headerText,

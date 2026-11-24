@@ -111,7 +111,7 @@
   "orders.attachments.ticket": "Ticket 80mm",
   "orders.colorScheme.blue": "Azul",
   "orders.colorScheme.green": "Amarillo",
-  "orders.colorScheme.green_alt": "Verde claro",
+  "orders.colorScheme.green_alt": "Verde",
   "orders.colorScheme.label": "Color",
   "orders.colorScheme.orange": "Naranja",
   "orders.colorScheme.reprocessDescription": "Vuelve a calcular el pedido con el motor fiscal actual y completa los datos que falten (CABYS, impuestos, unidad de medida) desde el producto. También regenera el reporte con el color elegido.",
