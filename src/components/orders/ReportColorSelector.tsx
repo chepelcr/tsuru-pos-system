@@ -1,6 +1,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { type OrderDepartment } from '@/types/order';
-import { REPORT_COLOR_OPTIONS, type ReportColorScheme } from '@/theme/reportColors';
+import { DEFAULT_REPORT_COLOR, REPORT_COLOR_OPTIONS, type ReportColorScheme } from '@/theme/reportColors';
 
 /**
  * Report-color scheme picker. The swatch backgrounds use data-driven inline
@@ -13,12 +13,10 @@ interface ReportColorSelectorProps {
   onChange: (color: ReportColorScheme) => void;
 }
 
-/** Default color derived from department: 22 → orange, 26 → green_alt, else green. */
+/** Department 22 uses orange. Other departments use the standard green palette. */
 export function getDefaultColorForDepartment(dept: string | OrderDepartment | null): ReportColorScheme {
-  const code = typeof dept === 'string' ? dept : dept?.department_code;
-  if (code === '22') return 'orange';
-  if (code === '26') return 'green_alt';
-  return 'green';
+  const code = typeof dept === 'string' ? dept.split(' - ', 1)[0] : dept?.department_code;
+  return code?.trim() === '22' ? 'orange' : DEFAULT_REPORT_COLOR;
 }
 
 export function ReportColorSelector({ value, onChange }: ReportColorSelectorProps) {

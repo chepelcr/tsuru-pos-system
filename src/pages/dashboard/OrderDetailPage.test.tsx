@@ -50,8 +50,24 @@ function exampleOrder(): Order {
 beforeEach(() => { state.electronic = false; state.export = true; });
 
 describe('order detail', () => {
-  it('opens the cross-docking upload from the labeled action and shows the saved yellow palette', async () => {
-    state.order = { ...exampleOrder(), report_color: 'green' };
+  it.each([
+    { department: null, color: undefined, uploaded: false, selected: 'Verde' },
+    { department: { department_code: '10' }, color: 'green', uploaded: false, selected: 'Verde' },
+    { department: { department_code: '26' }, color: undefined, uploaded: false, selected: 'Verde' },
+    { department: '22 - Textiles', color: undefined, uploaded: false, selected: 'Naranja' },
+    { department: null, color: 'green', uploaded: true, selected: 'Amarillo' },
+  ] as const)('preselects $selected in the cross-docking upload drawer', async ({ department, color, uploaded, selected }) => {
+    state.order = {
+      ...exampleOrder(),
+      department,
+      report_color: color,
+      crossdocking: uploaded ? {
+        sale_points: [],
+        item_summary: [],
+        box_summary: [],
+        totals: { total_sale_points: 0, total_line_items: 0, total_boxes: 0, total_units: 0 },
+      } : undefined,
+    };
     render(<OrderDetailPage orderId={state.order.document_number} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'common.actions' }));
@@ -62,8 +78,8 @@ describe('order detail', () => {
     fireEvent.change(fileInput, { target: { files: [new File(['xlsx'], 'crossdocking.xlsx')] } });
 
     const drawer = within(dialog);
-    expect(drawer.getByRole('button', { name: 'Amarillo' }).getAttribute('aria-pressed')).toBe('true');
-    expect(drawer.getByRole('button', { name: 'Verde claro' }).getAttribute('aria-pressed')).toBe('false');
+    expect(drawer.getByRole('button', { name: selected }).getAttribute('aria-pressed')).toBe('true');
+    expect(drawer.getByRole('button', { name: 'Verde' }).getAttribute('aria-pressed')).toBe(String(selected === 'Verde'));
   });
 
   it('shows separate gross, discount, net, tax and final totals and removes the CABYS column', () => {

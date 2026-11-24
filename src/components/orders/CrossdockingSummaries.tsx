@@ -2,6 +2,7 @@ import { Icon } from '@/components/ui';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { type CrossdockingSalePoint, type Order } from '@/types/order';
 import { getReportPaletteProperties } from '@/theme/reportColors';
+import { getDefaultColorForDepartment } from './ReportColorSelector';
 
 function value(v: unknown): string {
   if (v == null) return '';
@@ -80,7 +81,7 @@ export function CrossdockingSummaries({ order }: { order: Order }) {
   const supplierCode = value(order.supplier?.internal_code);
 
   return (
-    <div className="crossdocking-report space-y-5" style={getReportPaletteProperties(order.report_color)}>
+    <div className="crossdocking-report space-y-5" style={getReportPaletteProperties(order.report_color ?? getDefaultColorForDepartment(order.department))}>
       <section className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="crossdocking-report-hero px-5 py-4 text-center">
           <div className="t-xs font-semibold uppercase tracking-[0.16em] opacity-80">

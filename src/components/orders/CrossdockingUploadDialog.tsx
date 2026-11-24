@@ -20,16 +20,17 @@ export function CrossdockingUploadDialog({ open, onClose, order, orgId }: Crossd
   const { add } = useNotifications();
   const upload = useUploadCrossdocking(orgId, order.document_number);
   const [file, setFile] = useState<File | null>(null);
-  const [color, setColor] = useState<ReportColorScheme>(
-    order.report_color ?? getDefaultColorForDepartment(order.department),
-  );
+  // Older detail imports stored the former default before the cross-docking file existed.
+  const savedColor = !order.crossdocking && order.report_color === 'green' ? undefined : order.report_color;
+  const initialColor = savedColor ?? getDefaultColorForDepartment(order.department);
+  const [color, setColor] = useState<ReportColorScheme>(initialColor);
 
   useEffect(() => {
     if (open) {
-      setColor(order.report_color ?? getDefaultColorForDepartment(order.department));
+      setColor(initialColor);
       setFile(null);
     }
-  }, [open, order.report_color, order.department]);
+  }, [open, order.document_number, initialColor]);
 
   const close = () => {
     setFile(null);
