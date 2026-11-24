@@ -287,6 +287,7 @@ export interface SaleDocument {
   branch_id?: string;
   terminal_id?: string;
   client_id?: string | null;
+  linked_order_numbers?: string[];
 
   // Hacienda metadata
   document_type: DocTypeCode;

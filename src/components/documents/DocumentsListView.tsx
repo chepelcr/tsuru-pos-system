@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useEffect, useRef, useState } from 'react';
 import { useDocumentStore } from '@/store/documentStore';
 import { useSales } from '@/hooks/useSales';
@@ -18,9 +19,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { usePermissions } from '@/hooks/useRbac';
 import { hasHaciendaActions } from '@/lib/documentStatus';
 import { useDocumentImportStore } from '@/hooks/useDocumentImport';
+import { useListViewScroll, useListViewState } from '@/hooks/useListView';
 
 const SKELETON_COUNT = 6;
-const DEFAULT_PAGE_SIZE = 20;
 
 interface DocumentsListViewProps {
   orgId: string;
@@ -78,13 +79,14 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
   const { t } = useLanguage();
   const { can } = usePermissions();
 
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [search, setSearch] = useState<ComplexSearchFilters>({});
-  const [term, setTerm] = useState(search.searchTerm ?? '');
+  const listScope = `documents:${orgId}:${is_received ? 'received' : 'issued'}`;
+  const [selectedTypes, setSelectedTypes] = useListViewState<string[]>(listScope, 'types', []);
+  const [search, setSearch] = useListViewState<ComplexSearchFilters>(listScope, 'filters', {});
+  const term = search.searchTerm ?? '';
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  useEffect(() => setPage(0), [orgId, is_received]);
+  const [page, setPage] = useListViewState(listScope, 'page', 0);
+  const [pageSize, setPageSize] = useListViewState(listScope, 'pageSize', DEFAULT_PAGE_SIZE);
+  const scrollContainer = useRef<HTMLDivElement>(null);
   const [actionModal, setActionModal] = useState<{
     doc: DocumentListItem;
     action: string;
@@ -107,6 +109,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
 
   const docs = data?.data ?? [];
   const pagination = data?.pagination;
+  useListViewScroll(`${listScope}:${page}`, !isLoading, scrollContainer);
 
   const handleTypesChange = (types: string[]) => {
     setSelectedTypes(types);
@@ -114,7 +117,6 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
   };
 
   const handleSearchTermChange = (next: string) => {
-    setTerm(next);
     setSearch((s) => ({ ...s, searchTerm: next || undefined }));
     setPage(0);
   };
@@ -166,7 +168,7 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
       />
 
       {/* Content area — the ONLY scrollable region */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollContainer} className="flex-1 min-h-0 overflow-y-auto">
         {isLoading ? (
           <div className="grid-docs gap-3 p-4">
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
@@ -246,7 +248,6 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
             pageSize={pagination.page_size}
             onPageChange={(next) => setPage(next - 1)}
             onPageSizeChange={setPageSize}
-            pageSizeOptions={[20, 50, 100]}
             itemName={t('documents.itemName')}
           />
         </div>
@@ -296,7 +297,6 @@ export function DocumentsListView({ orgId }: DocumentsListViewProps) {
         filters={search}
         onApply={(next) => {
           setSearch(next);
-          setTerm(next.searchTerm ?? '');
           setPage(0);
         }}
         onClose={() => setShowAdvanced(false)}

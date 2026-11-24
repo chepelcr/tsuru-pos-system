@@ -40,19 +40,18 @@ interface PipelineStep {
 /**
  * Derive the Hacienda pipeline state from what the document itself records.
  *
- * Each stage is read from the field the backend writes when that stage
- * completes, so a document stuck mid-flight shows exactly where it stopped —
- * which is the whole point of this view. `pdf` keys off the PDF url persisted
+ * The timeline uses the recorded submission and Hacienda response. `pdf` keys off the PDF url persisted
  * on the document (`attachments.pdf_url`), so it is only done once the object
  * was actually written.
  */
 function buildPipeline(sale: SaleDocument): PipelineStep[] {
   const atv = sale.atv_validation;
   const signed = !!sale.document_key && !!sale.consecutive_number;
-  const submitted = !!atv?.send_date;
   const rejected = atv?.validation_status === 3;
   const validated = atv?.validation_status === 1 || atv?.validation_status === 2;
-  const answered = !!atv?.validation_date;
+  const answered = !!atv?.validation_date || validated || rejected;
+  // Imported XML can carry the reply without a local submission timestamp.
+  const submitted = !!atv?.send_date || answered;
   const pdfReady = !!sale.attachments?.pdf_url;
   const notified = !!sale.notified;
 
@@ -352,7 +351,7 @@ function OrderInfoCard({ sale, orgId }: { sale: SaleDocument; orgId: string }) {
   const hasChainFields = fields.some((field) => field.code === 'WMNumeroVendedor' || field.code === 'WMEnviarGLN');
   const { data: departmentsResp } = useDepartments(hasChainFields ? orgId : undefined, clientId, { page_size: 100 });
   const { data: storesResp } = useStores(hasChainFields ? orgId : undefined, clientId, { page_size: 100 });
-  if (!fields.length) return null;
+  if (!fields.length && !sale.linked_order_numbers?.length) return null;
 
   const value = (code: string) => fields.find((field) => field.code === code)?.other_text?.trim();
   const vendor = value('WMNumeroVendedor');
@@ -364,8 +363,10 @@ function OrderInfoCard({ sale, orgId }: { sale: SaleDocument; orgId: string }) {
   // A crossdocking order is numbered with the chain's purchase order, so the two
   // fields often carry the same value — then it is one number, shown once.
   const orderNumber = value('TsuruNumeroPedido');
+  const orderNumbers = sale.linked_order_numbers?.length
+    ? sale.linked_order_numbers : orderNumber ? [orderNumber] : [];
   const chainOrder = value('WMNumeroOrden');
-  const purchaseOrder = chainOrder && chainOrder !== orderNumber ? chainOrder : undefined;
+  const purchaseOrder = chainOrder && !orderNumbers.includes(chainOrder) ? chainOrder : undefined;
   const orderLink = (number: string) => (
     <Link
       href={`${ROUTES.DASHBOARD_ORDERS}/${encodeURIComponent(number)}`}
@@ -380,7 +381,7 @@ function OrderInfoCard({ sale, orgId }: { sale: SaleDocument; orgId: string }) {
 
   return (
     <SectionCard title={t('orderInfo.title')} icon="package">
-      {orderNumber && <PairRow label={t('orderInfo.orderNumber')} value={orderLink(orderNumber)} strong />}
+      {orderNumbers.map((number) => <PairRow key={number} label={t('orderInfo.orderNumber')} value={orderLink(number)} strong />)}
       {purchaseOrder && <PairRow label={t('documents.detail.purchaseOrder')} value={orderLink(purchaseOrder)} strong />}
       {vendor && (
         <PairRow

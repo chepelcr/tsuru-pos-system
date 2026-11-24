@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Icon, Pagination } from "@/components/ui";
@@ -23,7 +24,6 @@ interface ClientPickerProps {
   variant: "panel" | "inline";
 }
 
-const PAGE_SIZE = { panel: 20, inline: 5 } as const;
 
 /** Search and pick an active client — the POS left pane and the checkout receiver. */
 export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, variant }: ClientPickerProps) {
@@ -31,7 +31,7 @@ export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, vari
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(1);
   const debouncedTerm = useDebounce(term, 300);
-  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE[variant]);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const { data, isLoading } = useClients(orgId, {
     search: buildClientSearch({ term: debouncedTerm, status: 1 }),
@@ -44,7 +44,7 @@ export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, vari
 
   const list = isLoading ? (
     <div className="flex flex-col gap-2 p-2">
-      {Array.from({ length: isPanel ? 6 : pageSize }).map((_, i) => (
+      {Array.from({ length: isPanel ? 6 : 5 }).map((_, i) => (
         <ClientListSkeleton key={i} />
       ))}
     </div>
@@ -125,7 +125,6 @@ export function ClientPicker({ orgId, selectedClientId, onSelect, onAddNew, vari
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           itemName={t("tabs.clients")}
-          pageSizeOptions={variant === "inline" ? [5, 10, 20] : [20, 50, 100]}
         />
       )}
     </div>

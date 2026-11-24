@@ -1,3 +1,5 @@
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMemo, useState } from "react";
 import { useOrgContext } from "@/contexts/OrgContext";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -21,7 +23,6 @@ import { FormField } from "@/components/forms/FormField";
 import { ErrorBox } from "@/components/feedback/ErrorBox";
 import { roleLabel as rbacRoleLabel } from "@/lib/rbacI18n";
 
-const PAGE_SIZE = 12;
 
 function memberFullName(m: {
   user?: { first_name?: string; last_name?: string; email?: string };
@@ -75,9 +76,11 @@ export default function MembersPage() {
     [invitations]
   );
 
-  const [term, setTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const listScope = `members:${orgId}`;
+  const [term, setTerm] = useListViewState(listScope, "term", "");
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
+  useListViewScroll(`${listScope}:${page}`, !membersLoading && !invitationsLoading);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");

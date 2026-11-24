@@ -1,3 +1,5 @@
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
@@ -60,25 +62,27 @@ export default function SessionsPage() {
   const [drawerTab, setDrawerTab] = useState<DrawerTab>("overview");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [endConfirmId, setEndConfirmId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
+  const listScope = `sessions:${org?.id}`;
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
 
   usePageTitle([
     t("shell.sessions"),
     configOpen ? (editSession ? editSession.name : t("common.new")) : undefined,
   ]);
 
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
-
   // Status filter is in the URL so links are shareable. Default to active.
-  const urlFilter = new URLSearchParams(searchParams).get("filter") ?? "active";
-  const statusFilter: SessionStatusValue = URL_TO_STATUS[urlFilter] ?? "1";
-  const [term, setTerm] = useState("");
+  const urlFilter = new URLSearchParams(searchParams).get("filter");
+  const urlStatus = urlFilter ? URL_TO_STATUS[urlFilter] : undefined;
+  const [savedStatus, setSavedStatus] = useListViewState<SessionStatusValue>(listScope, "status", "1");
+  const statusFilter = urlStatus ?? savedStatus;
+  const [term, setTerm] = useListViewState(listScope, "term", "");
+  useEffect(() => {
+    if (urlStatus && urlStatus !== savedStatus) setSavedStatus(urlStatus);
+  }, [urlStatus, savedStatus]);
 
   const setStatusFilter = (next: SessionStatusValue) => {
+    setSavedStatus(next);
     const params = new URLSearchParams(searchParams);
     const urlVal = STATUS_TO_URL[next];
     if (urlVal === "active") params.delete("filter"); // active is default
@@ -111,6 +115,8 @@ export default function SessionsPage() {
       return crossAppApi.get<{ data: Session[]; pagination: any }>(crossAppOrgPath(org!.id, `/sessions?${qs}`));
     },
   });
+
+  useListViewScroll(`${listScope}:${page}`, !!org && !isLoading);
 
   const sessions = sessionsData?.data ?? [];
   const pagination = sessionsData?.pagination;
@@ -228,7 +234,6 @@ export default function SessionsPage() {
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           itemName={t("session.itemName")}
-          pageSizeOptions={[12, 24, 48, 96]}
         />
       )}
 

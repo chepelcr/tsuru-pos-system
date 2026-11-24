@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useMemo } from 'react';
 import { Link } from 'wouter';
 import { Button, EmptyState, Pagination, Spinner } from '@/components/ui';
 import { HistoricalDocumentsToolbar } from '@/components/documents/HistoricalDocumentsToolbar';
@@ -23,9 +25,10 @@ export default function HistoricalDocumentsPage() {
 function HistoricalDocumentsList({ orgId }: { orgId: string }) {
   const { t, language } = useLanguage();
   const { can } = usePermissions();
-  const [filters, setFilters] = useState<HistoricalDocumentFilters>({});
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(20);
+  const listScope = `historical-documents:${orgId}`;
+  const [filters, setFilters] = useListViewState<HistoricalDocumentFilters>(listScope, "filters", {});
+  const [page, setPage] = useListViewState(listScope, "page", 0);
+  const [size, setSize] = useListViewState(listScope, "size", DEFAULT_PAGE_SIZE);
   const canRead = can('reports', 'read', 'historical');
   const canSync = can('reports', 'update', 'historical');
   const validRange = !filters.start_date || !filters.end_date || filters.start_date <= filters.end_date;
@@ -38,6 +41,8 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
     [filters, debouncedTerm],
   );
   const query = useHistoricalDocuments(orgId, queryFilters, page, size, canRead && validRange);
+  useListViewScroll(`${listScope}:${page}`, !query.isLoading);
+
   const sync = useSyncHistoricalDocuments(orgId);
   // Importing XMLs fills the same ledger a sweep does (TSR-335).
   const openImport = useDocumentImportStore((state) => state.openDrawer);
@@ -102,7 +107,7 @@ function HistoricalDocumentsList({ orgId }: { orgId: string }) {
           </table>
         </div>
       )}
-      {validRange && !query.isError && pagination && <Pagination page={pagination.page + 1} totalPages={pagination.total_pages} totalElements={pagination.total_elements} pageSize={pagination.page_size} onPageChange={(next) => setPage(next - 1)} onPageSizeChange={(next) => { setSize(next); setPage(0); }} pageSizeOptions={[20, 50, 100, 250]} itemName={t('historical.items')} />}
+      {validRange && !query.isError && pagination && <Pagination page={pagination.page + 1} totalPages={pagination.total_pages} totalElements={pagination.total_elements} pageSize={pagination.page_size} onPageChange={(next) => setPage(next - 1)} onPageSizeChange={(next) => { setSize(next); setPage(0); }} itemName={t('historical.items')} />}
       {/* Mounted on first open and kept: closing only hides it, so uploads in
           flight continue in the background instead of being aborted. */}
     </div>

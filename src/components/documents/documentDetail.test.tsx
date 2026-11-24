@@ -29,8 +29,8 @@ const doc = {
   attachments: { xml_url: 'https://bucket/doc.xml', pdf_url: 'https://bucket/doc.pdf', hacienda_response_url: 'https://bucket/response.xml' },
   other_fields: [{ code: 'WMNumeroOrden', other_text: 'PO-123' }, { code: 'TsuruNumeroPedido', other_text: 'PM-123' }],
 };
-function mount() {
-  get.mockResolvedValue(doc);
+function mount(document = doc) {
+  get.mockResolvedValue(document);
   post.mockResolvedValue({});
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><DocumentDetailPage saleId="sale" /></QueryClientProvider>);
 }
@@ -55,5 +55,17 @@ describe('document detail requests and modal', () => {
     fireEvent.click(screen.getByText('documents.action.pdf'));
     expect(screen.getByTitle('documents.action.pdfTitle').getAttribute('src')).toBe('https://bucket/doc.pdf');
     expect(get).toHaveBeenCalledTimes(1);
+  });
+  it('shows the saved order link for an imported invoice without order fields and completes submission', async () => {
+    mount({
+      ...doc,
+      origin: 'IMPORT', document_key: 'clave', consecutive_number: '64',
+      linked_order_numbers: ['2900679598'], other_fields: [],
+      atv_validation: { validation_status: 1, validation_date: '2026-09-22', errors: [] },
+    } as typeof doc);
+    await screen.findByText('Receiver');
+    expect(screen.getByRole('link', { name: '2900679598' }).getAttribute('href')).toBe('/dashboard/orders/2900679598');
+    const submission = screen.getByText('documents.pipeline.submitted').parentElement!;
+    expect(submission.textContent).not.toContain('documents.pipeline.current');
   });
 });

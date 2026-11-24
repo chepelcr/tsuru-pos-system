@@ -42,10 +42,10 @@ describe('shared list footer', () => {
     expect(screen.getByText('Page 1 of 1')).toBeTruthy();
     expect((screen.getByRole('button', { name: 'Next' }) as HTMLButtonElement).disabled).toBe(true);
   });
-  it('includes the actual page size and resets to page one when changing it', () => {
-    const callbacks = footer({ page: 3, pageSizeOptions: [12, 24, 50] });
+  it('offers the same page sizes and resets to page one when changing it', () => {
+    const callbacks = footer({ page: 3 });
     fireEvent.click(screen.getByRole('combobox', { name: 'Show' }));
-    expect(screen.getByRole('option', { name: '20' })).toBeTruthy();
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['20', '50', '100']);
     fireEvent.click(screen.getByRole('option', { name: '50' }));
     expect(callbacks.onPageChange).toHaveBeenCalledWith(1);
     expect(callbacks.onPageSizeChange).toHaveBeenCalledWith(50);

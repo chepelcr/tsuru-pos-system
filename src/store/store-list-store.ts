@@ -1,3 +1,4 @@
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { create } from 'zustand';
 import type { StoreSortField } from "@/lib/search";
 
@@ -20,7 +21,7 @@ const initialState = {
   sortBy: 'store_code' as const,
   sortOrder: 'asc' as const,
   page: 1,
-  pageSize: 12,
+  pageSize: DEFAULT_PAGE_SIZE,
 };
 
 export const useStoreListStore = create<StoreListState>((set) => ({

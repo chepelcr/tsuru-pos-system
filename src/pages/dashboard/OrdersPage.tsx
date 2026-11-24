@@ -1,3 +1,5 @@
+import { useListViewScroll, useListViewState } from "@/hooks/useListView";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { ROUTES, documentEditorPath } from '@/routePaths';
@@ -26,7 +28,6 @@ import { formatOrderDate } from '@/lib/orderDate';
 import { useDocumentOrderMappings } from '@/hooks/useDocumentOrderMappings';
 import { useDocumentOrderMappingModal } from '@/components/orders/DocumentOrderMappingPrompt';
 
-const PAGE_SIZE = 12;
 const SKELETON_COUNT = 6;
 
 function OrderCardSkeleton() {
@@ -160,10 +161,11 @@ export default function OrdersPage() {
     navigate(documentEditorPath(tabId));
   };
 
-  const [term, setTerm] = useState('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZE);
-  const [filters, setFilters] = useState<OrdersAdvancedFilters>({ ...EMPTY_ORDERS_FILTERS });
+  const listScope = `orders:${orgId}`;
+  const [term, setTerm] = useListViewState(listScope, "term", '');
+  const [page, setPage] = useListViewState(listScope, "page", 1);
+  const [pageSize, setPageSize] = useListViewState(listScope, "pageSize", DEFAULT_PAGE_SIZE);
+  const [filters, setFilters] = useListViewState<OrdersAdvancedFilters>(listScope, "filters", { ...EMPTY_ORDERS_FILTERS });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const openImport = useOrderImportStore(state => state.openDrawer);
 
@@ -189,6 +191,8 @@ export default function OrdersPage() {
     page,
     pageSize,
   });
+
+  useListViewScroll(`${listScope}:${page}`, !isLoading);
 
   const orders = data?.data ?? [];
   const pagination = data?.pagination;

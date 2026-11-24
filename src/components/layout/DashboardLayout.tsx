@@ -1,4 +1,5 @@
 import { Redirect, useLocation } from "wouter";
+import { useDetailPageScroll } from "@/hooks/useListView";
 import { ROUTES } from "@/routePaths";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
@@ -101,6 +102,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { useDefaultOrganization } = useOrganization();
   const { data: org, isSuccess: orgsLoaded } = useDefaultOrganization(user?.userId);
   const [location, navigate] = useLocation();
+
+  useDetailPageScroll(location);
 
   const active = getActiveNav(location);
 

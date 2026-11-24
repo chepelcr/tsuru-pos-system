@@ -1,5 +1,6 @@
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
+import { PAGE_SIZES } from "@/lib/pagination";
 import { Button } from "./Button";
 import { SelectField } from "./SelectField";
 
@@ -12,7 +13,6 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   itemName?: string;
-  pageSizeOptions?: number[];
   className?: string;
 }
 
@@ -24,7 +24,6 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   itemName,
-  pageSizeOptions = [12, 24, 48, 96],
   className,
 }: PaginationProps) {
   const { t } = useLanguage();
@@ -32,7 +31,6 @@ export function Pagination({
   const currentPage = Math.min(pages, Math.max(1, page));
   const startItem = totalElements > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endItem = totalElements > 0 ? Math.min(currentPage * pageSize, totalElements) : 0;
-  const sizes = [...new Set([...pageSizeOptions, pageSize])].filter((size) => size > 0).sort((a, b) => a - b);
 
   return (
     <nav aria-label={t("common.pagination")} className={cn("list-pagination mt-6 flex shrink-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between", className)}>
@@ -47,7 +45,7 @@ export function Pagination({
             aria-label={t("common.pageSize")}
             inputSize="sm"
             className="w-20"
-            options={sizes.map((size) => ({ value: String(size), label: String(size) }))}
+            options={PAGE_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
             onChange={(value) => {
               onPageChange(1);
               onPageSizeChange(Number(value));
