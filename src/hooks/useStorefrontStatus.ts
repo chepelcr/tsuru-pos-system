@@ -7,6 +7,7 @@ export interface StorefrontStatus {
   infrastructure_status: "not_published" | "pending" | "provisioning" | "active" | "failed" | "deleting";
   infrastructure_updated_at: string | null;
   template_id: string | null;
+  template_name: string | null;
   store_url: string | null;
 }
 
