@@ -3,7 +3,7 @@ import { ROUTES } from '@/routePaths';
 
 const values = new Map<string, unknown>();
 const scrollPositions = new Map<string, number>();
-const detailParents = [
+const detailParents: readonly string[] = [
   ROUTES.DASHBOARD_ORDERS, ROUTES.DASHBOARD_PRODUCTS, ROUTES.DASHBOARD_CLIENTS,
   ROUTES.DASHBOARD_CONFIRMATIONS, ROUTES.DASHBOARD_DOCUMENTS, ROUTES.DASHBOARD_HISTORICAL_DOCUMENTS,
   ROUTES.DASHBOARD_BRANCHES, ROUTES.DASHBOARD_SESSIONS, ROUTES.DASHBOARD_ORG_SETTINGS,
@@ -11,7 +11,8 @@ const detailParents = [
 
 export function useDetailPageScroll(location: string) {
   useLayoutEffect(() => {
-    if (window.scrollY && detailParents.some((parent) => location.startsWith(`${parent}/`))) {
+    const path = location.replace(/\/+$/, '');
+    if (window.scrollY && !detailParents.includes(path) && detailParents.some((parent) => path.startsWith(`${parent}/`))) {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   }, [location]);
